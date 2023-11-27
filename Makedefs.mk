@@ -13,6 +13,8 @@ SIZE := $(TOOL)-size
 OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 GET := ./Meta get $(TRAITS)
+EPRINT := $(TOOLS)/EPrint
+EMAP := $(BUILD)/EMap
 
 CPUS=$(shell $(GET) "Traits<CPUS>::COUNT")
 MACHINE=$(shell $(GET) "Traits<Machine>::NAME")
@@ -29,6 +31,7 @@ CFLAGS = -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
+CFLAGS += -msmall-data-limit=0
 CFLAGS += -march=rv64ima_zicsr -mabi=lp64
 CFLAGS += -g -std=c++2c
 

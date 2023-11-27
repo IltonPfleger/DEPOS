@@ -9,7 +9,10 @@ OBJS := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 MEMORY_MAP := $(BUILD)/MemoryMap
 
-run: $(TARGET).elf $(TOOLS)
+run: $(TARGET).bin
+	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(TARGET).bin
+
+$(TARGET).bin : $(TARGET).elf $(TOOLS)
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)
 	$(LD) -e main --just-symbols $(TARGET).elf --image-base=$(ApplicationAddr) -o $(APPLICATION_TARGET).elf $(APPLICATION_TARGET).o
 	./$(BUILD)/ELFParser $(APPLICATION_TARGET).elf $(MEMORY_MAP)
@@ -19,7 +22,8 @@ run: $(TARGET).elf $(TOOLS)
 	$(OBJCOPY) -O binary $(APPLICATION_TARGET).elf $(APPLICATION_TARGET).bin
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
 	$(DD) bs=1 conv=notrunc if=$(APPLICATION_TARGET).bin of=$(TARGET).bin seek=$$(( $$(./tools/EPrint $(APPLICATION_TARGET).elf -b) - $(RamStart) ))
-	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(TARGET).bin
+	#$(TRUNCATE) -s %$(PAGE_SIZE) $(IMAGE)
+	#$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(TARGET).bin
 
 debug: $(TARGET)
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -S -gdb tcp::1234
