@@ -5,24 +5,23 @@
 #include <memory.h>
 #include <cpu.h>
 
-void kmain()
-{
+void kmain() {
     if (cpuid() == 0) {
         kprint_init();
         memory_init();
         kprint(WELCOME);
     } else {
-		__asm__ volatile("wfi");
+        __asm__ volatile("wfi");
     }
 }
 
-__attribute__((naked)) void ktrap()
-{
+__attribute__((naked)) void ktrap() {
     scontext();
     lcontext();
     /* INTERRUPT OR EXCEPTION */
     //__asm__ volatile("csrr t0, mcause\nsrli t0, t0, %0" ::"i"(XLEN - 1));
-    //__asm__ goto("beq t0, zero, %l[EXCEPTION]\nj %l[INTERRUPT]" :: ::EXCEPTION, INTERRUPT);
+    //__asm__ goto("beq t0, zero, %l[EXCEPTION]\nj %l[INTERRUPT]" ::
+    //::EXCEPTION, INTERRUPT);
 
     // EXCEPTION:
     //     kprint("EXCEPTION\n");
