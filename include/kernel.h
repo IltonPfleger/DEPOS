@@ -11,7 +11,7 @@ void kmain() {
         memory_init();
         kprint(WELCOME);
     } else {
-        __asm__ volatile("wfi");
+        __asm__ volatile("sleep: wfi\nj sleep");
     }
 }
 
