@@ -3,7 +3,6 @@
 #include <utils/kprint.h>
 #include <utils/welcome.h>
 #include <memory.h>
-#include <trap.h>
 #include <cpu.h>
 
 void kmain()
