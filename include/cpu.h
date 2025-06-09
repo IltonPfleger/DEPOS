@@ -6,6 +6,8 @@ struct {
     uint8_t mhartid;
 } cpus[CPUS];
 
+void sleep() { __asm__ volatile("wfi"); }
+
 uint32_t cpuid()
 {
     uint32_t mhartid;
