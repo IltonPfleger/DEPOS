@@ -12,7 +12,7 @@ void kmain()
         memory_init();
         kprint(WELCOME);
     } else {
-		sleep();
+		__asm__ volatile("wfi");
     }
 }
 
