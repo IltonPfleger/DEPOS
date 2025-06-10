@@ -6,14 +6,14 @@ struct {
     uint8_t mhartid;
 } cpus[CPUS];
 
-uint32_t cpuid()
+uint32_t cpu_id()
 {
     uint32_t mhartid;
     __asm__ volatile("csrr %0, mhartid" : "=r"(mhartid));
     return mhartid;
 }
 
-void scontext()
+void cpu_scontext()
 {
     __asm__ volatile(
         "csrw mscratch, a0\n"
@@ -63,7 +63,7 @@ void scontext()
         : "memory");
 }
 
-void lcontext()
+void cpu_lcontext()
 {
     __asm__ volatile(
         "csrr a0, mhartid\n"
