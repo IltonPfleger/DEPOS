@@ -11,7 +11,7 @@ struct {
     struct memory_block_s* free[MEM_ORDER + 1];
 } memory;
 
-void* alloc(uint32_t order)
+void* memory_alloc(uint32_t order)
 {
     if (order > MEM_ORDER) return 0;
 
@@ -32,7 +32,7 @@ void* alloc(uint32_t order)
     return (void*)block;
 }
 
-void dalloc(void* ptr, uint32_t order)
+void memory_free(void* ptr, uint32_t order)
 {
     if (!ptr || order > MEM_ORDER) return;
     uintptr_t block = (uintptr_t)ptr;
