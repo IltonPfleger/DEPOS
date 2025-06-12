@@ -26,7 +26,7 @@ SECTIONS {
 
 	.bss : { *(.bss) *(COMMON) } :rw
 
-	. = 0x80400000;
+	. = 0x80200000;
 	PROVIDE(__KERNEL_END__ = .);
 }
 

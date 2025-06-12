@@ -12,7 +12,7 @@ struct UART {
     static volatile uint8_t& LSB() { return *reinterpret_cast<volatile uint8_t*>(BaseAddr + 0); };  // Divisor Latch LSB
     static volatile uint8_t& MSB() { return *reinterpret_cast<volatile uint8_t*>(BaseAddr + 1); };  // Divisor Latch MSB
     static constexpr uint8_t LSR_TX_EMPTY = (1 << 5);
-    static constexpr uint64_t DIVISOR     = (Clock + Baudrate * 8) / (Baudrate * 16);
+    static constexpr uint64_t DIVISOR     = (Clock) / (Baudrate * 16);
 
     static void init() {
         IER() = 0x00;

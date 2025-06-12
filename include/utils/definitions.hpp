@@ -13,12 +13,13 @@ typedef unsigned int uint32_t;
 typedef unsigned long int uint64_t;
 
 struct Machine {
-    static constexpr const char* ARCH = "RISCV";
-    static constexpr uint32_t XLEN    = 64;
-    static constexpr uint32_t CPUS    = 4;
+    static constexpr const char* ARCH    = "RISCV";
+    static constexpr const uint32_t XLEN = 64;
+    static constexpr const uint32_t CPUS = 4;
     struct Memory {
-        static constexpr const uint32_t order = 30;
-        static constexpr const uint32_t size  = (1 << order);
+        static constexpr const uint32_t STACK_SIZE = 4096;
+        static constexpr const uint32_t ORDER      = 30;
+        static constexpr const uint32_t SIZE       = (1 << ORDER);
     };
 };
 
