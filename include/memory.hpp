@@ -11,6 +11,9 @@ struct {
     struct memory_block_s* free[MEM_ORDER + 1];
 } memory;
 
+class Memory {
+}
+
 void* memory_alloc(uint32_t order)
 {
     if (order > MEM_ORDER) return 0;
@@ -23,7 +26,7 @@ void* memory_alloc(uint32_t order)
         struct memory_block_s* block   = memory.free[available_order];
         memory.free[available_order--] = block->next;
 
-        block->next = (void*)((((uintptr_t)block - memory.base) ^ (1 << available_order)) + memory.base);
+        block->next = (struct memory_block_s*)((((uintptr_t)block - memory.base) ^ (1 << available_order)) + memory.base);
         memory.free[available_order] = block;
     }
 

@@ -1,5 +1,5 @@
 TOOL := riscv64-unknown-elf
-CC := $(TOOL)-gcc
+CC := $(TOOL)-g++
 AS := $(TOOL)-as
 LD := $(TOOL)-ld
 OBJCOPY := $(TOOL)-objcopy
@@ -10,12 +10,20 @@ CFLAGS := -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany -nostartfiles -no
 
 BUILD := build
 TARGET := $(BUILD)/quark
-OBJ := $(shell find . -type f -name "*.c" | sed -e 's|^\./|$(BUILD)/|' -e 's|\.c|\.o|')
+OBJ := $(shell find . -type f -name "*.cc" | sed -e 's|^\./|$(BUILD)/|' -e 's|\.cc|\.o|')
 DEP = $(OBJ:.o=.d)
 
-all: $(TARGET)
-	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 2G -smp 4
+run:
 	make clean
+	make build
+	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 2G -smp 4
+
+debug:
+	make clean
+	make build
+	$(QEMU) -bios $(TARGET) -nographic -m 2G -smp 4 -S
+
+build: $(TARGET)
 
 $(TARGET): $(TARGET).elf
 	$(OBJCOPY) -O binary -S $< $@
@@ -23,7 +31,7 @@ $(TARGET): $(TARGET).elf
 $(TARGET).elf: $(OBJ)
 	$(LD) -T linker.ld $^ -o $@
 
-$(BUILD)/%.o: %.c
+$(BUILD)/%.o: %.cc
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $< -o $@
 
