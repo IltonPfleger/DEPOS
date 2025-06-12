@@ -16,12 +16,7 @@ DEP = $(OBJ:.o=.d)
 run:
 	make clean
 	make build
-	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 2G -smp 4
-
-debug:
-	make clean
-	make build
-	$(QEMU) -bios $(TARGET) -nographic -m 2G -smp 4 -S
+	$(QEMU) -M virt -bios $(TARGET) -nographic -smp 4 -m 2G
 
 build: $(TARGET)
 

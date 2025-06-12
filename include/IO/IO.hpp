@@ -2,6 +2,7 @@
 #define KPRINT_H
 
 #include <stdarg.h>
+#include <utils/definitions.hpp>
 
 template <typename IF>
 struct IO {
