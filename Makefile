@@ -10,8 +10,7 @@ CFLAGS := -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany -nostartfiles -no
 
 BUILD := build
 TARGET := $(BUILD)/quark
-OBJ := $(shell find . -type f -name "*.c" | sed -e 's|^\./|$(BUILD)/|' -e 's|\.c|\.o|')
-DEP = $(OBJ:.o=.d)
+OBJ := $(shell find . -type f -name "*.cpp" | sed -e 's|^\./|$(BUILD)/|' -e 's|\.cpp|\.o|')
 
 all: $(TARGET)
 	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 2G -smp 4
@@ -23,7 +22,7 @@ $(TARGET): $(TARGET).elf
 $(TARGET).elf: $(OBJ)
 	$(LD) -T linker.ld $^ -o $@
 
-$(BUILD)/%.o: %.c
+$(BUILD)/%.o: %.cpp
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $< -o $@
 
