@@ -1,9 +1,9 @@
-#ifndef CPU_H
-#define CPU_H
-#include <utils/definitions.hpp>
+#ifndef cpu_HPP
+#define cpu_HPP
+#include <definitions.hpp>
 
 struct CPU {
-    static uint8_t stack[Machine::CPUS * Machine::Memory::STACK_SIZE];
+    static uint8_t stack[Machine::CPUS][Machine::Memory::PAGE_SIZE];
 
     static uint32_t id();
     static void idle();
