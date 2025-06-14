@@ -1,4 +1,7 @@
-#include <definitions.h>
+#include <definitions.hpp>
+
+extern void kmain();
+extern void ktrap();
 
 __attribute__((naked, section(".boot"))) void bootloader() {
     // disable interrupts.
@@ -6,17 +9,17 @@ __attribute__((naked, section(".boot"))) void bootloader() {
 
     // stack.
     __asm__ volatile(
-        "la t0, cpu_core_stacks\n"
+        "la t0, _ZN3CPU5stackE\n"
         "csrr t1, mhartid\n"
         "li t2, %0\n"
         "mul t1, t1, t2\n"
         "add sp, t0, t1\n"
         :
-        : "i"(MACHINE_MEMORY_PAGE_SIZE));
+        : "i"(Machine::Memory::PAGE_SIZE));
 
     // trap handler.
-    __asm__ volatile("la t0, ktrap\ncsrw mtvec, t0" ::: "t0");
+    __asm__ volatile("csrw mtvec, %0" ::"r"(ktrap));
 
     // start.
-    __asm__ volatile("j kmain");
+    __asm__ volatile("jr %0" ::"r"(kmain));
 }
