@@ -1,4 +1,5 @@
 #include <cpu.hpp>
+#include <definitions.hpp>
 #include <io/io.hpp>
 #include <io/uart.hpp>
 
@@ -6,7 +7,8 @@ void kmain() {
     if (CPU::id() == 0) {
         CPU::begin_atomic();
         IO<UART>::init();
-        IO<UART>::out("\nQ U A R K | μKernel\n");
+        IO<UART>::out("\nQ U A R K | [μKernel]\n");
+        __asm__ volatile(".word 0xffffffff");
         // IO<UART0>::init();
         // Memory::init(reinterpret_cast<uintptr_t>(__KERNEL_END__));
         // Memory::alloc(13);
@@ -17,25 +19,23 @@ void kmain() {
     CPU::idle();
 }
 
-__attribute__((naked)) void ktrap() {
+__attribute__((naked, aligned(4))) void ktrap() {
     CPU::save();
-    IO<UART>::out("\nIt's a Trap!");
-    __asm__ volatile("j .");
+    IO<UART>::out("Ohh it's a Trap!\n");
+    uintptr_t mcause, mepc, mtval;
+    __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
+    __asm__ volatile("csrr %0, mepc" : "=r"(mepc));
+    __asm__ volatile("csrr %0, mtval" : "=r"(mtval));
+    IO<UART>::out("mcause: %x\n", mcause);
+    IO<UART>::out("mepc: %x\n", mepc);
+    IO<UART>::out("mtval: %x\n", mtval);
+
+    if ((mcause >> (Machine::XLEN - 1)) == 0) {
+        IO<UART>::out("Exception Detected!\n");
+    } else {
+        IO<UART>::out("Interruption Detected!\n");
+    }
+
     CPU::load();
-
-    // IO<UART0>::print("Trap!\n");
-    // while (1);
-    /* INTERRUPT OR EXCEPTION */
-    //__asm__ volatile("csrr t0, mcause\nsrli t0, t0, %0" ::"i"(XLEN - 1));
-    //__asm__ goto("beq t0, zero, %l[EXCEPTION]\nj %l[INTERRUPT]" ::
-    //::EXCEPTION, INTERRUPT);
-
-    // EXCEPTION:
-    //     kprint("EXCEPTION\n");
-    //     goto EXIT;
-    // INTERRUPT:
-    //     kprint("INTERRUPT\n");
-    //     goto EXIT;
-    // EXIT:
-    //     __asm__ volatile("j .");
+    CPU::idle();
 }
