@@ -30,11 +30,21 @@ struct IO {
                     _number<int>(va_arg(args, int));
                     break;
                 case 'x':
-                    _hex<unsigned int>(va_arg(args, unsigned int));
+                    _hex<int>(va_arg(args, int));
                     break;
                 case 'p':
                     _hex<uintptr_t>(va_arg(args, uintptr_t));
                     break;
+                case 'l':
+                    format++;
+                    switch (*format) {
+                        case 'd':
+                            _number<intptr_t>(va_arg(args, intptr_t));
+                            break;
+                        case 'x':
+                            _hex<intptr_t>(va_arg(args, intptr_t));
+                            break;
+                    }
             }
             format++;
         }

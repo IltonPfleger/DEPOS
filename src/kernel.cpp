@@ -26,9 +26,9 @@ __attribute__((naked, aligned(4))) void ktrap() {
     __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
     __asm__ volatile("csrr %0, mepc" : "=r"(mepc));
     __asm__ volatile("csrr %0, mtval" : "=r"(mtval));
-    IO<UART>::out("mcause: %x\n", mcause);
-    IO<UART>::out("mepc: %x\n", mepc);
-    IO<UART>::out("mtval: %x\n", mtval);
+    IO<UART>::out("mcause: %lx\n", mcause);
+    IO<UART>::out("mepc: %lx\n", mepc);
+    IO<UART>::out("mtval: %lx\n", mtval);
 
     if ((mcause >> (Machine::XLEN - 1)) == 0) {
         IO<UART>::out("Exception Detected!\n");
