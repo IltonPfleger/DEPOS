@@ -1,15 +1,14 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
-#define ARCH "RISCV"
-#define XLEN 64
-#define CPUS 4
+#define MACHINE_ARCH "RISCV"
+#define MACHINE_XLEN 64
+#define MACHINE_CPUS 4
 
-#define MEM_ORDER     30
-#define MEM_SIZE      (1U << MEM_ORDER)
-#define MEM_MAX_ORDER MEM_ORDER
-#define PAGE_ORDER    12
-#define PAGE_SIZE     (1U << PAGE_ORDER)
+#define MACHINE_MEMORY_ORDER 30
+#define MACHINE_MEMORY_SIZE (1U << MACHINE_MEMORY_ORDER)
+#define MACHINE_MEMORY_PAGE_ORDER 12
+#define MACHINE_MEMORY_PAGE_SIZE (1U << MACHINE_MEMORY_PAGE_ORDER)
 
 typedef char int8_t;
 typedef short int16_t;

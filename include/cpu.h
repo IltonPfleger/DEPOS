@@ -1,16 +1,16 @@
 #ifndef CPU_H
 #define CPU_H
 
-struct {
-    char stack[512];
-    uint8_t mhartid;
-} cpus[CPUS] __attribute__((aligned(PAGE_SIZE)));
+// struct {
+//     char stack[PAGE_SIZE];
+//     uint8_t mhartid;
+// } cpus[CPUS] __attribute__((aligned(PAGE_SIZE)));
+//
 
-uint32_t cpu_id() {
-    uint32_t mhartid;
-    __asm__ volatile("csrr %0, mhartid" : "=r"(mhartid));
-    return mhartid;
-}
+int cpu_id();
+void cpu_idle();
+
+
 
 // void cpu_scontext()
 //{
