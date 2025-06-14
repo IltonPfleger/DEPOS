@@ -1,65 +1,57 @@
 #ifndef PRINT_H
 #define PRINT_H
 
+#include <definitions.h>
 #include <stdarg.h>
-#include <utils/definitions.h>
 #include <utils/uart.h>
-
-#define kprint_init uart_init
-#define kprint_put uart_put
 
 static const char HEX[] = "0123456789ABCDEF";
 
-void printd(int32_t d)
-{
+static void printd(int32_t d) {
     if (d < 0) {
-        kprint_put('-');
+        IO_PUT('-');
         d *= -1;
     }
     if (d >= 10) printd(d / 10);
-    kprint_put('0' + (d % 10));
+    IO_PUT('0' + (d % 10));
 }
 
-void printx(uint32_t x)
-{
-    kprint_put('0');
-    kprint_put('x');
+static void printx(uint32_t x) {
+    IO_PUT('0');
+    IO_PUT('x');
     for (int i = 7; i >= 0; i--) {
-        kprint_put(HEX[(x >> (i * 4)) & 0xF]);
+        IO_PUT(HEX[(x >> (i * 4)) & 0xF]);
     }
 }
 
-void printlx(uint64_t x)
-{
-    kprint_put('0');
-    kprint_put('x');
+static void printlx(uint64_t x) {
+    IO_PUT('0');
+    IO_PUT('x');
     for (int i = 15; i >= 0; i--) {
-        kprint_put(HEX[(x >> (i * 4)) & 0xF]);
+        IO_PUT(HEX[(x >> (i * 4)) & 0xF]);
     }
 }
 
-void printp(uintptr_t p)
-{
-    #if XLEN == 64
+static void printp(uintptr_t p) {
+#if MACHINE_XLEN == 64
     printlx(p);
-    #else
+#else
     printx(p);
-    #endif
+#endif
 }
 
-void kprint(const char* format, ...)
-{
+void kprint(const char* format, ...) {
     va_list args;
     va_start(args, format);
     while (*format) {
         if (*format != '%') {
-            kprint_put(*format++);
+            IO_PUT(*format++);
             continue;
         }
         format++;
         switch (*format) {
             case 'c':
-                kprint_put((char)va_arg(args, int32_t));
+                IO_PUT((char)va_arg(args, int32_t));
                 break;
             case 'd':
                 printd(va_arg(args, int32_t));
@@ -71,8 +63,8 @@ void kprint(const char* format, ...)
                 printp(va_arg(args, uintptr_t));
                 break;
             default:
-                kprint_put('%');
-                kprint_put(*format);
+                IO_PUT('%');
+                IO_PUT(*format);
                 break;
         }
         format++;
