@@ -20,6 +20,10 @@ __attribute__((naked, section(".boot"))) void bootloader() {
     // trap handler.
     __asm__ volatile("csrw mtvec, %0" ::"r"(ktrap));
 
+
+    // enable interrupts.
+    __asm__ volatile("csrsi mstatus, 0x8");
+
     // start.
     __asm__ volatile("jr %0" ::"r"(kmain));
 }
