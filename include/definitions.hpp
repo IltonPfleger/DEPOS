@@ -1,6 +1,5 @@
-#ifndef DEFINITIONS_H
-#define DEFINITIONS_H
-#include <utils/meta.hpp>
+#ifndef DEFINITIONS_HPP
+#define DEFINITIONS_HPP
 
 typedef char int8_t;
 typedef short int16_t;
@@ -17,13 +16,23 @@ struct Machine {
     static constexpr const uint32_t XLEN = 64;
     static constexpr const uint32_t CPUS = 4;
     struct Memory {
-        static constexpr const uint32_t STACK_SIZE = 4096;
+        static constexpr const uint32_t PAGE_SIZE = 4096;
         static constexpr const uint32_t ORDER      = 30;
         static constexpr const uint32_t SIZE       = (1 << ORDER);
     };
 };
 
-using intptr_t  = Meta::TypeSelector<Machine::XLEN == 64, int64_t, int32_t>::Type;
-using uintptr_t = Meta::TypeSelector<Machine::XLEN == 64, uint64_t, uint32_t>::Type;
+template <bool B, typename True, typename False>
+struct TypeSelector {
+    using Type = True;
+};
+
+template <typename True, typename False>
+struct TypeSelector<false, True, False> {
+    using Type = False;
+};
+
+using intptr_t  = TypeSelector<Machine::XLEN == 64, int64_t, int32_t>::Type;
+using uintptr_t = TypeSelector<Machine::XLEN == 64, uint64_t, uint32_t>::Type;
 
 #endif
