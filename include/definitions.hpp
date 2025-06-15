@@ -19,7 +19,7 @@ struct Machine {
         static constexpr const uint32_t ORDER = 30;
         static constexpr const uint32_t SIZE  = (1 << ORDER);
         struct Page {
-            static constexpr const uint32_t ORDER = 12;
+            static constexpr const uint32_t ORDER = 10;
             static constexpr const uint32_t SIZE  = (1 << ORDER);
         };
     };
