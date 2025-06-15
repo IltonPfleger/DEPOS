@@ -22,8 +22,8 @@ void Memory::init() {
     char *current      = BASE;
 
     while (remaining) {
-        uint32_t order = 0;
-        while ((1U << (order + 1)) <= remaining) order++;
+        uint32_t order = Machine::Memory::ORDER;
+        while (order > 0 && (1U << order) > remaining) order--;
         uint32_t size       = (1 << order);
         struct Block *block = reinterpret_cast<Block *>(current);
         block->next         = available[order];
@@ -44,7 +44,7 @@ void *Memory::alloc(uint32_t order) {
 
     uint32_t available_order = order;
 
-    while (available_order <= Machine::Memory::ORDER && available[available_order] == 0) available_order++;
+    while (available_order <= Machine::Memory::ORDER && !available[available_order]) available_order++;
 
     while (available_order != order) {
         struct Block *block        = available[available_order];
@@ -64,10 +64,10 @@ void *Memory::alloc(uint32_t order) {
 }
 
 void Memory::free(void *ptr, uint32_t order) {
-    if (ptr == 0) return;
+    if (!ptr || order >= Machine::Memory::ORDER) return;
 
     char *addr = reinterpret_cast<char *>(ptr);
-    while (order <= Machine::Memory::ORDER) {
+    while (order < Machine::Memory::ORDER) {
         char *buddy_addr = ((addr - BASE) ^ (1 << order)) + BASE;
 
         struct Block *buddy    = 0;

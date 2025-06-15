@@ -10,14 +10,14 @@ void kmain() {
         IO<UART>::init();
         IO<UART>::out("\nQ U A R K | [μKernel]\n");
         Memory::init();
-        void* mem  = Memory::alloc(5);
-        void* mem2 = Memory::alloc(5);
-        Memory::free(mem, 5);
-        Memory::free(mem2, 5);
-         mem  = Memory::alloc(5);
-         mem2 = Memory::alloc(5);
-        Memory::free(mem, 5);
-        Memory::free(mem2, 5);
+        //void* mem  = Memory::alloc(25);
+        //void* mem2 = Memory::alloc(25);
+        //Memory::free(mem, 25);
+        //Memory::free(mem2, 25);
+        // mem  = Memory::alloc(25);
+        // mem2 = Memory::alloc(25);
+        //Memory::free(mem, 25);
+        //Memory::free(mem2, 25);
 
         //__asm__ volatile(".word 0xffffffff");
         // IO<UART0>::init();
