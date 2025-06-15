@@ -5,10 +5,23 @@
 struct CPU {
     static uint8_t stack[Machine::CPUS][Machine::Memory::Page::SIZE];
 
-    static uint32_t id();
-    static void idle();
-    static void begin_atomic();
-    static void end_atomic();
+    static inline uint32_t id() {
+        uint32_t mhartid;
+        __asm__ volatile("csrr %0, mhartid" : "=r"(mhartid));
+        return mhartid;
+    }
+
+    static inline void idle() { __asm__ volatile("wfi"); }
+    static inline void begin_atomic() { __asm__ volatile("csrci mstatus, 0x8"); }
+    static inline void end_atomic() { __asm__ volatile("csrsi mstatus, 0x8"); }
+
+    __attribute__((always_inline)) static inline void load_stack_per_id() {
+        __asm__ volatile(
+            "csrr t0, mhartid\n"
+            "mul t0, t0, %0\n"
+            "add sp, t0, %1\n" ::"r"(Machine::Memory::Page::SIZE),
+            "r"(stack));
+    }
 
     __attribute__((always_inline)) static inline void save() {
         __asm__ volatile(

@@ -10,14 +10,14 @@ void kmain() {
         IO<UART>::init();
         IO<UART>::out("\nQ U A R K | [μKernel]\n");
         Memory::init();
-        //void* mem  = Memory::alloc(25);
-        //void* mem2 = Memory::alloc(25);
-        //Memory::free(mem, 25);
-        //Memory::free(mem2, 25);
-        // mem  = Memory::alloc(25);
-        // mem2 = Memory::alloc(25);
-        //Memory::free(mem, 25);
-        //Memory::free(mem2, 25);
+        void* mem  = Memory::alloc(25);
+        void* mem2 = Memory::alloc(25);
+        Memory::free(mem, 25);
+        Memory::free(mem2, 25);
+        mem  = Memory::alloc(25);
+        mem2 = Memory::alloc(25);
+        Memory::free(mem, 25);
+        Memory::free(mem2, 25);
 
         //__asm__ volatile(".word 0xffffffff");
         // IO<UART0>::init();
@@ -33,6 +33,7 @@ void kmain() {
 
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::save();
+    CPU::load_stack_per_id();
     IO<UART>::out("Ohh it's a Trap!\n");
     uintptr_t mcause, mepc, mtval;
     __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
