@@ -58,8 +58,7 @@ struct CPU {
             "sd t5, 224(tp)\n"
             "sd t6, 232(tp)\n"
             "sd tp, 240(tp)\n"
-            :
-            : "i"(Machine::Memory::Page::SIZE)
+            ::
             : "memory");
     }
 
@@ -95,9 +94,7 @@ struct CPU {
             "ld t4, 216(tp)\n"
             "ld t5, 224(tp)\n"
             "ld t6, 232(tp)\n"
-            "ld tp, 240(tp)\n"
-            :
-            : "i"(Machine::Memory::Page::SIZE)
+            "ld tp, 240(tp)\n" ::
             : "memory");
     }
 };
