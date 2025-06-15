@@ -2,16 +2,28 @@
 #include <definitions.hpp>
 #include <io/io.hpp>
 #include <io/uart.hpp>
+#include <memory.hpp>
 
 void kmain() {
     if (CPU::id() == 0) {
         CPU::begin_atomic();
         IO<UART>::init();
         IO<UART>::out("\nQ U A R K | [μKernel]\n");
-        __asm__ volatile(".word 0xffffffff");
+        Memory::init();
+        void* mem  = Memory::alloc(5);
+        void* mem2 = Memory::alloc(5);
+        Memory::free(mem, 5);
+        Memory::free(mem2, 5);
+         mem  = Memory::alloc(5);
+         mem2 = Memory::alloc(5);
+        Memory::free(mem, 5);
+        Memory::free(mem2, 5);
+
+        //__asm__ volatile(".word 0xffffffff");
         // IO<UART0>::init();
         // Memory::init(reinterpret_cast<uintptr_t>(__KERNEL_END__));
         // Memory::alloc(13);
+        IO<UART>::out("Done!\n");
         CPU::end_atomic();
     } else {
         CPU::idle();

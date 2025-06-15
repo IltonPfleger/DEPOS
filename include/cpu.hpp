@@ -3,7 +3,7 @@
 #include <definitions.hpp>
 
 struct CPU {
-    static uint8_t stack[Machine::CPUS][Machine::Memory::PAGE_SIZE];
+    static uint8_t stack[Machine::CPUS][Machine::Memory::Page::SIZE];
 
     static uint32_t id();
     static void idle();
@@ -54,7 +54,7 @@ struct CPU {
             "csrr a0, mscratch\n"
             "sd a0, 240(a1)\n"
             :
-            : "i"(Machine::Memory::PAGE_SIZE)
+            : "i"(Machine::Memory::Page::SIZE)
             : "memory");
     }
 
@@ -97,7 +97,7 @@ struct CPU {
             "ld t6, 232(a0)\n"
             "ld a0, 240(a0)\n"
             :
-            : "i"(Machine::Memory::PAGE_SIZE)
+            : "i"(Machine::Memory::Page::SIZE)
             : "memory");
     }
 };

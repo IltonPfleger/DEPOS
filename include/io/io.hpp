@@ -64,7 +64,7 @@ struct IO {
     static void _hex(T value) {
         put('0');
         put('x');
-        for (int i = sizeof(T) - 1; i >= 0; i--) {
+        for (int i = (sizeof(T) * 2) - 1; i >= 0; i--) {
             put(HEX[(value >> (i * 4)) & 0xF]);
         }
     }

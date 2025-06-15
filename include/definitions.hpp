@@ -16,9 +16,12 @@ struct Machine {
     static constexpr const uint32_t XLEN = 64;
     static constexpr const uint32_t CPUS = 4;
     struct Memory {
-        static constexpr const uint32_t PAGE_SIZE = 4096;
-        static constexpr const uint32_t ORDER      = 30;
-        static constexpr const uint32_t SIZE       = (1 << ORDER);
+        static constexpr const uint32_t ORDER = 30;
+        static constexpr const uint32_t SIZE  = (1 << ORDER);
+        struct Page {
+            static constexpr const uint32_t ORDER = 12;
+            static constexpr const uint32_t SIZE  = (1 << ORDER);
+        };
     };
 };
 
