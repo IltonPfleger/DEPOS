@@ -15,7 +15,7 @@ __attribute__((naked, section(".boot"))) void bootloader() {
         "mul t1, t1, t2\n"
         "add sp, t0, t1\n"
         :
-        : "i"(Machine::Memory::PAGE_SIZE));
+        : "i"(Machine::Memory::Page::SIZE));
 
     // trap handler.
     __asm__ volatile("csrw mtvec, %0" ::"r"(ktrap));

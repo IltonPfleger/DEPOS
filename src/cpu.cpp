@@ -1,6 +1,6 @@
 #include <cpu.hpp>
 
-uint8_t __attribute__((aligned(Machine::Memory::PAGE_SIZE))) CPU::stack[Machine::CPUS][Machine::Memory::PAGE_SIZE];
+uint8_t __attribute__((aligned(Machine::Memory::Page::SIZE))) CPU::stack[Machine::CPUS][Machine::Memory::Page::SIZE];
 
 uint32_t CPU::id() {
     uint32_t mhartid;
