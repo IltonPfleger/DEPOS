@@ -4,7 +4,7 @@
 #include <definitions.hpp>
 
 struct Process {
-    enum State { RUNNING, READY, BLOCKED };
+    enum State { RUNNING, READY, WAITING };
     char context[Machine::Memory::Page::SIZE];
     char stack[Machine::Memory::Page::SIZE];
     enum State state;
