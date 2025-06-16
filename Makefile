@@ -13,7 +13,7 @@ TARGET := $(BUILD)/quark
 OBJ := $(shell find . -type f -name "*.c" | sed -e 's|^\./|$(BUILD)/|' -e 's|\.c|\.o|')
 DEP = $(OBJ:.o=.d)
 
-all: $(TARGET)
+build: $(TARGET)
 	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 2G -smp 4
 	make clean
 

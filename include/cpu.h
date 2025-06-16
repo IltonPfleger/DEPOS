@@ -1,16 +1,16 @@
 #ifndef CPU_H
 #define CPU_H
 
-struct {
-    char stack[512];
-    uint8_t mhartid;
-} cpus[CPUS] __attribute__((aligned(PAGE_SIZE)));
-
-uint32_t cpu_id() {
-    uint32_t mhartid;
+__attribute__((always_inline)) inline int cpu_id() {
+    register int mhartid;
     __asm__ volatile("csrr %0, mhartid" : "=r"(mhartid));
     return mhartid;
 }
+
+__attribute__((always_inline)) inline void cpu_trap(void (*ptr)()) { __asm__ volatile("csrw mtvec, %0" ::"r"(ptr)); }
+__attribute__((always_inline)) inline void cpu_sleep() { __asm__ volatile("wfi"); }
+__attribute__((always_inline)) inline void cpu_disable_interrupts() { __asm__ volatile("csrci mstatus, 0x8"); }
+__attribute__((always_inline)) inline void cpu_enable_interrupts() { __asm__ volatile("csrsi mstatus, 0x8"); }
 
 // void cpu_scontext()
 //{
