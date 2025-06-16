@@ -4,10 +4,10 @@
 #include <stdarg.h>
 
 #include <definitions.hpp>
-#include <io/io.hpp>
+#include <io/uart.hpp>
 
-template <typename IF>
 struct IO {
+    using IF                    = UART;
     static constexpr char HEX[] = "0123456789ABCDEF";
 
     static void init() { IF::init(); };
@@ -35,16 +35,6 @@ struct IO {
                 case 'p':
                     _hex<uintptr_t>(va_arg(args, uintptr_t));
                     break;
-                case 'l':
-                    format++;
-                    switch (*format) {
-                        case 'd':
-                            _number<intptr_t>(va_arg(args, intptr_t));
-                            break;
-                        case 'x':
-                            _hex<intptr_t>(va_arg(args, intptr_t));
-                            break;
-                    }
             }
             format++;
         }

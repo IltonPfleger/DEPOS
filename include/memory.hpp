@@ -10,8 +10,8 @@ struct Memory {
 
     static struct Block* available[Machine::Memory::ORDER + 1];
     static void init();
-    static void* alloc(uint32_t);
-    static void free(void*, uint32_t);
+    static void* alloc(unsigned int);
+    static void free(void*, unsigned int);
 };
 
 #endif

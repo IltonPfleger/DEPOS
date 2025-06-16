@@ -9,40 +9,40 @@ static char *BASE = 0;
 struct Memory::Block *Memory::available[Machine::Memory::ORDER + 1] = {0};
 
 void Memory::init() {
-    const uint32_t KERNEL_SIZE = __KERNEL_END__ - __KERNEL_START__;
-    const uint32_t FREE        = Machine::Memory::SIZE - KERNEL_SIZE - Machine::Memory::Page::SIZE;
-    BASE                       = __KERNEL_END__;
+    const unsigned int KERNEL_SIZE = __KERNEL_END__ - __KERNEL_START__;
+    const unsigned int FREE        = Machine::Memory::SIZE - KERNEL_SIZE;
+    BASE                           = __KERNEL_END__;
 
-    IO<UART>::out("Memory::init()\n");
-    IO<UART>::out("KernelStart=%p | ", __KERNEL_START__);
-    IO<UART>::out("KernelEnd=%p | ", __KERNEL_END__);
-    IO<UART>::out("KernelSize=%dKB\n", KERNEL_SIZE / 1024);
+    IO::out("Memory::init()\n");
+    IO::out("KernelStart=%p | ", __KERNEL_START__);
+    IO::out("KernelEnd=%p | ", __KERNEL_END__);
+    IO::out("KernelSize=%dKB\n", KERNEL_SIZE / 1024);
 
-    uint32_t remaining = FREE;
-    char *current      = BASE;
+    unsigned int remaining = FREE;
+    char *current          = BASE;
 
     while (remaining) {
-        uint32_t order = Machine::Memory::ORDER;
+        unsigned int order = Machine::Memory::ORDER;
         while (order > 0 && (1U << order) > remaining) order--;
-        uint32_t size       = (1 << order);
+        unsigned int size   = (1 << order);
         struct Block *block = reinterpret_cast<Block *>(current);
         block->next         = available[order];
         available[order]    = block;
-        IO<UART>::out("Block=%p | Order=%d\n", current, order);
+        IO::out("Block=%p | Order=%d\n", current, order);
         remaining -= size;
         current += size;
     }
 
-    IO<UART>::out("HeapStart=%p | ", BASE);
-    IO<UART>::out("HeapEnd=%p | ", current);
-    IO<UART>::out("HeapSize=%dMB\n", FREE / (1024 * 1024));
-    IO<UART>::out("Memory::init(done)\n");
+    IO::out("HeapStart=%p | ", BASE);
+    IO::out("HeapEnd=%p | ", current);
+    IO::out("HeapSize=%dMB\n", FREE / (1024 * 1024));
+    IO::out("Memory::init(done)\n");
 }
 
-void *Memory::alloc(uint32_t order) {
+void *Memory::alloc(unsigned int order) {
     if (order >= Machine::Memory::ORDER) return 0;
 
-    uint32_t available_order = order;
+    unsigned int available_order = order;
 
     while (available_order <= Machine::Memory::ORDER && !available[available_order]) available_order++;
 
@@ -59,11 +59,11 @@ void *Memory::alloc(uint32_t order) {
 
     struct Block *block        = available[available_order];
     available[available_order] = available[available_order]->next;
-    IO<UART>::out("Memory::allocate(return=%p)\n", block);
+    IO::out("Memory::allocate(return=%p)\n", block);
     return block;
 }
 
-void Memory::free(void *ptr, uint32_t order) {
+void Memory::free(void *ptr, unsigned int order) {
     if (!ptr || order >= Machine::Memory::ORDER) return;
 
     char *addr = reinterpret_cast<char *>(ptr);

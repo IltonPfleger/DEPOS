@@ -4,11 +4,11 @@
 
 struct CPU {
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
-    __attribute__((always_inline)) static inline void begin_atomic() { __asm__ volatile("csrci mstatus, 0x8"); }
-    __attribute__((always_inline)) static inline void end_atomic() { __asm__ volatile("csrsi mstatus, 0x8"); }
+    __attribute__((always_inline)) static inline void disable_interrupts() { __asm__ volatile("csrci mstatus, 0x8"); }
+    __attribute__((always_inline)) static inline void enable_interrupts() { __asm__ volatile("csrsi mstatus, 0x8"); }
 
-    __attribute__((always_inline)) static inline uint32_t id() {
-        uint32_t id;
+    __attribute__((always_inline)) static inline unsigned int id() {
+        unsigned int id;
         __asm__ volatile("csrr %0, mhartid" : "=r"(id));
         return id;
     }
@@ -57,9 +57,8 @@ struct CPU {
             "sd t4, 216(tp)\n"
             "sd t5, 224(tp)\n"
             "sd t6, 232(tp)\n"
-            "sd tp, 240(tp)\n"
-            ::
-            : "memory");
+            "sd tp, 240(tp)\n" ::
+                : "memory");
     }
 
     __attribute__((always_inline)) static inline void load() {
@@ -95,7 +94,7 @@ struct CPU {
             "ld t5, 224(tp)\n"
             "ld t6, 232(tp)\n"
             "ld tp, 240(tp)\n" ::
-            : "memory");
+                : "memory");
     }
 };
 
