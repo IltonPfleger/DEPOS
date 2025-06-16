@@ -6,7 +6,8 @@ OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 
 
-CFLAGS := -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany -nostartfiles -nostdlib
+CFLAGS := -O2 -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
+CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib -nostartfiles
 
 BUILD := build
 TARGET := $(BUILD)/quark
