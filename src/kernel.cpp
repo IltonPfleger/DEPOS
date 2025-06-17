@@ -15,18 +15,18 @@ struct System {
             IO::init();
             IO::out("\nQ U A R K | [μSystem]\n");
             Memory::init();
-            Thread::init();
-            Thread teste;
-            Thread::ready.push(teste);
+            //Thread::init();
+            //Thread teste;
+            //Thread::ready.push(teste);
 
-            void* mem  = Memory::malloc(25);
-            void* mem2 = Memory::malloc(25);
-            Memory::free(mem, 25);
-            Memory::free(mem2, 25);
-            mem  = Memory::malloc(25);
-            mem2 = Memory::malloc(25);
-            Memory::free(mem, 25);
-            Memory::free(mem2, 25);
+            void* mem  = Memory::malloc(4096);
+            void* mem2 = Memory::malloc(4096);
+            Memory::free(mem);
+            Memory::free(mem2);
+            //mem  = Memory::malloc(25);
+            //mem2 = Memory::malloc(25);
+            //Memory::free(mem, 25);
+            //Memory::free(mem2, 25);
 
             __asm__ volatile(".word 0xffffffff");
             IO::out("Done!\n");
@@ -61,7 +61,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
-    CPU::stack((char*)0x80200000 + (CPU::id() << 5));
+    CPU::stack((char*)0x80200000 + (CPU::id() << 6));
     CPU::trap(ktrap);
     System::init();
 }
