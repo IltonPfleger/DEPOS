@@ -62,9 +62,9 @@ void io_out(const char* format, ...) {
             case 'x':
                 printx(va_arg(args, uintptr_t));
                 break;
-                // case 'p':
-                //     printp(va_arg(args, uintptr_t));
-                //     break;
+            case 'p':
+                printp(va_arg(args, uintptr_t));
+                     break;
                 // default:
                 //     kprint_put('%');
                 //     kprint_put(*format);
