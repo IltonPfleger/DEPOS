@@ -8,6 +8,12 @@ static char *BASE = 0;
 
 struct Memory::Block *Memory::available[Machine::Memory::ORDER + 1] = {0};
 
+static unsigned int bytes_to_order(unsigned int bytes) {
+    unsigned int order = 0;
+    while ((1U << order) < bytes) order++;
+    return order;
+}
+
 void Memory::init() {
     const unsigned int KERNEL_SIZE = __KERNEL_END__ - __KERNEL_START__;
     const unsigned int FREE        = Machine::Memory::SIZE - KERNEL_SIZE;
@@ -39,7 +45,8 @@ void Memory::init() {
     IO::out("Memory::init(done)\n");
 }
 
-void *Memory::alloc(unsigned int order) {
+void *Memory::malloc(unsigned int bytes) {
+    unsigned int order = bytes_to_order(bytes);
     if (order >= Machine::Memory::ORDER) return 0;
 
     unsigned int available_order = order;
@@ -63,7 +70,8 @@ void *Memory::alloc(unsigned int order) {
     return block;
 }
 
-void Memory::free(void *ptr, unsigned int order) {
+void Memory::free(void *ptr, unsigned int bytes) {
+    unsigned int order = bytes_to_order(bytes);
     if (!ptr || order >= Machine::Memory::ORDER) return;
 
     char *addr = reinterpret_cast<char *>(ptr);
