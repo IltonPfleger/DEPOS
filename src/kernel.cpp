@@ -3,36 +3,38 @@
 #include <io/io.hpp>
 #include <io/uart.hpp>
 #include <memory.hpp>
-#include <queue.hpp>
 #include <thread.hpp>
-
-// static struct Thread kThreads[Machine::CPUS];
 
 struct System {
     static void init() {
-        if (CPU::id() == 0) {
-            CPU::disable_interrupts();
-            IO::init();
-            IO::out("\nQ U A R K | [μSystem]\n");
-            Memory::init();
-            //Thread::init();
-            //Thread teste;
-            //Thread::ready.push(teste);
+        CPU::disable_interrupts();
+        IO::init();
+        IO::out("\nQ U A R K | [μSystem]\n");
+        Memory::init();
+        Thread main;
+        // Thread::init();
+        // Thread teste;
+        // Thread::ready.push(teste);
+        Memory::Heap heap;
+        void *p1 = heap.malloc(16);
+        void *p2 = heap.malloc(16);
+        void *p3 = heap.malloc(16);
+        heap.free(p1);
+        heap.free(p2);
+        heap.free(p3);
 
-            void* mem  = Memory::malloc(4096);
-            void* mem2 = Memory::malloc(4096);
-            Memory::free(mem);
-            Memory::free(mem2);
-            //mem  = Memory::malloc(25);
-            //mem2 = Memory::malloc(25);
-            //Memory::free(mem, 25);
-            //Memory::free(mem2, 25);
+        // void* mem  = Memory::kmalloc();
+        // void* mem2 = Memory::kmalloc();
+        // Memory::kfree(mem);
+        // Memory::kfree(mem2);
+        //  mem  = Memory::malloc(25);
+        //  mem2 = Memory::malloc(25);
+        //  Memory::free(mem, 25);
+        //  Memory::free(mem2, 25);
 
-            __asm__ volatile(".word 0xffffffff");
-            IO::out("Done!\n");
-            CPU::enable_interrupts();
-        }
-        CPU::idle();
+        IO::out("Done!\n");
+        __asm__ volatile(".word 0xffffffff");
+        CPU::enable_interrupts();
     }
 };
 
@@ -61,7 +63,12 @@ __attribute__((naked, aligned(4))) void ktrap() {
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
-    CPU::stack((char*)0x80200000 + (CPU::id() << 6));
     CPU::trap(ktrap);
-    System::init();
+
+    if (CPU::id() == 0) {
+        CPU::set_stack((void *)0x80200000);
+        System::init();
+    } else {
+        CPU::idle();
+    }
 }

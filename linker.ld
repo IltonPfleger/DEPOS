@@ -14,7 +14,7 @@ PHDRS {
 SECTIONS {
 	. = 0x80000000;
 
-	PROVIDE(__KERNEL_START__ = .);
+	PROVIDE(KERNEL_START = .);
 
 	.boot : { KEEP(*(.boot)) } :re
 
@@ -26,13 +26,6 @@ SECTIONS {
 
 	.bss : { *(.bss) *(COMMON) } :rw
 
-	/*. = 0x80200000;*/
-	PROVIDE(__KERNEL_END__ = .);
+	PROVIDE(KERNEL_END = .);
 }
-
-/*.boot : { KEEP(*(.boot))  } :re
-.text : { *(.text*) } :re
-.data : { *(.data)  } :rw
-.bss  : { *(.bss)   } :rw
-PROVIDE(__KERNEL_END__ = .);*/
 
