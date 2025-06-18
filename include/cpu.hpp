@@ -103,9 +103,16 @@ struct CPU {
                 "ld s11, 232(tp)\n");
         }
     };
-    __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
-    __attribute__((always_inline)) static inline void disable_interrupts() { __asm__ volatile("csrci mstatus, 0x8"); }
-    __attribute__((always_inline)) static inline void enable_interrupts() { __asm__ volatile("csrsi mstatus, 0x8"); }
+
+    __attribute__((always_inline)) static inline void idle() {
+        __asm__ volatile("wfi");
+    }
+    __attribute__((always_inline)) static inline void disable_interrupts() {
+        __asm__ volatile("csrci mstatus, 0x8");
+    }
+    __attribute__((always_inline)) static inline void enable_interrupts() {
+        __asm__ volatile("csrsi mstatus, 0x8");
+    }
 
     __attribute__((always_inline)) static inline unsigned int id() {
         unsigned int id;
@@ -113,12 +120,18 @@ struct CPU {
         return id;
     }
 
-    __attribute__((always_inline)) static inline void stack(char* ptr) {
+    __attribute__((always_inline)) static inline void set_stack(void* ptr) {
         __asm__ volatile("add sp, %0, zero" ::"r"(ptr));
     }
 
-    __attribute__((always_inline)) static inline void context(struct Context* ptr) {
-        __asm__ volatile("add tp, %0, zero" ::"r"(ptr));
+    __attribute__((always_inline)) static inline void set_context(void* p) {
+        __asm__ volatile("add tp, %0, zero" ::"r"(p));
+    }
+
+    __attribute__((always_inline)) static inline void* get_context() {
+        void* tp;
+        __asm__ volatile("add %0, tp, zero" ::"r"(tp));
+        return tp;
     }
 
     __attribute__((always_inline)) static inline void trap(void (*ptr)()) {

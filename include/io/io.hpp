@@ -1,17 +1,16 @@
 #ifndef IO_HPP
 #define IO_HPP
 
-#include <stdarg.h>
-
+#include <cstdarg>
 #include <definitions.hpp>
 #include <io/uart.hpp>
 
 struct IO {
-    using IF                    = UART;
     static constexpr char HEX[] = "0123456789ABCDEF";
+    using Interface             = UART;
 
-    static void init() { IF::init(); };
-    static void put(char value) { IF::put(value); };
+    static void init() { Interface::init(); };
+    static void put(char value) { Interface::put(value); };
 
     static void out(const char* format, ...) {
         va_list args;
@@ -27,31 +26,35 @@ struct IO {
                     put((char)va_arg(args, int));
                     break;
                 case 'd':
-                    _number<int>(va_arg(args, int));
+                    printNumber<int>(va_arg(args, int));
+                    break;
+                case 'u':
+                    printNumber<unsigned int>(va_arg(args, unsigned int));
                     break;
                 case 'x':
-                    _hex<int>(va_arg(args, int));
+                    printHex<int>(va_arg(args, int));
                     break;
                 case 'p':
-                    _hex<uintptr_t>(va_arg(args, uintptr_t));
+                    printHex<uintptr_t>(va_arg(args, uintptr_t));
                     break;
             }
             format++;
         }
         va_end(args);
     }
+
     template <typename T>
-    static void _number(T value) {
+    static void printNumber(T value) {
         if (value < 0) {
             put('-');
             value *= -1;
         }
-        if (value >= 10) _number<T>(value / 10);
+        if (value >= 10) printNumber<T>(value / 10);
         put('0' + (value % 10));
     }
 
     template <typename T>
-    static void _hex(T value) {
+    static void printHex(T value) {
         put('0');
         put('x');
         for (int i = (sizeof(T) * 2) - 1; i >= 0; i--) {

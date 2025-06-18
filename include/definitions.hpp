@@ -8,7 +8,7 @@ struct Machine {
         static constexpr const unsigned int ORDER = 30;
         static constexpr const unsigned int SIZE  = (1 << ORDER);
         struct Page {
-            static constexpr const unsigned int ORDER = 16;
+            static constexpr const unsigned int ORDER = 12;
             static constexpr const unsigned int SIZE  = (1 << ORDER);
         };
     };
