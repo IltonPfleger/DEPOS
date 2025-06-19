@@ -6,8 +6,9 @@ OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 
 
-CFLAGS := -O2 -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
+CFLAGS := -O0 -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib -nostartfiles
+CFLAGS += -g
 
 BUILD := build
 TARGET := $(BUILD)/quark
@@ -17,11 +18,9 @@ build: $(TARGET)
 	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 4
 	make clean
 
-#debug: $(TARGET)
-#	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1G -smp 4 -S -gdb tcp::1234&
-#	riscv64-unknown-elf-gdb kernel.elf -ex "target remote :1234"
-#	pkill qemu;
-
+debug: $(TARGET)
+	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 1 -gdb tcp::1234 -S
+	make clean
 
 $(TARGET): $(TARGET).elf
 	$(OBJCOPY) -O binary -S $< $@

@@ -1,15 +1,16 @@
-#ifndef PROCESS_HPP
-#define PROCESS_HPP
+#ifndef THREAD_HPP
+#define THREAD_HPP
 
 #include <cpu.hpp>
 #include <definitions.hpp>
 
 struct Thread {
-    typedef int (*ThreadFunction)(void*);
+    typedef int (*ThreadEntry)(void*);
     enum Priority {
-        LOW,
+        HIGH = 0,
         NORMAL,
-        HIGH,
+        LOW,
+        LAST,
     };
     enum State {
         RUNNING,
@@ -17,10 +18,11 @@ struct Thread {
         WAITING,
     };
 
-    Thread(ThreadFunction);
+    Thread(ThreadEntry);
     static void exit();
+    static void dispatch(Thread*, Thread*);
 
-   private:
+    uintptr_t stack;
     struct CPU::Context context;
     enum State state;
 };
