@@ -11,18 +11,18 @@ struct System {
         IO::init();
         IO::out("\nQ U A R K | [μSystem]\n");
         Memory::init();
-        Thread main;
-        // Thread::init();
-        // Thread teste;
-        // Thread::ready.push(teste);
-        Memory::Heap heap;
-        void *p1 = heap.malloc(16);
-        void *p2 = heap.malloc(16);
-        void *p3 = heap.malloc(16);
-        heap.free(p1);
-        heap.free(p2);
-        heap.free(p3);
 
+        Thread main(0);
+        //  Thread::init();
+        //  Thread teste;
+        //  Thread::ready.push(teste);
+        // Memory::Heap heap;
+        // void *p1 = heap.malloc(16);
+        // void *p2 = heap.malloc(16);
+        // void *p3 = heap.malloc(16);
+        // heap.free(p1);
+        // heap.free(p2);
+        // heap.free(p3);
         // void* mem  = Memory::kmalloc();
         // void* mem2 = Memory::kmalloc();
         // Memory::kfree(mem);
@@ -65,7 +65,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
 __attribute__((naked, section(".boot"))) void kboot() {
     CPU::trap(ktrap);
 
-    if (CPU::id() == 0) {
+    if (CPU::get_id() == 0) {
         CPU::set_stack((void *)0x80200000);
         System::init();
     } else {

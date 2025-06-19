@@ -114,7 +114,7 @@ struct CPU {
         __asm__ volatile("csrsi mstatus, 0x8");
     }
 
-    __attribute__((always_inline)) static inline unsigned int id() {
+    __attribute__((always_inline)) static inline unsigned int get_id() {
         unsigned int id;
         __asm__ volatile("csrr %0, mhartid" : "=r"(id));
         return id;

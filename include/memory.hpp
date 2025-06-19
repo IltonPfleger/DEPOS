@@ -12,17 +12,17 @@ struct Memory {
     static void* kmalloc();
     static void kfree(void*);
 
-    struct Heap {
-        typedef struct HeapBlock {
-            struct HeapBlock* next;
-            uintptr_t size;
-            bool free;
-        } HeapBlock;
+    // struct Heap {
+    //     typedef struct HeapBlock {
+    //         struct HeapBlock* next;
+    //         uintptr_t size;
+    //         bool free;
+    //     } HeapBlock;
 
-        HeapBlock* start;
-        void* malloc(uintptr_t);
-        void free(void*);
-    };
+    //    HeapBlock* start;
+    //    void* malloc(uintptr_t);
+    //    void free(void*);
+    //};
 };
 
 #endif
