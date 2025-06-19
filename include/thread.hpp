@@ -2,14 +2,27 @@
 #define PROCESS_HPP
 
 #include <cpu.hpp>
+#include <definitions.hpp>
 
 struct Thread {
-    enum State { RUNNING, READY, WAITING };
-    struct CPU::Context context;
-    char* stack;
-    enum State state;
+    typedef int (*ThreadFunction)(void*);
+    enum Priority {
+        LOW,
+        NORMAL,
+        HIGH,
+    };
+    enum State {
+        RUNNING,
+        READY,
+        WAITING,
+    };
 
-    static void init();
+    Thread(ThreadFunction);
+    static void exit();
+
+   private:
+    struct CPU::Context context;
+    enum State state;
 };
 
 #endif
