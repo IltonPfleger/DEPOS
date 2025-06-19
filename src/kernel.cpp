@@ -5,6 +5,11 @@
 #include <memory.hpp>
 #include <thread.hpp>
 
+int teste(void *) {
+    IO::out("Hello From Thread\n");
+    return 0;
+}
+
 struct System {
     static void init() {
         CPU::disable_interrupts();
@@ -12,29 +17,35 @@ struct System {
         IO::out("\nQ U A R K | [μSystem]\n");
         Memory::init();
 
-        Thread main(0);
-        //  Thread::init();
-        //  Thread teste;
-        //  Thread::ready.push(teste);
-        // Memory::Heap heap;
-        // void *p1 = heap.malloc(16);
-        // void *p2 = heap.malloc(16);
-        // void *p3 = heap.malloc(16);
-        // heap.free(p1);
-        // heap.free(p2);
-        // heap.free(p3);
-        // void* mem  = Memory::kmalloc();
-        // void* mem2 = Memory::kmalloc();
-        // Memory::kfree(mem);
-        // Memory::kfree(mem2);
-        //  mem  = Memory::malloc(25);
-        //  mem2 = Memory::malloc(25);
-        //  Memory::free(mem, 25);
-        //  Memory::free(mem2, 25);
+        //   Thread::init();
+        //   Thread teste;
+        //   Thread::ready.push(teste);
+        //  Memory::Heap heap;
+        //  void *p1 = heap.malloc(16);
+        //  void *p2 = heap.malloc(16);
+        //  void *p3 = heap.malloc(16);
+        //  heap.free(p1);
+        //  heap.free(p2);
+        //  heap.free(p3);
+        //  void* mem  = Memory::kmalloc();
+        //  void* mem2 = Memory::kmalloc();
+        //  Memory::kfree(mem);
+        //  Memory::kfree(mem2);
+        //   mem  = Memory::malloc(25);
+        //   mem2 = Memory::malloc(25);
+        //   Memory::free(mem, 25);
+        //   Memory::free(mem2, 25);
 
         IO::out("Done!\n");
-        __asm__ volatile(".word 0xffffffff");
+        //__asm__ volatile(".word 0xffffffff");
         CPU::enable_interrupts();
+
+        // --------------------
+
+        Thread mainnn(teste);
+        Thread::dispatch(0, &mainnn);
+
+        CPU::idle();
     }
 };
 
@@ -63,7 +74,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
-    CPU::trap(ktrap);
+    CPU::set_trap_handler(ktrap);
 
     if (CPU::get_id() == 0) {
         CPU::set_stack((void *)0x80200000);

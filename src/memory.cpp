@@ -2,15 +2,18 @@
 #include <io/uart.hpp>
 #include <memory.hpp>
 
-extern "C" const char KERNEL_START[];
-extern "C" const char KERNEL_END[];
+extern "C" const char __KERNEL_START__[];
+extern "C" const char __KERNEL_END__[];
 static Memory::MemoryBlock *pages = nullptr;
 
 void Memory::init() {
-    const uintptr_t KERNEL_SIZE = uintptr_t(KERNEL_END - KERNEL_START);
-    const uintptr_t HEAP_START  = uintptr_t(KERNEL_END);
-    const uintptr_t HEAP_SIZE   = Machine::Memory::SIZE - KERNEL_SIZE;
-    const uintptr_t HEAP_END    = HEAP_START + HEAP_SIZE;
+    const uintptr_t PSIZE        = Machine::Memory::Page::SIZE;
+    const uintptr_t KERNEL_START = uintptr_t(__KERNEL_START__);
+    const uintptr_t KERNEL_END   = uintptr_t(__KERNEL_END__);
+    const uintptr_t KERNEL_SIZE  = KERNEL_END - KERNEL_START;
+    const uintptr_t HEAP_START   = (KERNEL_START + PSIZE + 1) & ~(PSIZE - 1);
+    const uintptr_t HEAP_SIZE    = Machine::Memory::SIZE - KERNEL_SIZE;
+    const uintptr_t HEAP_END     = HEAP_START + HEAP_SIZE;
 
     IO::out("Memory::init()\n");
     IO::out("KernelStart=%p\n", KERNEL_START);
@@ -22,7 +25,7 @@ void Memory::init() {
 
     uintptr_t n_pages = 0;
     uintptr_t current = HEAP_START;
-    while (current < HEAP_END) {
+    while (current + PSIZE < HEAP_END) {
         MemoryBlock *block = reinterpret_cast<MemoryBlock *>(current);
         block->next        = pages;
         pages              = block;

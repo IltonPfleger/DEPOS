@@ -34,6 +34,11 @@ struct CPU {
         uintptr_t s9;
         uintptr_t s10;
         uintptr_t s11;
+        uintptr_t pc;
+
+        __attribute__((always_inline)) static inline void set(void* p) {
+            __asm__ volatile("mv tp, %0" ::"r"(p));
+        }
 
         __attribute__((always_inline)) static inline void save() {
             __asm__ volatile(
@@ -102,6 +107,15 @@ struct CPU {
                 "ld s10, 224(tp)\n"
                 "ld s11, 232(tp)\n");
         }
+
+        __attribute__((always_inline)) static inline void dispatch(
+            Context* target) {
+            //__asm__ volatile("mv gp, %0" ::"r"(target->pc));
+            target->gp = target->pc;
+            CPU::Context::set(target);
+            CPU::Context::load();
+            __asm__ volatile("jr gp");
+        }
     };
 
     __attribute__((always_inline)) static inline void idle() {
@@ -121,20 +135,17 @@ struct CPU {
     }
 
     __attribute__((always_inline)) static inline void set_stack(void* ptr) {
-        __asm__ volatile("add sp, %0, zero" ::"r"(ptr));
+        __asm__ volatile("mv sp, %0" ::"r"(ptr));
     }
 
-    __attribute__((always_inline)) static inline void set_context(void* p) {
-        __asm__ volatile("add tp, %0, zero" ::"r"(p));
+    __attribute__((always_inline)) static inline uintptr_t get_pc() {
+        uintptr_t pc;
+        __asm__ volatile("auipc %0, 0" ::"r"(pc));
+        return pc;
     }
 
-    __attribute__((always_inline)) static inline void* get_context() {
-        void* tp;
-        __asm__ volatile("add %0, tp, zero" ::"r"(tp));
-        return tp;
-    }
-
-    __attribute__((always_inline)) static inline void trap(void (*ptr)()) {
+    __attribute__((always_inline)) static inline void set_trap_handler(
+        void (*ptr)()) {
         __asm__ volatile("csrw mtvec, %0" ::"r"(ptr));
     }
 };

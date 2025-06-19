@@ -1,7 +1,3 @@
-MEMORY {
-}
-
-
 PHDRS {
 	/*READ | WRITE | EXECUTE*/
 	r PT_LOAD FLAGS(4);
@@ -9,12 +5,10 @@ PHDRS {
 	rw PT_LOAD FLAGS(6);
 }
 
-
-
 SECTIONS {
 	. = 0x80000000;
 
-	PROVIDE(KERNEL_START = .);
+	PROVIDE(__KERNEL_START__ = .);
 
 	.boot : { KEEP(*(.boot)) } :re
 
@@ -26,6 +20,6 @@ SECTIONS {
 
 	.bss : { *(.bss) *(COMMON) } :rw
 
-	PROVIDE(KERNEL_END = .);
+	PROVIDE(__KERNEL_END__ = .);
 }
 
