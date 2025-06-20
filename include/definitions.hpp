@@ -3,7 +3,7 @@
 
 struct Machine {
     static constexpr const unsigned int XLEN = 64;
-    static constexpr const unsigned int CPUS = 4;
+    static constexpr const unsigned int CPUS = 1;
     struct Memory {
         static constexpr const unsigned int ORDER = 30;
         static constexpr const unsigned int SIZE  = (1 << ORDER);
@@ -24,7 +24,7 @@ struct TypeSelector<false, True, False> {
     using Type = False;
 };
 
-using intptr_t  = TypeSelector<Machine::XLEN == 64, long long int, int>::Type;
-using uintptr_t = TypeSelector<Machine::XLEN == 64, unsigned long long int, unsigned int>::Type;
+using intptr_t = TypeSelector<Machine::XLEN == 64, long long, int>::Type;
+using uintptr_t = TypeSelector<Machine::XLEN == 64, unsigned long long, unsigned>::Type;
 
 #endif

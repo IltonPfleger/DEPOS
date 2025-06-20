@@ -7,15 +7,15 @@ QEMU := qemu-system-riscv64
 
 
 CFLAGS := -O0 -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
-CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib -nostartfiles
-CFLAGS += -g
+CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles
+CFLAGS += -g -fcheck-new
 
 BUILD := build
 TARGET := $(BUILD)/quark
 OBJ := $(shell find . -type f -name "*.cpp" | sed -e 's|^\./|$(BUILD)/|' -e 's|\.cpp|\.o|')
 
 build: $(TARGET)
-	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 4
+	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 1
 	make clean
 
 debug: $(TARGET)

@@ -12,10 +12,23 @@ int teste(void *) {
 
 struct System {
     static void init() {
+        Memory::Heap SYSTEM;
+
         CPU::disable_interrupts();
         IO::init();
         IO::out("\nQ U A R K | [μSystem]\n");
         Memory::init();
+
+        int *p1 = new (SYSTEM) int;
+        int *p2 = new (SYSTEM) int;
+        operator delete(p1, SYSTEM);
+        operator delete(p2, SYSTEM);
+
+        Thread main;
+        Thread main2;
+        Thread::create(&main, teste, Thread::Priority::NORMAL);
+        Thread::create(&main2, teste, Thread::Priority::NORMAL);
+        Thread::dispatch(&main);
 
         //   Thread::init();
         //   Thread teste;
@@ -42,8 +55,8 @@ struct System {
 
         // --------------------
 
-        Thread mainnn(teste);
-        Thread::dispatch(0, &mainnn);
+        // Thread mainnn(teste);
+        // Thread::dispatch(0, &mainnn);
 
         CPU::idle();
     }

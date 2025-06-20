@@ -40,6 +40,12 @@ struct CPU {
             __asm__ volatile("mv tp, %0" ::"r"(p));
         }
 
+        __attribute__((always_inline)) static inline uintptr_t get() {
+			uintptr_t tp;
+            __asm__ volatile("mv %0, tp" ::"r"(tp));
+			return tp;
+        }
+
         __attribute__((always_inline)) static inline void save() {
             __asm__ volatile(
                 "sd ra, 0(tp)\n"
@@ -108,13 +114,15 @@ struct CPU {
                 "ld s11, 232(tp)\n");
         }
 
-        __attribute__((always_inline)) static inline void dispatch(
-            Context* target) {
-            //__asm__ volatile("mv gp, %0" ::"r"(target->pc));
-            target->gp = target->pc;
+        static inline void dispatch(Context* target) {
+            uintptr_t mstatus;
+            __asm__ volatile("csrr %0, mstatus" : "=r"(mstatus));
+            mstatus |= (3UL << 11);
+            __asm__ volatile("csrw mstatus, %0" ::"r"(mstatus));
+            __asm__ volatile("csrw mepc, %0" ::"r"(target->pc));
             CPU::Context::set(target);
             CPU::Context::load();
-            __asm__ volatile("jr gp");
+            __asm__ volatile("mret");
         }
     };
 
