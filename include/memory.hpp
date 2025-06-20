@@ -4,25 +4,25 @@
 #include <definitions.hpp>
 
 struct Memory {
-    typedef struct MemoryBlock {
-        struct MemoryBlock* next;
-    } MemoryBlock;
+    typedef struct PBlock {
+        struct PBlock* next;
+    } PBlock;
 
     static void init();
     static void* kmalloc();
     static void kfree(void*);
 
-    // struct Heap {
-    //     typedef struct HeapBlock {
-    //         struct HeapBlock* next;
-    //         uintptr_t size;
-    //         bool free;
-    //     } HeapBlock;
-
-    //    HeapBlock* start;
-    //    void* malloc(uintptr_t);
-    //    void free(void*);
-    //};
+    struct Heap {
+        typedef struct HBlock {
+            struct HBlock* next;
+            uintptr_t size;
+            bool free;
+        } HBlock;
+        HBlock* start;
+    };
 };
+
+void* operator new(unsigned long bytes, Memory::Heap& target);
+void operator delete(void*, Memory::Heap& target);
 
 #endif
