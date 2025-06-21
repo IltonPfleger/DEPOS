@@ -5,67 +5,71 @@
 #include <memory.hpp>
 #include <thread.hpp>
 
-int teste(void *) {
-    IO::out("Hello From Thread\n");
+char STACK[Machine::Memory::Page::SIZE * 5];
+
+int teste0(void *) {
+	int i = 0;
+    while (i < 10) {
+        IO::out("Thread0 %d\n", i);
+        Thread::yield();
+		i++;
+    }
+    // IO::out("BACK0\n");
+    // while (1);
+    return 0;
+}
+
+int teste1(void *) {
+	int i = 0;
+    while (i < 10) {
+        IO::out("Thread1 %d\n", i);
+        Thread::yield();
+		i++;
+    }
+    // IO::out("BACK1\n");
+    // while (1);
     return 0;
 }
 
 struct System {
     static void init() {
-        Memory::Heap SYSTEM;
+        uintptr_t mstatus;
+        __asm__ volatile("csrr %0, mstatus" : "=r"(mstatus));
+        mstatus |= (3 << 11);
+        __asm__ volatile("csrw mstatus, %0" ::"r"(mstatus));
 
         CPU::disable_interrupts();
         IO::init();
         IO::out("\nQ U A R K | [μSystem]\n");
         Memory::init();
 
+        Memory::Heap SYSTEM;
         int *p1 = new (SYSTEM) int;
         int *p2 = new (SYSTEM) int;
         operator delete(p1, SYSTEM);
         operator delete(p2, SYSTEM);
 
         Thread main;
+        Thread::create(&main, teste0, Thread::Priority::NORMAL);
         Thread main2;
-        Thread::create(&main, teste, Thread::Priority::NORMAL);
-        Thread::create(&main2, teste, Thread::Priority::NORMAL);
-        Thread::dispatch(&main);
+        Thread::create(&main2, teste1, Thread::Priority::NORMAL);
 
-        //   Thread::init();
-        //   Thread teste;
-        //   Thread::ready.push(teste);
-        //  Memory::Heap heap;
-        //  void *p1 = heap.malloc(16);
-        //  void *p2 = heap.malloc(16);
-        //  void *p3 = heap.malloc(16);
-        //  heap.free(p1);
-        //  heap.free(p2);
-        //  heap.free(p3);
-        //  void* mem  = Memory::kmalloc();
-        //  void* mem2 = Memory::kmalloc();
-        //  Memory::kfree(mem);
-        //  Memory::kfree(mem2);
-        //   mem  = Memory::malloc(25);
-        //   mem2 = Memory::malloc(25);
-        //   Memory::free(mem, 25);
-        //   Memory::free(mem2, 25);
+        Thread::_running        = Thread::_ready.get();
+        Thread::_running->state = Thread::RUNNING;
+        CPU::Context::set((void *)0x80200000);
+        CPU::Context::change(const_cast<CPU::Context *>(&Thread::_running->context));
 
         IO::out("Done!\n");
         //__asm__ volatile(".word 0xffffffff");
         CPU::enable_interrupts();
-
-        // --------------------
-
-        // Thread mainnn(teste);
-        // Thread::dispatch(0, &mainnn);
-
         CPU::idle();
     }
 };
 
 __attribute__((naked, aligned(4))) void ktrap() {
-    CPU::Context::save();
-    // CPU::stack(kThreads[CPU::id()].stack);
-    // CPU::context(&kThreads[CPU::id()].context);
+    // CPU::Context::save();
+    //  CPU::stack(kThreads[CPU::id()].stack);
+    //  CPU::context(&kThreads[CPU::id()].context);
 
     IO::out("Ohh it's a Trap!\n");
     uintptr_t mcause, mepc, mtval;
@@ -82,15 +86,15 @@ __attribute__((naked, aligned(4))) void ktrap() {
         IO::out("Interruption Detected!\n");
     }
 
-    CPU::Context::load();
+    // CPU::Context::load();
     CPU::idle();
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
-    CPU::set_trap_handler(ktrap);
+    CPU::trap(ktrap);
 
-    if (CPU::get_id() == 0) {
-        CPU::set_stack((void *)0x80200000);
+    if (CPU::id() == 0) {
+        CPU::stack(STACK + Machine::Memory::Page::SIZE);
         System::init();
     } else {
         CPU::idle();

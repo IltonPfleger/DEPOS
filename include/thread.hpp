@@ -5,78 +5,35 @@
 #include <definitions.hpp>
 #include <memory.hpp>
 
-template <typename T>
-struct Queue {
-    struct Element {
-        unsigned int rank;
-        Element* previous;
-        Element* next;
-        T data;
-    };
-
-    void insert(T data, unsigned int rank) {
-        Element* item  = new (HEAP) Element;
-        item->data     = data;
-        item->next     = nullptr;
-        item->previous = nullptr;
-        item->rank     = rank;
-
-        if (head == nullptr) {
-            head = tail = item;
+struct Thread {
+    struct Queue {
+        struct Node {
+            Node* next;
+            Thread* value;
         };
 
-        Element* current = head;
-        while (current != nullptr && current->rank < rank) {
-            current = current->next;
-        }
-        if (current == head) {
-            item->next     = head;
-            head->previous = item;
-            head           = item;
-        } else if (current == nullptr) {
-            tail->next     = item;
-            item->previous = tail;
-            tail           = item;
-        } else {
-            item->next              = current;
-            item->previous          = current->previous;
-            current->previous->next = item;
-            current->previous       = item;
-        }
-    }
+        void put(Thread*);
+        Thread* get();
 
-    Element* head;
-    Element* tail;
-    Memory::Heap HEAP;
-};
+        Memory::Heap HEAP;
+        Node* head;
+    };
 
-struct Thread {
-    typedef int (*ThreadEntry)(void*);
-    enum Priority {
-        HIGH = 0,
-        NORMAL,
-        LOW,
-        LAST,
-    };
-    enum State {
-        RUNNING,
-        READY,
-        WAITING,
-    };
+    typedef int (*Entry)(void*);
+    enum Priority { HIGH, NORMAL, LOW, LAST };
+    enum State { RUNNING, READY, WAITING };
 
     static void exit();
-    static void dispatch(Thread*);
+    static void dispatch(Thread*, Thread*);
     static void yield();
-    static void create(Thread*, ThreadEntry, Priority);
+    static void create(Thread*, Entry, Priority);
 
-   private:
-    static Queue<Thread*> ready;
-    static Queue<Thread*> waiting;
-
-   private:
+    static Queue _ready;
+    static volatile Thread* _running;
     uintptr_t stack;
     struct CPU::Context context;
     enum State state;
+    enum Priority priority;
 };
 
 #endif
