@@ -20,7 +20,7 @@ struct Thread {
     };
 
     typedef int (*Entry)(void*);
-    enum Priority { HIGH, NORMAL, LOW, LAST };
+    enum Priority { HIGH, NORMAL, LOW };
     enum State { RUNNING, READY, WAITING };
 
     static void exit();

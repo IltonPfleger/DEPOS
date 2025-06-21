@@ -109,9 +109,7 @@ struct CPU {
                 "ld s11, 232(tp)\n");
         }
 
-        __attribute__((naked)) static void change(Context* next) {
-            CPU::Context::save();
-
+        __attribute__((naked)) static void run(Context* next) {
             __asm__ volatile(
                 "csrr t0, mstatus\n"
                 "li   t1, 0x1800\n"
@@ -124,9 +122,16 @@ struct CPU {
             CPU::Context::load();
             __asm__ volatile("mret");
         }
+
+        __attribute__((naked)) static void change(Context* next) {
+            CPU::Context::save();
+            CPU::Context::run(next);
+        }
     };
 
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
+
+    __attribute__((always_inline)) static inline void halt() { for (;;); }
 
     __attribute__((always_inline)) static inline void disable_interrupts() {
         __asm__ volatile("csrci mstatus, 0x8");

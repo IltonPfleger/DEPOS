@@ -48,30 +48,25 @@ void Thread::create(Thread *thread, Entry entry, Priority priority) {
     thread->state      = READY;
     thread->priority   = priority;
     _ready.put(thread);
-    //_ready.print();
 }
 
 void Thread::exit() {
+    Thread *current = const_cast<Thread *>(_running);
+    Memory::kfree((void *)current->stack);
     IO::out("RETURN\n");
     while (1);
 }
 
 void Thread::dispatch(Thread *current, Thread *next) {
-    // if (current != nullptr) {
-    //     current->state = READY;
-    //     _ready.insert(thread, thread->priority);
-    // }
-    // next->state = RUNNING;
-    // CPU::Context::dispatch(&next->context);
+    next->state = RUNNING;
+    _running    = next;
+    CPU::Context::change(&next->context);
 }
 
 void Thread::yield() {
-    volatile Thread *previous = _running;
-    previous->state = READY;
-    _ready.put(const_cast<Thread *>(previous));
-
+    Thread *previous = const_cast<Thread *>(_running);
+    _ready.put(previous);
     Thread *next = _ready.get();
-    next->state     = RUNNING;
-    _running = next;
-    CPU::Context::change(&next->context);
+    next->state  = RUNNING;
+    dispatch(previous, next);
 }
