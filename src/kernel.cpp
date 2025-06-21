@@ -5,29 +5,25 @@
 #include <memory.hpp>
 #include <thread.hpp>
 
-char STACK[Machine::Memory::Page::SIZE * 5];
+char STACK[Machine::Memory::Page::SIZE];
 
 int teste0(void *) {
-	int i = 0;
+    int i = 0;
     while (i < 10) {
         IO::out("Thread0 %d\n", i);
         Thread::yield();
-		i++;
+        i++;
     }
-    // IO::out("BACK0\n");
-    // while (1);
     return 0;
 }
 
 int teste1(void *) {
-	int i = 0;
+    int i = 0;
     while (i < 10) {
         IO::out("Thread1 %d\n", i);
         Thread::yield();
-		i++;
+        i++;
     }
-    // IO::out("BACK1\n");
-    // while (1);
     return 0;
 }
 
@@ -56,8 +52,7 @@ struct System {
 
         Thread::_running        = Thread::_ready.get();
         Thread::_running->state = Thread::RUNNING;
-        CPU::Context::set((void *)0x80200000);
-        CPU::Context::change(const_cast<CPU::Context *>(&Thread::_running->context));
+        CPU::Context::run(const_cast<CPU::Context *>(&Thread::_running->context));
 
         IO::out("Done!\n");
         //__asm__ volatile(".word 0xffffffff");
