@@ -15,7 +15,7 @@ TARGET := $(BUILD)/quark
 OBJ := $(shell find . -type f -name "*.cpp" | sed -e 's|^\./|$(BUILD)/|' -e 's|\.cpp|\.o|')
 
 build: $(TARGET)
-	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 1
+	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024
 	make clean
 
 debug: $(TARGET)

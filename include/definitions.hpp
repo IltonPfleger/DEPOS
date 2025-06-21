@@ -24,7 +24,7 @@ struct TypeSelector<false, True, False> {
     using Type = False;
 };
 
-using intptr_t = TypeSelector<Machine::XLEN == 64, long long, int>::Type;
+using intptr_t  = TypeSelector<Machine::XLEN == 64, long long, int>::Type;
 using uintptr_t = TypeSelector<Machine::XLEN == 64, unsigned long long, unsigned>::Type;
 
 #endif
