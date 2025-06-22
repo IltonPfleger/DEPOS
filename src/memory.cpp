@@ -11,7 +11,7 @@ void Memory::init() {
     const uintptr_t KERNEL_START = uintptr_t(__KERNEL_START__);
     const uintptr_t KERNEL_END   = uintptr_t(__KERNEL_END__);
     const uintptr_t KERNEL_SIZE  = KERNEL_END - KERNEL_START;
-    const uintptr_t HEAP_START   = (KERNEL_START + PSIZE + 1) & ~(PSIZE - 1);
+    const uintptr_t HEAP_START   = (KERNEL_END + PSIZE + 1) & ~(PSIZE - 1);
     const uintptr_t HEAP_SIZE    = Machine::Memory::SIZE - KERNEL_SIZE;
     const uintptr_t HEAP_END     = HEAP_START + HEAP_SIZE;
 

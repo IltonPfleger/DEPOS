@@ -39,33 +39,29 @@ struct System {
         IO::out("\nQ U A R K | [μSystem]\n");
         Memory::init();
 
-        Memory::Heap SYSTEM;
-        int *p1 = new (SYSTEM) int;
-        int *p2 = new (SYSTEM) int;
-        operator delete(p1, SYSTEM);
-        operator delete(p2, SYSTEM);
+        // Memory::Heap SYSTEM;
+        // int *p1 = new (SYSTEM) int;
+        // int *p2 = new (SYSTEM) int;
+        // operator delete(p1, SYSTEM);
+        // operator delete(p2, SYSTEM);
 
         Thread main;
         Thread::create(&main, teste0, Thread::Priority::NORMAL);
         Thread main2;
         Thread::create(&main2, teste1, Thread::Priority::NORMAL);
-
         Thread::_running        = Thread::_ready.get();
         Thread::_running->state = Thread::RUNNING;
-        CPU::Context::run(const_cast<CPU::Context *>(&Thread::_running->context));
+
+        CPU::Context::set((void *)&main.context);
+        CPU::Context::dispatch(&main.context);
 
         IO::out("Done!\n");
-        //__asm__ volatile(".word 0xffffffff");
         CPU::enable_interrupts();
         CPU::idle();
     }
 };
 
 __attribute__((naked, aligned(4))) void ktrap() {
-    // CPU::Context::save();
-    //  CPU::stack(kThreads[CPU::id()].stack);
-    //  CPU::context(&kThreads[CPU::id()].context);
-
     IO::out("Ohh it's a Trap!\n");
     uintptr_t mcause, mepc, mtval;
     __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
@@ -80,8 +76,6 @@ __attribute__((naked, aligned(4))) void ktrap() {
     } else {
         IO::out("Interruption Detected!\n");
     }
-
-    // CPU::Context::load();
     CPU::idle();
 }
 
@@ -95,3 +89,5 @@ __attribute__((naked, section(".boot"))) void kboot() {
         CPU::idle();
     }
 }
+
+//__asm__ volatile(".word 0xffffffff");
