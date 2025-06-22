@@ -24,7 +24,7 @@ struct Thread {
     enum State { RUNNING, READY, WAITING };
 
     static void exit();
-    static void dispatch(Thread*, Thread*);
+    static void dispatch(Thread*);
     static void yield();
     static void create(Thread*, Entry, Priority);
 
