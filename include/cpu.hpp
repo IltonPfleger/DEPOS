@@ -36,7 +36,7 @@ struct CPU {
         uintptr_t s11;
         uintptr_t pc;
 
-        __attribute__((always_inline)) static inline void set(void* p) {
+        __attribute__((always_inline)) static inline void set(void *p) {
             __asm__ volatile("mv tp, %0" ::"r"(p));
         }
 
@@ -72,7 +72,7 @@ struct CPU {
                 "sd s9, 216(tp)\n"
                 "sd s10, 224(tp)\n"
                 "sd s11, 232(tp)\n"
-                "sd ra, 240(tp)\n");  // REMOVE
+                "sd ra, 240(tp)\n");
         }
 
         __attribute__((always_inline)) static inline void load() {
@@ -109,7 +109,7 @@ struct CPU {
                 "ld s11, 232(tp)\n");
         }
 
-        __attribute__((naked)) static void run(Context* next) {
+        __attribute__((naked)) static void dispatch(CPU::Context *next) {
             __asm__ volatile(
                 "csrr t0, mstatus\n"
                 "li   t1, 0x1800\n"
@@ -118,16 +118,18 @@ struct CPU {
                     : "t1", "t0");
 
             __asm__ volatile("csrw mepc, %0" ::"r"(next->pc));
-            CPU::Context::set(next);
+            CPU::Context::set((void *)next);
             CPU::Context::load();
-            __asm__ volatile("mret");
+            CPU::iret();
         }
 
-        __attribute__((naked)) static void change(Context* next) {
+        __attribute__((naked)) static void relay(CPU::Context *next) {
             CPU::Context::save();
-            CPU::Context::run(next);
+            CPU::Context::dispatch(next);
         }
     };
+
+    __attribute__((always_inline)) static inline void iret() { __asm__ volatile("mret"); }
 
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
 
@@ -146,7 +148,7 @@ struct CPU {
         return id;
     }
 
-    __attribute__((always_inline)) static inline void stack(void* ptr) {
+    __attribute__((always_inline)) static inline void stack(void *ptr) {
         __asm__ volatile("mv sp, %0" ::"r"(ptr));
     }
 

@@ -51,22 +51,20 @@ void Thread::create(Thread *thread, Entry entry, Priority priority) {
 }
 
 void Thread::exit() {
-    Thread *current = const_cast<Thread *>(_running);
-    Memory::kfree((void *)current->stack);
-    IO::out("RETURN\n");
+    IO::out("EXIT\n");
     while (1);
 }
 
 void Thread::dispatch(Thread *current, Thread *next) {
-    next->state = RUNNING;
-    _running    = next;
-    CPU::Context::change(&next->context);
+    _running        = next;
+    _running->state = RUNNING;
+    CPU::Context::relay(&next->context);
 }
 
 void Thread::yield() {
-    Thread *previous = const_cast<Thread *>(_running);
-    _ready.put(previous);
-    Thread *next = _ready.get();
-    next->state  = RUNNING;
+    Thread *previous = const_cast<Thread *>(Thread::_running);
+    previous->state  = Thread::READY;
+    Thread::_ready.put(previous);
+    Thread *next = Thread::_ready.get();
     dispatch(previous, next);
 }
