@@ -52,7 +52,7 @@ struct System {
         Thread::_running        = Thread::_ready.get();
         Thread::_running->state = Thread::RUNNING;
 
-        CPU::Context::set((void *)&main.context);
+        CPU::Context::set(&main.context);
         CPU::Context::dispatch(&main.context);
 
         IO::out("Done!\n");

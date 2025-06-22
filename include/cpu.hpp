@@ -36,8 +36,8 @@ struct CPU {
         uintptr_t s11;
         uintptr_t pc;
 
-        __attribute__((always_inline)) static inline void set(void *p) {
-            __asm__ volatile("mv tp, %0" ::"r"(p));
+        __attribute__((always_inline)) static inline void set(Context *c) {
+            __asm__ volatile("mv tp, %0" ::"r"(c));
         }
 
         __attribute__((always_inline)) static inline void save() {
@@ -118,7 +118,7 @@ struct CPU {
                     : "t1", "t0");
 
             __asm__ volatile("csrw mepc, %0" ::"r"(next->pc));
-            CPU::Context::set((void *)next);
+            CPU::Context::set(next);
             CPU::Context::load();
             CPU::iret();
         }
