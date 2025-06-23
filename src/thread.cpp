@@ -1,6 +1,5 @@
 #include <io/logger.hpp>
 #include <thread.hpp>
-#include <timer/timer.hpp>
 
 Thread::Queue Thread::_ready;
 volatile Thread *Thread::_running;
@@ -81,6 +80,7 @@ void Thread::exit() {
 
 int Thread::idle(void *) {
     CPU::disable_interrupts();
+    Memory::kfree(reinterpret_cast<void *>(_running->stack));
     Logger::log("*** The last thread under control of QUARK has finished. ***\n");
     Logger::log("*** QUARK is shutting down! ***\n");
     while (1);

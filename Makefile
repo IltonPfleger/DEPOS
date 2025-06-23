@@ -6,7 +6,7 @@ OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 
 
-CFLAGS := -O0 -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
+CFLAGS := -O2 -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles
 CFLAGS += -g -fcheck-new
 
@@ -16,9 +16,9 @@ OBJ := $(shell find . -type f -name "*.cpp" | sed -e 's|^\./|$(BUILD)/|' -e 's|\
 
 all: 
 	make clean
-	make build 
+	make run
 
-build: $(TARGET)
+run: $(TARGET)
 	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024
 
 debug: $(TARGET)
