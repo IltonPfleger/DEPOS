@@ -4,41 +4,41 @@
 
 struct CPU {
     struct Context {
-        uintptr_t ra;
-        uintptr_t sp;
-        uintptr_t gp;
-        uintptr_t t0;
-        uintptr_t t1;
-        uintptr_t t2;
-        uintptr_t t3;
-        uintptr_t t4;
-        uintptr_t t5;
-        uintptr_t t6;
-        uintptr_t a0;
-        uintptr_t a1;
-        uintptr_t a2;
-        uintptr_t a3;
-        uintptr_t a4;
-        uintptr_t a5;
-        uintptr_t a6;
-        uintptr_t a7;
-        uintptr_t s0;
-        uintptr_t s1;
-        uintptr_t s2;
-        uintptr_t s3;
-        uintptr_t s4;
-        uintptr_t s5;
-        uintptr_t s6;
-        uintptr_t s7;
-        uintptr_t s8;
-        uintptr_t s9;
-        uintptr_t s10;
-        uintptr_t s11;
-        uintptr_t pc;
+        uintptr_t _ra;
+        uintptr_t _sp;
+        uintptr_t _gp;
+        uintptr_t _t0;
+        uintptr_t _t1;
+        uintptr_t _t2;
+        uintptr_t _t3;
+        uintptr_t _t4;
+        uintptr_t _t5;
+        uintptr_t _t6;
+        uintptr_t _a0;
+        uintptr_t _a1;
+        uintptr_t _a2;
+        uintptr_t _a3;
+        uintptr_t _a4;
+        uintptr_t _a5;
+        uintptr_t _a6;
+        uintptr_t _a7;
+        uintptr_t _s0;
+        uintptr_t _s1;
+        uintptr_t _s2;
+        uintptr_t _s3;
+        uintptr_t _s4;
+        uintptr_t _s5;
+        uintptr_t _s6;
+        uintptr_t _s7;
+        uintptr_t _s8;
+        uintptr_t _s9;
+        uintptr_t _s10;
+        uintptr_t _s11;
+        uintptr_t _pc;
 
-        __attribute__((always_inline)) static inline void set(Context *c) {
-            __asm__ volatile("mv tp, %0" ::"r"(c));
-        }
+        __attribute__((always_inline)) static inline void set(Context *c) { __asm__ volatile("mv tp, %0" ::"r"(c)); }
+
+        //__attribute__((always_inline)) static inline void pc(uintptr_t p) { __asm__ volatile("sd %0, 240(tp)" ::"r"(p)); }
 
         __attribute__((always_inline)) static inline void save() {
             __asm__ volatile(
@@ -72,7 +72,7 @@ struct CPU {
                 "sd s9, 216(tp)\n"
                 "sd s10, 224(tp)\n"
                 "sd s11, 232(tp)\n"
-                "sd ra, 240(tp)\n");
+                "sd ra, 240(tp)\n");  //
         }
 
         __attribute__((always_inline)) static inline void load() {
@@ -117,7 +117,7 @@ struct CPU {
                 "csrw mstatus, t0\n" ::
                     : "t1", "t0");
 
-            __asm__ volatile("csrw mepc, %0" ::"r"(next->pc));
+            __asm__ volatile("csrw mepc, %0" ::"r"(next->_pc));
             CPU::Context::set(next);
             CPU::Context::load();
             CPU::iret();
@@ -129,18 +129,42 @@ struct CPU {
         }
     };
 
+    // struct Trap {
+    //     static inline uintptr_t pc() {
+    //         uintptr_t p;
+    //         __asm__ volatile("csrr %0, mepc" : "=r"(p));
+    //         return p;
+    //     };
+
+    //     static inline uintptr_t rcause() {
+    //         uintptr_t _rcause;
+    //         __asm__ volatile("csrr %0, mcause" : "=r"(_rcause));
+    //         return _rcause;
+    //     }
+
+    //     struct Interrupt {
+    //         enum Type {
+    //             TIMER = 7,  // Machine Mode
+    //         };
+
+    //         static Type type() {
+    //             uintptr_t _rcause = rcause();
+    //             _rcause           = (_rcause << 1) >> 1;
+    //             return static_cast<Type>(_rcause);
+    //         }
+    //     };
+    // };
+
+    __attribute__((always_inline)) static inline void enable_timer_interrupts() { __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0"); }
+    __attribute__((always_inline)) static inline void disable_timer_interrupts() { __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0"); }
+    __attribute__((always_inline)) static inline void disable_interrupts() { __asm__ volatile("csrci mstatus, 0x8"); }
+    __attribute__((always_inline)) static inline void enable_interrupts() { __asm__ volatile("csrsi mstatus, 0x8"); }
+
     __attribute__((always_inline)) static inline void iret() { __asm__ volatile("mret"); }
 
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
 
     __attribute__((always_inline)) static inline void halt() { for (;;); }
-
-    __attribute__((always_inline)) static inline void disable_interrupts() {
-        __asm__ volatile("csrci mstatus, 0x8");
-    }
-    __attribute__((always_inline)) static inline void enable_interrupts() {
-        __asm__ volatile("csrsi mstatus, 0x8");
-    }
 
     __attribute__((always_inline)) static inline unsigned int id() {
         unsigned int id;
@@ -148,13 +172,9 @@ struct CPU {
         return id;
     }
 
-    __attribute__((always_inline)) static inline void stack(void *ptr) {
-        __asm__ volatile("mv sp, %0" ::"r"(ptr));
-    }
+    __attribute__((always_inline)) static inline void stack(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
 
-    __attribute__((always_inline)) static inline void trap(void (*ptr)()) {
-        __asm__ volatile("csrw mtvec, %0" ::"r"(ptr));
-    }
+    __attribute__((always_inline)) static inline void trap(void (*ptr)()) { __asm__ volatile("csrw mtvec, %0" ::"r"(ptr)); }
 };
 
 #endif

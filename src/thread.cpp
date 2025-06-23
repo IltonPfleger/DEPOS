@@ -1,5 +1,6 @@
-#include <io/io.hpp>
+#include <io/logger.hpp>
 #include <thread.hpp>
+#include <timer/timer.hpp>
 
 Thread::Queue Thread::_ready;
 volatile Thread *Thread::_running;
@@ -41,23 +42,60 @@ Thread *Thread::Queue::get() {
 }
 
 void Thread::create(Thread *thread, Entry entry, Priority priority) {
-    thread->stack      = reinterpret_cast<uintptr_t>(Memory::kmalloc());
-    thread->context.ra = reinterpret_cast<uintptr_t>(exit);
-    thread->context.pc = reinterpret_cast<uintptr_t>(entry);
-    thread->context.sp = thread->stack + Machine::Memory::Page::SIZE;
-    thread->state      = READY;
-    thread->priority   = priority;
+    thread->stack       = reinterpret_cast<uintptr_t>(Memory::kmalloc());
+    thread->context._ra = reinterpret_cast<uintptr_t>(exit);
+    thread->context._pc = reinterpret_cast<uintptr_t>(entry);
+    thread->context._sp = thread->stack + Machine::Memory::Page::SIZE;
+    thread->state       = READY;
+    thread->priority    = priority;
     _ready.put(thread);
 }
 
+void Thread::join(Thread *thread) {
+    CPU::disable_interrupts();
+    if (thread->state != FINISHED) {
+        Thread *previous = const_cast<Thread *>(_running);
+        if (thread == previous) Logger::log("ERROR: Self join detected.");
+
+        previous->state = WAITING;
+
+        if (thread->joining) Logger::log("ERROR: Multiple joins detected.");
+        thread->joining = previous;
+
+        Thread::dispatch(_ready.get());
+    }
+
+    Memory::kfree(reinterpret_cast<void *>(thread->stack));
+    CPU::enable_interrupts();
+}
+
 void Thread::exit() {
+    CPU::disable_interrupts();
     Thread *previous = const_cast<Thread *>(_running);
-    Thread *next     = _ready.get();
+    if (previous->joining) _ready.put(previous->joining);
+    previous->state = FINISHED;
 
-    if (next) dispatch(next);
+    Thread *next = _ready.get();
+    dispatch(next);
+}
 
-    IO::out("The Last Thread Has Exited!\n");
-    while (1);
+int Thread::idle(void *) {
+    CPU::disable_interrupts();
+    Logger::log("*** The last thread under control of QUARK has finished. ***\n");
+    Logger::log("*** QUARK is shutting down! ***\n");
+    CPU::idle();
+    return 0;
+}
+
+void Thread::init() {
+    Thread idle;
+    Thread::create(&idle, Thread::idle, Thread::Priority::IDLE);
+
+    Thread *first = Thread::_ready.get();
+    first->state  = RUNNING;
+    _running      = first;
+    CPU::Context::set(&first->context);
+    CPU::Context::dispatch(&first->context);
 }
 
 void Thread::dispatch(Thread *next) {
@@ -67,6 +105,7 @@ void Thread::dispatch(Thread *next) {
 }
 
 void Thread::yield() {
+    CPU::disable_interrupts();
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     _ready.put(previous);

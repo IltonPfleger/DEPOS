@@ -1,4 +1,4 @@
-#include <io/io.hpp>
+#include <io/logger.hpp>
 #include <io/uart.hpp>
 #include <memory.hpp>
 
@@ -15,13 +15,13 @@ void Memory::init() {
     const uintptr_t HEAP_SIZE    = Machine::Memory::SIZE - KERNEL_SIZE;
     const uintptr_t HEAP_END     = HEAP_START + HEAP_SIZE;
 
-    IO::out("Memory::init()\n");
-    IO::out("KernelStart=%p\n", KERNEL_START);
-    IO::out("KernelEnd=%p\n", KERNEL_END);
-    IO::out("KernelSize=%d\n", KERNEL_SIZE);
-    IO::out("HeapStart=%p\n", HEAP_START);
-    IO::out("HeapSize=%d\n", HEAP_SIZE / (1024 * 1024));
-    IO::out("HeapEnd=%p\n", HEAP_END);
+    Logger::log("Memory::init()\n");
+    Logger::log("KernelStart=%p\n", KERNEL_START);
+    Logger::log("KernelEnd=%p\n", KERNEL_END);
+    Logger::log("KernelSize=%d\n", KERNEL_SIZE);
+    Logger::log("HeapStart=%p\n", HEAP_START);
+    Logger::log("HeapSize=%d\n", HEAP_SIZE / (1024 * 1024));
+    Logger::log("HeapEnd=%p\n", HEAP_END);
 
     uintptr_t n_pages = 0;
     uintptr_t current = HEAP_START;
@@ -33,14 +33,14 @@ void Memory::init() {
         current += Machine::Memory::Page::SIZE;
     };
 
-    IO::out("NumberOfPages=%d\n", n_pages);
-    IO::out("Memory::init(done)\n");
+    Logger::log("NumberOfPages=%d\n", n_pages);
+    Logger::log("Memory::init(done)\n");
 }
 
 void *Memory::kmalloc() {
     PBlock *block = pages;
     if (block != nullptr) pages = block->next;
-    IO::out("Memory::kmalloc()[return=%p]\n", block);
+    Logger::log("Memory::kmalloc()[return=%p]\n", block);
     return reinterpret_cast<void *>(block);
 }
 
@@ -49,7 +49,7 @@ void Memory::kfree(void *addr) {
     PBlock *block = reinterpret_cast<PBlock *>(addr);
     block->next   = pages;
     pages         = block;
-    IO::out("Memory::kfree(%p)\n", block);
+    Logger::log("Memory::kfree(%p)\n", block);
 }
 
 void *operator new(unsigned long size, Memory::Heap &target) {

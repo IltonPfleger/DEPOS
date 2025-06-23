@@ -1,82 +1,65 @@
 #include <cpu.hpp>
 #include <definitions.hpp>
-#include <io/io.hpp>
+#include <io/logger.hpp>
 #include <io/uart.hpp>
 #include <memory.hpp>
 #include <thread.hpp>
+#include <timer/timer.hpp>
 
-char STACK[Machine::Memory::Page::SIZE];
-
-int teste0(void *) {
-    int i = 0;
-    while (i < 10) {
-        IO::out("Thread0 %d\n", i);
-        Thread::yield();
-        i++;
-    }
-    return 0;
-}
-
-int teste1(void *) {
-    int i = 0;
-    while (i < 10) {
-        IO::out("Thread1 %d\n", i);
-        Thread::yield();
-        i++;
-    }
-    return 0;
-}
+static char STACK[Machine::Memory::Page::SIZE];
+extern int main(void *);
+static Thread thread;
 
 struct System {
     static void init() {
-        uintptr_t mstatus;
-        __asm__ volatile("csrr %0, mstatus" : "=r"(mstatus));
-        mstatus |= (3 << 11);
-        __asm__ volatile("csrw mstatus, %0" ::"r"(mstatus));
-
         CPU::disable_interrupts();
-        IO::init();
-        IO::out("\nQ U A R K | [μSystem]\n");
+        Logger::init();
+        Logger::log("\nQ U A R K | [μSystem]\n");
         Memory::init();
+        Thread::create(&thread, main, Thread::Priority::NORMAL);
 
-        // Memory::Heap SYSTEM;
-        // int *p1 = new (SYSTEM) int;
-        // int *p2 = new (SYSTEM) int;
-        // operator delete(p1, SYSTEM);
-        // operator delete(p2, SYSTEM);
-
-        Thread main;
-        Thread::create(&main, teste0, Thread::Priority::NORMAL);
-        Thread main2;
-        Thread::create(&main2, teste1, Thread::Priority::NORMAL);
-        Thread::_running        = Thread::_ready.get();
-        Thread::_running->state = Thread::RUNNING;
-
-        CPU::Context::set(&main.context);
-        CPU::Context::dispatch(&main.context);
-
-        IO::out("Done!\n");
-        CPU::enable_interrupts();
+        Logger::log("Done!\n");
+        // Timer::init();
+        Thread::init();
         CPU::idle();
     }
 };
 
+//void interrupt_handler() {
+//    CPU::Trap::Interrupt::Type type = CPU::Trap::Interrupt::type();
+//    switch (type) {
+//        case CPU::Trap::Interrupt::TIMER:
+//            CPU::Context::load();
+//            CPU::Context::dispatch((CPU::Context *)&Thread::_running->context);
+//            // Thread::yield();
+//            break;
+//    }
+//    while (1);
+//}
+
 __attribute__((naked, aligned(4))) void ktrap() {
-    IO::out("Ohh it's a Trap!\n");
+    CPU::disable_interrupts();
+    // CPU::Context::save();
+    // CPU::Context::pc(CPU::Trap::pc());
+
+    //__asm__ volatile("csrr t0, mcause\nli t1, %0\nand t0, t0, t1\nbne t0, zero, _Z17interrupt_handlerv" ::"i"(1L << (Machine::XLEN - 1))
+    //                 : "t0", "t1");
+
+    Logger::log("Ohh it's a Trap!\n");
     uintptr_t mcause, mepc, mtval;
     __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
     __asm__ volatile("csrr %0, mepc" : "=r"(mepc));
     __asm__ volatile("csrr %0, mtval" : "=r"(mtval));
-    IO::out("mcause: %p\n", mcause);
-    IO::out("mepc: %p\n", mepc);
-    IO::out("mtval: %p\n", mtval);
+    Logger::log("mcause: %p\n", mcause);
+    Logger::log("mepc: %p\n", mepc);
+    Logger::log("mtval: %p\n", mtval);
 
     if ((mcause >> (Machine::XLEN - 1)) == 0) {
-        IO::out("Exception Detected!\n");
+        Logger::log("Exception Detected!\n");
     } else {
-        IO::out("Interruption Detected!\n");
+        Logger::log("Interruption Detected!\n");
     }
-    CPU::idle();
+    while (1);
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
@@ -89,5 +72,3 @@ __attribute__((naked, section(".boot"))) void kboot() {
         CPU::idle();
     }
 }
-
-//__asm__ volatile(".word 0xffffffff");
