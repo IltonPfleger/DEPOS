@@ -38,7 +38,7 @@ struct CPU {
 
         __attribute__((always_inline)) static inline void set(Context *c) { __asm__ volatile("mv tp, %0" ::"r"(c)); }
 
-        //__attribute__((always_inline)) static inline void pc(uintptr_t p) { __asm__ volatile("sd %0, 240(tp)" ::"r"(p)); }
+        __attribute__((always_inline)) static inline void pc(uintptr_t p) { __asm__ volatile("sd %0, 240(tp)" ::"r"(p)); }
 
         __attribute__((always_inline)) static inline void save() {
             __asm__ volatile(
@@ -71,8 +71,8 @@ struct CPU {
                 "sd s8, 208(tp)\n"
                 "sd s9, 216(tp)\n"
                 "sd s10, 224(tp)\n"
-                "sd s11, 232(tp)\n"
-                "sd ra, 240(tp)\n");  //
+                "sd s11, 232(tp)\n");
+            //"sd ra, 240(tp)\n");  //
         }
 
         __attribute__((always_inline)) static inline void load() {
@@ -125,35 +125,36 @@ struct CPU {
 
         __attribute__((naked)) static void relay(CPU::Context *next) {
             CPU::Context::save();
+            __asm__ volatile("sd ra, 240(tp)\n");
             CPU::Context::dispatch(next);
         }
     };
 
-    // struct Trap {
-    //     static inline uintptr_t pc() {
-    //         uintptr_t p;
-    //         __asm__ volatile("csrr %0, mepc" : "=r"(p));
-    //         return p;
-    //     };
+    struct Trap {
+        static inline uintptr_t pc() {
+            uintptr_t p;
+            __asm__ volatile("csrr %0, mepc" : "=r"(p));
+            return p;
+        };
 
-    //     static inline uintptr_t rcause() {
-    //         uintptr_t _rcause;
-    //         __asm__ volatile("csrr %0, mcause" : "=r"(_rcause));
-    //         return _rcause;
-    //     }
+        static inline uintptr_t rcause() {
+            uintptr_t _rcause;
+            __asm__ volatile("csrr %0, mcause" : "=r"(_rcause));
+            return _rcause;
+        }
 
-    //     struct Interrupt {
-    //         enum Type {
-    //             TIMER = 7,  // Machine Mode
-    //         };
+        struct Interrupt {
+            enum Type {
+                TIMER = 7,  // Machine Mode
+            };
 
-    //         static Type type() {
-    //             uintptr_t _rcause = rcause();
-    //             _rcause           = (_rcause << 1) >> 1;
-    //             return static_cast<Type>(_rcause);
-    //         }
-    //     };
-    // };
+            static Type type() {
+                uintptr_t _rcause = rcause();
+                _rcause           = (_rcause << 1) >> 1;
+                return static_cast<Type>(_rcause);
+            }
+        };
+    };
 
     __attribute__((always_inline)) static inline void enable_timer_interrupts() { __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0"); }
     __attribute__((always_inline)) static inline void disable_timer_interrupts() { __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0"); }

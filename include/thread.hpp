@@ -27,6 +27,7 @@ struct Thread {
     static void init();
     static void dispatch(Thread*);
     static void yield();
+    static void reschedule();
     static void create(Thread*, Entry, Priority);
     static void join(Thread*);
     static int idle(void*);

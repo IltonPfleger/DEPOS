@@ -16,11 +16,11 @@ struct Timer {
     }
 
 	static void init() {
-		//set();
-		//CPU::enable_timer_interrupts();
+		reset();
+		CPU::enable_timer_interrupts();
 	}
 
-    static void set() {
+    static void reset() {
         uintptr_t now = MTIME();
         MTIMECMP()    = now + INTERVAL;
     }
