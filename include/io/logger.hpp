@@ -1,18 +1,18 @@
-#ifndef IO_HPP
-#define IO_HPP
+#ifndef LOGGER_HPP
+#define LOGGER_HPP
 
 #include <cstdarg>
 #include <definitions.hpp>
 #include <io/uart.hpp>
 
-struct IO {
+struct Logger {
     static constexpr char HEX[] = "0123456789ABCDEF";
     using Interface             = UART;
 
     static void init() { Interface::init(); };
     static void put(char value) { Interface::put(value); };
 
-    static void out(const char* format, ...) {
+    static void log(const char* format, ...) {
         va_list args;
         va_start(args, format);
         while (*format) {
