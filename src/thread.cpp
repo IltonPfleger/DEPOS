@@ -83,7 +83,7 @@ int Thread::idle(void *) {
     CPU::disable_interrupts();
     Logger::log("*** The last thread under control of QUARK has finished. ***\n");
     Logger::log("*** QUARK is shutting down! ***\n");
-    CPU::idle();
+    while (1);
     return 0;
 }
 
@@ -96,6 +96,17 @@ void Thread::init() {
     _running      = first;
     CPU::Context::set(&first->context);
     CPU::Context::dispatch(&first->context);
+}
+
+void Thread::reschedule() {
+    CPU::disable_interrupts();
+    Thread *previous = const_cast<Thread *>(_running);
+    previous->state  = READY;
+    _ready.put(previous);
+    Thread *next    = _ready.get();
+    _running        = next;
+    _running->state = RUNNING;
+    CPU::Context::dispatch(&next->context);
 }
 
 void Thread::dispatch(Thread *next) {

@@ -19,31 +19,30 @@ struct System {
         Thread::create(&thread, main, Thread::Priority::NORMAL);
 
         Logger::log("Done!\n");
-        // Timer::init();
+        Timer::init();
         Thread::init();
         CPU::idle();
     }
 };
 
-//void interrupt_handler() {
-//    CPU::Trap::Interrupt::Type type = CPU::Trap::Interrupt::type();
-//    switch (type) {
-//        case CPU::Trap::Interrupt::TIMER:
-//            CPU::Context::load();
-//            CPU::Context::dispatch((CPU::Context *)&Thread::_running->context);
-//            // Thread::yield();
-//            break;
-//    }
-//    while (1);
-//}
+void interrupt_handler() {
+    CPU::Trap::Interrupt::Type type = CPU::Trap::Interrupt::type();
+    switch (type) {
+        case CPU::Trap::Interrupt::TIMER:
+            Timer::reset();
+            Thread::reschedule();
+            break;
+    }
+    while (1);
+}
 
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::disable_interrupts();
-    // CPU::Context::save();
-    // CPU::Context::pc(CPU::Trap::pc());
+    CPU::Context::save();
+    CPU::Context::pc(CPU::Trap::pc());
 
-    //__asm__ volatile("csrr t0, mcause\nli t1, %0\nand t0, t0, t1\nbne t0, zero, _Z17interrupt_handlerv" ::"i"(1L << (Machine::XLEN - 1))
-    //                 : "t0", "t1");
+    __asm__ volatile("csrr t0, mcause\nli t1, %0\nand t0, t0, t1\nbne t0, zero, _Z17interrupt_handlerv" ::"i"(1L << (Machine::XLEN - 1))
+                     : "t0", "t1");
 
     Logger::log("Ohh it's a Trap!\n");
     uintptr_t mcause, mepc, mtval;

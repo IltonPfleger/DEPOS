@@ -1,9 +1,11 @@
 #include <io/logger.hpp>
 #include <thread.hpp>
 
+#define ITERATIONS 1000
+
 int teste0(void *) {
     int i = 0;
-    while (i < 10) {
+    while (i < ITERATIONS) {
         Logger::log("Thread0 %d\n", i);
         Thread::yield();
         i++;
@@ -13,7 +15,7 @@ int teste0(void *) {
 
 int teste1(void *) {
     int i = 0;
-    while (i < 10) {
+    while (i < ITERATIONS) {
         Logger::log("Thread1 %d\n", i);
         Thread::yield();
         i++;
