@@ -1,7 +1,7 @@
 #include <io/logger.hpp>
 #include <thread.hpp>
 
-#define ITERATIONS 1000
+#define ITERATIONS 10
 
 int teste0(void *) {
     int i = 0;
