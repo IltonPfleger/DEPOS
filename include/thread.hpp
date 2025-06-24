@@ -36,7 +36,7 @@ struct Thread {
     static volatile Thread* _running;
 
     uintptr_t stack;
-    struct CPU::Context context;
+    struct CPU::Context* context;
     struct Thread* joining;
     enum State state;
     enum Priority priority;

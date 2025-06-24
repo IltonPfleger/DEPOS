@@ -5,8 +5,6 @@
 struct CPU {
     struct Context {
         uintptr_t ra;
-        uintptr_t sp;
-        uintptr_t gp;
         uintptr_t t0;
         uintptr_t t1;
         uintptr_t t2;
@@ -36,93 +34,92 @@ struct CPU {
         uintptr_t s11;
         uintptr_t pc;
 
-        __attribute__((always_inline)) static inline void set(Context *c) { __asm__ volatile("mv tp, %0" ::"r"(c)); }
+        // __attribute__((always_inline)) static inline void set(Context *c) { __asm__ volatile("mv tp, %0" ::"r"(c)); }
 
         __attribute__((always_inline)) static inline Context *get() {
             Context *c;
-            __asm__ volatile("mv %0, tp" : "=r"(c));
+            __asm__ volatile("mv %0, sp" : "=r"(c));
             return c;
         }
 
-        __attribute__((always_inline)) static inline void save() {
+        __attribute__((always_inline)) static inline void push() {
             __asm__ volatile(
-                "sd ra, 0(tp)\n"
-                "sd sp, 8(tp)\n"
-                "sd gp, 16(tp)\n"
-                "sd t0, 24(tp)\n"
-                "sd t1, 32(tp)\n"
-                "sd t2, 40(tp)\n"
-                "sd t3, 48(tp)\n"
-                "sd t4, 56(tp)\n"
-                "sd t5, 64(tp)\n"
-                "sd t6, 72(tp)\n"
-                "sd a0, 80(tp)\n"
-                "sd a1, 88(tp)\n"
-                "sd a2, 96(tp)\n"
-                "sd a3, 104(tp)\n"
-                "sd a4, 112(tp)\n"
-                "sd a5, 120(tp)\n"
-                "sd a6, 128(tp)\n"
-                "sd a7, 136(tp)\n"
-                "sd s0, 144(tp)\n"
-                "sd s1, 152(tp)\n"
-                "sd s2, 160(tp)\n"
-                "sd s3, 168(tp)\n"
-                "sd s4, 176(tp)\n"
-                "sd s5, 184(tp)\n"
-                "sd s6, 192(tp)\n"
-                "sd s7, 200(tp)\n"
-                "sd s8, 208(tp)\n"
-                "sd s9, 216(tp)\n"
-                "sd s10, 224(tp)\n"
-                "sd s11, 232(tp)\n");
+                "addi sp, sp, %0\n"
+                "sd ra, 0(sp)\n"
+                "sd t0, 8(sp)\n"
+                "sd t1, 16(sp)\n"
+                "sd t2, 24(sp)\n"
+                "sd t3, 32(sp)\n"
+                "sd t4, 40(sp)\n"
+                "sd t5, 48(sp)\n"
+                "sd t6, 56(sp)\n"
+                "sd a0, 64(sp)\n"
+                "sd a1, 72(sp)\n"
+                "sd a2, 80(sp)\n"
+                "sd a3, 88(sp)\n"
+                "sd a4, 96(sp)\n"
+                "sd a5, 104(sp)\n"
+                "sd a6, 112(sp)\n"
+                "sd a7, 120(sp)\n"
+                "sd s0, 128(sp)\n"
+                "sd s1, 136(sp)\n"
+                "sd s2, 144(sp)\n"
+                "sd s3, 152(sp)\n"
+                "sd s4, 160(sp)\n"
+                "sd s5, 168(sp)\n"
+                "sd s6, 176(sp)\n"
+                "sd s7, 184(sp)\n"
+                "sd s8, 192(sp)\n"
+                "sd s9, 200(sp)\n"
+                "sd s10, 208(sp)\n"
+                "sd s11, 216(sp)\n" ::"i"(-sizeof(Context)));
         }
 
-        __attribute__((always_inline)) static inline void load() {
+        __attribute__((always_inline)) static inline void pop() {
             __asm__ volatile(
-                "ld ra, 0(tp)\n"
-                "ld sp, 8(tp)\n"
-                "ld gp, 16(tp)\n"
-                "ld t0, 24(tp)\n"
-                "ld t1, 32(tp)\n"
-                "ld t2, 40(tp)\n"
-                "ld t3, 48(tp)\n"
-                "ld t4, 56(tp)\n"
-                "ld t5, 64(tp)\n"
-                "ld t6, 72(tp)\n"
-                "ld a0, 80(tp)\n"
-                "ld a1, 88(tp)\n"
-                "ld a2, 96(tp)\n"
-                "ld a3, 104(tp)\n"
-                "ld a4, 112(tp)\n"
-                "ld a5, 120(tp)\n"
-                "ld a6, 128(tp)\n"
-                "ld a7, 136(tp)\n"
-                "ld s0, 144(tp)\n"
-                "ld s1, 152(tp)\n"
-                "ld s2, 160(tp)\n"
-                "ld s3, 168(tp)\n"
-                "ld s4, 176(tp)\n"
-                "ld s5, 184(tp)\n"
-                "ld s6, 192(tp)\n"
-                "ld s7, 200(tp)\n"
-                "ld s8, 208(tp)\n"
-                "ld s9, 216(tp)\n"
-                "ld s10, 224(tp)\n"
-                "ld s11, 232(tp)\n");
+                "ld ra, 0(sp)\n"
+                "ld t0, 8(sp)\n"
+                "ld t1, 16(sp)\n"
+                "ld t2, 24(sp)\n"
+                "ld t3, 32(sp)\n"
+                "ld t4, 40(sp)\n"
+                "ld t5, 48(sp)\n"
+                "ld t6, 56(sp)\n"
+                "ld a0, 64(sp)\n"
+                "ld a1, 72(sp)\n"
+                "ld a2, 80(sp)\n"
+                "ld a3, 88(sp)\n"
+                "ld a4, 96(sp)\n"
+                "ld a5, 104(sp)\n"
+                "ld a6, 112(sp)\n"
+                "ld a7, 120(sp)\n"
+                "ld s0, 128(sp)\n"
+                "ld s1, 136(sp)\n"
+                "ld s2, 144(sp)\n"
+                "ld s3, 152(sp)\n"
+                "ld s4, 160(sp)\n"
+                "ld s5, 168(sp)\n"
+                "ld s6, 176(sp)\n"
+                "ld s7, 184(sp)\n"
+                "ld s8, 192(sp)\n"
+                "ld s9, 200(sp)\n"
+                "ld s10, 208(sp)\n"
+                "ld s11, 216(sp)\n"
+                "addi sp, sp, %0\n" ::"i"(sizeof(Context)));
         }
 
-        __attribute__((naked)) static void dispatch(CPU::Context *next) {
+        __attribute__((naked)) static void swap(CPU::Context **current, CPU::Context *next) {
+            CPU::Context::push();
+            __asm__ volatile("beq a0, zero, 1f\nsd sp, 0(a0)\n1:");
+            __asm__ volatile("mv sp, %0" ::"r"(next));
             __asm__ volatile(
-                "sd ra, 240(tp)\n"
                 "csrw mepc, %0\n"
                 "csrr t0, mstatus\n"
                 "li   t1, 0x1800\n"
                 "or   t0, t0, t1\n"
-                "csrw mstatus, t0\n" ::"r"(next->pc)
+                "csrw mstatus, t0\n" ::"r"((next)->pc)
                 : "t1", "t0");
-            CPU::Context::set(next);
-            CPU::Context::load();
+            CPU::Context::pop();
             CPU::iret();
         }
     };

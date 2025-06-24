@@ -37,12 +37,13 @@ Thread *Thread::Queue::get() {
 }
 
 void Thread::create(Thread *thread, Entry entry, Priority priority) {
-    thread->stack      = reinterpret_cast<uintptr_t>(Memory::kmalloc());
-    thread->context.ra = reinterpret_cast<uintptr_t>(exit);
-    thread->context.pc = reinterpret_cast<uintptr_t>(entry);
-    thread->context.sp = thread->stack + Machine::Memory::Page::SIZE;
-    thread->state      = READY;
-    thread->priority   = priority;
+    thread->stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
+    thread->context = reinterpret_cast<CPU::Context *>(thread->stack + Machine::Memory::Page::SIZE);
+    thread->context -= sizeof(CPU::Context);
+    thread->context->ra = reinterpret_cast<uintptr_t>(exit);
+    thread->context->pc = reinterpret_cast<uintptr_t>(entry);
+    thread->state       = READY;
+    thread->priority    = priority;
     _ready.put(thread);
 }
 
@@ -89,11 +90,11 @@ void Thread::init() {
     Thread::create(&app, main, Thread::Priority::NORMAL);
     Thread::create(&idle, Thread::idle, Thread::Priority::IDLE);
 
-    Thread *first = Thread::_ready.get();
-    first->state  = RUNNING;
-    _running      = first;
-    CPU::Context::set(&first->context);
-    CPU::Context::dispatch(&first->context);
+    Thread *first   = Thread::_ready.get();
+    _running        = first;
+    _running->state = RUNNING;
+    Logger::log("%p\n", first->context);
+    CPU::Context::swap(0, first->context);
 }
 
 void Thread::reschedule() {
@@ -104,14 +105,14 @@ void Thread::reschedule() {
     Thread *next    = _ready.get();
     _running        = next;
     _running->state = RUNNING;
-    CPU::Context::dispatch(&next->context);
+    // CPU::Context::jump(&next->context);
 }
 
 void Thread::dispatch(Thread *next) {
-    _running        = next;
-    _running->state = RUNNING;
-    CPU::Context::save();
-    CPU::Context::dispatch(&next->context);
+    Thread *previous = const_cast<Thread *>(_running);
+    _running         = next;
+    _running->state  = RUNNING;
+    CPU::Context::swap(&previous->context, next->context);
 }
 
 void Thread::yield() {

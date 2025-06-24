@@ -6,7 +6,7 @@ OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 
 
-CFLAGS := -O2 -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
+CFLAGS := -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles
 CFLAGS += -g -fcheck-new
 
