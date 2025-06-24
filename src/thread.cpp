@@ -37,17 +37,17 @@ Thread *Thread::Queue::get() {
 }
 
 void Thread::create(Thread *thread, Entry entry, Priority priority) {
-    thread->stack       = reinterpret_cast<uintptr_t>(Memory::kmalloc());
-    thread->context._ra = reinterpret_cast<uintptr_t>(exit);
-    thread->context._pc = reinterpret_cast<uintptr_t>(entry);
-    thread->context._sp = thread->stack + Machine::Memory::Page::SIZE;
-    thread->state       = READY;
-    thread->priority    = priority;
+    thread->stack      = reinterpret_cast<uintptr_t>(Memory::kmalloc());
+    thread->context.ra = reinterpret_cast<uintptr_t>(exit);
+    thread->context.pc = reinterpret_cast<uintptr_t>(entry);
+    thread->context.sp = thread->stack + Machine::Memory::Page::SIZE;
+    thread->state      = READY;
+    thread->priority   = priority;
     _ready.put(thread);
 }
 
 void Thread::join(Thread *thread) {
-    CPU::disable_interrupts();
+    CPU::Trap::Interrupt::disable();
     if (thread->state != FINISHED) {
         Thread *previous = const_cast<Thread *>(_running);
         if (thread == previous) Logger::log("ERROR: Self join detected.");
@@ -61,11 +61,11 @@ void Thread::join(Thread *thread) {
     }
 
     Memory::kfree(reinterpret_cast<void *>(thread->stack));
-    CPU::enable_interrupts();
+    CPU::Trap::Interrupt::enable();
 }
 
 void Thread::exit() {
-    CPU::disable_interrupts();
+    CPU::Trap::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     if (previous->joining) _ready.put(previous->joining);
     previous->state = FINISHED;
@@ -75,7 +75,7 @@ void Thread::exit() {
 }
 
 int Thread::idle(void *) {
-    CPU::disable_interrupts();
+    CPU::Trap::Interrupt::disable();
     // Memory::kfree(reinterpret_cast<void *>(_running->stack));
     Logger::log("*** The last thread under control of QUARK has finished. ***\n");
     Logger::log("*** QUARK is shutting down! ***\n");
@@ -97,7 +97,7 @@ void Thread::init() {
 }
 
 void Thread::reschedule() {
-    CPU::disable_interrupts();
+    CPU::Trap::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     _ready.put(previous);
@@ -110,11 +110,12 @@ void Thread::reschedule() {
 void Thread::dispatch(Thread *next) {
     _running        = next;
     _running->state = RUNNING;
-    CPU::Context::relay(&next->context);
+    CPU::Context::save();
+    CPU::Context::dispatch(&next->context);
 }
 
 void Thread::yield() {
-    CPU::disable_interrupts();
+    CPU::Trap::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     _ready.put(previous);
