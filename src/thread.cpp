@@ -47,7 +47,7 @@ void Thread::create(Thread *thread, Entry entry, Priority priority) {
 }
 
 void Thread::join(Thread *thread) {
-    CPU::Trap::Interrupt::disable();
+    CPU::Interrupt::disable();
     if (thread->state != FINISHED) {
         Thread *previous = const_cast<Thread *>(_running);
         if (thread == previous) Logger::log("ERROR: Self join detected.");
@@ -61,11 +61,11 @@ void Thread::join(Thread *thread) {
     }
 
     Memory::kfree(reinterpret_cast<void *>(thread->stack));
-    CPU::Trap::Interrupt::enable();
+    CPU::Interrupt::enable();
 }
 
 void Thread::exit() {
-    CPU::Trap::Interrupt::disable();
+    CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     if (previous->joining) _ready.put(previous->joining);
     previous->state = FINISHED;
@@ -75,7 +75,7 @@ void Thread::exit() {
 }
 
 int Thread::idle(void *) {
-    CPU::Trap::Interrupt::disable();
+    CPU::Interrupt::disable();
     // Memory::kfree(reinterpret_cast<void *>(_running->stack));
     Logger::log("*** The last thread under control of QUARK has finished. ***\n");
     Logger::log("*** QUARK is shutting down! ***\n");
@@ -97,7 +97,7 @@ void Thread::init() {
 }
 
 void Thread::reschedule() {
-    CPU::Trap::Interrupt::disable();
+    CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     _ready.put(previous);
@@ -115,7 +115,7 @@ void Thread::dispatch(Thread *next) {
 }
 
 void Thread::yield() {
-    CPU::Trap::Interrupt::disable();
+    CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     _ready.put(previous);
