@@ -38,7 +38,9 @@ struct CPU {
 
         __attribute__((always_inline)) static inline void set(Context *c) { __asm__ volatile("mv tp, %0" ::"r"(c)); }
 
-        __attribute__((always_inline)) static inline void pc(uintptr_t p) { __asm__ volatile("sd %0, 240(tp)" ::"r"(p)); }
+        __attribute__((always_inline)) static inline void pc(uintptr_t p) {
+            __asm__ volatile("sd %0, 240(tp)" ::"r"(p));
+        }
 
         __attribute__((always_inline)) static inline void save() {
             __asm__ volatile(
@@ -130,10 +132,12 @@ struct CPU {
     };
 
     struct Trap {
-        static inline uintptr_t pc() {
-            uintptr_t p;
-            __asm__ volatile("csrr %0, mepc" : "=r"(p));
-            return p;
+        enum Kind { INTERRUPT = 1, EXCEPTION = 0 };
+
+        static inline uintptr_t ra() {
+            uintptr_t _ra;
+            __asm__ volatile("csrr %0, mepc" : "=r"(_ra));
+            return _ra;
         };
 
         static inline uintptr_t rcause() {
@@ -142,10 +146,10 @@ struct CPU {
             return _rcause;
         }
 
+        static inline Kind kind() { return static_cast<Kind>(rcause() >> (Machine::XLEN - 1)); }
+
         struct Interrupt {
-            enum Type {
-                TIMER = 7,  // Machine Mode
-            };
+            enum Type { TIMER = 7 };
 
             static Type type() {
                 uintptr_t _rcause = rcause();
@@ -155,8 +159,12 @@ struct CPU {
         };
     };
 
-    __attribute__((always_inline)) static inline void enable_timer_interrupts() { __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0"); }
-    __attribute__((always_inline)) static inline void disable_timer_interrupts() { __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0"); }
+    __attribute__((always_inline)) static inline void enable_timer_interrupts() {
+        __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0");
+    }
+    __attribute__((always_inline)) static inline void disable_timer_interrupts() {
+        __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0");
+    }
     __attribute__((always_inline)) static inline void disable_interrupts() { __asm__ volatile("csrci mstatus, 0x8"); }
     __attribute__((always_inline)) static inline void enable_interrupts() { __asm__ volatile("csrsi mstatus, 0x8"); }
 
@@ -174,7 +182,9 @@ struct CPU {
 
     __attribute__((always_inline)) static inline void stack(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
 
-    __attribute__((always_inline)) static inline void trap(void (*ptr)()) { __asm__ volatile("csrw mtvec, %0" ::"r"(ptr)); }
+    __attribute__((always_inline)) static inline void trap(void (*ptr)()) {
+        __asm__ volatile("csrw mtvec, %0" ::"r"(ptr));
+    }
 };
 
 #endif
