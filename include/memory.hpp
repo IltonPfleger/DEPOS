@@ -4,21 +4,21 @@
 #include <definitions.hpp>
 
 struct Memory {
-    typedef struct PBlock {
-        struct PBlock* next;
-    } PBlock;
+    typedef struct Page {
+        struct Page* next;
+    } Page;
 
     static void init();
     static void* kmalloc();
     static void kfree(void*);
 
     struct Heap {
-        typedef struct HBlock {
-            struct HBlock* next;
+        typedef struct Block {
+            struct Block* next;
             uintptr_t size;
             bool free;
-        } HBlock;
-        HBlock* start;
+        } Block;
+        Block* start;
     };
 };
 
