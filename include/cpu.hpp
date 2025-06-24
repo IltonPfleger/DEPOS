@@ -72,7 +72,6 @@ struct CPU {
                 "sd s9, 216(tp)\n"
                 "sd s10, 224(tp)\n"
                 "sd s11, 232(tp)\n");
-            //"sd ra, 240(tp)\n");  //
         }
 
         __attribute__((always_inline)) static inline void load() {
