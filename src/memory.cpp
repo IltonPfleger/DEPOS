@@ -4,7 +4,7 @@
 
 extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
-static Memory::PBlock *pages = nullptr;
+static Memory::Page *pages = nullptr;
 
 void Memory::init() {
     const uintptr_t PSIZE        = Machine::Memory::Page::SIZE;
@@ -26,9 +26,9 @@ void Memory::init() {
     uintptr_t n_pages = 0;
     uintptr_t current = HEAP_START;
     while (current + PSIZE < HEAP_END) {
-        PBlock *block = reinterpret_cast<PBlock *>(current);
-        block->next   = pages;
-        pages         = block;
+        Page *page = reinterpret_cast<Page *>(current);
+        page->next = pages;
+        pages      = page;
         n_pages++;
         current += Machine::Memory::Page::SIZE;
     };
@@ -38,22 +38,22 @@ void Memory::init() {
 }
 
 void *Memory::kmalloc() {
-    PBlock *block = pages;
-    if (block != nullptr) pages = block->next;
-    Logger::log("Memory::kmalloc()[return=%p]\n", block);
-    return reinterpret_cast<void *>(block);
+    Page *page = pages;
+    if (page != nullptr) pages = page->next;
+    Logger::log("Memory::kmalloc()[return=%p]\n", page);
+    return reinterpret_cast<void *>(page);
 }
 
 void Memory::kfree(void *addr) {
     if (addr == nullptr) return;
-    PBlock *block = reinterpret_cast<PBlock *>(addr);
-    block->next   = pages;
-    pages         = block;
-    Logger::log("Memory::kfree(%p)\n", block);
+    Page *page = reinterpret_cast<Page *>(addr);
+    page->next = pages;
+    pages      = page;
+    Logger::log("Memory::kfree(%p)\n", page);
 }
 
 void *operator new(unsigned long size, Memory::Heap &target) {
-    using Block = Memory::Heap::HBlock;
+    using Block = Memory::Heap::Block;
     if (size == 0) return nullptr;
 
     Block *current = target.start;
@@ -86,7 +86,7 @@ void *operator new(unsigned long size, Memory::Heap &target) {
 }
 
 void operator delete(void *ptr, Memory::Heap &target) {
-    using Block  = Memory::Heap::HBlock;
+    using Block  = Memory::Heap::Block;
     Block *block = reinterpret_cast<Block *>(ptr) - 1;
     block->free  = true;
 
