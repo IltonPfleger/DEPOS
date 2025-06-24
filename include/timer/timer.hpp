@@ -5,7 +5,7 @@
 #include <cpu.hpp>
 
 struct Timer {
-    static constexpr uintptr_t INTERVAL = 100000;
+    static constexpr uintptr_t INTERVAL = 1000;
     static volatile inline char* BaseAddr() { return reinterpret_cast<volatile char*>(0x02000000); }
 
     static volatile inline uintptr_t& MTIME() {

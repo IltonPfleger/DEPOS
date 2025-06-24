@@ -15,7 +15,7 @@ struct Kernel {
         Logger::log("\nQ U A R K | [μKernel]\n");
         Memory::init();
         Logger::log("Done!\n");
-        Timer::init();
+        //Timer::init();
         Thread::init();
         CPU::idle();
     }
@@ -28,16 +28,16 @@ void interrupt_handler() {
             Thread::reschedule();
             break;
     }
-    while (1);
 }
 
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
-    CPU::Context::save();
-    CPU::Context::get()->pc = CPU::Trap::ra();
+    //CPU::Context::push();
+    ///CPU::Context::get()->pc = CPU::Trap::ra();
 
     if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
         interrupt_handler();
+        CPU::iret();
     } else {
         Logger::log("Ohh it's a Trap!\n");
         uintptr_t mcause, mepc, mtval;
