@@ -10,7 +10,7 @@ static char STACK[Machine::Memory::Page::SIZE * 2];
 
 struct Kernel {
     static void init() {
-        CPU::disable_interrupts();
+        CPU::Trap::Interrupt::disable();
         Logger::init();
         Logger::log("\nQ U A R K | [μKernel]\n");
         Memory::init();
@@ -33,9 +33,9 @@ void interrupt_handler() {
 }
 
 __attribute__((naked, aligned(4))) void ktrap() {
-    CPU::disable_interrupts();
+    CPU::Trap::Interrupt::disable();
     CPU::Context::save();
-    CPU::Context::pc(CPU::Trap::ra());
+    CPU::Context::get()->pc = CPU::Trap::ra();
 
     if (CPU::Trap::kind() == CPU::Trap::INTERRUPT) {
         interrupt_handler();
