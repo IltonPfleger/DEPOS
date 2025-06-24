@@ -10,7 +10,7 @@ static char STACK[Machine::Memory::Page::SIZE * 2];
 
 struct Kernel {
     static void init() {
-        CPU::Trap::Interrupt::disable();
+        CPU::Interrupt::disable();
         Logger::init();
         Logger::log("\nQ U A R K | [μKernel]\n");
         Memory::init();
@@ -22,9 +22,8 @@ struct Kernel {
 };
 
 void interrupt_handler() {
-    CPU::Trap::Interrupt::Type type = CPU::Trap::Interrupt::type();
-    switch (type) {
-        case CPU::Trap::Interrupt::TIMER:
+    switch (CPU::Interrupt::type()) {
+        case CPU::Interrupt::Type::TIMER:
             Timer::reset();
             Thread::reschedule();
             break;
@@ -33,11 +32,11 @@ void interrupt_handler() {
 }
 
 __attribute__((naked, aligned(4))) void ktrap() {
-    CPU::Trap::Interrupt::disable();
+    CPU::Interrupt::disable();
     CPU::Context::save();
     CPU::Context::get()->pc = CPU::Trap::ra();
 
-    if (CPU::Trap::kind() == CPU::Trap::INTERRUPT) {
+    if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
         interrupt_handler();
     } else {
         Logger::log("Ohh it's a Trap!\n");
