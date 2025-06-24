@@ -3,30 +3,26 @@
 
 Thread::Queue Thread::_ready;
 volatile Thread *Thread::_running;
+extern int main(void *);
 
 void Thread::Queue::put(Thread *thread) {
-    Node *item     = new (HEAP) Node;
-    Node *current  = head;
-    Node *previous = nullptr;
-    item->value    = thread;
+    Node *item  = new (HEAP) Node;
+    item->value = thread;
+    item->next  = nullptr;
 
-    while (current && current->value->priority <= thread->priority) {
-        previous = current;
-        current  = current->next;
-    }
-
-    if (head == nullptr) {
-        head = item;
-    } else if (current == head) {
+    if (!head || thread->priority < head->value->priority) {
         item->next = head;
         head       = item;
-    } else if (current == nullptr) {
-        previous->next = item;
-        item->next     = nullptr;
-    } else {
-        item->next     = current;
-        previous->next = item;
+        return;
     }
+
+    Node *current = head;
+    while (current->next && current->next->value->priority <= thread->priority) {
+        current = current->next;
+    }
+
+    item->next    = current->next;
+    current->next = item;
 }
 
 Thread *Thread::Queue::get() {
@@ -80,7 +76,7 @@ void Thread::exit() {
 
 int Thread::idle(void *) {
     CPU::disable_interrupts();
-    Memory::kfree(reinterpret_cast<void *>(_running->stack));
+    // Memory::kfree(reinterpret_cast<void *>(_running->stack));
     Logger::log("*** The last thread under control of QUARK has finished. ***\n");
     Logger::log("*** QUARK is shutting down! ***\n");
     while (1);
@@ -88,7 +84,9 @@ int Thread::idle(void *) {
 }
 
 void Thread::init() {
-    Thread idle;
+    static Thread idle;
+    static Thread app;
+    Thread::create(&app, main, Thread::Priority::NORMAL);
     Thread::create(&idle, Thread::idle, Thread::Priority::IDLE);
 
     Thread *first = Thread::_ready.get();
