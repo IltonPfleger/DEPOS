@@ -57,7 +57,7 @@ void Thread::join(Thread *thread) {
         if (thread->joining) Logger::log("ERROR: Multiple joins detected.");
         thread->joining = previous;
 
-        Thread::dispatch(_ready.get());
+        Thread::dispatch(previous, _ready.get());
     }
 
     Memory::kfree(reinterpret_cast<void *>(thread->stack));
@@ -71,7 +71,7 @@ void Thread::exit() {
     previous->state = FINISHED;
 
     Thread *next = _ready.get();
-    dispatch(next);
+    dispatch(previous, next);
 }
 
 int Thread::idle(void *ptr) {
@@ -108,11 +108,10 @@ void Thread::reschedule() {
     CPU::Context::jump();
 }
 
-void Thread::dispatch(Thread *next) {
-    Thread *previous = const_cast<Thread *>(_running);
-    _running         = next;
-    _running->state  = RUNNING;
-    CPU::Context::transfer(&previous->context, next->context);
+void Thread::dispatch(Thread *current, Thread *next) {
+    _running        = next;
+    _running->state = RUNNING;
+    CPU::Context::transfer(&current->context, next->context);
 }
 
 void Thread::yield() {
@@ -121,5 +120,17 @@ void Thread::yield() {
     previous->state  = READY;
     _ready.put(previous);
     Thread *next = _ready.get();
-    dispatch(next);
+    dispatch(previous, next);
+}
+
+void Thread::sleep(Queue *waiting) {
+    Thread *previous = const_cast<Thread *>(_running);
+    previous->state  = WAITING;
+    waiting->put(previous);
+    Thread *next = _ready.get();
+    dispatch(previous, next);
+}
+
+void Thread::wakeup(Queue *waiting) {
+    if (Thread *awake = waiting->get()) _ready.put(awake);
 }

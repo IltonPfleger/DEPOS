@@ -24,7 +24,9 @@ struct Thread {
 
     static void exit();
     static void init();
-    static void dispatch(Thread*);
+    static void dispatch(Thread *, Thread*);
+    static void sleep(Queue*);
+    static void wakeup(Queue*);
     static void yield();
     static void reschedule();
     static void create(Thread*, int (*)(void*), void*, Priority);
