@@ -134,6 +134,30 @@ struct CPU {
         }
     };
 
+    struct Atomic {
+        static int fdec(int *) {
+            int ret;
+            __asm__ volatile(
+                "1: lr.w %0, 0(a0)\n"
+                "addi t0, %0, -1\n"
+                "sc.w t0, t0, 0(a0)\n"
+                "bnez t0, 1b\n"
+                : "=&r"(ret));
+            return ret - 1;
+        }
+
+        static int fadd(int *) {
+            int ret;
+            __asm__ volatile(
+                "1: lr.w %0, 0(a0)\n"
+                "addi t0, %0, 1\n"
+                "sc.w t0, t0, 0(a0)\n"
+                "bnez t0, 1b\n"
+                : "=&r"(ret));
+            return ret + 1;
+        }
+    };
+
     struct Trap {
         enum class Type { INTERRUPT = 1, EXCEPTION = 0 };
 

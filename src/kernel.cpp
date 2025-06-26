@@ -6,7 +6,7 @@
 #include <thread.hpp>
 #include <timer/timer.hpp>
 
-static char STACK[Machine::Memory::Page::SIZE * 2];
+static char STACK[Machine::Memory::Page::SIZE];
 
 struct Kernel {
     static void init() {
