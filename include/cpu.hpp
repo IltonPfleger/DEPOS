@@ -1,7 +1,7 @@
-#ifndef CPU_HPP
-#define CPU_HPP
+#ifndef __cpu__hpp
+#define __cpu__hpp
+
 #include <definitions.hpp>
-#include <io/logger.hpp>
 
 struct CPU {
     struct Context {
