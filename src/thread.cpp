@@ -36,14 +36,13 @@ Thread *Thread::Queue::get() {
     return thread;
 }
 
-void Thread::create(Thread *thread, Entry entry, Priority priority) {
+void Thread::create(Thread *thread, int (*entry)(void *), void *arg, Priority priority) {
     thread->stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
     thread->context = reinterpret_cast<CPU::Context *>(thread->stack + Machine::Memory::Page::SIZE);
     thread->context -= sizeof(CPU::Context);
-    thread->context->ra = reinterpret_cast<uintptr_t>(exit);
-    thread->context->pc = reinterpret_cast<uintptr_t>(entry);
-    thread->state       = READY;
-    thread->priority    = priority;
+    CPU::Context::create(thread->context, entry, exit, arg);
+    thread->state    = READY;
+    thread->priority = priority;
     _ready.put(thread);
 }
 
@@ -75,9 +74,11 @@ void Thread::exit() {
     dispatch(next);
 }
 
-int Thread::idle(void *) {
+int Thread::idle(void *ptr) {
     CPU::Interrupt::disable();
-    // Memory::kfree(reinterpret_cast<void *>(_running->stack));
+    Thread *app = reinterpret_cast<Thread *>(ptr);
+    Memory::kfree(reinterpret_cast<void *>(_running->stack));
+    Memory::kfree(reinterpret_cast<void *>(app->stack));
     Logger::log("*** The last thread under control of QUARK has finished. ***\n");
     Logger::log("*** QUARK is shutting down! ***\n");
     while (1);
@@ -87,32 +88,31 @@ int Thread::idle(void *) {
 void Thread::init() {
     static Thread idle;
     static Thread app;
-    Thread::create(&app, main, Thread::Priority::NORMAL);
-    Thread::create(&idle, Thread::idle, Thread::Priority::IDLE);
-
+    Thread::create(&app, main, 0, Thread::Priority::NORMAL);
+    Thread::create(&idle, Thread::idle, &app, Thread::Priority::IDLE);
     Thread *first   = Thread::_ready.get();
     _running        = first;
     _running->state = RUNNING;
-    Logger::log("%p\n", first->context);
-    CPU::Context::swap(0, first->context);
+    CPU::Context::load(first->context);
+    CPU::Context::jump();
 }
 
 void Thread::reschedule() {
-    CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     _ready.put(previous);
     Thread *next    = _ready.get();
     _running        = next;
     _running->state = RUNNING;
-    // CPU::Context::jump(&next->context);
+    CPU::Context::load(next->context);
+    CPU::Context::jump();
 }
 
 void Thread::dispatch(Thread *next) {
     Thread *previous = const_cast<Thread *>(_running);
     _running         = next;
     _running->state  = RUNNING;
-    CPU::Context::swap(&previous->context, next->context);
+    CPU::Context::transfer(&previous->context, next->context);
 }
 
 void Thread::yield() {

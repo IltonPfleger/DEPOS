@@ -15,29 +15,24 @@ struct Kernel {
         Logger::log("\nQ U A R K | [μKernel]\n");
         Memory::init();
         Logger::log("Done!\n");
-        //Timer::init();
+        Timer::init();
         Thread::init();
         CPU::idle();
     }
 };
 
-void interrupt_handler() {
-    switch (CPU::Interrupt::type()) {
-        case CPU::Interrupt::Type::TIMER:
-            Timer::reset();
-            Thread::reschedule();
-            break;
-    }
-}
-
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
-    //CPU::Context::push();
-    ///CPU::Context::get()->pc = CPU::Trap::ra();
+    CPU::Context::push<true>();
+    CPU::Context::save(const_cast<CPU::Context**>(&Thread::_running->context));
 
     if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
-        interrupt_handler();
-        CPU::iret();
+        switch (CPU::Interrupt::type()) {
+            case CPU::Interrupt::Type::TIMER:
+                Timer::reset();
+                Thread::reschedule();
+                break;
+        }
     } else {
         Logger::log("Ohh it's a Trap!\n");
         uintptr_t mcause, mepc, mtval;
@@ -47,15 +42,19 @@ __attribute__((naked, aligned(4))) void ktrap() {
         Logger::log("mcause: %p\n", mcause);
         Logger::log("mepc: %p\n", mepc);
         Logger::log("mtval: %p\n", mtval);
+        while (1);
     }
     while (1);
+
+    CPU::Context::pop();
+    CPU::iret();
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
-    CPU::trap(ktrap);
+    CPU::Trap::set(ktrap);
 
     if (CPU::id() == 0) {
-        CPU::stack(STACK + Machine::Memory::Page::SIZE);
+        CPU::Stack::set(STACK + Machine::Memory::Page::SIZE);
         Kernel::init();
     } else {
         CPU::idle();
