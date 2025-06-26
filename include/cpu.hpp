@@ -1,6 +1,7 @@
 #ifndef CPU_HPP
 #define CPU_HPP
 #include <definitions.hpp>
+#include <io/logger.hpp>
 
 struct CPU {
     struct Context {
@@ -32,19 +33,18 @@ struct CPU {
         uintptr_t s9;
         uintptr_t s10;
         uintptr_t s11;
-        uintptr_t pc;
+        uintptr_t epc;
 
-        // __attribute__((always_inline)) static inline void set(Context *c) { __asm__ volatile("mv tp, %0" ::"r"(c)); }
-
-        __attribute__((always_inline)) static inline Context *get() {
-            Context *c;
-            __asm__ volatile("mv %0, sp" : "=r"(c));
-            return c;
+        static void create(Context *context, int (*entry)(void *), void (*exit)(), void *arg) {
+            context->ra  = reinterpret_cast<uintptr_t>(exit);
+            context->epc = reinterpret_cast<uintptr_t>(entry);
+            context->a0  = reinterpret_cast<uintptr_t>(arg);
         }
 
+        template <bool is_interrupt = false>
         __attribute__((always_inline)) static inline void push() {
+            __asm__ volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
             __asm__ volatile(
-                "addi sp, sp, %0\n"
                 "sd ra, 0(sp)\n"
                 "sd t0, 8(sp)\n"
                 "sd t1, 16(sp)\n"
@@ -72,11 +72,20 @@ struct CPU {
                 "sd s8, 192(sp)\n"
                 "sd s9, 200(sp)\n"
                 "sd s10, 208(sp)\n"
-                "sd s11, 216(sp)\n" ::"i"(-sizeof(Context)));
+                "sd s11, 216(sp)\n");
+            if constexpr (is_interrupt) {
+                __asm__ volatile(
+                    "csrr t0, mepc\n"
+                    "sd t0, 224(sp)");
+            } else {
+                __asm__ volatile("sd ra, 224(sp)");
+            }
         }
 
         __attribute__((always_inline)) static inline void pop() {
             __asm__ volatile(
+                "ld t0, 224(sp)\n"
+                "csrw mepc, t0\n"
                 "ld ra, 0(sp)\n"
                 "ld t0, 8(sp)\n"
                 "ld t1, 16(sp)\n"
@@ -108,38 +117,37 @@ struct CPU {
                 "addi sp, sp, %0\n" ::"i"(sizeof(Context)));
         }
 
-        __attribute__((naked)) static void swap(CPU::Context **current, CPU::Context *next) {
-            CPU::Context::push();
-            __asm__ volatile("beq a0, zero, 1f\nsd sp, 0(a0)\n1:");
-            __asm__ volatile("mv sp, %0" ::"r"(next));
-            __asm__ volatile(
-                "csrw mepc, %0\n"
-                "csrr t0, mstatus\n"
-                "li   t1, 0x1800\n"
-                "or   t0, t0, t1\n"
-                "csrw mstatus, t0\n" ::"r"((next)->pc)
-                : "t1", "t0");
+        __attribute__((naked)) static void jump() {
+            __asm__ volatile("li t0, 0x1800\ncsrs mstatus, t0\n" ::: "t0");
             CPU::Context::pop();
             CPU::iret();
+        }
+
+        __attribute__((naked)) static void save(CPU::Context **) { __asm__ volatile("sd sp, 0(a0)\nret"); }
+        __attribute__((naked)) static void load(CPU::Context *) { __asm__ volatile("mv sp, a0\nret"); }
+
+        __attribute__((naked)) static void transfer(CPU::Context **current, CPU::Context *next) {
+            CPU::Context::push();
+            CPU::Context::save(current);
+            CPU::Context::load(next);
+            CPU::Context::jump();
         }
     };
 
     struct Trap {
         enum class Type { INTERRUPT = 1, EXCEPTION = 0 };
 
-        static inline uintptr_t ra() {
-            uintptr_t r;
-            __asm__ volatile("csrr %0, mepc" : "=r"(r));
-            return r;
-        };
-
-        static inline uintptr_t cause() {
+        static uintptr_t cause() {
             uintptr_t r;
             __asm__ volatile("csrr %0, mcause" : "=r"(r));
             return r;
         }
 
-        static inline Type type() { return static_cast<Type>(cause() >> (Machine::XLEN - 1)); }
+        static Type type() { return static_cast<Type>(cause() >> (Machine::XLEN - 1)); }
+
+        __attribute__((always_inline)) static inline void set(void (*ptr)()) {
+            __asm__ volatile("csrw mtvec, %0" ::"r"(ptr));
+        }
     };
 
     struct Interrupt {
@@ -166,19 +174,15 @@ struct CPU {
 
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
 
-    __attribute__((always_inline)) static inline void halt() { for (;;); }
-
     __attribute__((always_inline)) static inline unsigned int id() {
         unsigned int id;
         __asm__ volatile("csrr %0, mhartid" : "=r"(id));
         return id;
     }
 
-    __attribute__((always_inline)) static inline void stack(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
-
-    __attribute__((always_inline)) static inline void trap(void (*ptr)()) {
-        __asm__ volatile("csrw mtvec, %0" ::"r"(ptr));
-    }
+    struct Stack {
+        __attribute__((always_inline)) static inline void set(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
+    };
 };
 
 #endif

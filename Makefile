@@ -22,7 +22,10 @@ run: $(TARGET)
 	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024
 
 debug: $(TARGET)
-	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 1 -gdb tcp::1234 -S
+	pkill -f 'qemu.*'
+	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 1 -gdb tcp::1234 -S &
+	sleep 1
+	alacritty -e sh -c 'gdb -ex "target remote tcp::1234" -ex "file build/quark.elf"'
 	make clean
 
 $(TARGET): $(TARGET).elf

@@ -19,7 +19,6 @@ struct Thread {
         Node* head;
     };
 
-    typedef int (*Entry)(void*);
     enum Priority { HIGH, NORMAL, LOW, IDLE };
     enum State { RUNNING, READY, WAITING, FINISHED };
 
@@ -28,7 +27,7 @@ struct Thread {
     static void dispatch(Thread*);
     static void yield();
     static void reschedule();
-    static void create(Thread*, Entry, Priority);
+    static void create(Thread*, int (*)(void*), void*, Priority);
     static void join(Thread*);
     static int idle(void*);
 
