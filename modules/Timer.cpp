@@ -18,13 +18,13 @@ volatile inline uintptr_t& MTIME    = *reinterpret_cast<volatile uintptr_t*>(Bas
 volatile inline uintptr_t& MTIMECMP = *reinterpret_cast<volatile uintptr_t*>(BaseAddr + 0x4000);
 struct Channel CHANNELS[2];
 
-export struct Timer {
-    static void reset() {
+export namespace Timer {
+    void reset() {
         uintptr_t now = MTIME;
         MTIMECMP      = now + TICKS_PER_CYCLE;
     }
 
-    static void init() {
+    void init() {
         if constexpr (Traits::Timer::Channel::SCHEDULER) {
             CHANNELS[Channel::SCHEDULER].handler = Thread::timer_handler;
             CHANNELS[Channel::SCHEDULER].initial = (Traits::Thread::DURATION * 1e6) / Traits::Timer::FREQUENCY;
@@ -35,7 +35,7 @@ export struct Timer {
         CPU::Interrupt::Timer::enable();
     }
 
-    static void handler() {
+    void handler() {
         Timer::reset();
         if constexpr (Traits::Timer::Channel::SCHEDULER) {
             if (--CHANNELS[Channel::SCHEDULER].current == 0) {
@@ -44,4 +44,4 @@ export struct Timer {
             }
         }
     }
-};
+};  // namespace Timer
