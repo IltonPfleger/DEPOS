@@ -4,22 +4,41 @@ import Memory;
 import Logger;
 import CPU;
 
-export struct Thread {
-    struct Queue {
-        struct Node {
-            Node *next;
-            Thread *value;
-        };
-
-        void put(Thread *);
-        Thread *get();
-
-        Memory::Heap HEAP;
-        Node *head;
+template <typename T, typename P>
+struct Queue {
+    struct Node {
+        Node *next;
+        T *value;
     };
 
-    enum Priority { HIGH, NORMAL, LOW, IDLE };
+    void put(T *value) {
+        Node *item                  = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), HEAP));
+        item->value                 = value;
+        item->next                  = priorities[value->priority];
+        priorities[value->priority] = item;
+    }
+
+    T *get() {
+        for (int i = P::MAX - 1; i >= 0; i--) {
+            if (priorities[i]) {
+                Node *item    = priorities[i];
+                priorities[i] = item->next;
+                T *value      = item->value;
+                Memory::free(item, HEAP);
+                return value;
+            }
+        }
+        return nullptr;
+    }
+
+    Node *priorities[P::MAX];
+    Memory::Heap HEAP;
+};
+
+export struct Thread {
+    enum Priority { IDLE, LOW, NORMAL, HIGH, MAX };
     enum State { RUNNING, READY, WAITING, FINISHED };
+    typedef Queue<Thread, Priority> Queue;
 
     static void exit();
     static void init();
@@ -45,37 +64,6 @@ export struct Thread {
 Thread::Queue Thread::_ready;
 volatile Thread *Thread::_running;
 extern int main(void *);
-
-void Thread::Queue::put(Thread *thread) {
-    Node *item  = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), HEAP));
-    item->value = thread;
-    item->next  = nullptr;
-
-    if (!head || thread->priority < head->value->priority) {
-        item->next = head;
-        head       = item;
-        return;
-    }
-
-    Node *current = head;
-    while (current->next && current->next->value->priority <= thread->priority) {
-        current = current->next;
-    }
-
-    item->next    = current->next;
-    current->next = item;
-}
-
-Thread *Thread::Queue::get() {
-    Node *node = head;
-    if (node == nullptr) {
-        return 0;
-    }
-    head           = head->next;
-    Thread *thread = node->value;
-    Memory::free(node, HEAP);
-    return thread;
-}
 
 void Thread::create(Thread *thread, int (*entry)(void *), void *arg, Priority priority) {
     thread->stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
@@ -131,7 +119,7 @@ void Thread::init() {
     static Thread app;
     Thread::create(&app, main, 0, Thread::Priority::NORMAL);
     Thread::create(&idle, Thread::idle, &app, Thread::Priority::IDLE);
-    Thread *first   = Thread::_ready.get();
+    Thread *first   = _ready.get();
     _running        = first;
     _running->state = RUNNING;
     CPU::Context::load(first->context);

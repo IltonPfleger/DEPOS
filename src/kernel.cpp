@@ -1,7 +1,3 @@
-// #include <memory.hpp>
-// #include <thread.hpp>
-// #include <timer/timer.hpp>
-
 import Definitions;
 import CPU;
 import Thread;
@@ -9,7 +5,7 @@ import Memory;
 import Logger;
 import Timer;
 
-static char STACK[Machine::Memory::Page::SIZE];
+static char STACK[Machine::Memory::Page::SIZE/4];
 
 struct Kernel {
     static void init() {
