@@ -12,7 +12,7 @@ export namespace CPU {
         return id;
     }
 
-    struct Context {
+    struct __attribute__((packed)) Context {
         uintptr_t ra;
         uintptr_t t0;
         uintptr_t t1;
@@ -125,44 +125,42 @@ export namespace CPU {
                 "addi sp, sp, %0\n" ::"i"(sizeof(Context)));
         }
 
-        __attribute__((naked)) static void jump() {
+        __attribute__((naked)) static void jump(Context *next) {
+            __asm__ volatile("mv sp, %0" ::"r"(next));
             __asm__ volatile("li t0, 0x1800\ncsrs mstatus, t0\n" ::: "t0");
-            CPU::Context::pop();
-            CPU::iret();
+            pop();
+            iret();
         }
 
-        __attribute__((naked)) static void save(Context **) { __asm__ volatile("sd sp, 0(a0)\nret"); }
-        __attribute__((naked)) static void load(Context *) { __asm__ volatile("mv sp, a0\nret"); }
         __attribute__((naked)) static Context *get() { __asm__ volatile("mv a0, sp\nret"); }
 
         __attribute__((naked)) static void transfer(CPU::Context **current, CPU::Context *next) {
-            CPU::Context::push();
-            CPU::Context::save(current);
-            CPU::Context::load(next);
-            CPU::Context::jump();
+            push();
+            __asm__ volatile("sd sp, 0(%0)" ::"r"(current));
+            jump(next);
         }
     };
 
     namespace Atomic {
-        int fdec(int *) {
+        int fdec(int * value) {
             int ret;
             __asm__ volatile(
-                "1: lr.w %0, 0(a0)\n"
+                "1: lr.w %0, 0(%1)\n"
                 "addi t0, %0, -1\n"
-                "sc.w t0, t0, 0(a0)\n"
+                "sc.w t0, t0, 0(%1)\n"
                 "bnez t0, 1b\n"
-                : "=&r"(ret));
+                : "=&r"(ret) : "r"(value));
             return ret - 1;
         }
 
-        int fadd(int *) {
+        int fadd(int * value) {
             int ret;
             __asm__ volatile(
-                "1: lr.w %0, 0(a0)\n"
+                "1: lr.w %0, 0(%1)\n"
                 "addi t0, %0, 1\n"
-                "sc.w t0, t0, 0(a0)\n"
+                "sc.w t0, t0, 0(%1)\n"
                 "bnez t0, 1b\n"
-                : "=&r"(ret));
+                : "=&r"(ret) : "r"(value));
             return ret + 1;
         }
 

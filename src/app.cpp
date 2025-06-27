@@ -5,7 +5,7 @@ import Logger;
 #define ITERATIONS 10
 #define SLEEP 10000000
 
-Semaphore semaphore;
+static Semaphore semaphore;
 
 int teste0(void *) {
     int i = 0;
@@ -35,8 +35,8 @@ int teste1(void *) {
 
 int main(void *) {
     Logger::log("APP:\n");
-	Thread::Thread thread0;
-	Thread::Thread thread1;
+    Thread::Thread thread0;
+    Thread::Thread thread1;
     Thread::create(&thread0, teste0, 0, Thread::Priority::NORMAL);
     Thread::create(&thread1, teste1, 0, Thread::Priority::NORMAL);
     Semaphore::create(&semaphore, 1);
