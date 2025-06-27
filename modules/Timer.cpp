@@ -39,7 +39,6 @@ export namespace Timer {
         Timer::reset();
         if constexpr (Traits::Timer::Channel::SCHEDULER) {
             if (--CHANNELS[Channel::SCHEDULER].current == 0) {
-                CHANNELS[Channel::SCHEDULER].handler();
                 CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
                 CHANNELS[Channel::SCHEDULER].handler();
             }
