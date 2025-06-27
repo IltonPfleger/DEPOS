@@ -1,12 +1,53 @@
-#include <io/logger.hpp>
-#include <thread.hpp>
+export module Thread;
+import Definitions;
+import Memory;
+import Logger;
+import CPU;
+
+export struct Thread {
+    struct Queue {
+        struct Node {
+            Node *next;
+            Thread *value;
+        };
+
+        void put(Thread *);
+        Thread *get();
+
+        Memory::Heap HEAP;
+        Node *head;
+    };
+
+    enum Priority { HIGH, NORMAL, LOW, IDLE };
+    enum State { RUNNING, READY, WAITING, FINISHED };
+
+    static void exit();
+    static void init();
+    static void dispatch(Thread *, Thread *);
+    static void sleep(Queue *);
+    static void wakeup(Queue *);
+    static void yield();
+    static void reschedule();
+    static void create(Thread *, int (*)(void *), void *, Priority);
+    static void join(Thread *);
+    static int idle(void *);
+
+    static Queue _ready;
+    static volatile Thread *_running;
+
+    uintptr_t stack;
+    struct CPU::Context *context;
+    struct Thread *joining;
+    enum State state;
+    enum Priority priority;
+};
 
 Thread::Queue Thread::_ready;
 volatile Thread *Thread::_running;
 extern int main(void *);
 
 void Thread::Queue::put(Thread *thread) {
-    Node *item  = new (HEAP) Node;
+    Node *item  = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), HEAP));
     item->value = thread;
     item->next  = nullptr;
 
@@ -32,7 +73,7 @@ Thread *Thread::Queue::get() {
     }
     head           = head->next;
     Thread *thread = node->value;
-    operator delete(node, HEAP);
+    Memory::free(node, HEAP);
     return thread;
 }
 

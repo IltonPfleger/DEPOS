@@ -2,7 +2,7 @@
 #define TIMER_HPP
 
 #include <definitions.hpp>
-#include <cpu.hpp>
+import CPU;
 
 struct Timer {
     static constexpr uintptr_t INTERVAL = 10000;
