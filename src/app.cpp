@@ -1,6 +1,6 @@
-#include <io/logger.hpp>
-#include <semaphore.hpp>
-#include <thread.hpp>
+import Semaphore;
+import Thread;
+import Logger;
 
 #define ITERATIONS 10
 #define SLEEP 10000000
@@ -12,7 +12,7 @@ int teste0(void *) {
     Semaphore::p(&semaphore);
     while (i < ITERATIONS) {
         Logger::log("Thread0 %d\n", i);
-        volatile int j = SLEEP;
+        int j = SLEEP;
         while (j--);
         i++;
     }
@@ -25,7 +25,7 @@ int teste1(void *) {
     Semaphore::p(&semaphore);
     while (i < ITERATIONS) {
         Logger::log("Thread1 %d\n", i);
-        volatile int j = SLEEP;
+        int j = SLEEP;
         while (j--);
         i++;
     }

@@ -1,6 +1,27 @@
-#include <io/logger.hpp>
-#include <io/uart.hpp>
-#include <memory.hpp>
+export module Memory;
+import Definitions;
+import Logger;
+
+export struct Memory {
+    typedef struct Page {
+        struct Page *next;
+    } Page;
+
+    struct Heap {
+        typedef struct Block {
+            struct Block *next;
+            uintptr_t size;
+            bool free;
+        } Block;
+        Block *start;
+    };
+
+    static void init();
+    static void *kmalloc();
+    static void kfree(void *);
+    static void *malloc(unsigned long, Heap &);
+    static void free(void *, Heap &);
+};
 
 extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
@@ -52,7 +73,7 @@ void Memory::kfree(void *addr) {
     Logger::log("Memory::kfree(%p)\n", page);
 }
 
-void *operator new(unsigned long size, Memory::Heap &target) {
+void *Memory::malloc(unsigned long size, Memory::Heap &target) {
     using Block = Memory::Heap::Block;
     if (size == 0) return nullptr;
 
@@ -82,10 +103,10 @@ void *operator new(unsigned long size, Memory::Heap &target) {
     block->free  = true;
     block->next  = target.start;
     target.start = block;
-    return ::operator new(size, target);
+    return malloc(size, target);
 }
 
-void operator delete(void *ptr, Memory::Heap &target) {
+void Memory::free(void *ptr, Memory::Heap &target) {
     using Block  = Memory::Heap::Block;
     Block *block = reinterpret_cast<Block *>(ptr) - 1;
     block->free  = true;

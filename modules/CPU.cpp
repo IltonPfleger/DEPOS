@@ -1,9 +1,7 @@
-#ifndef __cpu__hpp
-#define __cpu__hpp
+export module CPU;
+import Definitions;
 
-#include <definitions.hpp>
-
-struct CPU {
+export struct CPU {
     struct Context {
         uintptr_t ra;
         uintptr_t t0;
@@ -208,5 +206,3 @@ struct CPU {
         __attribute__((always_inline)) static inline void set(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
     };
 };
-
-#endif

@@ -1,7 +1,6 @@
-#ifndef UART_HPP
-#define UART_HPP
+export module UART;
 
-struct UART {
+export struct UART {
     static constexpr int Clock    = 24000000;
     static constexpr int Baudrate = 115200;
     static constexpr int DIVISOR  = (Clock) / (Baudrate * 16);
@@ -32,5 +31,3 @@ struct UART {
         THR() = c;
     }
 };
-
-#endif

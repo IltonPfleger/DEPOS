@@ -1,11 +1,10 @@
-#ifndef LOGGER_HPP
-#define LOGGER_HPP
-
+module;
 #include <cstdarg>
-#include <definitions.hpp>
-#include <io/uart.hpp>
+export module Logger;
+import Definitions;
+import UART;
 
-struct Logger {
+export struct Logger {
     static constexpr char HEX[] = "0123456789ABCDEF";
     using Interface             = UART;
 
@@ -62,5 +61,3 @@ struct Logger {
         }
     }
 };
-
-#endif
