@@ -35,35 +35,50 @@ struct Queue {
     Memory::Heap HEAP;
 };
 
-export struct Thread {
+export namespace Thread {
     enum Priority { IDLE, LOW, NORMAL, HIGH, MAX };
     enum State { RUNNING, READY, WAITING, FINISHED };
+    struct Thread {
+        uintptr_t stack;
+        struct CPU::Context *context;
+        struct Thread *joining;
+        enum State state;
+        enum Priority priority;
+    };
     typedef Queue<Thread, Priority> Queue;
 
-    static void exit();
-    static void init();
-    static void dispatch(Thread *, Thread *);
-    static void sleep(Queue *);
-    static void wakeup(Queue *);
-    static void yield();
-    static void timer_handler();
-    static void create(Thread *, int (*)(void *), void *, Priority);
-    static void join(Thread *);
-    static int idle(void *);
+    void save(CPU::Context *);
+    void exit();
+    void init();
+    void sleep(Queue *);
+    void wakeup(Queue *);
+    void yield();
+    void timer_handler();
+    void create(Thread *, int (*)(void *), void *, Priority);
+    void join(Thread *);
+};  // namespace Thread
 
-    static Queue _ready;
-    static volatile Thread *_running;
-
-    uintptr_t stack;
-    struct CPU::Context *context;
-    struct Thread *joining;
-    enum State state;
-    enum Priority priority;
-};
-
-Thread::Queue Thread::_ready;
-volatile Thread *Thread::_running;
 extern int main(void *);
+volatile Thread::Thread *_running;
+Thread::Queue _ready;
+Thread::Thread idle_thread;
+Thread::Thread application_thread;
+
+void dispatch(Thread::Thread *current, Thread::Thread *next) {
+    _running        = next;
+    _running->state = Thread::RUNNING;
+    CPU::Context::transfer(&current->context, next->context);
+}
+
+int idle(void *) {
+    CPU::Interrupt::disable();
+    Memory::kfree(reinterpret_cast<void *>(_running->stack));
+    Memory::kfree(reinterpret_cast<void *>(application_thread.stack));
+    Logger::log("*** The last thread under control of QUARK has finished. ***\n");
+    Logger::log("*** QUARK is shutting down! ***\n");
+    while (1);
+    return 0;
+}
 
 void Thread::create(Thread *thread, int (*entry)(void *), void *arg, Priority priority) {
     thread->stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
@@ -86,7 +101,7 @@ void Thread::join(Thread *thread) {
         if (thread->joining) Logger::log("ERROR: Multiple joins detected.");
         thread->joining = previous;
 
-        Thread::dispatch(previous, _ready.get());
+        dispatch(previous, _ready.get());
     }
 
     Memory::kfree(reinterpret_cast<void *>(thread->stack));
@@ -103,22 +118,9 @@ void Thread::exit() {
     dispatch(previous, next);
 }
 
-int Thread::idle(void *ptr) {
-    CPU::Interrupt::disable();
-    Thread *app = reinterpret_cast<Thread *>(ptr);
-    Memory::kfree(reinterpret_cast<void *>(_running->stack));
-    Memory::kfree(reinterpret_cast<void *>(app->stack));
-    Logger::log("*** The last thread under control of QUARK has finished. ***\n");
-    Logger::log("*** QUARK is shutting down! ***\n");
-    while (1);
-    return 0;
-}
-
 void Thread::init() {
-    static Thread idle;
-    static Thread app;
-    Thread::create(&app, main, 0, Thread::Priority::NORMAL);
-    Thread::create(&idle, Thread::idle, &app, Thread::Priority::IDLE);
+    create(&application_thread, main, 0, NORMAL);
+    create(&idle_thread, idle, 0, IDLE);
     Thread *first   = _ready.get();
     _running        = first;
     _running->state = RUNNING;
@@ -135,12 +137,6 @@ void Thread::timer_handler() {
     _running->state = RUNNING;
     CPU::Context::load(next->context);
     CPU::Context::jump();
-}
-
-void Thread::dispatch(Thread *current, Thread *next) {
-    _running        = next;
-    _running->state = RUNNING;
-    CPU::Context::transfer(&current->context, next->context);
 }
 
 void Thread::yield() {
@@ -163,3 +159,5 @@ void Thread::sleep(Queue *waiting) {
 void Thread::wakeup(Queue *waiting) {
     if (Thread *awake = waiting->get()) _ready.put(awake);
 }
+
+void Thread::save(CPU::Context *context) { _running->context = context; }

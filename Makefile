@@ -8,7 +8,7 @@ QEMU := qemu-system-riscv64
 
 CFLAGS := -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles
-CFLAGS += -g -std=c++23 -fmodules-ts 
+CFLAGS += -g -std=c++23 -fmodules-ts
 
 BUILD := build
 TARGET := $(BUILD)/quark
@@ -24,9 +24,9 @@ run: $(TARGET)
 
 debug: $(TARGET)
 	pkill -f 'qemu.*'
-	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 1 -gdb tcp::1234 -S &
-	sleep 1
-	alacritty -e sh -c 'gdb -ex "target remote tcp::1234" -ex "file build/quark.elf"'
+	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 1 -gdb tcp::1234 -S
+	#sleep 1
+	#alacritty -e sh -c 'gdb -ex "target remote tcp::1234" -ex "file build/quark.elf"'
 
 $(TARGET): $(TARGET).elf
 	$(OBJCOPY) -O binary -S $< $@

@@ -35,8 +35,8 @@ int teste1(void *) {
 
 int main(void *) {
     Logger::log("APP:\n");
-    Thread thread0;
-    Thread thread1;
+	Thread::Thread thread0;
+	Thread::Thread thread1;
     Thread::create(&thread0, teste0, 0, Thread::Priority::NORMAL);
     Thread::create(&thread1, teste1, 0, Thread::Priority::NORMAL);
     Semaphore::create(&semaphore, 1);
