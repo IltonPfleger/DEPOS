@@ -27,7 +27,7 @@ export struct Thread {
     static void sleep(Queue *);
     static void wakeup(Queue *);
     static void yield();
-    static void reschedule();
+    static void timer_handler();
     static void create(Thread *, int (*)(void *), void *, Priority);
     static void join(Thread *);
     static int idle(void *);
@@ -138,7 +138,7 @@ void Thread::init() {
     CPU::Context::jump();
 }
 
-void Thread::reschedule() {
+void Thread::timer_handler() {
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     _ready.put(previous);

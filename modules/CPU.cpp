@@ -183,14 +183,12 @@ export struct CPU {
 
         __attribute__((always_inline)) static inline void disable() { __asm__ volatile("csrci mstatus, 0x8"); }
         __attribute__((always_inline)) static inline void enable() { __asm__ volatile("csrsi mstatus, 0x8"); }
-    };
 
-    __attribute__((always_inline)) static inline void enable_timer_interrupts() {
-        __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0");
-    }
-    __attribute__((always_inline)) static inline void disable_timer_interrupts() {
-        __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0");
-    }
+        struct Timer {
+            static void enable() { __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0"); }
+            static void disable() { __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0"); }
+        };
+    };
 
     __attribute__((always_inline)) static inline void iret() { __asm__ volatile("mret"); }
 

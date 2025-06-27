@@ -1,12 +1,13 @@
 // #include <memory.hpp>
 // #include <thread.hpp>
-//#include <timer/timer.hpp>
+// #include <timer/timer.hpp>
 
 import Definitions;
 import CPU;
 import Thread;
 import Memory;
 import Logger;
+import Timer;
 
 static char STACK[Machine::Memory::Page::SIZE];
 
@@ -17,7 +18,7 @@ struct Kernel {
         Logger::log("\nQ U A R K | [μKernel]\n");
         Memory::init();
         Logger::log("Done!\n");
-        //Timer::init();
+        Timer::init();
         Thread::init();
         CPU::idle();
     }
@@ -31,8 +32,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
     if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
         switch (CPU::Interrupt::type()) {
             case CPU::Interrupt::Type::TIMER:
-                //Timer::reset();
-                Thread::reschedule();
+                Timer::handler();
                 break;
         }
     } else {
@@ -46,7 +46,6 @@ __attribute__((naked, aligned(4))) void ktrap() {
         Logger::log("mtval: %p\n", mtval);
         while (1);
     }
-    while (1);
 
     CPU::Context::pop();
     CPU::iret();
