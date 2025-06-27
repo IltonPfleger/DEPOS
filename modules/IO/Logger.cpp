@@ -4,14 +4,33 @@ export module Logger;
 import Definitions;
 import UART;
 
-export struct Logger {
-    static constexpr char HEX[] = "0123456789ABCDEF";
-    using Interface             = UART;
+using Interface = UART;
+void put(char value) { Interface::put(value); };
+constexpr char HEX[] = "0123456789ABCDEF";
 
-    static void init() { Interface::init(); };
-    static void put(char value) { Interface::put(value); };
+template <typename T>
+void printNumber(T value) {
+    if (value < 0) {
+        put('-');
+        value *= -1;
+    }
+    if (value >= 10) printNumber<T>(value / 10);
+    put('0' + (value % 10));
+}
 
-    static void log(const char* format, ...) {
+template <typename T>
+static void printHex(T value) {
+    put('0');
+    put('x');
+    for (int i = (sizeof(T) * 2) - 1; i >= 0; i--) {
+        put(HEX[(value >> (i * 4)) & 0xF]);
+    }
+}
+
+export namespace Logger {
+    void init() { Interface::init(); };
+
+    void log(const char* format, ...) {
         va_list args;
         va_start(args, format);
         while (*format) {
@@ -41,23 +60,4 @@ export struct Logger {
         }
         va_end(args);
     }
-
-    template <typename T>
-    static void printNumber(T value) {
-        if (value < 0) {
-            put('-');
-            value *= -1;
-        }
-        if (value >= 10) printNumber<T>(value / 10);
-        put('0' + (value % 10));
-    }
-
-    template <typename T>
-    static void printHex(T value) {
-        put('0');
-        put('x');
-        for (int i = (sizeof(T) * 2) - 1; i >= 0; i--) {
-            put(HEX[(value >> (i * 4)) & 0xF]);
-        }
-    }
-};
+};  // namespace Logger

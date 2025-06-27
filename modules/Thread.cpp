@@ -124,8 +124,7 @@ void Thread::init() {
     Thread *first   = _ready.get();
     _running        = first;
     _running->state = RUNNING;
-    CPU::Context::load(first->context);
-    CPU::Context::jump();
+    CPU::Context::jump(first->context);
 }
 
 void Thread::timer_handler() {
@@ -135,8 +134,7 @@ void Thread::timer_handler() {
     Thread *next    = _ready.get();
     _running        = next;
     _running->state = RUNNING;
-    CPU::Context::load(next->context);
-    CPU::Context::jump();
+    CPU::Context::jump(next->context);
 }
 
 void Thread::yield() {

@@ -17,7 +17,6 @@ struct Kernel {
         Timer::init();
         Thread::init();
         while (1);
-        // CPU::idle();
     }
 };
 
@@ -26,10 +25,12 @@ __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Context::push<true>();
     CPU::Context* context = CPU::Context::get();
     Thread::save(context);
+    CPU::Stack::set(STACK + Machine::Memory::Page::SIZE);
 
     if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
         switch (CPU::Interrupt::type()) {
             case CPU::Interrupt::Type::TIMER:
+                Timer::reset();
                 Timer::handler();
                 break;
         }
@@ -44,6 +45,8 @@ __attribute__((naked, aligned(4))) void ktrap() {
         Logger::log("mtval: %p\n", mtval);
         while (1);
     }
+
+    CPU::Stack::set((char*)context);
     CPU::Context::pop();
     CPU::iret();
 }
