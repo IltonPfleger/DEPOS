@@ -142,25 +142,27 @@ export namespace CPU {
     };
 
     namespace Atomic {
-        int fdec(int * value) {
+        int fdec(int *value) {
             int ret;
             __asm__ volatile(
                 "1: lr.w %0, 0(%1)\n"
                 "addi t0, %0, -1\n"
                 "sc.w t0, t0, 0(%1)\n"
                 "bnez t0, 1b\n"
-                : "=&r"(ret) : "r"(value));
+                : "=&r"(ret)
+                : "r"(value));
             return ret - 1;
         }
 
-        int fadd(int * value) {
+        int fadd(int *value) {
             int ret;
             __asm__ volatile(
                 "1: lr.w %0, 0(%1)\n"
                 "addi t0, %0, 1\n"
                 "sc.w t0, t0, 0(%1)\n"
                 "bnez t0, 1b\n"
-                : "=&r"(ret) : "r"(value));
+                : "=&r"(ret)
+                : "r"(value));
             return ret + 1;
         }
 

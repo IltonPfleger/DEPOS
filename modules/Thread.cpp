@@ -12,10 +12,11 @@ struct Queue {
     };
 
     void put(T *value) {
-        Node *item                  = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), HEAP));
-        item->value                 = value;
-        item->next                  = priorities[value->priority];
-        priorities[value->priority] = item;
+        P i           = value->priority;
+        Node *item    = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), HEAP));
+        item->value   = value;
+        item->next    = priorities[i];
+        priorities[i] = item;
     }
 
     T *get() {
