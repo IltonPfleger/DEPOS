@@ -12,7 +12,7 @@ volatile uintptr_t& MTIMECMP = *reinterpret_cast<volatile uintptr_t*>(Machine::C
 constexpr const bool ALARM                        = true;
 constexpr const bool SCHEDULER                    = true;
 constexpr const unsigned long INTERRUPT_FREQUENCY = 1'000'000;
-constexpr const unsigned long SCHEDULER_FREQUENCY = 1'000'000;
+constexpr const unsigned long SCHEDULER_FREQUENCY = 10'000;
 constexpr const unsigned long ALARM_FREQUENCY     = INTERRUPT_FREQUENCY;
 
 struct Channel {
@@ -38,11 +38,11 @@ export namespace Timer {
             CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
         }
 
-        if constexpr (ALARM) {
-            CHANNELS[Channel::ALARM].handler = Alarm::timer_handler;
-            CHANNELS[Channel::ALARM].initial = INTERRUPT_FREQUENCY / ALARM_FREQUENCY;
-            CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
-        }
+        // if constexpr (ALARM) {
+        //     CHANNELS[Channel::ALARM].handler = Alarm::timer_handler;
+        //     CHANNELS[Channel::ALARM].initial = INTERRUPT_FREQUENCY / ALARM_FREQUENCY;
+        //     CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
+        // }
 
         reset();
         CPU::Interrupt::Timer::enable();
@@ -51,7 +51,8 @@ export namespace Timer {
     void handler() {
         Timer::reset();
         if constexpr (SCHEDULER) {
-            if (--CHANNELS[Channel::SCHEDULER].current == 0) {
+            if (--(CHANNELS[Channel::SCHEDULER].current) == 0) {
+                //Logger::log("TICK\n");
                 CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
                 CHANNELS[Channel::SCHEDULER].handler();
             }

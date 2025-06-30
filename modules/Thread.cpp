@@ -12,11 +12,22 @@ struct Queue {
     };
 
     void put(T *value) {
-        P i           = value->priority;
-        Node *item    = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), Memory::SYSTEM));
-        item->value   = value;
-        item->next    = priorities[i];
-        priorities[i] = item;
+        P i         = value->priority;
+        Node *item  = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), Memory::SYSTEM));
+        item->value = value;
+        item->next  = nullptr;
+
+        Node *&head = priorities[i];
+
+        if (!head) {
+            head = item;
+        } else {
+            Node *current = head;
+            while (current->next) {
+                current = current->next;
+            }
+            current->next = item;
+        }
     }
 
     T *get() {
@@ -82,7 +93,7 @@ int idle(void *) {
             while (1);
         } else {
             CPU::idle();
-			Thread::yield();
+            Thread::yield();
         }
     }
     return 0;
