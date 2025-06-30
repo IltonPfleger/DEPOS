@@ -12,7 +12,7 @@ volatile uintptr_t& MTIMECMP = *reinterpret_cast<volatile uintptr_t*>(Machine::C
 constexpr const bool ALARM                        = true;
 constexpr const bool SCHEDULER                    = true;
 constexpr const unsigned long INTERRUPT_FREQUENCY = 1'000'000;
-constexpr const unsigned long SCHEDULER_FREQUENCY = 1'000'000'000'000;
+constexpr const unsigned long SCHEDULER_FREQUENCY = 1'000'000;
 constexpr const unsigned long ALARM_FREQUENCY     = INTERRUPT_FREQUENCY;
 
 struct Channel {
@@ -34,13 +34,13 @@ export namespace Timer {
     void init() {
         if constexpr (SCHEDULER) {
             CHANNELS[Channel::SCHEDULER].handler = Thread::timer_handler;
-            CHANNELS[Channel::SCHEDULER].initial = SCHEDULER_FREQUENCY / INTERRUPT_FREQUENCY;
+            CHANNELS[Channel::SCHEDULER].initial = INTERRUPT_FREQUENCY / SCHEDULER_FREQUENCY;
             CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
         }
 
         if constexpr (ALARM) {
             CHANNELS[Channel::ALARM].handler = Alarm::timer_handler;
-            CHANNELS[Channel::ALARM].initial = ALARM_FREQUENCY / INTERRUPT_FREQUENCY;
+            CHANNELS[Channel::ALARM].initial = INTERRUPT_FREQUENCY / ALARM_FREQUENCY;
             CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
         }
 
@@ -57,8 +57,8 @@ export namespace Timer {
             }
         }
 
-        if constexpr (ALARM) {
-            CHANNELS[Channel::ALARM].handler();
-        }
+        // if constexpr (ALARM) {
+        //     CHANNELS[Channel::ALARM].handler();
+        // }
     }
 };  // namespace Timer
