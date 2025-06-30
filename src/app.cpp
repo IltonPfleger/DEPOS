@@ -4,33 +4,33 @@ import Logger;
 import Alarm;
 
 #define ITERATIONS 10
-#define SLEEP 100000000
+#define SLEEP 1000000
 
 static Semaphore semaphore;
 
 int teste0(void *) {
     int i = 0;
-    //Semaphore::p(&semaphore);
+    Semaphore::p(&semaphore);
     while (i < ITERATIONS) {
-        Logger::log("Thread0 %d\n", i);
         int j = SLEEP;
         while (j--);
+        Logger::log("Thread0 %d\n", i);
         i++;
     }
-    //Semaphore::v(&semaphore);
+    Semaphore::v(&semaphore);
     return 0;
 }
 
 int teste1(void *) {
     int i = 0;
-    //Semaphore::p(&semaphore);
+    Semaphore::p(&semaphore);
     while (i < ITERATIONS) {
         Logger::log("Thread1 %d\n", i);
         int j = SLEEP;
         while (j--);
         i++;
     }
-    //Semaphore::v(&semaphore);
+    Semaphore::v(&semaphore);
     return 0;
 }
 
