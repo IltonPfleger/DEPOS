@@ -17,9 +17,7 @@ export struct Alarm {
 
         entry->value = value;
         Semaphore::create(&entry->semaphore, 0);
-
         Semaphore::p(&entry->semaphore);
-
         Memory::free(entry, Memory::SYSTEM);
     }
 

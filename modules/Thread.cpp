@@ -82,6 +82,7 @@ int idle(void *) {
             while (1);
         } else {
             CPU::idle();
+			Thread::yield();
         }
     }
     return 0;
@@ -122,8 +123,8 @@ void Thread::exit() {
     if (previous->joining) _ready.put(previous->joining);
     previous->state = FINISHED;
 
-    Thread *next = _ready.get();
     _count--;
+    Thread *next = _ready.get();
     dispatch(previous, next);
 }
 
