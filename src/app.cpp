@@ -1,6 +1,7 @@
 import Semaphore;
 import Thread;
 import Logger;
+import Alarm;
 
 #define ITERATIONS 10
 #define SLEEP 10000000
@@ -37,6 +38,7 @@ int main(void *) {
     Logger::log("APP:\n");
     Thread::Thread thread0;
     Thread::Thread thread1;
+    Alarm::delay(1);
     Thread::create(&thread0, teste0, 0, Thread::Priority::NORMAL);
     Thread::create(&thread1, teste1, 0, Thread::Priority::NORMAL);
     Semaphore::create(&semaphore, 1);

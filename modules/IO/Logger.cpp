@@ -1,7 +1,7 @@
 module;
 #include <cstdarg>
 export module Logger;
-import Definitions;
+import Machine;
 import UART;
 
 using Interface = UART;

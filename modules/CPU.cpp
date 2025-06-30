@@ -1,5 +1,5 @@
 export module CPU;
-import Definitions;
+import Machine;
 
 export namespace CPU {
     __attribute__((always_inline)) inline void iret() { __asm__ volatile("mret"); }
@@ -198,6 +198,7 @@ export namespace CPU {
         namespace Timer {
             void enable() { __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0"); }
             void disable() { __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0"); }
+            void reset() {}
         };  // namespace Timer
 
     };  // namespace Interrupt

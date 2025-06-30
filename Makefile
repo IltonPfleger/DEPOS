@@ -8,7 +8,7 @@ QEMU := qemu-system-riscv64
 
 CFLAGS := -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles
-CFLAGS += -g -std=c++23 -fmodules-ts -O3
+CFLAGS += -g -std=c++23 -fmodules-ts -O2
 
 BUILD := build
 TARGET := $(BUILD)/quark
