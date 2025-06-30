@@ -1,4 +1,4 @@
-export module Definitions;
+export module Machine;
 
 template <bool B, typename True, typename False>
 struct TypeSelector {
@@ -24,24 +24,8 @@ export struct Machine {
             static constexpr const unsigned int SIZE  = (1 << ORDER);
         };
     };
-    struct Timer {
+    struct CLINT {
         static constexpr const uintptr_t ADDR      = 0x02000000;
-        static constexpr const unsigned long CLOCK = 1e7;
-    };
-};
-
-export struct Traits {
-    struct Timer {
-        static constexpr const unsigned long long FREQUENCY = 1e6;
-        static constexpr const bool ENABLED                 = true;
-
-        struct Channel {
-            static constexpr const bool ALARM     = false;
-            static constexpr const bool SCHEDULER = true;
-        };
-    };
-
-    struct Thread {
-        static constexpr const unsigned long long DURATION = 1e5;  // µs
+		static constexpr const unsigned long CLOCK = 1e7;
     };
 };

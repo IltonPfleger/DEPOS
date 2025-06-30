@@ -1,4 +1,4 @@
-import Definitions;
+import Machine;
 import CPU;
 import Thread;
 import Memory;
@@ -30,7 +30,6 @@ __attribute__((naked, aligned(4))) void ktrap() {
     if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
         switch (CPU::Interrupt::type()) {
             case CPU::Interrupt::Type::TIMER:
-                Timer::reset();
                 Timer::handler();
                 break;
         }

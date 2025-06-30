@@ -1,5 +1,5 @@
 export module Thread;
-import Definitions;
+import Machine;
 import Memory;
 import Logger;
 import CPU;
@@ -13,7 +13,7 @@ struct Queue {
 
     void put(T *value) {
         P i           = value->priority;
-        Node *item    = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), HEAP));
+        Node *item    = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), Memory::SYSTEM));
         item->value   = value;
         item->next    = priorities[i];
         priorities[i] = item;
@@ -25,7 +25,7 @@ struct Queue {
                 Node *item    = priorities[i];
                 priorities[i] = item->next;
                 T *value      = item->value;
-                Memory::free(item, HEAP);
+                Memory::free(item, Memory::SYSTEM);
                 return value;
             }
         }
@@ -33,7 +33,6 @@ struct Queue {
     }
 
     Node *priorities[P::MAX];
-    Memory::Heap HEAP;
 };
 
 export namespace Thread {
@@ -61,9 +60,10 @@ export namespace Thread {
 
 extern int main(void *);
 volatile Thread::Thread *_running;
+int _count;
 Thread::Queue _ready;
-Thread::Thread idle_thread;
-Thread::Thread application_thread;
+Thread::Thread _idle_thread;
+Thread::Thread _user_thread;
 
 void dispatch(Thread::Thread *current, Thread::Thread *next) {
     _running        = next;
@@ -72,12 +72,18 @@ void dispatch(Thread::Thread *current, Thread::Thread *next) {
 }
 
 int idle(void *) {
-    CPU::Interrupt::disable();
-    Memory::kfree(reinterpret_cast<void *>(_running->stack));
-    Memory::kfree(reinterpret_cast<void *>(application_thread.stack));
-    Logger::log("*** The last thread under control of QUARK has finished. ***\n");
-    Logger::log("*** QUARK is shutting down! ***\n");
-    while (1);
+    while (1) {
+        CPU::Interrupt::disable();
+        if (_count == 1) {
+            Memory::kfree(reinterpret_cast<void *>(_running->stack));
+            Memory::kfree(reinterpret_cast<void *>(_user_thread.stack));
+            Logger::log("*** The last thread under control of QUARK has finished. ***\n");
+            Logger::log("*** QUARK is shutting down! ***\n");
+            while (1);
+        } else {
+            CPU::idle();
+        }
+    }
     return 0;
 }
 
@@ -88,6 +94,7 @@ void Thread::create(Thread *thread, int (*entry)(void *), void *arg, Priority pr
     CPU::Context::create(thread->context, entry, exit, arg);
     thread->state    = READY;
     thread->priority = priority;
+    _count++;
     _ready.put(thread);
 }
 
@@ -116,12 +123,13 @@ void Thread::exit() {
     previous->state = FINISHED;
 
     Thread *next = _ready.get();
+    _count--;
     dispatch(previous, next);
 }
 
 void Thread::init() {
-    create(&application_thread, main, 0, NORMAL);
-    create(&idle_thread, idle, 0, IDLE);
+    create(&_user_thread, main, 0, NORMAL);
+    create(&_idle_thread, idle, 0, IDLE);
     Thread *first   = _ready.get();
     _running        = first;
     _running->state = RUNNING;
