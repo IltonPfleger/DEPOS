@@ -12,22 +12,11 @@ struct Queue {
     };
 
     void put(T *value) {
-        P i         = value->priority;
-        Node *item  = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), Memory::SYSTEM));
-        item->value = value;
-        item->next  = nullptr;
-
-        Node *&head = priorities[i];
-
-        if (!head) {
-            head = item;
-        } else {
-            Node *current = head;
-            while (current->next) {
-                current = current->next;
-            }
-            current->next = item;
-        }
+        P i           = value->priority;
+        Node *item    = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), Memory::SYSTEM));
+        item->value   = value;
+        item->next    = priorities[i];
+        priorities[i] = item;
     }
 
     T *get() {
@@ -84,14 +73,15 @@ void dispatch(Thread::Thread *current, Thread::Thread *next) {
 
 int idle(void *) {
     while (1) {
-        CPU::Interrupt::disable();
         if (_count == 1) {
+            CPU::Interrupt::disable();
             Memory::kfree(reinterpret_cast<void *>(_running->stack));
             Memory::kfree(reinterpret_cast<void *>(_user_thread.stack));
             Logger::log("*** The last thread under control of QUARK has finished. ***\n");
             Logger::log("*** QUARK is shutting down! ***\n");
             while (1);
         } else {
+            CPU::Interrupt::enable();
             CPU::idle();
             Thread::yield();
         }
@@ -176,7 +166,10 @@ void Thread::sleep(Queue *waiting) {
 }
 
 void Thread::wakeup(Queue *waiting) {
-    if (Thread *awake = waiting->get()) _ready.put(awake);
+    if (Thread *awake = waiting->get()) {
+        awake->state = READY;
+        _ready.put(awake);
+    }
 }
 
 void Thread::save(CPU::Context *context) { _running->context = context; }
