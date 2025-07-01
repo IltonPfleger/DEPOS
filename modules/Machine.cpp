@@ -1,18 +1,9 @@
 export module Machine;
 import SiFiveUART;
+import Meta;
 
-template <bool B, typename True, typename False>
-struct TypeSelector {
-    using Type = True;
-};
-
-template <typename True, typename False>
-struct TypeSelector<false, True, False> {
-    using Type = False;
-};
-
-export typedef TypeSelector<sizeof(void*) == 4, long long, int>::Type intptr_t;
-export typedef TypeSelector<sizeof(void*) == 8, unsigned long long, unsigned>::Type uintptr_t;
+export typedef Meta::TypeSelector<sizeof(void*) == 4, long long, int>::Type intptr_t;
+export typedef Meta::TypeSelector<sizeof(void*) == 8, unsigned long long, unsigned>::Type uintptr_t;
 
 export struct Machine {
     struct IO {
