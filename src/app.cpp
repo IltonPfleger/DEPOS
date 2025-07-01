@@ -36,14 +36,14 @@ int teste1(void *) {
 
 int main(void *) {
     Logger::log("APP:\n");
-    //Thread::Thread thread0;
-    //Thread::Thread thread1;
-     Alarm::delay(5);
+    // Thread::Thread thread0;
+    // Thread::Thread thread1;
+    Alarm::delay(1);
     Logger::log("Done!\n");
-    //Thread::create(&thread0, teste0, 0, Thread::Priority::NORMAL);
-    //Thread::create(&thread1, teste1, 0, Thread::Priority::NORMAL);
-    //Semaphore::create(&semaphore, 1);
-    //Thread::join(&thread0);
-    //Thread::join(&thread1);
+    // Thread::create(&thread0, teste0, 0, Thread::Priority::NORMAL);
+    // Thread::create(&thread1, teste1, 0, Thread::Priority::NORMAL);
+    // Semaphore::create(&semaphore, 1);
+    // Thread::join(&thread0);
+    // Thread::join(&thread1);
     return 0;
 }

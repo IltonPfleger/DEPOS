@@ -6,7 +6,7 @@ OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 
 
-CFLAGS := -Wall -Wextra -pedantic -Iinclude -c -mcmodel=medany
+CFLAGS := -Wall -Wextra -pedantic -mcmodel=medany
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles
 CFLAGS += -g -std=c++23 -fmodules-ts
 
@@ -23,7 +23,7 @@ run: $(TARGET)
 	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 
 
 debug: $(TARGET)
-	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 1 -gdb tcp::1234 -S
+	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
 
 $(TARGET): $(TARGET).elf
 	$(OBJCOPY) -O binary -S $< $@

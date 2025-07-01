@@ -33,7 +33,7 @@ export namespace Timer {
         }
 
         if constexpr (Settings::Timer::Enable::ALARM) {
-            CHANNELS[Channel::ALARM].handler = Alarm::timer_handler;
+            CHANNELS[Channel::ALARM].handler = Alarm::handler;
             CHANNELS[Channel::ALARM].initial = Settings::Timer::FREQUENCY / Settings::Timer::ALARM;
             CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
         }

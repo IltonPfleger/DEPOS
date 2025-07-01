@@ -14,7 +14,7 @@ export struct SiFiveUART {
     static volatile unsigned int& IP() { return *(BaseAddr() + 5); }
     static volatile unsigned int& DIV() { return *(BaseAddr() + 6); }
 
-    static constexpr unsigned int TX_FULL_MASK  = 0x80000000;
+    static constexpr unsigned int TX_EMPTY_MASK = (1 << 31);
     static constexpr unsigned int RX_EMPTY_MASK = 0x80000000;
 
     static void init() {
@@ -25,7 +25,8 @@ export struct SiFiveUART {
     }
 
     static void put(char c) {
-        while (TXDATA() & TX_FULL_MASK);
+        while (TXDATA() & TX_EMPTY_MASK);
         TXDATA() = c;
+        while (TXDATA() & TX_EMPTY_MASK);
     }
 };

@@ -3,6 +3,7 @@ import Logger;
 import Memory;
 import Settings;
 import Semaphore;
+import Meta;
 
 struct Entry {
     Semaphore semaphore;
@@ -11,9 +12,10 @@ struct Entry {
 };
 
 Entry *alarms = nullptr;
-
-export struct Alarm {
-    static void delay(unsigned long value) {
+template <bool B>
+struct _Alarm {
+    template <typename T = void>
+    static typename Meta::IF<B, T>::Type delay(unsigned long value) {
         Entry *alarm = reinterpret_cast<Entry *>(Memory::malloc(sizeof(Entry), Memory::SYSTEM));
         alarm->value = value * Settings::Timer::ALARM;
 
@@ -46,10 +48,12 @@ export struct Alarm {
         Memory::free(alarm, Memory::SYSTEM);
     }
 
-    static void timer_handler() {
+    static void handler() {
         if (alarms && --alarms->value == 0) {
             Semaphore::v(&alarms->semaphore);
             alarms = alarms->next;
         }
     }
 };
+
+export using Alarm = _Alarm<Settings::Timer::Enable::ALARM>;
