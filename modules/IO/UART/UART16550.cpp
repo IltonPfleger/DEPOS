@@ -1,10 +1,11 @@
-export module UART;
+export module UART16550;
 
-export struct UART {
-    static constexpr int Clock    = 24000000;
-    static constexpr int Baudrate = 115200;
+export template <char* A, int C, int B>
+struct UART16550 {
+    static constexpr int Clock    = C;
+    static constexpr int Baudrate = B;
     static constexpr int DIVISOR  = (Clock) / (Baudrate * 16);
-    static volatile inline char* BaseAddr() { return reinterpret_cast<volatile char*>(0x10000000); }
+    static volatile inline char* BaseAddr() { return reinterpret_cast<volatile char*>(A); }
     static volatile char& THR() { return *reinterpret_cast<volatile char*>(BaseAddr() + 0); };
     static volatile char& IER() { return *reinterpret_cast<volatile char*>(BaseAddr() + 1); };
     static volatile char& FCR() { return *reinterpret_cast<volatile char*>(BaseAddr() + 2); };

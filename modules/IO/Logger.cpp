@@ -2,11 +2,10 @@ module;
 #include <cstdarg>
 export module Logger;
 import Machine;
-import UART;
+import Settings;
 
-using Interface = UART;
-void put(char value) { Interface::put(value); };
 constexpr char HEX[] = "0123456789ABCDEF";
+inline void put(char value) { Settings::IO::Device::put(value); };
 
 template <typename T>
 void printNumber(T value) {
@@ -28,7 +27,8 @@ static void printHex(T value) {
 }
 
 export namespace Logger {
-    void init() { Interface::init(); };
+
+    void init() { Settings::IO::Device::init(); };
 
     void log(const char* format, ...) {
         va_list args;
@@ -55,6 +55,11 @@ export namespace Logger {
                 case 'p':
                     printHex<uintptr_t>(va_arg(args, uintptr_t));
                     break;
+                default: {
+                    put('%');
+                    put(*format);
+                    break;
+                }
             }
             format++;
         }
