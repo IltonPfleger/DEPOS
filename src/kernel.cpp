@@ -1,10 +1,9 @@
-#include <cpu.hpp>
-#include <definitions.hpp>
-#include <io/logger.hpp>
-#include <io/uart.hpp>
-#include <memory.hpp>
-#include <thread.hpp>
-#include <timer/timer.hpp>
+import Machine;
+import CPU;
+import Thread;
+import Memory;
+import Logger;
+import Timer;
 
 static char STACK[Machine::Memory::Page::SIZE];
 
@@ -17,20 +16,21 @@ struct Kernel {
         Logger::log("Done!\n");
         Timer::init();
         Thread::init();
-        CPU::idle();
+        while (1);
     }
 };
 
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push<true>();
-    CPU::Context::save(const_cast<CPU::Context**>(&Thread::_running->context));
+    CPU::Context* context = CPU::Context::get();
+    Thread::save(context);
+    CPU::Stack::set(STACK + Machine::Memory::Page::SIZE);
 
     if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
         switch (CPU::Interrupt::type()) {
             case CPU::Interrupt::Type::TIMER:
-                Timer::reset();
-                Thread::reschedule();
+                Timer::handler();
                 break;
         }
     } else {
@@ -44,8 +44,8 @@ __attribute__((naked, aligned(4))) void ktrap() {
         Logger::log("mtval: %p\n", mtval);
         while (1);
     }
-    while (1);
 
+    CPU::Stack::set((char*)context);
     CPU::Context::pop();
     CPU::iret();
 }
@@ -57,6 +57,6 @@ __attribute__((naked, section(".boot"))) void kboot() {
         CPU::Stack::set(STACK + Machine::Memory::Page::SIZE);
         Kernel::init();
     } else {
-        CPU::idle();
+        for (;;);
     }
 }

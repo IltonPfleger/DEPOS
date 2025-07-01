@@ -1,18 +1,36 @@
-#ifndef LOGGER_HPP
-#define LOGGER_HPP
-
+module;
 #include <cstdarg>
-#include <definitions.hpp>
-#include <io/uart.hpp>
+export module Logger;
+import Machine;
+import Settings;
 
-struct Logger {
-    static constexpr char HEX[] = "0123456789ABCDEF";
-    using Interface             = UART;
+constexpr char HEX[] = "0123456789ABCDEF";
+inline void put(char value) { Settings::IO::Device::put(value); };
 
-    static void init() { Interface::init(); };
-    static void put(char value) { Interface::put(value); };
+template <typename T>
+void printNumber(T value) {
+    if (value < 0) {
+        put('-');
+        value *= -1;
+    }
+    if (value >= 10) printNumber<T>(value / 10);
+    put('0' + (value % 10));
+}
 
-    static void log(const char* format, ...) {
+template <typename T>
+static void printHex(T value) {
+    put('0');
+    put('x');
+    for (int i = (sizeof(T) * 2) - 1; i >= 0; i--) {
+        put(HEX[(value >> (i * 4)) & 0xF]);
+    }
+}
+
+export namespace Logger {
+
+    void init() { Settings::IO::Device::init(); };
+
+    void log(const char* format, ...) {
         va_list args;
         va_start(args, format);
         while (*format) {
@@ -37,30 +55,14 @@ struct Logger {
                 case 'p':
                     printHex<uintptr_t>(va_arg(args, uintptr_t));
                     break;
+                default: {
+                    put('%');
+                    put(*format);
+                    break;
+                }
             }
             format++;
         }
         va_end(args);
     }
-
-    template <typename T>
-    static void printNumber(T value) {
-        if (value < 0) {
-            put('-');
-            value *= -1;
-        }
-        if (value >= 10) printNumber<T>(value / 10);
-        put('0' + (value % 10));
-    }
-
-    template <typename T>
-    static void printHex(T value) {
-        put('0');
-        put('x');
-        for (int i = (sizeof(T) * 2) - 1; i >= 0; i--) {
-            put(HEX[(value >> (i * 4)) & 0xF]);
-        }
-    }
-};
-
-#endif
+};  // namespace Logger
