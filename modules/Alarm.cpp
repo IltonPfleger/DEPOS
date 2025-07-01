@@ -10,26 +10,46 @@ struct Entry {
     Entry *next;
 };
 
-Entry *entries = nullptr;
+Entry *alarms = nullptr;
 
 export struct Alarm {
     static void delay(unsigned long value) {
-        Entry *entry = reinterpret_cast<Entry *>(Memory::malloc(sizeof(Entry), Memory::SYSTEM));
-        entry->value = value * Settings::Timer::ALARM;
+        Entry *alarm = reinterpret_cast<Entry *>(Memory::malloc(sizeof(Entry), Memory::SYSTEM));
+        alarm->value = value * Settings::Timer::ALARM;
 
-        entry->next = nullptr;
-        Semaphore::create(&entry->semaphore, 0);
+        if (alarms == nullptr) {
+            alarm->next = nullptr;
+            alarms      = alarm;
+        } else if (alarm->value < alarms->value) {
+            alarms->value -= alarm->value;
+            alarm->next = alarms;
+            alarms      = alarm;
+        } else {
+            unsigned long sum = alarms->value;
+            Entry *current    = alarms;
+            while (current->next && sum + current->next->value < alarm->value) {
+                current = current->next;
+                sum += current->value;
+            }
+            if (current->next == nullptr) {
+                alarm->value -= sum;
+                current->next = alarm;
+            } else {
+                alarm->next = current->next;
+                alarm->value -= current->value;
+                alarm->next->value -= alarm->value;
+            }
+        }
 
-        entries = entry;
-        Semaphore::p(&entry->semaphore);
-        Memory::free(entry, Memory::SYSTEM);
+        Semaphore::create(&alarm->semaphore, 0);
+        Semaphore::p(&alarm->semaphore);
+        Memory::free(alarm, Memory::SYSTEM);
     }
 
     static void timer_handler() {
-        if (entries && --entries->value == 0) {
-            //Logger::log("%d\n", entries->value);
-            Semaphore::v(&entries->semaphore);
-            entries = entries->next;
+        if (alarms && --alarms->value == 0) {
+            Semaphore::v(&alarms->semaphore);
+            alarms = alarms->next;
         }
     }
 };

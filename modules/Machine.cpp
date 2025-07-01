@@ -1,4 +1,5 @@
 export module Machine;
+import SiFiveUART;
 
 template <bool B, typename True, typename False>
 struct TypeSelector {
@@ -14,6 +15,9 @@ export typedef TypeSelector<sizeof(void*) == 4, long long, int>::Type intptr_t;
 export typedef TypeSelector<sizeof(void*) == 8, unsigned long long, unsigned>::Type uintptr_t;
 
 export struct Machine {
+    struct IO {
+        using UART = SiFiveUART;
+    };
     static constexpr const unsigned int XLEN = 64;
     static constexpr const unsigned int CPUS = 1;
     struct Memory {
@@ -26,6 +30,6 @@ export struct Machine {
     };
     struct CLINT {
         static constexpr const uintptr_t ADDR      = 0x02000000;
-        static constexpr const unsigned long CLOCK = 10'000'000;
+        static constexpr const unsigned long CLOCK = 1'000'000;
     };
 };

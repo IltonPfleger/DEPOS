@@ -38,7 +38,7 @@ int main(void *) {
     Logger::log("APP:\n");
     //Thread::Thread thread0;
     //Thread::Thread thread1;
-     Alarm::delay(1);
+     Alarm::delay(5);
     Logger::log("Done!\n");
     //Thread::create(&thread0, teste0, 0, Thread::Priority::NORMAL);
     //Thread::create(&thread1, teste1, 0, Thread::Priority::NORMAL);
