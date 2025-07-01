@@ -57,6 +57,6 @@ __attribute__((naked, section(".boot"))) void kboot() {
         CPU::Stack::set(STACK + Machine::Memory::Page::SIZE);
         Kernel::init();
     } else {
-        CPU::idle();
+        for (;;);
     }
 }

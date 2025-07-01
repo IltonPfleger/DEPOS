@@ -21,6 +21,6 @@ export struct Semaphore {
         if (CPU::Atomic::fadd(&semaphore->value) <= 0) {
             Thread::wakeup(&semaphore->waiting);
         }
-        CPU::Interrupt::enable();
+        //CPU::Interrupt::enable();
     }
 };

@@ -20,7 +20,7 @@ all:
 	make run
 
 run: $(TARGET)
-	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024
+	$(QEMU) -M virt -bios $(TARGET) -nographic -m 1024 
 
 debug: $(TARGET)
 	$(QEMU) -machine virt -bios $(TARGET) -nographic -m 1024 -smp 1 -gdb tcp::1234 -S

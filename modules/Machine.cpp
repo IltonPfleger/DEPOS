@@ -26,6 +26,6 @@ export struct Machine {
     };
     struct CLINT {
         static constexpr const uintptr_t ADDR      = 0x02000000;
-		static constexpr const unsigned long CLOCK = 1e7;
+        static constexpr const unsigned long CLOCK = 10'000'000;
     };
 };
