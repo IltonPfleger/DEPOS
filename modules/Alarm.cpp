@@ -12,10 +12,9 @@ struct Entry {
 };
 
 Entry *alarms = nullptr;
-template <bool B>
-struct _Alarm {
+export struct Alarm {
     template <typename T = void>
-    static typename Meta::IF<B, T>::Type delay(unsigned long value) {
+    static typename Meta::IF<Settings::Timer::Enable::ALARM, T>::Type delay(unsigned long value) {
         Entry *alarm = reinterpret_cast<Entry *>(Memory::malloc(sizeof(Entry), Memory::SYSTEM));
         alarm->value = value * Settings::Timer::ALARM;
 
@@ -55,5 +54,3 @@ struct _Alarm {
         }
     }
 };
-
-export using Alarm = _Alarm<Settings::Timer::Enable::ALARM>;
