@@ -33,6 +33,7 @@ struct Memory {
 
 void *operator new(unsigned long, Memory::Role);
 void operator delete(void *, unsigned long);
+void operator delete(void *);
 
 // export namespace Memory {
 //     void init();

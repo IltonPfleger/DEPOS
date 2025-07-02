@@ -21,7 +21,7 @@ struct Queue {
     }
 
     T *get() {
-        for (int i = P::COUNT - 1; i >= 0; i--) {
+        for (int i = P::MAX; i >= 0; i--) {
             if (priorities[i]) {
                 Node *item    = priorities[i];
                 priorities[i] = item->next;
@@ -33,15 +33,15 @@ struct Queue {
         return nullptr;
     }
 
-    Node *priorities[P::COUNT];
+    Node *priorities[P::MAX + 1];
 };
 
 namespace Thread {
-    enum Priority { IDLE, LOW, NORMAL, HIGH, COUNT };
+    enum Priority { IDLE = 0, LOW, NORMAL, MAX };
     enum State { RUNNING, READY, WAITING, FINISHED };
     struct Thread {
-        //Thread(int (*)(void *), void *, Priority);
-        //~Thread();
+        Thread(int (*)(void *), void *, Priority);
+        ~Thread();
         uintptr_t stack;
         struct CPU::Context *context;
         struct Thread *joining;
@@ -52,9 +52,9 @@ namespace Thread {
 
     void save(CPU::Context *);
     void join(Thread *);
-    void create(Thread *, int (*)(void *), void *, Priority);
     void exit();
     void init();
+    void stop();
     void sleep(Queue *);
     void wakeup(Queue *);
     void yield();
