@@ -8,6 +8,7 @@ Thread::Thread *_idle_thread;
 Thread::Thread *_user_thread;
 
 void dispatch(Thread::Thread *current, Thread::Thread *next) {
+    if (current == next) Logger::log("ERROR\n");
     _running        = next;
     _running->state = Thread::RUNNING;
     CPU::Context::transfer(&current->context, next->context);
@@ -21,7 +22,7 @@ int idle(void *) {
             Logger::log("*** OI ***\n");
             CPU::Interrupt::enable();
             CPU::idle();
-            Thread::yield();
+            // Thread::yield();
         }
     }
     return 0;
@@ -38,7 +39,19 @@ Thread::Thread::Thread(int (*entry)(void *), void *args, Priority priority) {
     _ready.put(this);
 }
 
-Thread::Thread::~Thread() { Memory::kfree(reinterpret_cast<void *>(stack)); }
+Thread::Thread::~Thread() {
+    switch (state) {
+        case (READY):
+            _ready.remove(this);
+            _count--;
+            break;
+        case (WAITING):
+            waiting->remove(this);
+            _count--;
+            break;
+    }
+    Memory::kfree(reinterpret_cast<void *>(stack));
+}
 
 void Thread::join(Thread *thread) {
     CPU::Interrupt::disable();
@@ -58,6 +71,7 @@ void Thread::join(Thread *thread) {
 
 void Thread::exit() {
     CPU::Interrupt::disable();
+    Logger::log("ERROR\n");
     Thread *previous = const_cast<Thread *>(_running);
     if (previous->joining) _ready.put(previous->joining);
     previous->state = FINISHED;
@@ -99,14 +113,15 @@ void Thread::yield() {
     CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
+    Thread *next     = _ready.get();
     _ready.put(previous);
-    Thread *next = _ready.get();
     dispatch(previous, next);
 }
 
 void Thread::sleep(Queue *waiting) {
-    Thread *previous = const_cast<Thread *>(_running);
-    previous->state  = WAITING;
+    Thread *previous  = const_cast<Thread *>(_running);
+    previous->state   = WAITING;
+    previous->waiting = waiting;
     waiting->put(previous);
     Thread *next = _ready.get();
     dispatch(previous, next);
@@ -114,7 +129,8 @@ void Thread::sleep(Queue *waiting) {
 
 void Thread::wakeup(Queue *waiting) {
     if (Thread *awake = waiting->get()) {
-        awake->state = READY;
+        awake->state   = READY;
+        awake->waiting = nullptr;
         _ready.put(awake);
     }
 }

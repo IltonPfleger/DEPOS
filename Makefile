@@ -13,6 +13,7 @@ CFLAGS += -g -O2 -march=rv64imac_zicsr -mabi=lp64
 BUILD := build
 TARGET := $(BUILD)/quark
 OBJS := $(shell find . -type f -name "*.cpp" | sed 's|\./|\./build/|g' | sed 's|\.cpp|.o|')
+DEPS = $(OBJS:.o=.d)
 
 all:
 	make run
@@ -31,7 +32,7 @@ $(TARGET).elf: $(OBJS)
 
 $(BUILD)/%.o: %.cpp 
 	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 clean:
 	rm -rf build

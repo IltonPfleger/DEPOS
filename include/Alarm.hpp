@@ -12,7 +12,7 @@ Entry *alarms = nullptr;
 struct Alarm {
     template <typename T = void>
     static typename Meta::IF<Settings::Timer::Enable::ALARM, T>::Type delay(unsigned long value) {
-        Entry *alarm = new (Memory::SYSTEM) Alarm;
+        Entry *alarm = new (Memory::SYSTEM) Entry;
         alarm->value = value * Settings::Timer::ALARM;
 
         if (alarms == nullptr) {
@@ -39,14 +39,14 @@ struct Alarm {
             }
         }
 
-        Semaphore::create(&alarm->semaphore, 0);
-        Semaphore::p(&alarm->semaphore);
+		new(&alarm->semaphore) Semaphore(0);
+		alarm->semaphore.p();
         delete alarm;
     }
 
     static void handler() {
         if (alarms && --alarms->value == 0) {
-            Semaphore::v(&alarms->semaphore);
+			alarms->semaphore.v();
             alarms = alarms->next;
         }
     }

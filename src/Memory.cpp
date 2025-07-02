@@ -53,6 +53,8 @@ void Memory::kfree(void *addr) {
     Logger::log("Memory::kfree(%p)\n", page);
 }
 
+void *operator new(unsigned long bytes, void *ptr) { return ptr; }
+
 void *operator new(unsigned long bytes, Memory::Role role) {
     using Block = Memory::Block;
     if (bytes == 0) return 0;

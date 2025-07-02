@@ -31,6 +31,7 @@ struct Memory {
     // static void free(void *, Role);
 };
 
+void *operator new(unsigned long, void*);
 void *operator new(unsigned long, Memory::Role);
 void operator delete(void *, unsigned long);
 void operator delete(void *);
