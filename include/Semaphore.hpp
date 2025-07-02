@@ -1,8 +1,8 @@
-export module Semaphore;
-import Thread;
-import CPU;
+#pragma once
+#include <CPU.hpp>
+#include <Thread.hpp>
 
-export struct Semaphore {
+struct Semaphore {
     Thread::Queue waiting;
     int value;
 
@@ -21,6 +21,6 @@ export struct Semaphore {
         if (CPU::Atomic::fadd(&semaphore->value) <= 0) {
             Thread::wakeup(&semaphore->waiting);
         }
-        //CPU::Interrupt::enable();
+        // CPU::Interrupt::enable();
     }
 };

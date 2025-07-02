@@ -1,9 +1,6 @@
-export module Alarm;
-import Logger;
-import Memory;
-import Settings;
-import Semaphore;
-import Meta;
+#include <Meta.hpp>
+#include <Semaphore.hpp>
+#include <Settings.hpp>
 
 struct Entry {
     Semaphore semaphore;
@@ -12,10 +9,10 @@ struct Entry {
 };
 
 Entry *alarms = nullptr;
-export struct Alarm {
+struct Alarm {
     template <typename T = void>
     static typename Meta::IF<Settings::Timer::Enable::ALARM, T>::Type delay(unsigned long value) {
-        Entry *alarm = reinterpret_cast<Entry *>(Memory::malloc(sizeof(Entry), Memory::SYSTEM));
+        Entry *alarm = new (Memory::SYSTEM) Alarm;
         alarm->value = value * Settings::Timer::ALARM;
 
         if (alarms == nullptr) {
@@ -44,7 +41,7 @@ export struct Alarm {
 
         Semaphore::create(&alarm->semaphore, 0);
         Semaphore::p(&alarm->semaphore);
-        Memory::free(alarm, Memory::SYSTEM);
+        delete alarm;
     }
 
     static void handler() {

@@ -1,6 +1,4 @@
-export module SiFiveUART;
-
-export struct SiFiveUART {
+struct SiFiveUART {
     static constexpr int Clock    = 31250000;
     static constexpr int Baudrate = 115200;
     static constexpr int DIVISOR  = Clock / Baudrate;

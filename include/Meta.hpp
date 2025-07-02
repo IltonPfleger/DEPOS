@@ -1,6 +1,6 @@
-export module Meta;
+#pragma once
 
-export namespace Meta {
+namespace Meta {
     template <bool B, typename True, typename False>
     struct TypeSelector {
         using Type = True;
