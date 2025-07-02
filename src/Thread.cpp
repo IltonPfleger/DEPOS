@@ -71,7 +71,6 @@ void Thread::join(Thread *thread) {
 
 void Thread::exit() {
     CPU::Interrupt::disable();
-    Logger::log("ERROR\n");
     Thread *previous = const_cast<Thread *>(_running);
     if (previous->joining) _ready.put(previous->joining);
     previous->state = FINISHED;
