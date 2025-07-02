@@ -3,24 +3,24 @@
 #include <Thread.hpp>
 
 struct Semaphore {
-    Thread::Queue waiting;
-    int value;
+    Thread::Queue _waiting;
+    int _value;
 
-    static void create(Semaphore* semaphore, int value) { semaphore->value = value; }
+    Semaphore(int value) { _value = value; }
 
-    static void p(Semaphore* semaphore) {
+    void p() {
         CPU::Interrupt::disable();
-        if (CPU::Atomic::fdec(&semaphore->value) < 0) {
-            Thread::sleep(&semaphore->waiting);
+		if (CPU::Atomic::fdec(&_value) < 0) {
+            Thread::sleep(&_waiting);
         }
         CPU::Interrupt::enable();
     }
 
-    static void v(Semaphore* semaphore) {
+    void v() {
         CPU::Interrupt::disable();
-        if (CPU::Atomic::fadd(&semaphore->value) <= 0) {
-            Thread::wakeup(&semaphore->waiting);
+        if (CPU::Atomic::fadd(&_value) <= 0) {
+            Thread::wakeup(&_waiting);
         }
-        // CPU::Interrupt::enable();
+        CPU::Interrupt::enable();
     }
 };

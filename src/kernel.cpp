@@ -13,7 +13,7 @@ struct Kernel {
         Logger::log("\nQ U A R K | [μKernel]\n");
         Memory::init();
         Logger::log("Done!\n");
-        Timer::init();
+        //Timer::init();
         Thread::init();
     }
 };

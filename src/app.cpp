@@ -5,33 +5,36 @@
 #define ITERATIONS 10
 #define SLEEP 1000000
 
-static Semaphore semaphore;
+// static Semaphore semaphore;
 
-int teste0(void *) {
-    int i = 0;
+int teste0(void *ptr) {
+    Semaphore *semaphore = (Semaphore *)ptr;
+    semaphore->p();
+    Logger::log("THREAD!\n");
+    Logger::log("THREAD2!\n");
     // Semaphore::p(&semaphore);
-    while (i < ITERATIONS) {
-        int j = SLEEP;
-        while (j--);
-        Logger::log("Thread0 %d\n", i);
-        i++;
-    }
-    // Semaphore::v(&semaphore);
+    // while (i < ITERATIONS) {
+    //    int j = SLEEP;
+    //    while (j--);
+    //    Logger::log("Thread0 %d\n", i);
+    //    i++;
+    //}
+    //// Semaphore::v(&semaphore);
     return 0;
 }
 
-int teste1(void *) {
-    int i = 0;
-    // Semaphore::p(&semaphore);
-    while (i < ITERATIONS) {
-        Logger::log("Thread1 %d\n", i);
-        int j = SLEEP;
-        while (j--);
-        i++;
-    }
-    // Semaphore::v(&semaphore);
-    return 0;
-}
+// int teste1(void *) {
+//     int i = 0;
+//     // Semaphore::p(&semaphore);
+//     while (i < ITERATIONS) {
+//         Logger::log("Thread1 %d\n", i);
+//         int j = SLEEP;
+//         while (j--);
+//         i++;
+//     }
+//     // Semaphore::v(&semaphore);
+//     return 0;
+// }
 
 int main(void *) {
     Logger::log("APP:\n");
@@ -43,11 +46,20 @@ int main(void *) {
     // Thread::create(&thread1, teste1, 0, Thread::Priority::NORMAL);
 
     // Alarm::delay(1);
-    Thread::Thread thread0(teste0, 0, Thread::Priority::NORMAL);
-    Thread::Thread thread1(teste1, 0, Thread::Priority::NORMAL);
+    Semaphore semaphore(0);
+    Thread::Thread *thread0 = new (Memory::APPLICATION) Thread::Thread(teste0, &semaphore, Thread::Priority::NORMAL);
+    Thread::yield();
+    // delete thread0;
+    // delete thread0;
+    //{
+    //  Thread::Thread thread0(teste0, &semaphore, Thread::Priority::NORMAL);
+    //  Thread::yield();
+    // }
+    semaphore.v();
+    // Thread::Thread thread1(teste1, 0, Thread::Priority::NORMAL);
     Logger::log("Done!\n");
     // Semaphore::create(&semaphore, 1);
-    Thread::join(&thread0);
-    Thread::join(&thread1);
+    // Thread::join(&thread0);
+    // wThread::join(&thread1);
     return 0;
 }

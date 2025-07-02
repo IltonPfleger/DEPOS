@@ -33,22 +33,40 @@ struct Queue {
         return nullptr;
     }
 
+    void remove(T *value) {
+        Node *current  = priorities[value->priority];
+        Node *previous = nullptr;
+        while (current && current->value != value) {
+            previous = current;
+            current  = current->next;
+        }
+        if (current->value == value) {
+            if (previous)
+                previous->next = current->next;
+            else
+                priorities[value->priority] = current->next;
+            delete current;
+        }
+    }
+
     Node *priorities[P::MAX + 1];
 };
 
 namespace Thread {
     enum Priority { IDLE = 0, LOW, NORMAL, MAX };
     enum State { RUNNING, READY, WAITING, FINISHED };
+    struct Thread;
+    typedef Queue<Thread, Priority> Queue;
     struct Thread {
         Thread(int (*)(void *), void *, Priority);
         ~Thread();
         uintptr_t stack;
         struct CPU::Context *context;
         struct Thread *joining;
+        Queue *waiting;
         enum State state;
         enum Priority priority;
     };
-    typedef Queue<Thread, Priority> Queue;
 
     void save(CPU::Context *);
     void join(Thread *);
