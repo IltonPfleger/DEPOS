@@ -4,6 +4,9 @@
 struct Settings {
     struct IO {
         using Device = Machine::IO::UART;
+        struct Enable {
+            static constexpr const bool ASSERT = false;
+        };
     };
     struct Timer {
         struct Enable {

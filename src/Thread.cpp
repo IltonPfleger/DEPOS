@@ -1,3 +1,4 @@
+#include <IO/Assert.hpp>
 #include <Thread.hpp>
 
 extern int main(void *);
@@ -8,7 +9,7 @@ Thread::Thread *_idle_thread;
 Thread::Thread *_user_thread;
 
 void dispatch(Thread::Thread *current, Thread::Thread *next) {
-    if (current == next) Logger::log("ERROR\n");
+    assert(current != next, "Thread::dispatch | Dispatch itself!");
     _running        = next;
     _running->state = Thread::RUNNING;
     CPU::Context::transfer(&current->context, next->context);
@@ -19,7 +20,6 @@ int idle(void *) {
         if (_count == 1) {
             Thread::stop();
         } else {
-            Logger::log("*** OI ***\n");
             CPU::Interrupt::enable();
             CPU::idle();
             // Thread::yield();
@@ -57,13 +57,12 @@ void Thread::join(Thread *thread) {
     CPU::Interrupt::disable();
     if (thread->state != FINISHED) {
         Thread *previous = const_cast<Thread *>(_running);
-        if (thread == previous) Logger::log("ERROR: Self join detected.");
+
+        assert(thread != previous, "Thread::join | Self join!");
+        assert(thread->joining, "Thread::join | Multiple joins!");
 
         previous->state = WAITING;
-
-        if (thread->joining) Logger::log("ERROR: Multiple joins detected.");
         thread->joining = previous;
-
         dispatch(previous, _ready.get());
     }
     CPU::Interrupt::enable();
@@ -93,7 +92,6 @@ void Thread::stop() {
     CPU::Interrupt::disable();
     delete _idle_thread;
     delete _user_thread;
-    Logger::log("*** The last thread under control of QUARK has finished. ***\n");
     Logger::log("*** QUARK is shutting down! ***\n");
     while (1);
 }
@@ -127,11 +125,11 @@ void Thread::sleep(Queue *waiting) {
 }
 
 void Thread::wakeup(Queue *waiting) {
-    if (Thread *awake = waiting->get()) {
-        awake->state   = READY;
-        awake->waiting = nullptr;
-        _ready.put(awake);
-    }
+    Thread *awake = waiting->get();
+    assert(awake != nullptr, "Thread::wakeup | Empty Queue!");
+    awake->state   = READY;
+    awake->waiting = nullptr;
+    _ready.put(awake);
 }
 
 void Thread::save(CPU::Context *context) { _running->context = context; }
