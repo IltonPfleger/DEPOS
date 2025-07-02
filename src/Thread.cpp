@@ -4,8 +4,8 @@ extern int main(void *);
 volatile Thread::Thread *_running;
 int _count;
 Thread::Queue _ready;
-Thread::Thread _idle_thread;
-Thread::Thread _user_thread;
+Thread::Thread *_idle_thread;
+Thread::Thread *_user_thread;
 
 void dispatch(Thread::Thread *current, Thread::Thread *next) {
     _running        = next;
@@ -16,12 +16,7 @@ void dispatch(Thread::Thread *current, Thread::Thread *next) {
 int idle(void *) {
     while (1) {
         if (_count == 1) {
-            CPU::Interrupt::disable();
-            // Memory::kfree(reinterpret_cast<void *>(_running->stack));
-            // Memory::kfree(reinterpret_cast<void *>(_user_thread.stack));
-            Logger::log("*** The last thread under control of QUARK has finished. ***\n");
-            Logger::log("*** QUARK is shutting down! ***\n");
-            while (1);
+            Thread::stop();
         } else {
             Logger::log("*** OI ***\n");
             CPU::Interrupt::enable();
@@ -32,29 +27,18 @@ int idle(void *) {
     return 0;
 }
 
-void Thread::create(Thread *thread, int (*entry)(void *), void *arg, Priority priority) {
-    thread->stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
-    thread->context = reinterpret_cast<CPU::Context *>(thread->stack + Machine::Memory::Page::SIZE);
-    thread->context -= sizeof(CPU::Context);
-    CPU::Context::create(thread->context, entry, exit, arg);
-    thread->state    = READY;
-    thread->priority = priority;
+Thread::Thread::Thread(int (*entry)(void *), void *args, Priority priority) {
+    stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
+    context = reinterpret_cast<CPU::Context *>(stack + Machine::Memory::Page::SIZE);
+    context -= sizeof(CPU::Context);
+    CPU::Context::create(context, entry, exit, args);
+    state    = READY;
+    priority = priority;
     _count++;
-    _ready.put(thread);
+    _ready.put(this);
 }
 
-//Thread::Thread::Thread(int (*entry)(void *), void *args, Priority priority) {
-//    stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
-//    context = reinterpret_cast<CPU::Context *>(stack + Machine::Memory::Page::SIZE);
-//    context -= sizeof(CPU::Context);
-//    CPU::Context::create(context, entry, exit, args);
-//    state    = READY;
-//    priority = priority;
-//    _count++;
-//    _ready.put(this);
-//}
-//
-//Thread::Thread::~Thread() {}
+Thread::Thread::~Thread() { Memory::kfree(reinterpret_cast<void *>(stack)); }
 
 void Thread::join(Thread *thread) {
     CPU::Interrupt::disable();
@@ -69,8 +53,6 @@ void Thread::join(Thread *thread) {
 
         dispatch(previous, _ready.get());
     }
-
-    // Memory::kfree(reinterpret_cast<void *>(thread->stack));
     CPU::Interrupt::enable();
 }
 
@@ -86,15 +68,21 @@ void Thread::exit() {
 }
 
 void Thread::init() {
-    create(&_user_thread, main, 0, NORMAL);
-    create(&_idle_thread, idle, 0, IDLE);
-
-    //_user_thread    = new (Memory::SYSTEM) Thread(main, 0, NORMAL);
-    //_idle_thread    = new (Memory::SYSTEM) Thread(idle, 0, IDLE);
+    _idle_thread    = new (Memory::SYSTEM) Thread(idle, 0, IDLE);
+    _user_thread    = new (Memory::SYSTEM) Thread(main, 0, NORMAL);
     Thread *first   = _ready.get();
     _running        = first;
     _running->state = RUNNING;
     CPU::Context::jump(first->context);
+}
+
+void Thread::stop() {
+    CPU::Interrupt::disable();
+    delete _idle_thread;
+    delete _user_thread;
+    Logger::log("*** The last thread under control of QUARK has finished. ***\n");
+    Logger::log("*** QUARK is shutting down! ***\n");
+    while (1);
 }
 
 void Thread::timer_handler() {
