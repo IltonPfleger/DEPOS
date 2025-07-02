@@ -1,7 +1,7 @@
-export module Settings;
-import Machine;
+#pragma once
+#include <Machine.hpp>
 
-export struct Settings {
+struct Settings {
     struct IO {
         using Device = Machine::IO::UART;
     };

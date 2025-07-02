@@ -1,12 +1,13 @@
-export module CPU;
-import Machine;
+#pragma once
 
-export namespace CPU {
-    __attribute__((always_inline)) inline void iret() { __asm__ volatile("mret"); }
+#include <Machine.hpp>
 
-    __attribute__((always_inline)) inline void idle() { __asm__ volatile("wfi"); }
+struct CPU {
+    __attribute__((always_inline)) static inline void iret() { __asm__ volatile("mret"); }
 
-    __attribute__((always_inline)) inline unsigned int id() {
+    __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
+
+    __attribute__((always_inline)) static inline unsigned int id() {
         unsigned int id;
         __asm__ volatile("csrr %0, mhartid" : "=r"(id));
         return id;
@@ -141,8 +142,8 @@ export namespace CPU {
         }
     };
 
-    namespace Atomic {
-        int fdec(int *value) {
+    struct Atomic {
+        static int fdec(int *value) {
             int ret;
             __asm__ volatile(
                 "1: lr.w %0, 0(%1)\n"
@@ -154,7 +155,7 @@ export namespace CPU {
             return ret - 1;
         }
 
-        int fadd(int *value) {
+        static int fadd(int *value) {
             int ret;
             __asm__ volatile(
                 "1: lr.w %0, 0(%1)\n"
@@ -165,46 +166,44 @@ export namespace CPU {
                 : "r"(value));
             return ret + 1;
         }
+    };
 
-    };  // namespace Atomic
-
-    namespace Trap {
+    struct Trap {
         enum class Type { INTERRUPT = 1, EXCEPTION = 0 };
 
-        uintptr_t cause() {
+        static uintptr_t cause() {
             uintptr_t r;
             __asm__ volatile("csrr %0, mcause" : "=r"(r));
             return r;
         }
 
-        Type type() { return static_cast<Type>(cause() >> (Machine::XLEN - 1)); }
+        static Type type() { return static_cast<Type>(cause() >> (Machine::XLEN - 1)); }
 
-        __attribute__((always_inline)) inline void set(void (*ptr)()) { __asm__ volatile("csrw mtvec, %0" ::"r"(ptr)); }
+        __attribute__((always_inline)) static inline void set(void (*ptr)()) {
+            __asm__ volatile("csrw mtvec, %0" ::"r"(ptr));
+        }
+    };
 
-    };  // namespace Trap
-
-    namespace Interrupt {
+    struct Interrupt {
         enum class Type { TIMER = 7 };
 
-        Type type() {
+        static Type type() {
             uintptr_t r = Trap::cause();
             r           = (r << 1) >> 1;
             return static_cast<Type>(r);
         }
 
-        __attribute__((always_inline)) inline void disable() { __asm__ volatile("csrci mstatus, 0x8"); }
-        __attribute__((always_inline)) inline void enable() { __asm__ volatile("csrsi mstatus, 0x8"); }
+        __attribute__((always_inline)) static inline void disable() { __asm__ volatile("csrci mstatus, 0x8"); }
+        __attribute__((always_inline)) static inline void enable() { __asm__ volatile("csrsi mstatus, 0x8"); }
 
-        namespace Timer {
-            void enable() { __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0"); }
-            void disable() { __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0"); }
-            void reset() {}
-        };  // namespace Timer
+        struct Timer {
+            static void enable() { __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0"); }
+            static void disable() { __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0"); }
+            static void reset() {}
+        };
+    };
 
-    };  // namespace Interrupt
-
-    namespace Stack {
-        __attribute__((always_inline)) inline void set(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
-    };  // namespace Stack
-
-};  // namespace CPU
+    struct Stack {
+        __attribute__((always_inline)) static inline void set(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
+    };
+};

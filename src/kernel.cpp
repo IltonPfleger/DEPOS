@@ -1,9 +1,9 @@
-import Machine;
-import CPU;
-import Thread;
-import Memory;
-import Logger;
-import Timer;
+#include <CPU.hpp>
+#include <IO/Logger.hpp>
+#include <Machine.hpp>
+#include <Memory.hpp>
+#include <Thread.hpp>
+#include <Timer.hpp>
 
 static char STACK[Machine::Memory::Page::SIZE];
 

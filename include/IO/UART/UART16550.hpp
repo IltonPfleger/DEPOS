@@ -1,6 +1,4 @@
-export module UART16550;
-
-export template <char* A, int C, int B>
+template <char* A, int C, int B>
 struct UART16550 {
     static constexpr int Clock    = C;
     static constexpr int Baudrate = B;

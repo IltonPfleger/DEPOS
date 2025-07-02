@@ -1,62 +1,4 @@
-export module Thread;
-import Machine;
-import Memory;
-import Logger;
-import CPU;
-
-template <typename T, typename P>
-struct Queue {
-    struct Node {
-        Node *next;
-        T *value;
-    };
-
-    void put(T *value) {
-        P i           = value->priority;
-        Node *item    = reinterpret_cast<Node *>(Memory::malloc(sizeof(Node), Memory::SYSTEM));
-        item->value   = value;
-        item->next    = priorities[i];
-        priorities[i] = item;
-    }
-
-    T *get() {
-        for (int i = P::MAX - 1; i >= 0; i--) {
-            if (priorities[i]) {
-                Node *item    = priorities[i];
-                priorities[i] = item->next;
-                T *value      = item->value;
-                Memory::free(item, Memory::SYSTEM);
-                return value;
-            }
-        }
-        return nullptr;
-    }
-
-    Node *priorities[P::MAX];
-};
-
-export namespace Thread {
-    enum Priority { IDLE, LOW, NORMAL, HIGH, MAX };
-    enum State { RUNNING, READY, WAITING, FINISHED };
-    struct Thread {
-        uintptr_t stack;
-        struct CPU::Context *context;
-        struct Thread *joining;
-        enum State state;
-        enum Priority priority;
-    };
-    typedef Queue<Thread, Priority> Queue;
-
-    void save(CPU::Context *);
-    void exit();
-    void init();
-    void sleep(Queue *);
-    void wakeup(Queue *);
-    void yield();
-    void timer_handler();
-    void create(Thread *, int (*)(void *), void *, Priority);
-    void join(Thread *);
-};  // namespace Thread
+#include <Thread.hpp>
 
 extern int main(void *);
 volatile Thread::Thread *_running;
@@ -75,12 +17,13 @@ int idle(void *) {
     while (1) {
         if (_count == 1) {
             CPU::Interrupt::disable();
-            Memory::kfree(reinterpret_cast<void *>(_running->stack));
-            Memory::kfree(reinterpret_cast<void *>(_user_thread.stack));
+            // Memory::kfree(reinterpret_cast<void *>(_running->stack));
+            // Memory::kfree(reinterpret_cast<void *>(_user_thread.stack));
             Logger::log("*** The last thread under control of QUARK has finished. ***\n");
             Logger::log("*** QUARK is shutting down! ***\n");
             while (1);
         } else {
+            Logger::log("*** OI ***\n");
             CPU::Interrupt::enable();
             CPU::idle();
             Thread::yield();
@@ -100,6 +43,19 @@ void Thread::create(Thread *thread, int (*entry)(void *), void *arg, Priority pr
     _ready.put(thread);
 }
 
+//Thread::Thread::Thread(int (*entry)(void *), void *args, Priority priority) {
+//    stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
+//    context = reinterpret_cast<CPU::Context *>(stack + Machine::Memory::Page::SIZE);
+//    context -= sizeof(CPU::Context);
+//    CPU::Context::create(context, entry, exit, args);
+//    state    = READY;
+//    priority = priority;
+//    _count++;
+//    _ready.put(this);
+//}
+//
+//Thread::Thread::~Thread() {}
+
 void Thread::join(Thread *thread) {
     CPU::Interrupt::disable();
     if (thread->state != FINISHED) {
@@ -114,7 +70,7 @@ void Thread::join(Thread *thread) {
         dispatch(previous, _ready.get());
     }
 
-    Memory::kfree(reinterpret_cast<void *>(thread->stack));
+    // Memory::kfree(reinterpret_cast<void *>(thread->stack));
     CPU::Interrupt::enable();
 }
 
@@ -132,6 +88,9 @@ void Thread::exit() {
 void Thread::init() {
     create(&_user_thread, main, 0, NORMAL);
     create(&_idle_thread, idle, 0, IDLE);
+
+    //_user_thread    = new (Memory::SYSTEM) Thread(main, 0, NORMAL);
+    //_idle_thread    = new (Memory::SYSTEM) Thread(idle, 0, IDLE);
     Thread *first   = _ready.get();
     _running        = first;
     _running->state = RUNNING;
