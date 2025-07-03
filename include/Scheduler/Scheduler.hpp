@@ -1,20 +1,34 @@
 #pragma once
 #include <Scheduler/Queue.hpp>
+#define N 5
 
 template <typename T>
 struct Scheduler {
     typedef Stack<T*> Queue;
-    Queue elements[5];
+    Queue elements[N];
+    int i{0};
 
     T* chose() {
-        for (int i = 4; i >= 0; --i) {
+        i--;
+        for (int i = N - 1; i >= 0; --i) {
             T* element = elements[i].get();
             if (element) return element;
         }
         return nullptr;
     }
 
-    void remove(T* element) { elements[element->priority].remove(element); }
+    void remove(T* element) {
+        i--;
+        elements[element->priority].remove(element);
+    }
 
-    void put(T* element) { elements[element->priority].put(element); }
+    void put(T* element) {
+        i++;
+        elements[element->priority].put(element);
+    }
+
+    bool empty() {
+        if (i <= 0) return true;
+		return false;
+    }
 };
