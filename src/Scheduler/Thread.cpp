@@ -1,16 +1,16 @@
-#include <IO/Assert.hpp>
+#include <IO/Debug.hpp>
 #include <Scheduler/Scheduler.hpp>
 #include <Scheduler/Thread.hpp>
 
 extern int main(void *);
 volatile Thread::Thread *_running;
 static int _count;
-static Scheduler<Thread::Thread> _scheduler;
+static Scheduler<Thread::Thread, Thread::Priority::MAX> _scheduler;
 static Thread::Thread *_idle_thread;
 static Thread::Thread *_user_thread;
 
 void dispatch(Thread::Thread *current, Thread::Thread *next) {
-    assert(current != next, "Thread::dispatch | Dispatch itself!");
+    ERROR(current == next, "Thread::dispatch[current == next]");
     _running        = next;
     _running->state = Thread::RUNNING;
     CPU::Context::transfer(&current->context, next->context);
@@ -23,7 +23,6 @@ int idle(void *) {
         } else {
             CPU::Interrupt::enable();
             CPU::idle();
-            // Thread::yield();
         }
     }
     return 0;
@@ -50,6 +49,8 @@ Thread::Thread::~Thread() {
             waiting->remove(this);
             _count--;
             break;
+        default:
+            break;
     }
     Memory::kfree(reinterpret_cast<void *>(stack));
 }
@@ -59,8 +60,8 @@ void Thread::join(Thread *thread) {
     if (thread->state != FINISHED) {
         Thread *previous = const_cast<Thread *>(_running);
 
-        assert(thread != previous, "Thread::join | Self join!");
-        assert(thread->joining, "Thread::join | Multiple joins!");
+        ERROR(thread == previous, "Thread::join[target == running]");
+        ERROR(thread->joining != nullptr, "Thread::join[joining != nullptr]");
 
         previous->state = WAITING;
         thread->joining = previous;
@@ -101,7 +102,7 @@ void Thread::timer_handler() {
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     _scheduler.put(previous);
-    Thread *next     = _scheduler.chose();
+    Thread *next    = _scheduler.chose();
     _running        = next;
     _running->state = RUNNING;
     CPU::Context::jump(next->context);
@@ -127,7 +128,7 @@ void Thread::sleep(Queue *waiting) {
 
 void Thread::wakeup(Queue *waiting) {
     Thread *awake = waiting->get();
-    assert(awake != nullptr, "Thread::wakeup | Empty Queue!");
+    ERROR(awake == nullptr, "Thread::wakeup[awake == nullptr]");
     awake->state   = READY;
     awake->waiting = nullptr;
     _scheduler.put(awake);
