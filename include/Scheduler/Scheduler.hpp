@@ -2,9 +2,13 @@
 #include <Scheduler/Queue.hpp>
 #define N 5
 
+struct RR {
+    static constexpr bool timed = true;
+};
+
 template <typename T>
 struct Scheduler {
-    typedef Stack<T*> Queue;
+    typedef FIFO<T*> Queue;
     Queue elements[N];
     int i{0};
 
@@ -29,6 +33,6 @@ struct Scheduler {
 
     bool empty() {
         if (i <= 0) return true;
-		return false;
+        return false;
     }
 };
