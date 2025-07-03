@@ -9,7 +9,7 @@
 struct Thread {
     enum Priority { IDLE = 0, LOW, NORMAL, HIGH };
     enum State { RUNNING, READY, WAITING, FINISHED };
-    typedef Stack<Thread *> Queue;
+    typedef LIFO<Thread *> Queue;
 
     Thread(int (*)(void *), void *, Priority);
     ~Thread();
