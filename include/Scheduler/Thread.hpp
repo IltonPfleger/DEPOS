@@ -7,7 +7,7 @@
 #include <Scheduler/Queue.hpp>
 
 namespace Thread {
-    enum Priority { IDLE = 0, LOW, NORMAL, HIGH };
+    enum Priority { IDLE = 0, LOW, NORMAL, MAX };
     enum State { RUNNING, READY, WAITING, FINISHED };
     struct Thread;
     typedef Stack<Thread *> Queue;

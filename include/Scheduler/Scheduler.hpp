@@ -1,15 +1,13 @@
 #pragma once
 #include <Scheduler/Queue.hpp>
 
-#define N 5
-
-template <typename T>
+template <typename T, int N>
 struct Scheduler {
     typedef Stack<T*> Queue;
-    Queue elements[N];
+    Queue elements[N + 1];
 
     T* chose() {
-        for (int i = N - 1; i >= 0; --i) {
+        for (int i = N; i >= 0; --i) {
             T* element = elements[i].get();
             if (element) return element;
         }

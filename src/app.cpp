@@ -6,8 +6,6 @@
 #define ITERATIONS 20
 #define SLEEP 1000000000
 
-// static Semaphore semaphore;
-
 int teste0(void *ptr) {
     Semaphore *semaphore = (Semaphore *)ptr;
     semaphore->p();
