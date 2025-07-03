@@ -1,9 +1,10 @@
 #pragma once
 #include <Alarm.hpp>
 #include <CPU.hpp>
+#include <IO/Logger.hpp>
 #include <Machine.hpp>
 #include <Settings.hpp>
-#include <Thread.hpp>
+#include <Scheduler/Thread.hpp>
 
 volatile uintptr_t& MTIME    = *reinterpret_cast<volatile uintptr_t*>(Machine::CLINT::ADDR + 0xBFF8);
 volatile uintptr_t& MTIMECMP = *reinterpret_cast<volatile uintptr_t*>(Machine::CLINT::ADDR + 0x4000);
@@ -45,6 +46,7 @@ namespace Timer {
         reset();
         if constexpr (Settings::Timer::Enable::SCHEDULER) {
             if (--(CHANNELS[Channel::SCHEDULER].current) == 0) {
+                //Logger::log("TIMER\n");
                 CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
                 CHANNELS[Channel::SCHEDULER].handler();
             }

@@ -1,12 +1,13 @@
 #include <IO/Assert.hpp>
-#include <Thread.hpp>
+#include <Scheduler/Scheduler.hpp>
+#include <Scheduler/Thread.hpp>
 
 extern int main(void *);
 volatile Thread::Thread *_running;
-int _count;
-Thread::Queue _ready;
-Thread::Thread *_idle_thread;
-Thread::Thread *_user_thread;
+static int _count;
+static Scheduler<Thread::Thread> _scheduler;
+static Thread::Thread *_idle_thread;
+static Thread::Thread *_user_thread;
 
 void dispatch(Thread::Thread *current, Thread::Thread *next) {
     assert(current != next, "Thread::dispatch | Dispatch itself!");
@@ -28,21 +29,21 @@ int idle(void *) {
     return 0;
 }
 
-Thread::Thread::Thread(int (*entry)(void *), void *args, Priority priority) {
+Thread::Thread::Thread(int (*entry)(void *), void *args, Priority p) {
     stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
     context = reinterpret_cast<CPU::Context *>(stack + Machine::Memory::Page::SIZE);
     context -= sizeof(CPU::Context);
     CPU::Context::create(context, entry, exit, args);
     state    = READY;
-    priority = priority;
+    priority = p;
     _count++;
-    _ready.put(this);
+    _scheduler.put(this);
 }
 
 Thread::Thread::~Thread() {
     switch (state) {
         case (READY):
-            _ready.remove(this);
+            _scheduler.remove(this);
             _count--;
             break;
         case (WAITING):
@@ -63,7 +64,7 @@ void Thread::join(Thread *thread) {
 
         previous->state = WAITING;
         thread->joining = previous;
-        dispatch(previous, _ready.get());
+        dispatch(previous, _scheduler.chose());
     }
     CPU::Interrupt::enable();
 }
@@ -71,18 +72,18 @@ void Thread::join(Thread *thread) {
 void Thread::exit() {
     CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
-    if (previous->joining) _ready.put(previous->joining);
+    if (previous->joining) _scheduler.put(previous->joining);
     previous->state = FINISHED;
 
     _count--;
-    Thread *next = _ready.get();
+    Thread *next = _scheduler.chose();
     dispatch(previous, next);
 }
 
 void Thread::init() {
     _idle_thread    = new (Memory::SYSTEM) Thread(idle, 0, IDLE);
     _user_thread    = new (Memory::SYSTEM) Thread(main, 0, NORMAL);
-    Thread *first   = _ready.get();
+    Thread *first   = _scheduler.chose();
     _running        = first;
     _running->state = RUNNING;
     CPU::Context::jump(first->context);
@@ -99,8 +100,8 @@ void Thread::stop() {
 void Thread::timer_handler() {
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
-    _ready.put(previous);
-    Thread *next    = _ready.get();
+    _scheduler.put(previous);
+    Thread *next     = _scheduler.chose();
     _running        = next;
     _running->state = RUNNING;
     CPU::Context::jump(next->context);
@@ -110,8 +111,8 @@ void Thread::yield() {
     CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
-    Thread *next     = _ready.get();
-    _ready.put(previous);
+    Thread *next     = _scheduler.chose();
+    _scheduler.put(previous);
     dispatch(previous, next);
 }
 
@@ -120,7 +121,7 @@ void Thread::sleep(Queue *waiting) {
     previous->state   = WAITING;
     previous->waiting = waiting;
     waiting->put(previous);
-    Thread *next = _ready.get();
+    Thread *next = _scheduler.chose();
     dispatch(previous, next);
 }
 
@@ -129,7 +130,7 @@ void Thread::wakeup(Queue *waiting) {
     assert(awake != nullptr, "Thread::wakeup | Empty Queue!");
     awake->state   = READY;
     awake->waiting = nullptr;
-    _ready.put(awake);
+    _scheduler.put(awake);
 }
 
 void Thread::save(CPU::Context *context) { _running->context = context; }
