@@ -38,8 +38,8 @@ int main(void *) {
     Logger::log("APP\n");
     Alarm::delay(1);
     Semaphore semaphore(1);
-    Thread::Thread *thread0 = new (Memory::APPLICATION) Thread::Thread(teste0, &semaphore, Thread::Priority::NORMAL);
-    Thread::Thread *thread1 = new (Memory::APPLICATION) Thread::Thread(teste1, &semaphore, Thread::Priority::NORMAL);
+    Thread *thread0 = new (Memory::APPLICATION) Thread(teste0, &semaphore, Thread::Priority::NORMAL);
+    Thread *thread1 = new (Memory::APPLICATION) Thread(teste1, &semaphore, Thread::Priority::NORMAL);
     // Thread::yield();
     Thread::join(thread0);
     Thread::join(thread1);

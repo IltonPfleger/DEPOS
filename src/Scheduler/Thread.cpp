@@ -3,13 +3,13 @@
 #include <Scheduler/Thread.hpp>
 
 extern int main(void *);
-volatile Thread::Thread *_running;
+volatile Thread *_running;
 static int _count;
-static Scheduler<Thread::Thread, Thread::Priority::MAX> _scheduler;
-static Thread::Thread *_idle_thread;
-static Thread::Thread *_user_thread;
+static Scheduler<Thread> _scheduler;
+static Thread *_idle_thread;
+static Thread *_user_thread;
 
-void dispatch(Thread::Thread *current, Thread::Thread *next) {
+void dispatch(Thread *current, Thread *next) {
     ERROR(next == nullptr, "[Thread::dispatch] Cannot dispatch an invalid thread.");
     ERROR(current == next, "[Thread::dispatch] Cannot dispatch the same thread.");
     _running        = next;
@@ -23,13 +23,15 @@ int idle(void *) {
             Thread::stop();
         } else {
             CPU::Interrupt::enable();
+			//Logger::log("IDLE\n");
             CPU::idle();
+			//Thread::yield();
         }
     }
     return 0;
 }
 
-Thread::Thread::Thread(int (*entry)(void *), void *args, Priority p) {
+Thread::Thread(int (*entry)(void *), void *args, Priority p) {
     stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
     context = reinterpret_cast<CPU::Context *>(stack + Machine::Memory::Page::SIZE);
     context -= sizeof(CPU::Context);
@@ -40,7 +42,7 @@ Thread::Thread::Thread(int (*entry)(void *), void *args, Priority p) {
     _scheduler.put(this);
 }
 
-Thread::Thread::~Thread() {
+Thread::~Thread() {
     switch (state) {
         case (READY):
             _scheduler.remove(this);
