@@ -4,15 +4,10 @@
 #include <Meta.hpp>
 #include <Settings.hpp>
 
-#define ERROR(expr, message)                      \
+#define ERROR(expr, message, ...)                 \
     if constexpr (Settings::IO::Enable::ASSERT) { \
-        _ERROR(expr, message);                    \
+        if (expr) {                               \
+            Logger::log("ERROR: ");               \
+            Logger::log(message, ##__VA_ARGS__);  \
+        }                                         \
     }
-
-inline void _ERROR(bool cond, const char *message) {
-    if (cond) {
-        Logger::log("ERROR: ");
-        Logger::log(message);
-        while (1);
-    }
-}
