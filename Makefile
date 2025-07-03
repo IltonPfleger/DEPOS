@@ -8,7 +8,7 @@ QEMU := qemu-system-riscv64
 
 CFLAGS := -Wall -Wextra -pedantic -mcmodel=medany -Iinclude
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles -fcheck-new
-CFLAGS += -g -O2 -march=rv64imac_zicsr -mabi=lp64
+CFLAGS += -g -std=c++23 -O2 -march=rv64imac_zicsr -mabi=lp64
 
 BUILD := build
 TARGET := $(BUILD)/quark
@@ -33,6 +33,8 @@ $(TARGET).elf: $(OBJS)
 $(BUILD)/%.o: %.cpp 
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
+-include $(DEPS)
 
 clean:
 	rm -rf build

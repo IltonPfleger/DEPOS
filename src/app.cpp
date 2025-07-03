@@ -1,9 +1,10 @@
+#include <Alarm.hpp>
 #include <IO/Logger.hpp>
-#include <Semaphore.hpp>
-#include <Thread.hpp>
+#include <Scheduler/Semaphore.hpp>
+#include <Scheduler/Thread.hpp>
 
-#define ITERATIONS 10
-#define SLEEP 1000000
+#define ITERATIONS 20
+#define SLEEP 1000000000
 
 // static Semaphore semaphore;
 
@@ -36,14 +37,15 @@ int teste1(void *ptr) {
 }
 
 int main(void *) {
-    // Alarm::delay(1);
+    Logger::log("APP\n");
+    Alarm::delay(1);
     Semaphore semaphore(1);
     Thread::Thread *thread0 = new (Memory::APPLICATION) Thread::Thread(teste0, &semaphore, Thread::Priority::NORMAL);
     Thread::Thread *thread1 = new (Memory::APPLICATION) Thread::Thread(teste1, &semaphore, Thread::Priority::NORMAL);
-    // Semaphore::create(&semaphore, 1);
+    // Thread::yield();
     Thread::join(thread0);
     Thread::join(thread1);
     delete thread0;
-    delete thread0;
+    delete thread1;
     return 0;
 }
