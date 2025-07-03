@@ -20,15 +20,15 @@ struct Settings {
     };
 };
 
-//template <typename>
-//struct Scheduler;
-//struct Thread;
-//struct RR;
-//
-//template <typename T>
-//struct Traits;
-//
-//template <>
-//struct Traits<Scheduler<Thread>> {
-//    typedef RR Criterion;
-//};
+template <typename>
+struct Scheduler;
+struct Thread;
+struct RR;
+
+template <typename T>
+struct Traits;
+
+template <>
+struct Traits<Scheduler<Thread>> {
+    typedef RR Criterion;
+};

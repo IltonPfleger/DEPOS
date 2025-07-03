@@ -23,9 +23,8 @@ int idle(void *) {
             Thread::stop();
         } else {
             CPU::Interrupt::enable();
-			//Logger::log("IDLE\n");
             CPU::idle();
-			//Thread::yield();
+            if (!_scheduler.empty()) Thread::yield();
         }
     }
     return 0;
