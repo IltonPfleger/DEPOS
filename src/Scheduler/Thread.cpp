@@ -10,7 +10,7 @@ static Thread::Thread *_idle_thread;
 static Thread::Thread *_user_thread;
 
 void dispatch(Thread::Thread *current, Thread::Thread *next) {
-    ERROR(current == next, "Thread::dispatch[current == next]");
+    ERROR(current == next, "[Thread::dispatch] Cannot dispatch the same thread.");
     _running        = next;
     _running->state = Thread::RUNNING;
     CPU::Context::transfer(&current->context, next->context);
@@ -60,8 +60,8 @@ void Thread::join(Thread *thread) {
     if (thread->state != FINISHED) {
         Thread *previous = const_cast<Thread *>(_running);
 
-        ERROR(thread == previous, "Thread::join[target == running]");
-        ERROR(thread->joining != nullptr, "Thread::join[joining != nullptr]");
+        ERROR(thread == previous, "[Thread::join] Thread cannot to join itself.");
+        ERROR(thread->joining != nullptr, "[Thread::join] Thread already has a joining thread.");
 
         previous->state = WAITING;
         thread->joining = previous;
@@ -128,7 +128,7 @@ void Thread::sleep(Queue *waiting) {
 
 void Thread::wakeup(Queue *waiting) {
     Thread *awake = waiting->get();
-    ERROR(awake == nullptr, "Thread::wakeup[awake == nullptr]");
+    ERROR(awake == nullptr, "[Thread::wakeup]  Cannot wake up a thread from an empty waiting queue.");
     awake->state   = READY;
     awake->waiting = nullptr;
     _scheduler.put(awake);
