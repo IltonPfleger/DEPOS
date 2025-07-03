@@ -27,6 +27,7 @@ struct Alarm {
         } else {
             unsigned long sum = alarms->value;
             Entry *current    = alarms;
+            Entry *previous   = nullptr;
             while (current->next && sum + current->next->value < alarm.value) {
                 current = current->next;
                 sum += current->value;
@@ -38,6 +39,7 @@ struct Alarm {
                 alarm.next = current->next;
                 alarm.value -= current->value;
                 alarm.next->value -= alarm.value;
+                previous->next = &alarm;
             }
         }
 

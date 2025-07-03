@@ -35,5 +35,5 @@ struct Stack {
         }
     }
 
-    Node *head;
+    Node *head{nullptr};
 };
