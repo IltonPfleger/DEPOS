@@ -22,8 +22,8 @@ struct Base {
         Element *node = head;
         head          = node->next;
         T value       = node->value;
-        delete node;
         if (empty()) tail = nullptr;
+        delete node;
         return value;
     }
 
@@ -57,7 +57,7 @@ struct Base {
 };
 
 template <typename T>
-struct LIFO : public Base<T> {
+struct LIFO : Base<T> {
     using Base<T>::empty;
     using Base<T>::head;
     using Base<T>::remove;
@@ -67,7 +67,7 @@ struct LIFO : public Base<T> {
 };
 
 template <typename T>
-struct FIFO : public Base<T> {
+struct FIFO : Base<T> {
     using Base<T>::empty;
     using Base<T>::head;
     using Base<T>::remove;
@@ -88,7 +88,7 @@ struct FIFO : public Base<T> {
 };
 
 template <typename T, typename R>
-struct POFO : public Base<T> {
+struct POFO : Base<T> {
     using Base<T>::empty;
     using Base<T>::head;
     using Base<T>::remove;
