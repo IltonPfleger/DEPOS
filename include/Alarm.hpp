@@ -1,6 +1,6 @@
 #include <Memory.hpp>
 #include <Meta.hpp>
-#include <Scheduler/Semaphore.hpp>
+#include <Semaphore.hpp>
 #include <Settings.hpp>
 
 struct Alarm {

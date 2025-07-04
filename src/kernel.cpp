@@ -2,7 +2,7 @@
 #include <IO/Logger.hpp>
 #include <Machine.hpp>
 #include <Memory.hpp>
-#include <Scheduler/Thread.hpp>
+#include <Thread.hpp>
 #include <Timer.hpp>
 
 static char STACK[Machine::Memory::Page::SIZE];

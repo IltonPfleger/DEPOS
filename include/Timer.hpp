@@ -1,10 +1,9 @@
 #pragma once
 #include <Alarm.hpp>
 #include <CPU.hpp>
-#include <IO/Logger.hpp>
 #include <Machine.hpp>
 #include <Scheduler/Scheduler.hpp>
-#include <Scheduler/Thread.hpp>
+#include <Thread.hpp>
 #include <Settings.hpp>
 
 volatile uintptr_t& MTIME    = *reinterpret_cast<volatile uintptr_t*>(Machine::CLINT::ADDR + 0xBFF8);

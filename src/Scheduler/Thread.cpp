@@ -1,6 +1,6 @@
 #include <IO/Debug.hpp>
 #include <Scheduler/Scheduler.hpp>
-#include <Scheduler/Thread.hpp>
+#include <Thread.hpp>
 
 extern int main(void *);
 volatile Thread *_running;
