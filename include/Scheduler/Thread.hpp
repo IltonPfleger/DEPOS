@@ -4,19 +4,19 @@
 #include <IO/Logger.hpp>
 #include <Machine.hpp>
 #include <Memory.hpp>
-#include <Scheduler/Queue.hpp>
+#include <Scheduler/Lists.hpp>
 
 struct Thread {
     enum Priority { IDLE = 0, LOW, NORMAL, HIGH };
     enum State { RUNNING, READY, WAITING, FINISHED };
-    typedef LIFO<Thread *> Queue;
+    typedef LIFO<Thread *> List;
 
     Thread(int (*)(void *), void *, Priority);
     ~Thread();
     uintptr_t stack;
     struct CPU::Context *context;
     struct Thread *joining;
-    Queue *waiting;
+    List *waiting;
     enum State state;
     enum Priority priority;
 
@@ -25,8 +25,8 @@ struct Thread {
     static void exit();
     static void init();
     static void stop();
-    static void sleep(Queue *);
-    static void wakeup(Queue *);
+    static void sleep(List *);
+    static void wakeup(List *);
     static void yield();
     static void timer_handler();
 };

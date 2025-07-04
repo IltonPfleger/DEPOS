@@ -19,6 +19,7 @@ struct LIFO {
         delete node;
         return value;
     }
+    bool empty() { return head == nullptr; }
 
     void remove(T value) {
         Node **current = &head;
@@ -43,7 +44,7 @@ struct FIFO {
     };
 
     void put(T value) {
-        Node *node = new (Memory::SYSTEM) Node{.value = value, .next = nullptr};
+        Node *node = new (Memory::SYSTEM) Node{value, nullptr};
         if (!head) {
             head = tail = node;
             return;
@@ -51,6 +52,8 @@ struct FIFO {
         tail->next = node;
         tail       = node;
     }
+
+    bool empty() { return head == nullptr; }
 
     T get() {
         if (!head) return nullptr;
@@ -62,7 +65,7 @@ struct FIFO {
     }
 
     void remove(T value) {
-		if(!head) return;
+        if (!head) return;
         Node *current  = head;
         Node *previous = nullptr;
         while (current && current->value != value) {

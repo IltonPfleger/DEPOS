@@ -4,10 +4,10 @@
 #include <Meta.hpp>
 #include <Settings.hpp>
 
-#define ERROR(expr, message, ...)                 \
-    if constexpr (Settings::IO::Enable::ASSERT) { \
-        if (expr) {                               \
-            Logger::log("ERROR: ");               \
-            Logger::log(message, ##__VA_ARGS__);  \
-        }                                         \
+#define ERROR(expr, message, ...)                \
+    if constexpr (Traits<Debug>::ERROR) {        \
+        if (expr) {                              \
+            Logger::log("ERROR: ");              \
+            Logger::log(message, ##__VA_ARGS__); \
+        }                                        \
     }

@@ -4,52 +4,48 @@
 #include <Settings.hpp>
 
 struct Alarm {
-    struct Entry {
+    struct Delay {
         RawSemaphore semaphore;
         unsigned long value;
-        Entry *next;
+        Delay *next;
     };
 
-    static inline Entry *alarms = nullptr;
+    static inline Delay *delays = nullptr;
 
     template <typename T = void>
-    static typename Meta::IF<Settings::Timer::Enable::ALARM, T>::Type delay(unsigned long value) {
-        unsigned long time = value * Settings::Timer::ALARM;
-        Entry alarm{RawSemaphore(0), time, nullptr};
+    static typename Meta::IF<Traits<Alarm>::Enable, T>::Type delay(unsigned long value) {
+        unsigned long ticks = value * Traits<Alarm>::Frequency;
+        Delay *entry        = new (Memory::SYSTEM) Delay{RawSemaphore(0), ticks, nullptr};
 
-        if (alarms == nullptr) {
-            alarm.next = nullptr;
-            alarms     = &alarm;
-        } else if (alarm.value < alarms->value) {
-            alarms->value -= alarm.value;
-            alarm.next = alarms;
-            alarms     = &alarm;
+        if (!delays || entry->value < delays->value) {
+            if (delays) delays->value -= entry->value;
+            entry->next = delays;
+            delays      = entry;
         } else {
-            unsigned long sum = alarms->value;
-            Entry *current    = alarms;
-            Entry *previous   = nullptr;
-            while (current->next && sum + current->next->value < alarm.value) {
+            unsigned long sum = delays->value;
+            Delay *current    = delays;
+
+            while (current->next && sum + current->next->value < entry->value) {
                 current = current->next;
                 sum += current->value;
             }
-            if (current->next == nullptr) {
-                alarm.value -= sum;
-                current->next = &alarm;
-            } else {
-                alarm.next = current->next;
-                alarm.value -= current->value;
-                alarm.next->value -= alarm.value;
-                previous->next = &alarm;
-            }
+
+            entry->value -= sum;
+
+            if (current->next) current->next->value -= entry->value;
+
+            entry->next   = current->next;
+            current->next = entry;
         }
 
-        alarm.semaphore.p();
+        entry->semaphore.p();
+        delete entry;
     }
 
     static void handler() {
-        if (alarms && --alarms->value == 0) {
-            alarms->semaphore.v();
-            alarms = alarms->next;
+        if (delays && --delays->value == 0) {
+            delays->semaphore.v();
+            delays = delays->next;
         }
     }
 };
