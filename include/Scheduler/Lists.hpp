@@ -10,15 +10,15 @@ struct Base {
         Element *next;
     };
 
-    bool empty() const { return static_cast<const Derived *>(this)->head == nullptr; }
+    bool empty() const { return head == nullptr; }
 
     T next() {
         if (empty()) return T{};
-        Element *node                      = static_cast<Derived *>(this)->head;
-        static_cast<Derived *>(this)->head = node->next;
+        Element *node                      = head;
+        head = node->next;
         T value                            = node->value;
         delete node;
-        if (empty()) static_cast<Derived *>(this)->tail = nullptr;
+        if (empty()) tail = nullptr;
         return value;
     }
 
