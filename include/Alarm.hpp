@@ -1,7 +1,7 @@
 #include <Memory.hpp>
 #include <Meta.hpp>
 #include <Semaphore.hpp>
-#include <Settings.hpp>
+#include <Traits.hpp>
 
 struct Alarm {
     struct Delay {

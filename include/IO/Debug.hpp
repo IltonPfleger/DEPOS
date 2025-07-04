@@ -2,7 +2,7 @@
 
 #include <IO/Logger.hpp>
 #include <Meta.hpp>
-#include <Settings.hpp>
+#include <Traits.hpp>
 
 #define ERROR(expr, message, ...)                \
     if constexpr (Traits<Debug>::ERROR) {        \
