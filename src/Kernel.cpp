@@ -1,22 +1,20 @@
-import Machine;
-import CPU;
-import Thread;
-import Memory;
-import Logger;
-import Timer;
+#include <CPU.hpp>
+#include <IO/Logger.hpp>
+#include <Machine.hpp>
+#include <Memory.hpp>
+#include <Thread.hpp>
+#include <Timer.hpp>
 
 static char STACK[Machine::Memory::Page::SIZE];
 
 struct Kernel {
     static void init() {
-        CPU::Interrupt::disable();
         Logger::init();
         Logger::log("\nQ U A R K | [μKernel]\n");
         Memory::init();
-        Logger::log("Done!\n");
         Timer::init();
+        Logger::log("Done!\n");
         Thread::init();
-        while (1);
     }
 };
 
@@ -51,6 +49,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
+    CPU::Interrupt::disable();
     CPU::Trap::set(ktrap);
 
     if (CPU::id() == 0) {

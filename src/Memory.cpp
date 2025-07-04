@@ -1,34 +1,11 @@
-export module Memory;
-import Machine;
-import Logger;
+#include <IO/Logger.hpp>
+#include <Machine.hpp>
+#include <Memory.hpp>
 
 extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
-
-typedef struct Page {
-    struct Page *next;
-} Page;
-
-typedef struct Block {
-    struct Block *next;
-    uintptr_t size;
-    bool free;
-} Block;
-
-Page *pages = nullptr;
-
-export namespace Memory {
-    struct Heap {
-        Block *start;
-    };
-
-    void init();
-    void *kmalloc();
-    void kfree(void *);
-    void *malloc(unsigned long, Heap &);
-    void free(void *, Heap &);
-    Heap SYSTEM;
-};  // namespace Memory
+static Memory::Page *pages = nullptr;
+static Memory::Heap heaps[Memory::COUNT];
 
 void Memory::init() {
     const uintptr_t PSIZE        = Machine::Memory::Page::SIZE;
@@ -76,51 +53,56 @@ void Memory::kfree(void *addr) {
     Logger::log("Memory::kfree(%p)\n", page);
 }
 
-void *Memory::malloc(unsigned long size, Memory::Heap &target) {
-    if (size == 0) return nullptr;
+void *operator new(unsigned long, void *ptr) { return ptr; }
 
-    Block *current = target.start;
+void *operator new(unsigned long bytes, Memory::Role role) {
+    using Block = Memory::Block;
+    if (bytes == 0) return 0;
+
+    Block *current = heaps[role].start;
     while (current) {
-        if (current->free && current->size >= size) {
-            if (current->size >= size + sizeof(Block) + 1) {
+        if (current->flags.free && current->size >= bytes) {
+            if (current->size >= bytes + sizeof(Block) + 1) {
                 uintptr_t addr = reinterpret_cast<uintptr_t>(current);
-                addr += sizeof(Block) + size;
-                Block *block  = reinterpret_cast<Block *>(addr);
-                block->size   = current->size - size - sizeof(Block);
-                block->free   = true;
-                block->next   = current->next;
-                current->size = size;
-                current->next = block;
+                addr += sizeof(Block) + bytes;
+                Block *block      = reinterpret_cast<Block *>(addr);
+                block->size       = current->size - bytes - sizeof(Block);
+                block->flags.free = true;
+                block->flags.role = role;
+                block->next       = current->next;
+                current->size     = bytes;
+                current->next     = block;
             }
-            current->free = false;
+            current->flags.free = false;
             return reinterpret_cast<void *>(current + 1);
         }
         current = current->next;
     }
 
     void *page = Memory::kmalloc();
-    if (!page) return nullptr;
-    Block *block = reinterpret_cast<Block *>(page);
-    block->size  = Machine::Memory::Page::SIZE - sizeof(Block);
-    block->free  = true;
-    block->next  = target.start;
-    target.start = block;
-    return malloc(size, target);
+    if (!page) return 0;
+    Block *block      = reinterpret_cast<Block *>(page);
+    block->size       = Machine::Memory::Page::SIZE - sizeof(Block);
+    block->flags.free = true;
+    block->next       = heaps[role].start;
+    heaps[role].start = block;
+    return ::operator new(bytes, role);
 }
 
-void Memory::free(void *ptr, Memory::Heap &target) {
-    Block *block = reinterpret_cast<Block *>(ptr) - 1;
-    block->free  = true;
+void operator delete(void *ptr, unsigned long) {
+    using Block       = Memory::Block;
+    Block *block      = reinterpret_cast<Block *>(ptr) - 1;
+    Memory::Role role = static_cast<Memory::Role>(block->flags.role);
+    block->flags.free = true;
 
-    Block *current  = target.start;
+    Block *current  = heaps[role].start;
     Block *previous = nullptr;
-
     while (current) {
-        if (current->free) {
+        if (current->flags.free) {
             const uintptr_t tsize = current->size + sizeof(Block);
             if (tsize == Machine::Memory::Page::SIZE) {
                 if (!previous) {
-                    target.start = target.start->next;
+                    heaps[role].start = heaps[role].start->next;
                 } else {
                     previous->next = current->next;
                 }
@@ -129,7 +111,7 @@ void Memory::free(void *ptr, Memory::Heap &target) {
                 Memory::kfree(temporary);
                 continue;
             }
-            if (current->next && current->next->free) {
+            if (current->next && current->next->flags.free) {
                 current->size += current->next->size + sizeof(Block);
                 current->next = current->next->next;
                 continue;
@@ -139,3 +121,5 @@ void Memory::free(void *ptr, Memory::Heap &target) {
         current  = current->next;
     }
 }
+
+void operator delete(void *ptr) { ::operator delete(ptr, 0); }
