@@ -5,33 +5,22 @@
 template <typename T>
 struct RR {
     static constexpr bool Timed = true;
-    using List                  = FIFO<T*>;
 };
 
 template <typename T>
 struct Scheduler {
-    using Criterion = Traits<Scheduler<T>>::Criterion;
-    using List      = Criterion::List;
-    List lists[N];
+    POFO<T*, typename T::Priority> list;
+	//LIFO<T*> list;
 
     T* chose() {
-        for (int j = N - 1; j >= 0; --j) {
-            T* element = lists[j].get();
-            if (element) return element;
-        }
+        T* element = list.next();
+        if (element) return element;
         return nullptr;
     }
 
-    void remove(T* element) { lists[element->priority].remove(element); }
+    void remove(T* element) { list.remove(element); }
 
-    void put(T* element) { lists[element->priority].put(element); }
+    void insert(T* element) { list.insert(element); }
 
-    bool empty() {
-        for (int j = 0; j < N; ++j) {
-            if (!lists[j].empty()) {
-                return false;
-            }
-        }
-        return true;
-    }
+    bool empty() { return list.empty(); }
 };

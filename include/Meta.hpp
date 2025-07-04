@@ -3,20 +3,50 @@
 namespace Meta {
     template <bool B, typename True, typename False>
     struct TypeSelector {
-        using Type = True;
+        using Result = True;
     };
 
     template <typename True, typename False>
     struct TypeSelector<false, True, False> {
-        using Type = False;
+        using Result = False;
     };
 
-    template <bool Cond, typename T = void>
-    struct IF {};
+    template <bool Cond, typename T = void, typename F = void>
+    struct IF {
+        using Result = F;
+    };
+
+    template <typename T, typename F>
+    struct IF<true, T, F> {
+        using Result = T;
+    };
+
+    template <typename T, typename U>
+    struct SAME {};
 
     template <typename T>
-    struct IF<true, T> {
-        using Type = T;
+    struct SAME<T, T> {
+        static constexpr bool Result = true;
+    };
+
+    template <typename T>
+    struct REMOVE_POINTER {
+        using Result = T;
+    };
+
+    template <typename T>
+    struct REMOVE_POINTER<T*> {
+        using Result = T;
+    };
+
+    template <typename T>
+    struct IS_POINTER {
+        static constexpr bool Result = false;
+    };
+
+    template <typename T>
+    struct IS_POINTER<T*> {
+        static constexpr bool Result = true;
     };
 
 }  // namespace Meta

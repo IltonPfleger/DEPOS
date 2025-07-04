@@ -38,7 +38,7 @@ Thread::Thread(int (*entry)(void *), void *args, Priority p) {
     state    = READY;
     priority = p;
     _count++;
-    _scheduler.put(this);
+    _scheduler.insert(this);
 }
 
 Thread::~Thread() {
@@ -75,7 +75,7 @@ void Thread::join(Thread *thread) {
 void Thread::exit() {
     CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
-    if (previous->joining) _scheduler.put(previous->joining);
+    if (previous->joining) _scheduler.insert(previous->joining);
     previous->state = FINISHED;
 
     _count--;
@@ -103,7 +103,7 @@ void Thread::stop() {
 void Thread::timer_handler() {
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
-    _scheduler.put(previous);
+    _scheduler.insert(previous);
     Thread *next    = _scheduler.chose();
     _running        = next;
     _running->state = RUNNING;
@@ -115,7 +115,7 @@ void Thread::yield() {
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     Thread *next     = _scheduler.chose();
-    _scheduler.put(previous);
+    _scheduler.insert(previous);
     dispatch(previous, next);
 }
 
@@ -123,17 +123,17 @@ void Thread::sleep(List *waiting) {
     Thread *previous  = const_cast<Thread *>(_running);
     previous->state   = WAITING;
     previous->waiting = waiting;
-    waiting->put(previous);
+    waiting->insert(previous);
     Thread *next = _scheduler.chose();
     dispatch(previous, next);
 }
 
 void Thread::wakeup(List *waiting) {
-    Thread *awake = waiting->get();
+    Thread *awake = waiting->next();
     ERROR(awake == nullptr, "[Thread::wakeup] Empty queue.");
     awake->state   = READY;
     awake->waiting = nullptr;
-    _scheduler.put(awake);
+    _scheduler.insert(awake);
 }
 
 void Thread::save(CPU::Context *context) { _running->context = context; }
