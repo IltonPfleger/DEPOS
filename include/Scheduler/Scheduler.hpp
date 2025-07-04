@@ -10,7 +10,6 @@ struct RR {
 template <typename T>
 struct Scheduler {
     POFO<T*, typename T::Priority> list;
-	//LIFO<T*> list;
 
     T* chose() {
         T* element = list.next();
