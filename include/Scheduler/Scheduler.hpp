@@ -1,6 +1,5 @@
 #pragma once
 #include <Scheduler/Lists.hpp>
-#define N 5
 
 template <typename T>
 struct RR {
@@ -13,8 +12,7 @@ struct Scheduler {
 
     T* chose() {
         T* element = list.next();
-        if (element) return element;
-        return nullptr;
+        return element;
     }
 
     void remove(T* element) { list.remove(element); }
