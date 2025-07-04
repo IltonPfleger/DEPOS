@@ -1,10 +1,10 @@
 #include <IO/Logger.hpp>
 #include <Machine.hpp>
-#include <Settings.hpp>
+#include <Traits.hpp>
 #include <cstdarg>
 
 constexpr char HEX[] = "0123456789ABCDEF";
-inline void put(char value) { Settings::IO::Device::put(value); };
+inline void put(char value) { Traits<Debug>::Device::put(value); };
 
 template <typename T>
 void printNumber(T value) {
@@ -25,7 +25,7 @@ static void printHex(T value) {
     }
 }
 
-void Logger::init() { Settings::IO::Device::init(); };
+void Logger::init() { Traits<Debug>::Device::init(); };
 
 void Logger::log(const char* format, ...) {
     va_list args;

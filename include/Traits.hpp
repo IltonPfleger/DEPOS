@@ -1,20 +1,14 @@
 #pragma once
 #include <Machine.hpp>
 
-struct Settings {
-    struct IO {
-        using Device = Machine::IO::UART;
-    };
-};
-
 template <typename T>
 struct Traits;
 
 template <typename T>
 struct Scheduler;
-struct Thread;
 template <typename T>
 struct RR;
+struct Thread;
 template <>
 struct Traits<Scheduler<Thread>> {
     static constexpr unsigned long Frequency = 1'000;
@@ -38,5 +32,6 @@ struct Traits<Alarm> {
 struct Debug;
 template <>
 struct Traits<Debug> {
+    using Device                      = Machine::IO::UART;
     static constexpr const bool ERROR = true;
 };
