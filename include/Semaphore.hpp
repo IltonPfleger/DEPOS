@@ -1,7 +1,7 @@
 #pragma once
 #include <CPU.hpp>
 #include <Scheduler/Lists.hpp>
-#include <Scheduler/Thread.hpp>
+#include <Thread.hpp>
 
 struct RawSemaphore {
     Thread::List _waiting;

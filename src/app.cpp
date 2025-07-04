@@ -1,7 +1,7 @@
 #include <Alarm.hpp>
 #include <IO/Logger.hpp>
-#include <Scheduler/Semaphore.hpp>
-#include <Scheduler/Thread.hpp>
+#include <Semaphore.hpp>
+#include <Thread.hpp>
 
 #define ITERATIONS 20
 #define SLEEP 1000000000
