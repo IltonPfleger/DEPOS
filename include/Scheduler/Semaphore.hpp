@@ -1,10 +1,10 @@
 #pragma once
 #include <CPU.hpp>
-#include <Scheduler/Queue.hpp>
+#include <Scheduler/Lists.hpp>
 #include <Scheduler/Thread.hpp>
 
 struct RawSemaphore {
-    Thread::Queue _waiting;
+    Thread::List _waiting;
     int _value;
 
     RawSemaphore(int value) : _value(value) {}
@@ -23,7 +23,7 @@ struct RawSemaphore {
 };
 
 struct Semaphore {
-    Thread::Queue _waiting;
+    Thread::List _waiting;
     int _value;
 
     Semaphore(int value) : _value(value) {}

@@ -10,8 +10,8 @@ static Thread *_idle_thread;
 static Thread *_user_thread;
 
 void dispatch(Thread *current, Thread *next) {
-    ERROR(next == nullptr, "[Thread::dispatch] Cannot dispatch an invalid thread.");
-    ERROR(current == next, "[Thread::dispatch] Cannot dispatch the same thread.");
+    ERROR(next == nullptr, "[Thread::dispatch] Invalid thread.");
+    ERROR(current == next, "[Thread::dispatch] Same thread.");
     _running        = next;
     _running->state = Thread::RUNNING;
     CPU::Context::transfer(&current->context, next->context);
@@ -62,8 +62,8 @@ void Thread::join(Thread *thread) {
     if (thread->state != FINISHED) {
         Thread *previous = const_cast<Thread *>(_running);
 
-        ERROR(thread == previous, "[Thread::join] Thread cannot join itself.");
-        ERROR(thread->joining != nullptr, "[Thread::join] Thread already has a joining thread.");
+        ERROR(thread == previous, "[Thread::join] Join itself.");
+        ERROR(thread->joining != nullptr, "[Thread::join] Already joined.");
 
         previous->state = WAITING;
         thread->joining = previous;
@@ -119,7 +119,7 @@ void Thread::yield() {
     dispatch(previous, next);
 }
 
-void Thread::sleep(Queue *waiting) {
+void Thread::sleep(List *waiting) {
     Thread *previous  = const_cast<Thread *>(_running);
     previous->state   = WAITING;
     previous->waiting = waiting;
@@ -128,9 +128,9 @@ void Thread::sleep(Queue *waiting) {
     dispatch(previous, next);
 }
 
-void Thread::wakeup(Queue *waiting) {
+void Thread::wakeup(List *waiting) {
     Thread *awake = waiting->get();
-    ERROR(awake == nullptr, "[Thread::wakeup]  Cannot wake up a thread from an empty waiting queue.");
+    ERROR(awake == nullptr, "[Thread::wakeup] Empty queue.");
     awake->state   = READY;
     awake->waiting = nullptr;
     _scheduler.put(awake);

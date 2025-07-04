@@ -4,31 +4,39 @@
 struct Settings {
     struct IO {
         using Device = Machine::IO::UART;
-        struct Enable {
-            static constexpr const bool ASSERT = true;
-        };
-    };
-    struct Timer {
-        struct Enable {
-            static constexpr const bool ALARM     = true;
-            static constexpr const bool SCHEDULER = true;
-        };
-
-        static constexpr const unsigned long FREQUENCY = 10'000;
-        static constexpr const unsigned long ALARM     = 1'000;
-        static constexpr const unsigned long SCHEDULER = 1'000;
     };
 };
-
-template <typename>
-struct Scheduler;
-struct Thread;
-struct RR;
 
 template <typename T>
 struct Traits;
 
+template <typename T>
+struct Scheduler;
+struct Thread;
+template <typename T>
+struct RR;
 template <>
 struct Traits<Scheduler<Thread>> {
-    typedef RR Criterion;
+    static constexpr unsigned long Frequency = 1'000;
+    typedef RR<Thread> Criterion;
+};
+
+struct Timer;
+template <>
+struct Traits<Timer> {
+    static constexpr const bool Enable             = true;
+    static constexpr const unsigned long Frequency = 10'000;
+};
+
+struct Alarm;
+template <>
+struct Traits<Alarm> {
+    static constexpr const bool Enable             = true;
+    static constexpr const unsigned long Frequency = 1'000;
+};
+
+struct Debug;
+template <>
+struct Traits<Debug> {
+    static constexpr const bool ERROR = true;
 };

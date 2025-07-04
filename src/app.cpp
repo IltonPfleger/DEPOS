@@ -40,7 +40,6 @@ int main(void *) {
     Semaphore semaphore(1);
     Thread *thread0 = new (Memory::APPLICATION) Thread(teste0, &semaphore, Thread::Priority::NORMAL);
     Thread *thread1 = new (Memory::APPLICATION) Thread(teste1, &semaphore, Thread::Priority::NORMAL);
-    // Thread::yield();
     Thread::join(thread0);
     Thread::join(thread1);
     delete thread0;
