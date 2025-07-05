@@ -22,7 +22,9 @@ struct Meta {
     };
 
     template <typename T, typename U>
-    struct SAME {};
+    struct SAME {
+        static constexpr bool Result = false;
+    };
 
     template <typename T>
     struct SAME<T, T> {
@@ -35,7 +37,7 @@ struct Meta {
     };
 
     template <typename T>
-    struct REMOVE_POINTER<T*> {
+    struct REMOVE_POINTER<T *> {
         using Result = T;
     };
 
@@ -45,7 +47,7 @@ struct Meta {
     };
 
     template <typename T>
-    struct IS_POINTER<T*> {
+    struct IS_POINTER<T *> {
         static constexpr bool Result = true;
     };
 };

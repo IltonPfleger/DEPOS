@@ -1,17 +1,17 @@
-template <char* A, int C, int B>
+template <char *A, int C, int B>
 struct UART16550 {
     static constexpr int Clock    = C;
     static constexpr int Baudrate = B;
     static constexpr int DIVISOR  = (Clock) / (Baudrate * 16);
-    static volatile inline char* BaseAddr() { return reinterpret_cast<volatile char*>(A); }
-    static volatile char& THR() { return *reinterpret_cast<volatile char*>(BaseAddr() + 0); };
-    static volatile char& IER() { return *reinterpret_cast<volatile char*>(BaseAddr() + 1); };
-    static volatile char& FCR() { return *reinterpret_cast<volatile char*>(BaseAddr() + 2); };
-    static volatile char& LCR() { return *reinterpret_cast<volatile char*>(BaseAddr() + 3); };
-    static volatile char& MCR() { return *reinterpret_cast<volatile char*>(BaseAddr() + 4); };
-    static volatile char& LSR() { return *reinterpret_cast<volatile char*>(BaseAddr() + 5); };
-    static volatile char& LSB() { return *reinterpret_cast<volatile char*>(BaseAddr() + 0); };  // Divisor Latch LSB
-    static volatile char& MSB() { return *reinterpret_cast<volatile char*>(BaseAddr() + 1); };  // Divisor Latch MSB
+    static volatile inline char *BaseAddr() { return reinterpret_cast<volatile char *>(A); }
+    static volatile char &THR() { return *reinterpret_cast<volatile char *>(BaseAddr() + 0); };
+    static volatile char &IER() { return *reinterpret_cast<volatile char *>(BaseAddr() + 1); };
+    static volatile char &FCR() { return *reinterpret_cast<volatile char *>(BaseAddr() + 2); };
+    static volatile char &LCR() { return *reinterpret_cast<volatile char *>(BaseAddr() + 3); };
+    static volatile char &MCR() { return *reinterpret_cast<volatile char *>(BaseAddr() + 4); };
+    static volatile char &LSR() { return *reinterpret_cast<volatile char *>(BaseAddr() + 5); };
+    static volatile char &LSB() { return *reinterpret_cast<volatile char *>(BaseAddr() + 0); };  // Divisor Latch LSB
+    static volatile char &MSB() { return *reinterpret_cast<volatile char *>(BaseAddr() + 1); };  // Divisor Latch MSB
     static constexpr char LSR_TX_EMPTY = (1 << 5);
 
     static void init() {

@@ -8,16 +8,16 @@ struct RR {
 
 template <typename T>
 struct Scheduler {
-    POFO<T*, typename T::Priority> list;
+    POFO<T *, typename T::Priority> list;
 
-    T* chose() {
-        T* element = list.next();
+    T *chose() {
+        T *element = list.next();
         return element;
     }
 
-    void remove(T* element) { list.remove(element); }
+    void remove(T *element) { list.remove(element); }
 
-    void insert(T* element) { list.insert(element); }
+    void insert(T *element) { list.insert(element); }
 
     bool empty() { return list.empty(); }
 };

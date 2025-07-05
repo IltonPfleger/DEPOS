@@ -21,7 +21,7 @@ struct Kernel {
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push<true>();
-    CPU::Context* context = CPU::Context::get();
+    CPU::Context *context = CPU::Context::get();
     Thread::save(context);
     CPU::Stack::set(STACK + Machine::Memory::Page::SIZE);
 
@@ -43,7 +43,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
         while (1);
     }
 
-    CPU::Stack::set((char*)context);
+    CPU::Stack::set((char *)context);
     CPU::Context::pop();
     CPU::iret();
 }
