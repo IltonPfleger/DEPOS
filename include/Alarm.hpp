@@ -13,7 +13,8 @@ struct Alarm {
     static inline Delay *delays = nullptr;
 
     template <typename T = void>
-    static typename Meta::IF<Traits<Alarm>::Enable, T>::Result delay(unsigned long value) {
+        requires Traits<Alarm>::Enable
+    static void delay(unsigned long value) {
         unsigned long ticks = value * Traits<Alarm>::Frequency;
         Delay *entry        = new (Memory::SYSTEM) Delay{RawSemaphore(0), ticks, nullptr};
 
