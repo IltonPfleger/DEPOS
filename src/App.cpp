@@ -36,7 +36,7 @@ int teste1(void *ptr) {
 
 int main(void *) {
     Logger::log("APP\n");
-	//Alarm::delay(1);
+    // Alarm::delay(1);
     Semaphore semaphore(1);
     Thread *thread0 = new (Memory::APPLICATION) Thread(teste0, &semaphore, Thread::Priority::NORMAL);
     Thread *thread1 = new (Memory::APPLICATION) Thread(teste1, &semaphore, Thread::Priority::NORMAL);
