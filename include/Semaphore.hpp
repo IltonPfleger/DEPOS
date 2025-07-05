@@ -4,43 +4,36 @@
 #include <Thread.hpp>
 
 struct RawSemaphore {
-    Thread::List _waiting;
-    int _value;
+    Thread::List waiting;
+    int value;
 
-    RawSemaphore(int value) : _value(value) {}
+    RawSemaphore(int value) : value(value) {}
 
     void p() {
-        if (CPU::Atomic::fdec(&_value) < 0) {
-            Thread::sleep(&_waiting);
+        if (CPU::Atomic::fdec(&value) < 0) {
+            Thread::sleep(&waiting);
         }
     }
 
     void v() {
-        if (CPU::Atomic::fadd(&_value) <= 0) {
-            Thread::wakeup(&_waiting);
+        if (CPU::Atomic::fadd(&value) <= 0) {
+            Thread::wakeup(&waiting);
         }
     }
 };
 
-struct Semaphore {
-    Thread::List _waiting;
-    int _value;
-
-    Semaphore(int value) : _value(value) {}
+struct Semaphore : private RawSemaphore {
+    Semaphore(int value) : RawSemaphore(value) {}
 
     void p() {
         CPU::Interrupt::disable();
-        if (CPU::Atomic::fdec(&_value) < 0) {
-            Thread::sleep(&_waiting);
-        }
+        RawSemaphore::p();
         CPU::Interrupt::enable();
     }
 
     void v() {
         CPU::Interrupt::disable();
-        if (CPU::Atomic::fadd(&_value) <= 0) {
-            Thread::wakeup(&_waiting);
-        }
+        RawSemaphore::v();
         CPU::Interrupt::enable();
     }
 };

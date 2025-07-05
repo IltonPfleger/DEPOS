@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Meta {
+struct Meta {
     template <bool B, typename True, typename False>
     struct TypeSelector {
         using Result = True;
@@ -48,5 +48,4 @@ namespace Meta {
     struct IS_POINTER<T*> {
         static constexpr bool Result = true;
     };
-
-}  // namespace Meta
+};

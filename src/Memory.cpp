@@ -1,3 +1,4 @@
+#include <IO/Debug.hpp>
 #include <IO/Logger.hpp>
 #include <Machine.hpp>
 #include <Memory.hpp>
@@ -122,4 +123,6 @@ void operator delete(void *ptr, unsigned long) {
     }
 }
 
-void operator delete(void *ptr) { ::operator delete(ptr, 0); }
+void operator delete(void *) {
+	ERROR(true);
+}
