@@ -4,10 +4,9 @@
 #include <Meta.hpp>
 #include <Traits.hpp>
 
-#define ERROR(expr, message, ...)                \
-    if constexpr (Traits<Debug>::ERROR) {        \
-        if (expr) {                              \
-            Logger::log("ERROR: ");              \
-            Logger::log(message, ##__VA_ARGS__); \
-        }                                        \
+#define ERROR(expr, ...)                           \
+    if constexpr (Traits<Debug>::ERROR) {          \
+        if (expr) {                                \
+            Logger::log("ERROR: ", ##__VA_ARGS__); \
+        }                                          \
     }
