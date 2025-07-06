@@ -32,7 +32,7 @@ int idle(void *) {
 
 Thread::Thread(int (*entry)(void *), void *args, Priority p) {
     stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
-    context = reinterpret_cast<CPU::Context *>(stack + Machine::Memory::Page::SIZE);
+    context = reinterpret_cast<CPU::Context *>(stack + Traits<Memory>::Page::SIZE);
     context -= sizeof(CPU::Context);
     CPU::Context::create(context, entry, exit, args);
     state    = READY;

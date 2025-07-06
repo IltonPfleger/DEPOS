@@ -18,7 +18,7 @@ static constexpr unsigned char &ROLE(uintptr_t page) {
 }
 
 void Memory::init() {
-    const uintptr_t PSIZE        = Machine::Memory::Page::SIZE;
+    const uintptr_t PSIZE        = Traits<Memory>::Page::SIZE;
     const uintptr_t KERNEL_START = uintptr_t(__KERNEL_START__);
     const uintptr_t KERNEL_END   = uintptr_t(__KERNEL_END__);
     const uintptr_t KERNEL_SIZE  = KERNEL_END - KERNEL_START;
@@ -41,7 +41,7 @@ void Memory::init() {
         page->next = pages;
         pages      = page;
         n_pages++;
-        current += Machine::Memory::Page::SIZE;
+        current += Traits<Memory>::Page::SIZE;
     };
 
     Logger::log("NumberOfPages=%d\n", n_pages);
@@ -64,7 +64,6 @@ void Memory::kfree(void *addr) {
 }
 
 void *operator new(unsigned long, void *ptr) { return ptr; }
-
 void *operator new(unsigned long bytes, Memory::Role role) {
     if (bytes == 0 || bytes >= Traits<Memory>::Page::SIZE) return 0;
 
@@ -93,6 +92,7 @@ void *operator new(unsigned long bytes, Memory::Role role) {
     return reinterpret_cast<void *>(block);
 }
 
+void operator delete(void *) { ERROR(true, "::operator delete(void*)"); }
 void operator delete(void *ptr, unsigned long bytes) {
     if (!ptr) return;
 
@@ -133,5 +133,3 @@ void operator delete(void *ptr, unsigned long bytes) {
         heaps[role][order] = nullptr;
     }
 }
-
-void operator delete(void *) { ERROR(true, "::operator delete(void*)"); }

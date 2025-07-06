@@ -14,10 +14,6 @@ struct Machine {
     struct Memory {
         static constexpr const unsigned int ORDER = 30;
         static constexpr const unsigned int SIZE  = (1 << ORDER);
-        struct Page {
-            static constexpr const unsigned int ORDER = 12;
-            static constexpr const unsigned int SIZE  = (1 << ORDER);
-        };
     };
     struct CLINT {
         static constexpr const uintptr_t ADDR      = 0x02000000;
