@@ -16,6 +16,7 @@ OBJS := $(shell find . -type f -name "*.cpp" | sed 's|\./|\./build/|g' | sed 's|
 DEPS = $(OBJS:.o=.d)
 
 all:
+	make clean
 	make run
 
 run: $(TARGET)

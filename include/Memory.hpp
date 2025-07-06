@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Traits.hpp>
+
 struct Memory {
     enum Role : unsigned char {
         APPLICATION,
@@ -13,16 +15,9 @@ struct Memory {
 
     typedef struct Block {
         struct Block *next;
-        unsigned long size;
-        struct {
-            unsigned char free : 1;
-            unsigned char role : 7;
-        } flags;
     } Block;
 
-    struct Heap {
-        Block *start;
-    };
+    typedef Block *Heap[Traits<Memory>::Page::ORDER + 1];
 
     static void init();
     static void *kmalloc();
