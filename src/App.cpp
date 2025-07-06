@@ -3,7 +3,7 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-#define ITERATIONS 20
+#define ITERATIONS 100
 #define SLEEP 1000000000
 
 int teste0(void *ptr) {
@@ -35,8 +35,10 @@ int teste1(void *ptr) {
 }
 
 int main(void *) {
-    Logger::log("APP\n");
-    // Alarm::delay(1);
+    Logger::log("APP:\n");
+    Logger::log("Delay...");
+    Alarm::delay(1);
+    Logger::log("Done!\n");
     Semaphore semaphore(1);
     Thread *thread0 = new (Memory::APPLICATION) Thread(teste0, &semaphore, Thread::Priority::NORMAL);
     Thread *thread1 = new (Memory::APPLICATION) Thread(teste1, &semaphore, Thread::Priority::NORMAL);
