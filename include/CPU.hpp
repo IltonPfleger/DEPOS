@@ -199,7 +199,6 @@ struct CPU {
         struct Timer {
             static void enable() { __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0"); }
             static void disable() { __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0"); }
-            static void reset() {}
         };
     };
 

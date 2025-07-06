@@ -3,6 +3,8 @@
 #include <Memory.hpp>
 #include <Meta.hpp>
 
+// TODO: If we have a doubly linked list, remove from tail is faster
+
 template <typename T, typename R = void>
 struct LinkedList {
     struct Element {
@@ -24,8 +26,22 @@ struct LinkedList {
 
     T remove_back() {
         if (!head) return T{};
+        if (head == tail) {
+            T value = head->value;
+            delete head;
+            head = tail = nullptr;
+            return value;
+        }
+
+        Element *current = head;
+        while (current->next != tail) {
+            current = current->next;
+        }
+
         T value = tail->value;
-        remove(value);
+        delete tail;
+        tail       = current;
+        tail->next = nullptr;
         return value;
     }
 
@@ -48,7 +64,8 @@ struct LinkedList {
         requires(!Meta::SAME<R, void>::Result)
     {
         Element *e = new (Memory::SYSTEM) Element{value, nullptr};
-        if (!head || value < head->value) {
+
+        if (!head || priority(value) > priority(head->value)) {
             e->next = head;
             head    = e;
             if (!tail) tail = e;

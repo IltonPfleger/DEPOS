@@ -12,7 +12,7 @@ struct Thread;
 template <>
 struct Traits<Scheduler<Thread>> {
     static constexpr unsigned long Frequency = 1'000;
-    typedef RR<Thread> Criterion;
+    using Criterion                          = RR<Thread>;
 };
 
 struct Timer;
