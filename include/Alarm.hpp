@@ -48,8 +48,10 @@ struct Alarm {
         if (delays) {
             if (delays->value > 0) {
                 delays->value--;
-            } else {
+            } else if (delays->value == 0) {
                 delays->semaphore.v();
+            } else {
+                delays = delays->next;
             }
         }
     }
