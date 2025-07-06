@@ -75,7 +75,7 @@ void *operator new(unsigned long bytes, Memory::Role role) {
         auto raw  = reinterpret_cast<uintptr_t>(Memory::kmalloc());
         auto page = reinterpret_cast<Memory::Block *>(raw);
         if (!page) return nullptr;
-        ROLE(raw)     = role;
+        ROLE(raw)      = role;
         i              = Traits<Memory>::Page::ORDER;
         page->next     = heaps[role][i];
         heaps[role][i] = reinterpret_cast<Memory::Block *>(page);
@@ -107,21 +107,15 @@ void operator delete(void *ptr, unsigned long bytes) {
     while (order < Traits<Memory>::Page::ORDER) {
         auto buddy = addr ^ (1UL << order);
 
-        Memory::Block *current  = heaps[role][order];
-        Memory::Block *previous = nullptr;
+        Memory::Block **current = &heaps[role][order];
 
-        while (current && reinterpret_cast<uintptr_t>(current) != buddy) {
-            previous = current;
-            current  = current->next;
+        while (*current && reinterpret_cast<uintptr_t>(*current) != buddy) {
+            current = &(*current)->next;
         }
 
-        if (!current) break;
+        if (!*current) break;
 
-        if (previous) {
-            previous->next = current->next;
-        } else {
-            heaps[role][order] = current->next;
-        }
+        (*current) = (*current)->next;
 
         if (buddy < addr) addr = buddy;
         order++;
