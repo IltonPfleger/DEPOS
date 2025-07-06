@@ -69,13 +69,15 @@ void *operator new(unsigned long bytes, Memory::Role role) {
 
     auto order = ORDER(bytes);
     auto i     = order;
-    while (i <= Traits<Memory>::Page::ORDER && !heaps[role][i]) i++;
+    while (i < Traits<Memory>::Page::ORDER && !heaps[role][i]) i++;
 
-    if (i > Traits<Memory>::Page::ORDER) {
-        auto page = reinterpret_cast<uintptr_t>(Memory::kmalloc());
+    if (i == Traits<Memory>::Page::ORDER) {
+        auto raw  = reinterpret_cast<uintptr_t>(Memory::kmalloc());
+        auto page = reinterpret_cast<Memory::Block *>(raw);
         if (!page) return nullptr;
-        ROLE(page)     = role;
+        ROLE(raw)     = role;
         i              = Traits<Memory>::Page::ORDER;
+        page->next     = heaps[role][i];
         heaps[role][i] = reinterpret_cast<Memory::Block *>(page);
     }
 
@@ -83,8 +85,9 @@ void *operator new(unsigned long bytes, Memory::Role role) {
         Memory::Block *block = heaps[role][i];
         heaps[role][i--]     = block->next;
 
-        block->next    = reinterpret_cast<Memory::Block *>(reinterpret_cast<uintptr_t>(block) ^ (1 << i));
-        heaps[role][i] = block;
+        block->next       = reinterpret_cast<Memory::Block *>(reinterpret_cast<uintptr_t>(block) ^ (1 << i));
+        block->next->next = heaps[role][i];
+        heaps[role][i]    = block;
     }
 
     Memory::Block *block = heaps[role][order];
