@@ -17,7 +17,7 @@ int filosofo(void *arg) {
     int i        = ITERATIONS;
     while (i--) {
         Logger::log("Filósofo %d está pensando\n", id);
-        //Alarm::delay(1);
+        Alarm::delay(1);
 
         if (id == FILOSOFOS - 1) {
             garfos[esquerda]->p();
@@ -28,7 +28,7 @@ int filosofo(void *arg) {
         }
 
         Logger::log("Filósofo %d está comendo\n", id);
-        //Alarm::delay(1);
+        Alarm::delay(1);
 
         garfos[direita]->v();
         garfos[esquerda]->v();
