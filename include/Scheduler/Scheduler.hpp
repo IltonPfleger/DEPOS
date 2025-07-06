@@ -3,7 +3,7 @@
 
 template <typename T>
 struct RR {
-    static constexpr bool Timed = true;
+    static constexpr bool Timed = false;
 };
 
 template <typename T>
