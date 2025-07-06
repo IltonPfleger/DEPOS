@@ -1,3 +1,4 @@
+#include <IO/Logger.hpp>
 #include <Memory.hpp>
 #include <Meta.hpp>
 #include <Semaphore.hpp>
@@ -15,6 +16,7 @@ struct Alarm {
     template <typename T = void>
         requires Traits<Alarm>::Enable
     static void delay(unsigned long value) {
+        CPU::Interrupt::disable();
         unsigned long ticks = value * Traits<Alarm>::Frequency;
         Delay *entry        = new (Memory::SYSTEM) Delay{RawSemaphore(0), ticks, nullptr};
 
@@ -44,9 +46,13 @@ struct Alarm {
     }
 
     static void handler() {
-        if (delays && --delays->value == 0) {
-            delays->semaphore.v();
-            delays = delays->next;
+        if (delays) {
+            if (delays->value > 0) {
+                delays->value--;
+            } else {
+                delays->semaphore.v();
+                delays = delays->next;
+            }
         }
     }
 };

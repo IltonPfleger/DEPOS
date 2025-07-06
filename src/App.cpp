@@ -1,50 +1,57 @@
 #include <Alarm.hpp>
 #include <IO/Logger.hpp>
+#include <Memory.hpp>
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-#define ITERATIONS 100
-#define SLEEP 1000000000
+#define FILOSOFOS 2
+#define ITERATIONS 5
 
-int teste0(void *ptr) {
-    Semaphore *semaphore = (Semaphore *)ptr;
-    semaphore->p();
-    int i = 0;
-    while (i < ITERATIONS) {
-        int j = SLEEP;
-        while (j--);
-        Logger::log("Thread0 %d\n", i);
-        i++;
-    }
-    semaphore->v();
-    return 0;
-}
+Thread *threads[FILOSOFOS];
+Semaphore *garfos[FILOSOFOS];
+Semaphore *mutex;
 
-int teste1(void *ptr) {
-    Semaphore *semaphore = (Semaphore *)ptr;
-    semaphore->p();
-    int i = 0;
-    while (i < ITERATIONS) {
-        int j = SLEEP;
-        while (j--);
-        Logger::log("Thread1 %d\n", i);
-        i++;
+int filosofo(void *arg) {
+    int id       = (int)(long)arg;
+    int esquerda = id;
+    int direita  = (id + 1) % FILOSOFOS;
+    int i        = ITERATIONS;
+    while (i--) {
+        Logger::log("Filósofo %d está pensando\n", id);
+        Alarm::delay(1);
+
+        mutex->p();
+        garfos[esquerda]->p();
+        garfos[direita]->p();
+        mutex->v();
+
+        Logger::log("Filósofo %d está comendo\n", id);
+        Alarm::delay(1);
+
+        garfos[direita]->v();
+        garfos[esquerda]->v();
     }
-    semaphore->v();
     return 0;
 }
 
 int main(void *) {
-    Logger::log("APP:\n");
-    Logger::log("Delay...");
-    Alarm::delay(1);
+    Logger::log("Application: \n");
+
+    mutex = new (Memory::APPLICATION) Semaphore(1);
+    for (int i = 0; i < FILOSOFOS; i++) {
+        garfos[i] = new (Memory::APPLICATION) Semaphore(1);
+    }
+
+    for (int i = 0; i < FILOSOFOS; i++) {
+        threads[i] = new (Memory::APPLICATION) Thread(filosofo, (void *)(long long)i, Thread::Priority::NORMAL);
+    }
+
+    for (int i = 0; i < FILOSOFOS; i++) {
+        Thread::join(threads[i]);
+        delete threads[i];
+        delete garfos[i];
+    }
+
     Logger::log("Done!\n");
-    Semaphore semaphore(1);
-    Thread *thread0 = new (Memory::APPLICATION) Thread(teste0, &semaphore, Thread::Priority::NORMAL);
-    Thread *thread1 = new (Memory::APPLICATION) Thread(teste1, &semaphore, Thread::Priority::NORMAL);
-    Thread::join(thread0);
-    Thread::join(thread1);
-    delete thread0;
-    delete thread1;
     return 0;
 }

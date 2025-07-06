@@ -123,4 +123,4 @@ void operator delete(void *ptr, unsigned long) {
     }
 }
 
-void operator delete(void *) { ERROR(true); }
+void operator delete(void * ptr) { ::operator delete(ptr, 0);}
