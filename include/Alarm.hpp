@@ -15,34 +15,33 @@ struct Alarm {
 
     template <typename T = void>
         requires Traits<Alarm>::Enable
-    static void delay(unsigned long value) {
+    static void delay(unsigned long seconds) {
         CPU::Interrupt::disable();
-        unsigned long ticks = value * Traits<Alarm>::Frequency;
-        Delay *entry        = new (Memory::SYSTEM) Delay{RawSemaphore(0), ticks, nullptr};
+        unsigned long ticks = seconds * Traits<Alarm>::Frequency;
+        Delay entry{RawSemaphore(0), ticks, nullptr};
 
-        if (!delays || entry->value < delays->value) {
-            if (delays) delays->value -= entry->value;
-            entry->next = delays;
-            delays      = entry;
+        if (!delays || entry.value < delays->value) {
+            if (delays) delays->value -= entry.value;
+            entry.next = delays;
+            delays     = &entry;
         } else {
             unsigned long sum = delays->value;
             Delay *current    = delays;
 
-            while (current->next && sum + current->next->value < entry->value) {
+            while (current->next && sum + current->next->value < entry.value) {
                 current = current->next;
                 sum += current->value;
             }
 
-            entry->value -= sum;
+            entry.value -= sum;
 
-            if (current->next) current->next->value -= entry->value;
+            if (current->next) current->next->value -= entry.value;
 
-            entry->next   = current->next;
-            current->next = entry;
+            entry.next    = current->next;
+            current->next = &entry;
         }
-
-        entry->semaphore.p();
-        delete entry;
+        entry.semaphore.p();
+        delays = delays->next;
     }
 
     static void handler() {
@@ -51,7 +50,6 @@ struct Alarm {
                 delays->value--;
             } else {
                 delays->semaphore.v();
-                delays = delays->next;
             }
         }
     }
