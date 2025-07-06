@@ -5,14 +5,13 @@
 #include <Thread.hpp>
 
 #define FILOSOFOS 2
-#define ITERATIONS 5
+#define ITERATIONS 1
 
 Thread *threads[FILOSOFOS];
 Semaphore *garfos[FILOSOFOS];
-Semaphore *mutex;
 
 int filosofo(void *arg) {
-    int id       = (int)(long)arg;
+    int id       = (int)(long long)arg;
     int esquerda = id;
     int direita  = (id + 1) % FILOSOFOS;
     int i        = ITERATIONS;
@@ -20,10 +19,13 @@ int filosofo(void *arg) {
         Logger::log("Filósofo %d está pensando\n", id);
         Alarm::delay(1);
 
-        mutex->p();
-        garfos[esquerda]->p();
-        garfos[direita]->p();
-        mutex->v();
+        if (id == FILOSOFOS - 1) {
+            garfos[esquerda]->p();
+            garfos[direita]->p();
+        } else {
+            garfos[direita]->p();
+            garfos[esquerda]->p();
+        }
 
         Logger::log("Filósofo %d está comendo\n", id);
         Alarm::delay(1);
@@ -37,7 +39,6 @@ int filosofo(void *arg) {
 int main(void *) {
     Logger::log("Application: \n");
 
-    mutex = new (Memory::APPLICATION) Semaphore(1);
     for (int i = 0; i < FILOSOFOS; i++) {
         garfos[i] = new (Memory::APPLICATION) Semaphore(1);
     }
