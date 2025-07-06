@@ -151,7 +151,8 @@ struct CPU {
                 "sc.w t0, t0, 0(%1)\n"
                 "bnez t0, 1b\n"
                 : "=&r"(ret)
-                : "r"(value));
+                : "r"(value)
+                : "memory");
             return ret - 1;
         }
 
@@ -163,7 +164,8 @@ struct CPU {
                 "sc.w t0, t0, 0(%1)\n"
                 "bnez t0, 1b\n"
                 : "=&r"(ret)
-                : "r"(value));
+                : "r"(value)
+                : "memory");
             return ret + 1;
         }
     };
