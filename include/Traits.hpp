@@ -29,6 +29,15 @@ struct Traits<Alarm> {
     static constexpr const unsigned long Frequency = 1'000;
 };
 
+struct Memory;
+template <>
+struct Traits<Memory> {
+    struct Page {
+        static constexpr const unsigned int ORDER = 12;
+        static constexpr const unsigned int SIZE  = (1 << ORDER);
+    };
+};
+
 struct Debug;
 template <>
 struct Traits<Debug> {
