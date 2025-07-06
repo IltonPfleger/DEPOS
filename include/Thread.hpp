@@ -7,7 +7,7 @@
 #include <Scheduler/Lists.hpp>
 
 struct Thread {
-    enum Priority { IDLE = 0, LOW, NORMAL, HIGH };
+    enum Priority { IDLE = 0, LOW = 1, NORMAL = 2, HIGH = 3 };
     enum State { RUNNING, READY, WAITING, FINISHED };
     typedef FIFO<Thread *> List;
 

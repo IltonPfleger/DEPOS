@@ -39,8 +39,10 @@ struct Timer {
             CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
         }
 
-        reset();
-        CPU::Interrupt::Timer::enable();
+        if constexpr (Traits<Timer>::Enable) {
+            reset();
+            CPU::Interrupt::Timer::enable();
+        }
     }
 
     static void handler() {
