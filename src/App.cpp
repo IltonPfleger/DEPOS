@@ -1,48 +1,58 @@
 #include <Alarm.hpp>
 #include <IO/Logger.hpp>
+#include <Memory.hpp>
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-#define ITERATIONS 20
-#define SLEEP 1000000000
+#define FILOSOFOS 2
+#define ITERATIONS 1
 
-int teste0(void *ptr) {
-    Semaphore *semaphore = (Semaphore *)ptr;
-    semaphore->p();
-    int i = 0;
-    while (i < ITERATIONS) {
-        int j = SLEEP;
-        while (j--);
-        Logger::log("Thread0 %d\n", i);
-        i++;
-    }
-    semaphore->v();
-    return 0;
-}
+Thread *threads[FILOSOFOS];
+Semaphore *garfos[FILOSOFOS];
 
-int teste1(void *ptr) {
-    Semaphore *semaphore = (Semaphore *)ptr;
-    semaphore->p();
-    int i = 0;
-    while (i < ITERATIONS) {
-        int j = SLEEP;
-        while (j--);
-        Logger::log("Thread1 %d\n", i);
-        i++;
+int filosofo(void *arg) {
+    int id       = (int)(long long)arg;
+    int esquerda = id;
+    int direita  = (id + 1) % FILOSOFOS;
+    int i        = ITERATIONS;
+    while (i--) {
+        Logger::log("Filósofo %d está pensando\n", id);
+        Alarm::delay(1);
+
+        if (id == FILOSOFOS - 1) {
+            garfos[esquerda]->p();
+            garfos[direita]->p();
+        } else {
+            garfos[direita]->p();
+            garfos[esquerda]->p();
+        }
+
+        Logger::log("Filósofo %d está comendo\n", id);
+        Alarm::delay(1);
+
+        garfos[direita]->v();
+        garfos[esquerda]->v();
     }
-    semaphore->v();
     return 0;
 }
 
 int main(void *) {
-    Logger::log("APP\n");
-    Alarm::delay(1);
-    Semaphore semaphore(1);
-    Thread *thread0 = new (Memory::APPLICATION) Thread(teste0, &semaphore, Thread::Priority::NORMAL);
-    Thread *thread1 = new (Memory::APPLICATION) Thread(teste1, &semaphore, Thread::Priority::NORMAL);
-    Thread::join(thread0);
-    Thread::join(thread1);
-    delete thread0;
-    delete thread1;
+    Logger::log("Application: \n");
+
+    for (int i = 0; i < FILOSOFOS; i++) {
+        garfos[i] = new (Memory::APPLICATION) Semaphore(1);
+    }
+
+    for (int i = 0; i < FILOSOFOS; i++) {
+        threads[i] = new (Memory::APPLICATION) Thread(filosofo, (void *)(long long)i, Thread::Priority::NORMAL);
+    }
+
+    for (int i = 0; i < FILOSOFOS; i++) {
+        Thread::join(threads[i]);
+        delete threads[i];
+        delete garfos[i];
+    }
+
+    Logger::log("Done!\n");
     return 0;
 }

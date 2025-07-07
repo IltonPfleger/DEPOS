@@ -6,8 +6,8 @@
 #include <Thread.hpp>
 #include <Traits.hpp>
 
-volatile uintptr_t& MTIME    = *reinterpret_cast<volatile uintptr_t*>(Machine::CLINT::ADDR + 0xBFF8);
-volatile uintptr_t& MTIMECMP = *reinterpret_cast<volatile uintptr_t*>(Machine::CLINT::ADDR + 0x4000);
+volatile uintptr_t &MTIME    = *reinterpret_cast<volatile uintptr_t *>(Machine::CLINT::ADDR + 0xBFF8);
+volatile uintptr_t &MTIMECMP = *reinterpret_cast<volatile uintptr_t *>(Machine::CLINT::ADDR + 0x4000);
 
 struct Timer {
     struct Channel {
@@ -39,8 +39,10 @@ struct Timer {
             CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
         }
 
-        reset();
-        CPU::Interrupt::Timer::enable();
+        if constexpr (Traits<Timer>::Enable) {
+            reset();
+            CPU::Interrupt::Timer::enable();
+        }
     }
 
     static void handler() {
