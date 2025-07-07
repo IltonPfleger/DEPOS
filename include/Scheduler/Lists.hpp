@@ -5,7 +5,7 @@
 
 // TODO: If we have a doubly linked list, remove from tail is faster
 
-template <typename T, typename R = void>
+template <typename T>
 struct LinkedList {
     struct Element {
         T value;
@@ -61,17 +61,17 @@ struct LinkedList {
     }
 
     void push_sorted(const T &value)
-        requires(!Meta::SAME<R, void>::Result)
+        requires requires(const T &v) { v(); } || requires(const T &v) { (*v)(); }
     {
         Element *e = new (Memory::SYSTEM) Element{value, nullptr};
 
-        if (!head || priority(value) > priority(head->value)) {
+        if (!head || rank(value) > rank(head->value)) {
             e->next = head;
             head    = e;
             if (!tail) tail = e;
         } else {
             Element *current = head;
-            while (current->next && priority(value) < priority(current->next->value)) {
+            while (current->next && rank(value) < rank(current->next->value)) {
                 current = current->next;
             }
             e->next       = current->next;
@@ -80,13 +80,14 @@ struct LinkedList {
         }
     }
 
-    constexpr R priority(const T &value)
-        requires(!Meta::SAME<R, void>::Result)
+    constexpr auto rank(const T &value)
+        requires requires(const T &v) { v(); } || requires(const T &v) { (*v)(); }
     {
         if constexpr (Meta::IS_POINTER<T>::Result) {
-            return value->priority;
+            return (*value)();
         } else {
-            return value.priority;
+            return value();
+            ;
         }
     }
 
@@ -136,10 +137,10 @@ struct FIFO : private LinkedList<T> {
     T next() { return LinkedList<T>::remove_front(); }
 };
 
-template <typename T, typename R>
-struct POFO : private LinkedList<T, R> {
-    using LinkedList<T, R>::empty;
-    using LinkedList<T, R>::remove;
-    void insert(const T &value) { LinkedList<T, R>::push_sorted(value); }
-    T next() { return LinkedList<T, R>::remove_front(); }
+template <typename T>
+struct POFO : private LinkedList<T> {
+    using LinkedList<T>::empty;
+    using LinkedList<T>::remove;
+    void insert(const T &value) { LinkedList<T>::push_sorted(value); }
+    T next() { return LinkedList<T>::remove_front(); }
 };

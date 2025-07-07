@@ -7,12 +7,11 @@
 #include <Scheduler/Lists.hpp>
 
 struct Thread {
-    enum Priority { IDLE = 0, LOW = 1, NORMAL = 2, HIGH = 3 };
+    enum Priority : int { IDLE, LOW, NORMAL, HIGH };
+
     enum State { RUNNING, READY, WAITING, FINISHED };
     typedef FIFO<Thread *> List;
 
-    Thread(int (*)(void *), void *, Priority);
-    ~Thread();
     uintptr_t stack;
     struct CPU::Context *context;
     struct Thread *joining;
@@ -20,11 +19,14 @@ struct Thread {
     enum State state;
     enum Priority priority;
 
+    ~Thread();
+    Thread(int (*)(void *), void *, Priority);
+    Priority operator()() const;
+
     static void save(CPU::Context *);
     static void join(Thread *);
     static void exit();
     static void init();
-    static void stop();
     static void sleep(List *);
     static void wakeup(List *);
     static void yield();
