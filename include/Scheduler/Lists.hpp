@@ -71,7 +71,7 @@ struct LinkedList {
             if (!tail) tail = e;
         } else {
             Element *current = head;
-            while (current->next && rank(value) < rank(current->next->value)) {
+            while (current->next && rank(value) > rank(current->next->value)) {
                 current = current->next;
             }
             e->next       = current->next;
