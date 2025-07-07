@@ -44,10 +44,10 @@ struct CPU {
         uintptr_t s11;
         uintptr_t epc;
 
-        static void create(Context *context, int (*entry)(void *), void (*exit)(), void *arg) {
-            context->ra  = reinterpret_cast<uintptr_t>(exit);
-            context->epc = reinterpret_cast<uintptr_t>(entry);
-            context->a0  = reinterpret_cast<uintptr_t>(arg);
+        Context(int (*entry)(void *), void (*exit)(), void *arg) {
+            ra  = reinterpret_cast<uintptr_t>(exit);
+            epc = reinterpret_cast<uintptr_t>(entry);
+            a0  = reinterpret_cast<uintptr_t>(arg);
         }
 
         template <bool is_interrupt = false>

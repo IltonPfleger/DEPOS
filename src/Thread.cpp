@@ -38,7 +38,7 @@ Thread::Thread(int (*entry)(void *), void *args, Priority p) {
     stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
     context = reinterpret_cast<CPU::Context *>(stack + Traits<Memory>::Page::SIZE);
     context -= sizeof(CPU::Context);
-    CPU::Context::create(context, entry, exit, args);
+    new (context) CPU::Context(entry, exit, args);
     state    = READY;
     priority = p;
     _count++;
