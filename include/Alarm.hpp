@@ -14,7 +14,7 @@ struct Alarm {
     static inline Delay *delays = nullptr;
 
     template <typename T = void>
-        requires Traits<Alarm>::Enable
+        requires (Traits<Alarm>::Enable)
     static void delay(unsigned long seconds) {
         CPU::Interrupt::disable();
         unsigned long ticks = seconds * Traits<Alarm>::Frequency;

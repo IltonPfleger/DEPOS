@@ -20,7 +20,11 @@ void dispatch(Thread *current, Thread *next) {
 int idle(void *) {
     while (1) {
         if (_count == 1) {
-            Thread::stop();
+            CPU::Interrupt::disable();
+            delete _idle_thread;
+            delete _user_thread;
+            Logger::log("*** QUARK is shutting down! ***\n");
+            while (1);
         } else {
             CPU::Interrupt::enable();
             CPU::idle();
@@ -57,6 +61,8 @@ Thread::~Thread() {
     Memory::kfree(reinterpret_cast<void *>(stack));
 }
 
+Thread::Priority Thread::operator()() const { return priority; }
+
 void Thread::join(Thread *thread) {
     CPU::Interrupt::disable();
     if (thread->state != FINISHED) {
@@ -90,14 +96,6 @@ void Thread::init() {
     _running        = first;
     _running->state = RUNNING;
     CPU::Context::jump(first->context);
-}
-
-void Thread::stop() {
-    CPU::Interrupt::disable();
-    delete _idle_thread;
-    delete _user_thread;
-    Logger::log("*** QUARK is shutting down! ***\n");
-    while (1);
 }
 
 void Thread::timer_handler() {

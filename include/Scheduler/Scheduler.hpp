@@ -8,7 +8,7 @@ struct RR {
 
 template <typename T>
 struct Scheduler {
-    POFO<T *, typename T::Priority> list;
+    POFO<T *> list;
 
     T *chose() {
         T *element = list.next();
