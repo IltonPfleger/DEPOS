@@ -4,8 +4,8 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-#define FILOSOFOS 2
-#define ITERATIONS 1
+static constexpr int FILOSOFOS  = 5;
+static constexpr int ITERATIONS = 1;
 
 Thread *threads[FILOSOFOS];
 Semaphore *garfos[FILOSOFOS];

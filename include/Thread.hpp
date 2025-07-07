@@ -12,11 +12,11 @@ struct Thread {
     enum State { RUNNING, READY, WAITING, FINISHED };
 
     uintptr_t stack;
-    struct CPU::Context *context;
-    struct Thread *joining;
+    CPU::Context *context;
+    Thread *joining;
     List *waiting;
-    enum State state;
-    enum Priority priority;
+    State state;
+    Priority priority;
 
     ~Thread();
     Thread(int (*)(void *), void *, Priority);

@@ -12,18 +12,18 @@ CFLAGS += -g -std=c++23 -march=rv64imac_zicsr -mabi=lp64 -O3
 
 BUILD := build
 TARGET := $(BUILD)/quark
-OBJS := $(shell find . -type f -name "*.cpp" | sed 's|\./|\./build/|g' | sed 's|\.cpp|.o|')
+OBJS := $(shell find src/ -type f -name "*.cpp" | sed 's|src/|\./build/|g' | sed 's|\.cpp|.o|')
+OBJS += $(BUILD)/$(APPLICATION).o
 DEPS = $(OBJS:.o=.d)
 
-all:
-	make clean
+default:
 	make run
 
 run: $(TARGET)
 	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 
 
-debug: $(TARGET)
-	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
+#debug: $(TARGET)
+#	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
 
 $(TARGET): $(TARGET).elf
 	$(OBJCOPY) -O binary -S $< $@
@@ -31,12 +31,15 @@ $(TARGET): $(TARGET).elf
 $(TARGET).elf: $(OBJS)
 	$(LD) -T linker.ld $^ -o $@
 
-$(BUILD)/%.o: %.cpp 
+$(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
+$(BUILD)/$(APPLICATION).o: app/$(APPLICATION).cpp
+	$(CC) $(CFLAGS) -c $< -o $@
+
 
 -include $(DEPS)
 
 clean:
 	rm -rf build
-	rm -rf gcm.cache
