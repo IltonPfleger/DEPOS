@@ -7,10 +7,9 @@
 #include <Scheduler/Lists.hpp>
 
 struct Thread {
-    enum Priority : int { IDLE, LOW, NORMAL, HIGH };
-
-    enum State { RUNNING, READY, WAITING, FINISHED };
     typedef FIFO<Thread *> List;
+    enum Priority { HIGH, NORMAL, LOW, IDLE = ~0 };
+    enum State { RUNNING, READY, WAITING, FINISHED };
 
     uintptr_t stack;
     struct CPU::Context *context;
@@ -31,4 +30,11 @@ struct Thread {
     static void wakeup(List *);
     static void yield();
     static void timer_handler();
+};
+
+struct RThread : Thread {
+    unsigned long period;
+    unsigned long duration;
+    unsigned long deadline;
+    unsigned long operator()() const;
 };
