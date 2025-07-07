@@ -1,5 +1,5 @@
+#include <IO/Debug.hpp>
 #include <IO/Logger.hpp>
-#include <Machine.hpp>
 #include <Memory.hpp>
 
 extern "C" const char __KERNEL_START__[];
@@ -7,8 +7,18 @@ extern "C" const char __KERNEL_END__[];
 static Memory::Page *pages = nullptr;
 static Memory::Heap heaps[Memory::COUNT];
 
+static constexpr unsigned long ORDER(unsigned long bytes) {
+    unsigned long order = 1;
+    while ((1UL << order) < bytes) order++;
+    return order;
+}
+
+static constexpr unsigned char &ROLE(uintptr_t page) {
+    return *(reinterpret_cast<unsigned char *>(page) + Traits<Memory>::Page::SIZE - 1);
+}
+
 void Memory::init() {
-    const uintptr_t PSIZE        = Machine::Memory::Page::SIZE;
+    const uintptr_t PSIZE        = Traits<Memory>::Page::SIZE;
     const uintptr_t KERNEL_START = uintptr_t(__KERNEL_START__);
     const uintptr_t KERNEL_END   = uintptr_t(__KERNEL_END__);
     const uintptr_t KERNEL_SIZE  = KERNEL_END - KERNEL_START;
@@ -31,7 +41,7 @@ void Memory::init() {
         page->next = pages;
         pages      = page;
         n_pages++;
-        current += Machine::Memory::Page::SIZE;
+        current += Traits<Memory>::Page::SIZE;
     };
 
     Logger::log("NumberOfPages=%d\n", n_pages);
@@ -54,72 +64,69 @@ void Memory::kfree(void *addr) {
 }
 
 void *operator new(unsigned long, void *ptr) { return ptr; }
-
 void *operator new(unsigned long bytes, Memory::Role role) {
-    using Block = Memory::Block;
-    if (bytes == 0) return 0;
+    if (bytes == 0 || bytes >= Traits<Memory>::Page::SIZE) return 0;
 
-    Block *current = heaps[role].start;
-    while (current) {
-        if (current->flags.free && current->size >= bytes) {
-            if (current->size >= bytes + sizeof(Block) + 1) {
-                uintptr_t addr = reinterpret_cast<uintptr_t>(current);
-                addr += sizeof(Block) + bytes;
-                Block *block      = reinterpret_cast<Block *>(addr);
-                block->size       = current->size - bytes - sizeof(Block);
-                block->flags.free = true;
-                block->flags.role = role;
-                block->next       = current->next;
-                current->size     = bytes;
-                current->next     = block;
-            }
-            current->flags.free = false;
-            return reinterpret_cast<void *>(current + 1);
-        }
-        current = current->next;
+    auto order = ORDER(bytes);
+    auto i     = order;
+    while (i < Traits<Memory>::Page::ORDER && !heaps[role][i]) i++;
+
+    if (i == Traits<Memory>::Page::ORDER) {
+        auto raw  = reinterpret_cast<uintptr_t>(Memory::kmalloc());
+        auto page = reinterpret_cast<Memory::Block *>(raw);
+        if (!page) return nullptr;
+        ROLE(raw)      = role;
+        i              = Traits<Memory>::Page::ORDER;
+        page->next     = heaps[role][i];
+        heaps[role][i] = reinterpret_cast<Memory::Block *>(page);
     }
 
-    void *page = Memory::kmalloc();
-    if (!page) return 0;
-    Block *block      = reinterpret_cast<Block *>(page);
-    block->size       = Machine::Memory::Page::SIZE - sizeof(Block);
-    block->flags.free = true;
-    block->next       = heaps[role].start;
-    heaps[role].start = block;
-    return ::operator new(bytes, role);
+    while (i != order) {
+        Memory::Block *block = heaps[role][i];
+        heaps[role][i--]     = block->next;
+
+        block->next       = reinterpret_cast<Memory::Block *>(reinterpret_cast<uintptr_t>(block) ^ (1 << i));
+        block->next->next = heaps[role][i];
+        heaps[role][i]    = block;
+    }
+
+    Memory::Block *block = heaps[role][order];
+    heaps[role][order]   = block->next;
+    return reinterpret_cast<void *>(block);
 }
 
-void operator delete(void *ptr, unsigned long) {
-    using Block       = Memory::Block;
-    Block *block      = reinterpret_cast<Block *>(ptr) - 1;
-    Memory::Role role = static_cast<Memory::Role>(block->flags.role);
-    block->flags.free = true;
+void operator delete(void *) { ERROR(true, "::operator delete(void*)"); }
+void operator delete(void *ptr, unsigned long bytes) {
+    if (!ptr) return;
 
-    Block *current  = heaps[role].start;
-    Block *previous = nullptr;
-    while (current) {
-        if (current->flags.free) {
-            const uintptr_t tsize = current->size + sizeof(Block);
-            if (tsize == Machine::Memory::Page::SIZE) {
-                if (!previous) {
-                    heaps[role].start = heaps[role].start->next;
-                } else {
-                    previous->next = current->next;
-                }
-                Block *temporary = current;
-                current          = current->next;
-                Memory::kfree(temporary);
-                continue;
-            }
-            if (current->next && current->next->flags.free) {
-                current->size += current->next->size + sizeof(Block);
-                current->next = current->next->next;
-                continue;
-            }
+    auto addr  = reinterpret_cast<uintptr_t>(ptr);
+    auto mask  = ~0ULL << Traits<Memory>::Page::ORDER;
+    auto role  = ROLE(addr & mask);
+    auto order = ORDER(bytes);
+
+    while (order < Traits<Memory>::Page::ORDER) {
+        auto buddy = addr ^ (1UL << order);
+
+        Memory::Block **current = &heaps[role][order];
+
+        while (*current && reinterpret_cast<uintptr_t>(*current) != buddy) {
+            current = &(*current)->next;
         }
-        previous = current;
-        current  = current->next;
+
+        if (!*current) break;
+
+        (*current) = (*current)->next;
+
+        if (buddy < addr) addr = buddy;
+        order++;
+    }
+
+    Memory::Block *new_block = reinterpret_cast<Memory::Block *>(addr);
+    new_block->next          = heaps[role][order];
+    heaps[role][order]       = new_block;
+
+    if (order == Traits<Memory>::Page::ORDER) {
+        Memory::kfree(heaps[role][order]);
+        heaps[role][order] = nullptr;
     }
 }
-
-void operator delete(void *ptr) { ::operator delete(ptr, 0); }

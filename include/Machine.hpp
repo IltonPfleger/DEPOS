@@ -2,8 +2,8 @@
 #include <IO/UART/SiFiveUART.hpp>
 #include <Meta.hpp>
 
-typedef Meta::TypeSelector<sizeof(void*) == 4, long long, int>::Result intptr_t;
-typedef Meta::TypeSelector<sizeof(void*) == 8, unsigned long long, unsigned>::Result uintptr_t;
+typedef Meta::TypeSelector<sizeof(void *) == 4, long long, int>::Result intptr_t;
+typedef Meta::TypeSelector<sizeof(void *) == 8, unsigned long long, unsigned>::Result uintptr_t;
 
 struct Machine {
     struct IO {
@@ -14,10 +14,6 @@ struct Machine {
     struct Memory {
         static constexpr const unsigned int ORDER = 30;
         static constexpr const unsigned int SIZE  = (1 << ORDER);
-        struct Page {
-            static constexpr const unsigned int ORDER = 12;
-            static constexpr const unsigned int SIZE  = (1 << ORDER);
-        };
     };
     struct CLINT {
         static constexpr const uintptr_t ADDR      = 0x02000000;

@@ -8,7 +8,7 @@ QEMU := qemu-system-riscv64
 
 CFLAGS := -Wall -Wextra -pedantic -mcmodel=medany -Iinclude
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles -fcheck-new
-CFLAGS += -g -std=c++23 -march=rv64imac_zicsr -mabi=lp64 -O2
+CFLAGS += -g -std=c++23 -march=rv64imac_zicsr -mabi=lp64 -O3
 
 BUILD := build
 TARGET := $(BUILD)/quark
@@ -16,6 +16,7 @@ OBJS := $(shell find . -type f -name "*.cpp" | sed 's|\./|\./build/|g' | sed 's|
 DEPS = $(OBJS:.o=.d)
 
 all:
+	make clean
 	make run
 
 run: $(TARGET)
