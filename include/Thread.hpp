@@ -21,6 +21,10 @@ struct Thread {
     Thread(int (*)(void *), void *, Priority);
     Priority operator()() const;
 
+    static inline volatile Thread *_running;
+    static inline unsigned int _count;
+    static inline Scheduler<Thread> _scheduler;
+
     static void save(CPU::Context *);
     static void join(Thread *);
     static void exit();
@@ -29,10 +33,8 @@ struct Thread {
     static void wakeup(List *);
     static void yield();
     static void timer_handler();
-
-    static inline volatile Thread *_running;
-    static inline unsigned int _count;
-    static inline Scheduler<Thread> _scheduler;
+    static inline void save() { _running->context = CPU::Context::get(); };
+    static inline void load() { CPU::Context::set(_running->context); };
 };
 
 struct RThread : Thread {
