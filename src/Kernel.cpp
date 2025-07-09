@@ -22,7 +22,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push<true>();
     Thread::save();
-    //CPU::Stack::set(STACK + Traits<Memory>::Page::SIZE);
+    // CPU::Stack::set(STACK + Traits<Memory>::Page::SIZE);
 
     if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
         switch (CPU::Interrupt::type()) {

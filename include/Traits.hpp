@@ -11,7 +11,7 @@ struct RR;
 struct Thread;
 template <>
 struct Traits<Scheduler<Thread>> {
-    static constexpr unsigned long Frequency = 10'000;
+    static constexpr unsigned long Frequency = 100'000;
     using Criterion                          = RR<Thread>;
 };
 
