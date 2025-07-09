@@ -1,10 +1,9 @@
 #pragma once
 
 #include <CPU.hpp>
-#include <IO/Logger.hpp>
 #include <Machine.hpp>
 #include <Memory.hpp>
-#include <Scheduler/Lists.hpp>
+#include <Scheduler/Scheduler.hpp>
 
 struct Thread {
     typedef FIFO<Thread *> List;
@@ -30,6 +29,10 @@ struct Thread {
     static void wakeup(List *);
     static void yield();
     static void timer_handler();
+
+    static inline volatile Thread *_running;
+    static inline unsigned int _count;
+    static inline Scheduler<Thread> _scheduler;
 };
 
 struct RThread : Thread {

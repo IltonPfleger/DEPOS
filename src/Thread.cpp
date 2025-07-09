@@ -1,25 +1,21 @@
 #include <IO/Debug.hpp>
-#include <Scheduler/Scheduler.hpp>
 #include <Thread.hpp>
 
 extern int main(void *);
-volatile Thread *_running;
-static int _count;
-static Scheduler<Thread> _scheduler;
 static Thread *_idle_thread;
 static Thread *_user_thread;
 
 void dispatch(Thread *current, Thread *next) {
     ERROR(next == nullptr, "[Thread::dispatch] Invalid thread.");
     ERROR(current == next, "[Thread::dispatch] Same thread.");
-    _running        = next;
-    _running->state = Thread::RUNNING;
+    Thread::_running        = next;
+    Thread::_running->state = Thread::RUNNING;
     CPU::Context::transfer(&current->context, next->context);
 }
 
 int idle(void *) {
     while (1) {
-        if (_count == 1) {
+        if (Thread::_count == 1) {
             CPU::Interrupt::disable();
             delete _idle_thread;
             delete _user_thread;
@@ -28,7 +24,7 @@ int idle(void *) {
         } else {
             CPU::Interrupt::enable();
             CPU::idle();
-            if (!_scheduler.empty()) Thread::yield();
+            if (!Thread::_scheduler.empty()) Thread::yield();
         }
     }
     return 0;
