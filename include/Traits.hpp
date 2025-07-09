@@ -19,14 +19,14 @@ struct Timer;
 template <>
 struct Traits<Timer> {
     static constexpr const bool Enable             = true;
-    static constexpr const unsigned long Frequency = 100'000;
+    static constexpr const unsigned long Frequency = 1'000'000;
 };
 
 struct Alarm;
 template <>
 struct Traits<Alarm> {
     static constexpr const bool Enable             = true;
-    static constexpr const unsigned long Frequency = 1'000;
+    static constexpr const unsigned long Frequency = 1'000'000;
 };
 
 struct Memory;
