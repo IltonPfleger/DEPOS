@@ -32,7 +32,7 @@ struct Thread {
     static void sleep(List *);
     static void wakeup(List *);
     static void yield();
-    static void timer_handler();
+    static void reschedule();
     static inline void save() { _running->context = CPU::Context::get(); };
     static inline void load() { CPU::Context::set(_running->context); };
 };
