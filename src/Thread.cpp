@@ -94,14 +94,13 @@ void Thread::init() {
     CPU::Context::jump(first->context);
 }
 
-void Thread::timer_handler() {
+void Thread::reschedule() {
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     _scheduler.insert(previous);
     Thread *next    = _scheduler.chose();
     _running        = next;
     _running->state = RUNNING;
-    CPU::Context::jump(next->context);
 }
 
 void Thread::yield() {
