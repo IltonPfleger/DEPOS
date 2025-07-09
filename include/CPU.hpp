@@ -134,6 +134,7 @@ struct CPU {
         }
 
         __attribute__((naked)) static Context *get() { __asm__ volatile("mv a0, sp\nret"); }
+        __attribute__((naked)) static void set(Context *) { __asm__ volatile("mv sp, a0\nret"); }
 
         __attribute__((naked)) static void transfer(CPU::Context **current, CPU::Context *next) {
             push();
