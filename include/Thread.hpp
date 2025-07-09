@@ -25,7 +25,6 @@ struct Thread {
     static inline unsigned int _count;
     static inline Scheduler<Thread> _scheduler;
 
-    static void save(CPU::Context *);
     static void join(Thread *);
     static void exit();
     static void init();

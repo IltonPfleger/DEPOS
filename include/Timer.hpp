@@ -46,6 +46,7 @@ struct Timer {
     }
 
     static void handler() {
+        reset();
         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
             if (--(CHANNELS[Channel::SCHEDULER].current) == 0) {
                 CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;

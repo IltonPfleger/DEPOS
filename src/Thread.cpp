@@ -128,5 +128,3 @@ void Thread::wakeup(List *waiting) {
     awake->waiting = nullptr;
     _scheduler.insert(awake);
 }
-
-void Thread::save(CPU::Context *context) { _running->context = context; }
