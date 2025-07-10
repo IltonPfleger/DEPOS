@@ -16,13 +16,13 @@ int filosofo(void *arg) {
     int p2 = (id < FILOSOFOS - 1) ? (id + 1) : FILOSOFOS - 1;
     int i  = ITERATIONS;
     while (i--) {
-        Logger::log("Filósofo %d está pensando\n", id);
+        Logger::println("Filósofo %d está pensando\n", id);
         Alarm::udelay(100000);
 
         garfos[p1]->p();
         garfos[p2]->p();
 
-        Logger::log("Filósofo %d está comendo\n", id);
+        Logger::println("Filósofo %d está comendo\n", id);
         Alarm::udelay(100000);
 
         garfos[p1]->v();
@@ -32,7 +32,7 @@ int filosofo(void *arg) {
 }
 
 int main(void *) {
-    Logger::log("Application: \n");
+    Logger::println("Application: \n");
 
     for (int i = 0; i < FILOSOFOS; i++) {
         garfos[i] = new (Memory::APPLICATION) Semaphore(1);
@@ -48,6 +48,6 @@ int main(void *) {
         delete garfos[i];
     }
 
-    Logger::log("Done!\n");
+    Logger::println("Done!\n");
     return 0;
 }

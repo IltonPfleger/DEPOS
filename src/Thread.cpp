@@ -19,7 +19,7 @@ int idle(void *) {
             CPU::Interrupt::disable();
             delete _idle_thread;
             delete _user_thread;
-            Logger::log("*** QUARK is shutting down! ***\n");
+            Logger::println("*** QUARK is shutting down! ***\n");
             while (1);
         } else {
             CPU::Interrupt::enable();
@@ -30,13 +30,13 @@ int idle(void *) {
     return 0;
 }
 
-Thread::Thread(int (*entry)(void *), void *args, Priority p) {
-    stack   = reinterpret_cast<uintptr_t>(Memory::kmalloc());
-    context = reinterpret_cast<CPU::Context *>(stack + Traits<Memory>::Page::SIZE);
-    context -= sizeof(CPU::Context);
-    new (context) CPU::Context(entry, exit, args);
-    state    = READY;
-    priority = p;
+Thread::Thread(int (*function)(void *), void *args, Priority priority) {
+    stack       = Memory::kmalloc();
+    char *entry = reinterpret_cast<char *>(stack);
+    entry += Traits<Memory>::Page::SIZE - sizeof(CPU::Context);
+    context = new (entry) CPU::Context(function, exit, args);
+    state   = READY;
+    rank    = priority;
     _count++;
     _scheduler.insert(this);
 }
@@ -54,10 +54,8 @@ Thread::~Thread() {
         default:
             break;
     }
-    Memory::kfree(reinterpret_cast<void *>(stack));
+    Memory::kfree(stack);
 }
-
-Thread::Priority Thread::operator()() const { return priority; }
 
 void Thread::join(Thread *thread) {
     CPU::Interrupt::disable();

@@ -61,7 +61,7 @@ struct LinkedList {
     }
 
     void push_sorted(const T &value)
-        requires requires(const T &v) { v(); } || requires(const T &v) { (*v)(); }
+        requires requires(const T &v) { v.rank; } || requires(const T &v) { v->rank; }
     {
         Element *e = new (Memory::SYSTEM) Element{value, nullptr};
 
@@ -81,13 +81,12 @@ struct LinkedList {
     }
 
     constexpr auto rank(const T &value)
-        requires requires(const T &v) { v(); } || requires(const T &v) { (*v)(); }
+        requires requires(const T &v) { v.rank; } || requires(const T &v) { v->rank; }
     {
         if constexpr (Meta::IS_POINTER<T>::Result) {
-            return (*value)();
+            return value->rank;
         } else {
-            return value();
-            ;
+            return value.rank;
         }
     }
 

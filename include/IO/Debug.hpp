@@ -7,6 +7,6 @@
 #define ERROR(expr, ...)                           \
     if constexpr (Traits<Debug>::ERROR) {          \
         if (expr) {                                \
-            Logger::log("ERROR: ", ##__VA_ARGS__); \
+            Logger::println("ERROR: ", ##__VA_ARGS__); \
         }                                          \
     }

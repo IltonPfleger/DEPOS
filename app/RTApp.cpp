@@ -4,15 +4,15 @@
 #include <Thread.hpp>
 
 int teste(void*) {
-    Logger::log("teste\n");
+    Logger::println("teste\n");
     return 0;
 }
 
 int main() {
-    Logger::log("Real Time Application: \n");
+    Logger::println("Real Time Application: \n");
 
     RThread thread(teste, 0, Thread::NORMAL);
 
-    Logger::log("Done!\n");
+    Logger::println("Done!\n");
     return 0;
 }
