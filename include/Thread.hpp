@@ -10,20 +10,21 @@ struct Thread {
     enum Priority { HIGH, NORMAL, LOW, IDLE = ~0 };
     enum State { RUNNING, READY, WAITING, FINISHED };
 
-    uintptr_t stack;
+    void *stack;
     CPU::Context *context;
     Thread *joining;
     List *waiting;
     State state;
-    Priority priority;
+    Priority rank;
 
     ~Thread();
     Thread(int (*)(void *), void *, Priority);
-    Priority operator()() const;
 
     static inline volatile Thread *_running;
     static inline unsigned int _count;
     static inline Scheduler<Thread> _scheduler;
+    static inline void save() { _running->context = CPU::Context::get(); };
+    static inline void load() { CPU::Context::set(_running->context); };
 
     static void join(Thread *);
     static void exit();
@@ -32,8 +33,6 @@ struct Thread {
     static void wakeup(List *);
     static void yield();
     static void reschedule();
-    static inline void save() { _running->context = CPU::Context::get(); };
-    static inline void load() { CPU::Context::set(_running->context); };
 };
 
 struct RThread : Thread {

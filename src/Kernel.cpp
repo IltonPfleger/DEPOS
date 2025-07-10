@@ -10,10 +10,10 @@ static char STACK[Traits<Memory>::Page::SIZE];
 struct Kernel {
     static void init() {
         Logger::init();
-        Logger::log("\nQ U A R K | [μKernel]\n");
+        Logger::println("\nQ U A R K | [μKernel]\n");
         Memory::init();
         Timer::init();
-        Logger::log("Done!\n");
+        Logger::println("Done!\n");
         Thread::init();
     }
 };
@@ -22,7 +22,6 @@ __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push<true>();
     Thread::save();
-    // CPU::Stack::set(STACK + Traits<Memory>::Page::SIZE);
 
     if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
         switch (CPU::Interrupt::type()) {
@@ -31,14 +30,14 @@ __attribute__((naked, aligned(4))) void ktrap() {
                 break;
         }
     } else {
-        Logger::log("Ohh it's a Trap!\n");
+        Logger::println("Ohh it's a Trap!\n");
         uintptr_t mcause, mepc, mtval;
         __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
         __asm__ volatile("csrr %0, mepc" : "=r"(mepc));
         __asm__ volatile("csrr %0, mtval" : "=r"(mtval));
-        Logger::log("mcause: %p\n", mcause);
-        Logger::log("mepc: %p\n", mepc);
-        Logger::log("mtval: %p\n", mtval);
+        Logger::println("mcause: %p\n", mcause);
+        Logger::println("mepc: %p\n", mepc);
+        Logger::println("mtval: %p\n", mtval);
         while (1);
     }
 

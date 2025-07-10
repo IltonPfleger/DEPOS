@@ -27,7 +27,7 @@ static void printHex(T value) {
 
 void Logger::init() { Traits<Debug>::Device::init(); };
 
-void Logger::log(const char *format, ...) {
+void Logger::println(const char *format, ...) {
     va_list args;
     va_start(args, format);
     while (*format) {

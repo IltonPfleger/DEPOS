@@ -2,5 +2,5 @@
 
 struct Logger {
     static void init();
-    static void log(const char *format, ...);
+    static void println(const char *format, ...);
 };
