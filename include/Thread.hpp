@@ -39,6 +39,7 @@ struct RT_Thread : Thread {
     typedef unsigned long Period;
 
     Period period;
+    Period last;
 
     RT_Thread(int (*)(void *), void *, Period);
     static void wait_next();

@@ -1,3 +1,4 @@
+#pragma once
 #include <IO/Logger.hpp>
 #include <Memory.hpp>
 #include <Meta.hpp>
@@ -16,10 +17,10 @@ struct Alarm {
     template <typename T = void>
         requires(Traits<Alarm>::Enable && Traits<Alarm>::Frequency >= 1'000'000)
     static void udelay(unsigned long useconds) {
-        CPU::Interrupt::disable();
         unsigned long ticks = useconds * (Traits<Alarm>::Frequency / 1'000'000);
         Delay entry{RawSemaphore(0), ticks, nullptr};
 
+        CPU::Interrupt::disable();
         if (!delays || entry.value < delays->value) {
             if (delays) delays->value -= entry.value;
             entry.next = delays;

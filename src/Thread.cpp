@@ -1,4 +1,5 @@
 #include <Alarm.hpp>
+#include <Timer.hpp>
 #include <IO/Debug.hpp>
 #include <Thread.hpp>
 
@@ -129,9 +130,19 @@ void Thread::wakeup(List *waiting) {
 }
 
 RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Period period)
-    : Thread(function, args, NORMAL), period(period) {}
+    : Thread(function, args, NORMAL), period(period), last(Timer::time()) {}
 
 void RT_Thread::wait_next() {
     volatile RT_Thread *running = reinterpret_cast<volatile RT_Thread *>(_running);
-    Alarm::udelay(running->period);
+
+    RT_Thread::Period now    = Timer::time();
+    RT_Thread::Period target = running->last + running->period;
+
+    if (now < target) {
+        Alarm::udelay(target - now);
+    } else {
+        Logger::println("Missed deadline by %d us\n", now - target);
+    }
+
+    running->last += running->period;
 }
