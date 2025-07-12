@@ -20,10 +20,9 @@ struct Timer {
 
     static inline struct Channel CHANNELS[2];
 
-    static void reset() {
-        uintptr_t now = MTIME;
-        MTIMECMP      = now + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency);
-    }
+    static uintptr_t time() { return MTIME; }
+
+    static void reset() { MTIMECMP = time() + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency); }
 
     static void init() {
         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
