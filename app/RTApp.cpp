@@ -4,14 +4,18 @@
 #include <Thread.hpp>
 
 int teste(void*) {
-    Logger::println("teste\n");
+    while (1) {
+        Logger::println("teste\n");
+        RT_Thread::wait_next();
+    }
     return 0;
 }
 
 int main() {
     Logger::println("Real Time Application: \n");
 
-    RThread thread(teste, 0, Thread::NORMAL);
+    RT_Thread thread(teste, 0, 1000);
+	Thread::join(&thread);
 
     Logger::println("Done!\n");
     return 0;

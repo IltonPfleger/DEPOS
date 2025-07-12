@@ -35,9 +35,11 @@ struct Thread {
     static void reschedule();
 };
 
-struct RThread : Thread {
-    unsigned long period;
-    unsigned long duration;
-    unsigned long deadline;
-    unsigned long operator()() const;
+struct RT_Thread : Thread {
+    typedef unsigned long Period;
+
+    Period period;
+
+    RT_Thread(int (*)(void *), void *, Period);
+    static void wait_next();
 };

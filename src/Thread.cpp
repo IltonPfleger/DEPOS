@@ -1,3 +1,4 @@
+#include <Alarm.hpp>
 #include <IO/Debug.hpp>
 #include <Thread.hpp>
 
@@ -125,4 +126,12 @@ void Thread::wakeup(List *waiting) {
     awake->state   = READY;
     awake->waiting = nullptr;
     _scheduler.insert(awake);
+}
+
+RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Period period)
+    : Thread(function, args, NORMAL), period(period) {}
+
+void RT_Thread::wait_next() {
+    volatile RT_Thread *running = reinterpret_cast<volatile RT_Thread *>(_running);
+    Alarm::udelay(running->period);
 }
