@@ -1,7 +1,7 @@
 #include <Alarm.hpp>
-#include <Timer.hpp>
 #include <IO/Debug.hpp>
 #include <Thread.hpp>
+#include <Timer.hpp>
 
 extern int main(void *);
 static Thread *_idle_thread;
@@ -24,7 +24,6 @@ int idle(void *) {
             Logger::println("*** QUARK is shutting down! ***\n");
             while (1);
         } else {
-            CPU::Interrupt::enable();
             CPU::idle();
             if (!Thread::_scheduler.empty()) Thread::yield();
         }
@@ -135,14 +134,14 @@ RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Period peri
 void RT_Thread::wait_next() {
     volatile RT_Thread *running = reinterpret_cast<volatile RT_Thread *>(_running);
 
-    RT_Thread::Period now    = Timer::time();
-    RT_Thread::Period target = running->last + running->period;
-
-    if (now < target) {
-        Alarm::udelay(target - now);
-    } else {
-        Logger::println("Missed deadline by %d us\n", now - target);
-    }
-
     running->last += running->period;
+
+    RT_Thread::Period now  = Timer::time(); //CONTANDO TICKS E DORMINDO EM MICROSEGUNDOS!!!
+    RT_Thread::Period next = running->last;
+
+    if (now < next) {
+        Alarm::udelay(next - now);
+    } else {
+        Logger::println("Missed deadline by %d us\n", now - next);
+    }
 }
