@@ -95,7 +95,6 @@ void *operator new(unsigned long bytes, Memory::Role role) {
     return reinterpret_cast<void *>(block);
 }
 
-void operator delete(void *) { ERROR(true, "::operator delete(void*)"); }
 void operator delete(void *ptr, unsigned long bytes) {
     if (!ptr) return;
 
