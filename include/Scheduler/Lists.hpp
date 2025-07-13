@@ -65,13 +65,13 @@ struct LinkedList {
     {
         Element *e = new (Memory::SYSTEM) Element{value, nullptr};
 
-        if (!head || rank(value) > rank(head->value)) {
+        if (!head || rank(value) < rank(head->value)) {
             e->next = head;
             head    = e;
             if (!tail) tail = e;
         } else {
             Element *current = head;
-            while (current->next && rank(value) > rank(current->next->value)) {
+            while (current->next && rank(value) >= rank(current->next->value)) {
                 current = current->next;
             }
             e->next       = current->next;
