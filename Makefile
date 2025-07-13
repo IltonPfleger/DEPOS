@@ -7,8 +7,8 @@ QEMU := qemu-system-riscv64
 
 
 CFLAGS := -Wall -Wextra -pedantic -mcmodel=medany -Iinclude
-CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles -fcheck-new
-CFLAGS += -g -std=c++23 -march=rv64imac_zicsr -mabi=lp64 -O3
+CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles -fcheck-new -Wsized-deallocation
+CFLAGS += -g -std=c++23 -march=rv64imac_zicsr -mabi=lp64 
 
 BUILD := build
 TARGET := $(BUILD)/quark
@@ -22,8 +22,8 @@ default:
 run: $(TARGET)
 	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 
 
-#debug: $(TARGET)
-#	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
+debug: $(TARGET)
+	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
 
 $(TARGET): $(TARGET).elf
 	$(OBJCOPY) -O binary -S $< $@

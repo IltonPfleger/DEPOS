@@ -14,22 +14,27 @@ void dispatch(Thread *next) {
     Thread::_running        = next;
     Thread::_running->state = Thread::RUNNING;
     CPU::Atomic::unlock(&Thread::_lock);
+    CPU::Interrupt::disable();
     CPU::Context::transfer(&previous->context, next->context);
 }
 
 int idle(void *) {
     while (1) {
         CPU::Atomic::lock(&Thread::_lock);
+        // Logger::println("IDLE %d\n", Thread::_count);
         if (Thread::_count == 1) {
-            CPU::Atomic::unlock(&Thread::_lock);
             CPU::Interrupt::disable();
+            //Logger::println("HIT> %d\n", Thread::_count);
+            CPU::Atomic::unlock(&Thread::_lock);
             delete _idle_thread;
             delete _user_thread;
+            CPU::Atomic::lock(&Thread::_lock);
             Logger::println("*** QUARK is shutting down! ***\n");
+            // CPU::Atomic::unlock(&Thread::_lock);
             while (1);
         } else {
             // CPU::idle();
-            Logger::println("IDLE\n");
+            Logger::println("IDLEE\n");
             if (!Thread::_scheduler.empty()) {
                 CPU::Atomic::unlock(&Thread::_lock);
                 Thread::yield();
@@ -55,18 +60,18 @@ Thread::Thread(int (*function)(void *), void *args, Priority priority) {
 
 Thread::~Thread() {
     CPU::Atomic::lock(&_lock);
-    // switch (state) {
-    //     case (READY):
-    //         _scheduler.remove(this);
-    //         _count--;
-    //         break;
-    //     case (WAITING):
-    //         waiting->remove(this);
-    //         _count--;
-    //         break;
-    //     default:
-    //         break;
-    // }
+    switch (state) {
+        case (READY):
+            _scheduler.remove(this);
+            _count--;
+            break;
+        case (WAITING):
+            // waiting->remove(this);
+            _count--;
+            break;
+        default:
+            break;
+    }
     CPU::Atomic::unlock(&_lock);
     Memory::kfree(stack);
 }
