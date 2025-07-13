@@ -16,7 +16,7 @@ struct Alarm {
 
     template <typename T = void>
         requires(Traits<Alarm>::Enable && Traits<Alarm>::Frequency >= 1'000'000)
-    static void udelay(unsigned long useconds) {
+    static void usleep(unsigned long useconds) {
         unsigned long ticks = useconds * (Traits<Alarm>::Frequency / 1'000'000);
         Delay entry{RawSemaphore(0), ticks, nullptr};
 
@@ -45,36 +45,36 @@ struct Alarm {
         delays = delays->next;
     }
 
-    template <typename T = void>
-        requires(Traits<Alarm>::Enable)
-    static void delay(unsigned long seconds) {
-        CPU::Interrupt::disable();
-        unsigned long ticks = seconds * Traits<Alarm>::Frequency;
-        Delay entry{RawSemaphore(0), ticks, nullptr};
+    // template <typename T = void>
+    //     requires(Traits<Alarm>::Enable)
+    // static void delay(unsigned long seconds) {
+    //     CPU::Interrupt::disable();
+    //     unsigned long ticks = seconds * Traits<Alarm>::Frequency;
+    //     Delay entry{RawSemaphore(0), ticks, nullptr};
 
-        if (!delays || entry.value < delays->value) {
-            if (delays) delays->value -= entry.value;
-            entry.next = delays;
-            delays     = &entry;
-        } else {
-            unsigned long sum = delays->value;
-            Delay *current    = delays;
+    //     if (!delays || entry.value < delays->value) {
+    //         if (delays) delays->value -= entry.value;
+    //         entry.next = delays;
+    //         delays     = &entry;
+    //     } else {
+    //         unsigned long sum = delays->value;
+    //         Delay *current    = delays;
 
-            while (current->next && sum + current->next->value < entry.value) {
-                current = current->next;
-                sum += current->value;
-            }
+    //         while (current->next && sum + current->next->value < entry.value) {
+    //             current = current->next;
+    //             sum += current->value;
+    //         }
 
-            entry.value -= sum;
+    //         entry.value -= sum;
 
-            if (current->next) current->next->value -= entry.value;
+    //         if (current->next) current->next->value -= entry.value;
 
-            entry.next    = current->next;
-            current->next = &entry;
-        }
-        entry.semaphore.p();
-        delays = delays->next;
-    }
+    //         entry.next    = current->next;
+    //         current->next = &entry;
+    //     }
+    //     entry.semaphore.p();
+    //     delays = delays->next;
+    // }
 
     static void handler() {
         if (delays) {

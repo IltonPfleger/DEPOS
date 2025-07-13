@@ -20,9 +20,9 @@ struct Timer {
 
     static inline struct Channel CHANNELS[2];
 
-    static uintptr_t time() { return MTIME; }
+    static uintptr_t utime() { return (MTIME * 1'000'000) / Machine::CLINT::CLOCK; }
 
-    static void reset() { MTIMECMP = time() + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency); }
+    static void reset() { MTIMECMP = MTIME + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency); }
 
     static void init() {
         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
@@ -45,7 +45,6 @@ struct Timer {
     }
 
     static void handler() {
-        reset();
         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
             if (--(CHANNELS[Channel::SCHEDULER].current) == 0) {
                 CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;

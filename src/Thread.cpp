@@ -24,7 +24,7 @@ int idle(void *) {
             Logger::println("*** QUARK is shutting down! ***\n");
             while (1);
         } else {
-            CPU::idle();
+            // CPU::idle();
             if (!Thread::_scheduler.empty()) Thread::yield();
         }
     }
@@ -129,19 +129,20 @@ void Thread::wakeup(List *waiting) {
 }
 
 RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Period period)
-    : Thread(function, args, NORMAL), period(period), last(Timer::time()) {}
+    : Thread(function, args, NORMAL), period(period) {}  //, last(Timer::time()) {}
 
 void RT_Thread::wait_next() {
     volatile RT_Thread *running = reinterpret_cast<volatile RT_Thread *>(_running);
-
-    running->last += running->period;
-
-    RT_Thread::Period now  = Timer::time(); //CONTANDO TICKS E DORMINDO EM MICROSEGUNDOS!!!
-    RT_Thread::Period next = running->last;
-
-    if (now < next) {
-        Alarm::udelay(next - now);
-    } else {
-        Logger::println("Missed deadline by %d us\n", now - next);
-    }
+    Alarm::usleep(running->period);
+    //
+    //    running->last += running->period;
+    //
+    //    RT_Thread::Period now  = Timer::time(); //CONTANDO TICKS E DORMINDO EM MICROSEGUNDOS!!!
+    //    RT_Thread::Period next = running->last;
+    //
+    //    if (now < next) {
+    //        Alarm::udelay(next - now);
+    //    } else {
+    //        Logger::println("Missed deadline by %d us\n", now - next);
+    //    }
 }
