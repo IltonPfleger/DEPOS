@@ -20,8 +20,9 @@ struct Thread {
     ~Thread();
     Thread(int (*)(void *), void *, Priority);
 
+    static inline int _count;
+    static inline int _lock;
     static inline volatile Thread *_running;
-    static inline unsigned int _count;
     static inline Scheduler<Thread> _scheduler;
     static inline void save() { _running->context = CPU::Context::get(); };
     static inline void load() { CPU::Context::set(_running->context); };
