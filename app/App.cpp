@@ -4,29 +4,17 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-static constexpr int FILOSOFOS  = 5;
-static constexpr int ITERATIONS = 1;
+static constexpr int N          = 2;
+static constexpr int ITERATIONS = 10;
 
-Thread *threads[FILOSOFOS];
-Semaphore *garfos[FILOSOFOS];
+Thread *threads[N];
 
-int filosofo(void *arg) {
+int thread_function(void *arg) {
     int id = (int)(long long)arg;
-    int p1 = (id < FILOSOFOS - 1) ? id : 0;
-    int p2 = (id < FILOSOFOS - 1) ? (id + 1) : FILOSOFOS - 1;
     int i  = ITERATIONS;
     while (i--) {
-        Logger::println("Filósofo %d está pensando\n", id);
-        Alarm::udelay(100000);
-
-        garfos[p1]->p();
-        garfos[p2]->p();
-
-        Logger::println("Filósofo %d está comendo\n", id);
-        Alarm::udelay(100000);
-
-        garfos[p1]->v();
-        garfos[p2]->v();
+        Logger::println("THREAD %d\n", id);
+        Thread::yield();
     }
     return 0;
 }
@@ -34,20 +22,15 @@ int filosofo(void *arg) {
 int main(void *) {
     Logger::println("Application: \n");
 
-    for (int i = 0; i < FILOSOFOS; i++) {
-        garfos[i] = new (Memory::APPLICATION) Semaphore(1);
+    for (int i = 0; i < N; i++) {
+        threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i, Thread::Priority::NORMAL);
     }
 
-    for (int i = 0; i < FILOSOFOS; i++) {
-        threads[i] = new (Memory::APPLICATION) Thread(filosofo, (void *)(long long)i, Thread::Priority::NORMAL);
-    }
-
-    for (int i = 0; i < FILOSOFOS; i++) {
+    for (int i = 0; i < N; i++) {
         Thread::join(threads[i]);
         delete threads[i];
-        delete garfos[i];
     }
 
-    Logger::println("Done!\n");
+    Logger::println("Application Done!\n");
     return 0;
 }

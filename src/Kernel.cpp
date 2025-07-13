@@ -21,7 +21,8 @@ struct Kernel {
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push<true>();
-    Thread::save();
+    CPU::Context *context = CPU::Context::get();
+    // Thread::save();
 
     if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
         switch (CPU::Interrupt::type()) {
@@ -30,18 +31,19 @@ __attribute__((naked, aligned(4))) void ktrap() {
                 break;
         }
     } else {
-        Logger::println("Ohh it's a Trap!\n");
         uintptr_t mcause, mepc, mtval;
         __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
         __asm__ volatile("csrr %0, mepc" : "=r"(mepc));
         __asm__ volatile("csrr %0, mtval" : "=r"(mtval));
+        Logger::println("Ohh it's a Trap!\n");
         Logger::println("mcause: %p\n", mcause);
         Logger::println("mepc: %p\n", mepc);
         Logger::println("mtval: %p\n", mtval);
         while (1);
     }
 
-    Thread::load();
+    // Thread::load();
+    CPU::Context::set(context);
     CPU::Context::pop();
     CPU::iret();
 }

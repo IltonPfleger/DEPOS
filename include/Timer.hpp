@@ -33,7 +33,7 @@ struct Timer {
         }
 
         if constexpr (Traits<Alarm>::Enable) {
-            CHANNELS[Channel::ALARM].handler = Alarm::handler;
+            // CHANNELS[Channel::ALARM].handler = Alarm::handler;
             CHANNELS[Channel::ALARM].initial = Traits<Timer>::Frequency / Traits<Alarm>::Frequency;
             CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
         }
@@ -45,19 +45,19 @@ struct Timer {
     }
 
     static void handler() {
-        if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
-            if (--(CHANNELS[Channel::SCHEDULER].current) == 0) {
-                CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
-                CHANNELS[Channel::SCHEDULER].handler();
-            }
-        }
+        // if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
+        //     if (--(CHANNELS[Channel::SCHEDULER].current) == 0) {
+        //         CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
+        //         CHANNELS[Channel::SCHEDULER].handler();
+        //     }
+        // }
 
-        if constexpr (Traits<Alarm>::Enable) {
-            if (--(CHANNELS[Channel::ALARM].current) == 0) {
-                CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
-                CHANNELS[Channel::ALARM].handler();
-            }
-        }
+        // if constexpr (Traits<Alarm>::Enable) {
+        //     if (--(CHANNELS[Channel::ALARM].current) == 0) {
+        //         CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
+        //         CHANNELS[Channel::ALARM].handler();
+        //     }
+        // }
         reset();
     }
 };

@@ -146,21 +146,27 @@ struct CPU {
     struct Atomic {
         static void lock(int *value) {
             __asm__ volatile(
-                "1: lr.w t0, 0(%1)\n"
-                "bnez t0, 1b\n"
-                "li t0, 1\n"
-                "sc.w t0, t0, 0(%1)\n"
-                "bnez t0, 1b\n" ::"r"(value)
-                : "memory");
+                "1:\n"
+                "   lr.w t0, 0(%0)\n"
+                "   beq t0, zero, 1b\n"
+                "   li t1, 0\n"
+                "   sc.w t2, t1, 0(%0)\n"
+                "   bnez t2, 1b\n"
+                :
+                : "r"(value)
+                : "t0", "t1", "t2", "memory");
         }
 
         static void unlock(int *value) {
             __asm__ volatile(
-                "1: lr.w t0, 0(%1)\n"
-                "li t0, 0\n"
-                "sc.w t0, t0, 0(%1)\n"
-                "bnez t0, 1b\n" ::"r"(value)
-                : "memory");
+                "1:\n"
+                "   lr.w t0, 0(%0)\n"
+                "   li t1, 1\n"
+                "   sc.w t2, t1, 0(%0)\n"
+                "   bnez t2, 1b\n"
+                :
+                : "r"(value)
+                : "t0", "t1", "t2", "memory");
         }
 
         static int fdec(int *value) {
@@ -226,5 +232,8 @@ struct CPU {
 
     struct Stack {
         __attribute__((always_inline)) static inline void set(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
+        __attribute__((always_inline)) static inline void get(void **ptr) {
+            __asm__ volatile("sd sp, 0(%0)" : "=r"(ptr));
+        }
     };
 };
