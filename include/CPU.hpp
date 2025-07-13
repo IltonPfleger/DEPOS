@@ -144,6 +144,25 @@ struct CPU {
     };
 
     struct Atomic {
+        static void lock(int *value) {
+            __asm__ volatile(
+                "1: lr.w t0, 0(%1)\n"
+                "bnez t0, 1b\n"
+                "li t0, 1\n"
+                "sc.w t0, t0, 0(%1)\n"
+                "bnez t0, 1b\n" ::"r"(value)
+                : "memory");
+        }
+
+        static void unlock(int *value) {
+            __asm__ volatile(
+                "1: lr.w t0, 0(%1)\n"
+                "li t0, 0\n"
+                "sc.w t0, t0, 0(%1)\n"
+                "bnez t0, 1b\n" ::"r"(value)
+                : "memory");
+        }
+
         static int fdec(int *value) {
             int ret;
             __asm__ volatile(

@@ -1,6 +1,5 @@
 #pragma once
 #include <CPU.hpp>
-#include <Scheduler/Lists.hpp>
 #include <Thread.hpp>
 
 struct RawSemaphore {
