@@ -11,7 +11,7 @@ struct RR;
 struct Thread;
 template <>
 struct Traits<Scheduler<Thread>> {
-    static constexpr unsigned long Frequency = 100'000;
+    static constexpr unsigned long Frequency = 1'000'000;
     using Criterion                          = RR<Thread>;
 };
 
@@ -25,7 +25,7 @@ struct Traits<Timer> {
 struct Alarm;
 template <>
 struct Traits<Alarm> {
-    static constexpr const bool Enable             = false;
+    static constexpr const bool Enable             = true;
     static constexpr const unsigned long Frequency = 1'000'000;
 };
 

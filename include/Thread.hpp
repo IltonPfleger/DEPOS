@@ -6,14 +6,14 @@
 #include <Scheduler/Scheduler.hpp>
 
 struct Thread {
-    // typedef FIFO<Thread *> List;
-    enum Priority : unsigned { HIGH = 0, NORMAL = 1, LOW = 2, IDLE = ~0U };
+    typedef FIFO<Thread *> List;
+    enum Priority : unsigned { HIGH, NORMAL, LOW, IDLE = ~0U };
     enum State { RUNNING, READY, WAITING, FINISHED };
 
     void *stack;
     CPU::Context *context;
     Thread *joining;
-    // List *waiting;
+    List *waiting;
     State state;
     Priority rank;
 
@@ -25,23 +25,15 @@ struct Thread {
     static inline volatile Thread *_running;
     static inline Scheduler<Thread> _scheduler;
 
-    // static inline void save() {
-    //     //CPU::Atomic::lock(&_lock);
-    //     _running->context = CPU::Context::get();
-    //     //CPU::Atomic::unlock(&_lock);
-    // };
+    static inline void save() { _running->context = CPU::Context::get(); };
 
-    // static inline void load() {
-    //     //CPU::Atomic::lock(&_lock);
-    //     CPU::Context::set(_running->context);
-    //     //CPU::Atomic::unlock(&_lock);
-    // };
+    static inline void load() { CPU::Context::set(_running->context); };
 
     static void join(Thread *);
     static void exit();
     static void init();
-    // static void sleep(List *);
-    // static void wakeup(List *);
+    static void sleep(List *);
+    static void wakeup(List *);
     static void yield();
     static void reschedule();
 };
