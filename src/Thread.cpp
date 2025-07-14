@@ -126,19 +126,19 @@ void Thread::wakeup(List *waiting) {
 }
 
 RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Period period)
-    : Thread(function, args, NORMAL), period(period), last(Timer::uclock()) {}
+    : Thread(function, args, HIGH), period(period), last(Timer::uclock()) {}
 
 void RT_Thread::wait_next() {
     volatile RT_Thread *running = reinterpret_cast<volatile RT_Thread *>(_running);
 
-    running->last += running->period;
-
     RT_Thread::Period now  = Timer::uclock();
-    RT_Thread::Period next = running->last;
+    RT_Thread::Period next = running->last + running->period;
 
-    if (now < next) {
-        Alarm::usleep(next - now);
-    } else {
+    if (now > next) {
         Logger::println("Missed deadline by %d us\n", now - next);
+    } else {
+        Alarm::usleep(next - now);
     }
+
+    running->last = Timer::uclock() + running->period;
 }
