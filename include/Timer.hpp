@@ -20,7 +20,7 @@ struct Timer {
 
     static inline struct Channel CHANNELS[2];
 
-    static uintptr_t uclock() { return (MTIME * 1'000'000) / Machine::CLINT::CLOCK; }
+    static uintptr_t uclock() { return (MTIME * 1'000'000ULL) / Machine::CLINT::CLOCK; }
 
     static void reset() { MTIMECMP = MTIME + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency); }
 
@@ -45,6 +45,13 @@ struct Timer {
     }
 
     static void handler() {
+        if constexpr (Traits<Alarm>::Enable) {
+            if (--(CHANNELS[Channel::ALARM].current) == 0) {
+                CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
+                CHANNELS[Channel::ALARM].handler();
+            }
+        }
+
         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
             if (--(CHANNELS[Channel::SCHEDULER].current) == 0) {
                 CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
@@ -52,12 +59,6 @@ struct Timer {
             }
         }
 
-        if constexpr (Traits<Alarm>::Enable) {
-            if (--(CHANNELS[Channel::ALARM].current) == 0) {
-                CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
-                CHANNELS[Channel::ALARM].handler();
-            }
-        }
         reset();
     }
 };
