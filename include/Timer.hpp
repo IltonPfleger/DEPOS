@@ -11,7 +11,6 @@ volatile inline uintptr_t &MTIMECMP = *reinterpret_cast<volatile uintptr_t *>(Ma
 
 struct Timer {
     struct Channel {
-        typedef void (*Handler)(void);
         enum { SCHEDULER, ALARM };
         uintptr_t initial;
         uintptr_t current;
@@ -20,14 +19,14 @@ struct Timer {
 
     static inline struct Channel CHANNELS[2];
 
-    static uintptr_t uclock() { return (MTIME * 1'000'000ULL) / Machine::CLINT::CLOCK; }
+    static uintptr_t uclock() { return (MTIME * Traits<Timer>::MHz) / Machine::CLINT::CLOCK; }
 
     static void reset() { MTIMECMP = MTIME + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency); }
 
     static void init() {
         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
             CHANNELS[Channel::SCHEDULER].handler = Thread::reschedule;
-            unsigned long initial                = Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
+            uintptr_t initial                    = Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
             CHANNELS[Channel::SCHEDULER].initial = initial;
             CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
         }
@@ -45,20 +44,19 @@ struct Timer {
     }
 
     static void handler() {
+        reset();
         if constexpr (Traits<Alarm>::Enable) {
-            if (--(CHANNELS[Channel::ALARM].current) == 0) {
+            if (--CHANNELS[Channel::ALARM].current == 0) {
                 CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
                 CHANNELS[Channel::ALARM].handler();
             }
         }
 
         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
-            if (--(CHANNELS[Channel::SCHEDULER].current) == 0) {
+            if (--CHANNELS[Channel::SCHEDULER].current == 0) {
                 CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
                 CHANNELS[Channel::SCHEDULER].handler();
             }
         }
-
-        reset();
     }
 };
