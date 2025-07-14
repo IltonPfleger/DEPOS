@@ -38,11 +38,12 @@ struct Thread {
 };
 
 struct RT_Thread : Thread {
-    typedef unsigned long Period;
+    typedef unsigned long Interval;
+    typedef unsigned long Time;
 
-    Period period;
-    Period next;
+    Interval period;
+    Time next;
 
-    RT_Thread(int (*)(void *), void *, Period);
+    RT_Thread(int (*)(void *), void *, Interval);
     static void wait_next();
 };
