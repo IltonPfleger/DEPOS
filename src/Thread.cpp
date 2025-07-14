@@ -13,40 +13,24 @@ void dispatch(Thread *next) {
     ERROR(previous == next, "[Thread::dispatch] Same thread.");
     Thread::_running        = next;
     Thread::_running->state = Thread::RUNNING;
-    CPU::Atomic::unlock(&Thread::_lock);
-    CPU::Interrupt::disable();
     CPU::Context::transfer(&previous->context, next->context);
 }
 
 int idle(void *) {
-    while (1) {
-        CPU::Atomic::lock(&Thread::_lock);
-        // Logger::println("IDLE %d\n", Thread::_count);
-        if (Thread::_count == 1) {
-            CPU::Interrupt::disable();
-            //Logger::println("HIT> %d\n", Thread::_count);
-            CPU::Atomic::unlock(&Thread::_lock);
-            delete _idle_thread;
-            delete _user_thread;
-            CPU::Atomic::lock(&Thread::_lock);
-            Logger::println("*** QUARK is shutting down! ***\n");
-            // CPU::Atomic::unlock(&Thread::_lock);
-            while (1);
-        } else {
-            // CPU::idle();
-            Logger::println("IDLEE\n");
-            if (!Thread::_scheduler.empty()) {
-                CPU::Atomic::unlock(&Thread::_lock);
-                Thread::yield();
-            };
-        }
-        CPU::Atomic::unlock(&Thread::_lock);
+    while (Thread::_count > 1) {
+        CPU::idle();
+        if (!Thread::_scheduler.empty()) Thread::yield();
     }
+
+    CPU::Interrupt::disable();
+    delete _idle_thread;
+    delete _user_thread;
+    Logger::println("*** QUARK is shutting down! ***\n");
+    for (;;);
     return 0;
 }
 
 Thread::Thread(int (*function)(void *), void *args, Priority priority) {
-    CPU::Atomic::lock(&_lock);
     stack       = Memory::kmalloc();
     char *entry = reinterpret_cast<char *>(stack);
     entry += Traits<Memory>::Page::SIZE - sizeof(CPU::Context);
@@ -55,29 +39,26 @@ Thread::Thread(int (*function)(void *), void *args, Priority priority) {
     rank    = priority;
     _count++;
     _scheduler.insert(this);
-    CPU::Atomic::unlock(&_lock);
 }
 
 Thread::~Thread() {
-    CPU::Atomic::lock(&_lock);
     switch (state) {
         case (READY):
             _scheduler.remove(this);
             _count--;
             break;
         case (WAITING):
-            // waiting->remove(this);
+            waiting->remove(this);
             _count--;
             break;
         default:
             break;
     }
-    CPU::Atomic::unlock(&_lock);
     Memory::kfree(stack);
 }
 
 void Thread::join(Thread *thread) {
-    CPU::Atomic::lock(&_lock);
+    CPU::Interrupt::disable();
     if (thread->state != FINISHED) {
         Thread *previous = const_cast<Thread *>(_running);
 
@@ -88,11 +69,10 @@ void Thread::join(Thread *thread) {
         thread->joining = previous;
         dispatch(_scheduler.chose());
     }
-    CPU::Atomic::unlock(&_lock);
 }
 
 void Thread::exit() {
-    CPU::Atomic::lock(&_lock);
+    CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     if (previous->joining) _scheduler.insert(previous->joining);
     previous->state = FINISHED;
@@ -111,18 +91,16 @@ void Thread::init() {
 }
 
 void Thread::reschedule() {
-    CPU::Atomic::lock(&_lock);
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     _scheduler.insert(previous);
     Thread *next    = _scheduler.chose();
     _running        = next;
     _running->state = RUNNING;
-    CPU::Atomic::unlock(&_lock);
 }
 
 void Thread::yield() {
-    CPU::Atomic::lock(&_lock);
+    CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(_running);
     previous->state  = READY;
     Thread *next     = _scheduler.chose();
@@ -130,42 +108,37 @@ void Thread::yield() {
     dispatch(next);
 }
 
-// void Thread::sleep(List *waiting) {
-//     CPU::Atomic::lock(&_lock);
-//     Thread *previous  = const_cast<Thread *>(_running);
-//     previous->state   = WAITING;
-//     previous->waiting = waiting;
-//     waiting->insert(previous);
-//     Thread *next = _scheduler.chose();
-//     dispatch(previous, next);
-//     CPU::Atomic::unlock(&_lock);
-// }
-//
-// void Thread::wakeup(List *waiting) {
-//     CPU::Atomic::lock(&_lock);
-//     Thread *awake = waiting->next();
-//     ERROR(awake == nullptr, "[Thread::wakeup] Empty queue.");
-//     awake->state   = READY;
-//     awake->waiting = nullptr;
-//     _scheduler.insert(awake);
-//     CPU::Atomic::unlock(&_lock);
-// }
+void Thread::sleep(List *waiting) {
+    Thread *previous  = const_cast<Thread *>(_running);
+    previous->state   = WAITING;
+    previous->waiting = waiting;
+    waiting->insert(previous);
+    Thread *next = _scheduler.chose();
+    dispatch(next);
+}
 
-// RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Period period)
-//     : Thread(function, args, NORMAL), period(period) {}  //, last(Timer::time()) {}
-//
-// void RT_Thread::wait_next() {
-//     volatile RT_Thread *running = reinterpret_cast<volatile RT_Thread *>(_running);
-//     Alarm::usleep(running->period);
-//     //
-//     //    running->last += running->period;
-//     //
-//     //    RT_Thread::Period now  = Timer::time(); //CONTANDO TICKS E DORMINDO EM MICROSEGUNDOS!!!
-//     //    RT_Thread::Period next = running->last;
-//     //
-//     //    if (now < next) {
-//     //        Alarm::udelay(next - now);
-//     //    } else {
-//     //        Logger::println("Missed deadline by %d us\n", now - next);
-//     //    }
-// }
+void Thread::wakeup(List *waiting) {
+    Thread *awake = waiting->next();
+    ERROR(awake == nullptr, "[Thread::wakeup] Empty queue.");
+    awake->state   = READY;
+    awake->waiting = nullptr;
+    _scheduler.insert(awake);
+}
+
+RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Period period)
+    : Thread(function, args, NORMAL), period(period), last(Timer::uclock()) {}
+
+void RT_Thread::wait_next() {
+    volatile RT_Thread *running = reinterpret_cast<volatile RT_Thread *>(_running);
+
+    running->last += running->period;
+
+    RT_Thread::Period now  = Timer::uclock();
+    RT_Thread::Period next = running->last;
+
+    if (now < next) {
+        Alarm::usleep(next - now);
+    } else {
+        Logger::println("Missed deadline by %d us\n", now - next);
+    }
+}
