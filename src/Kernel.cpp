@@ -21,8 +21,7 @@ struct Kernel {
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push<true>();
-    CPU::Context *context = CPU::Context::get();
-    // Thread::save();
+    Thread::save();
 
     if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
         switch (CPU::Interrupt::type()) {
@@ -42,8 +41,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
         while (1);
     }
 
-    // Thread::load();
-    CPU::Context::set(context);
+    Thread::load();
     CPU::Context::pop();
     CPU::iret();
 }

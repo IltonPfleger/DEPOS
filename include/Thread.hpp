@@ -26,7 +26,6 @@ struct Thread {
     static inline Scheduler<Thread> _scheduler;
 
     static inline void save() { _running->context = CPU::Context::get(); };
-
     static inline void load() { CPU::Context::set(_running->context); };
 
     static void join(Thread *);
@@ -42,7 +41,7 @@ struct RT_Thread : Thread {
     typedef unsigned long Period;
 
     Period period;
-    Period last;
+    Period next;
 
     RT_Thread(int (*)(void *), void *, Period);
     static void wait_next();
