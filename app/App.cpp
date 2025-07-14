@@ -4,8 +4,8 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-static constexpr int N          = 5;
-static constexpr int ITERATIONS = 2;
+static constexpr int N          = 2;
+static constexpr int ITERATIONS = 10;
 
 Thread *threads[N];
 
@@ -14,7 +14,7 @@ int thread_function(void *arg) {
     int i  = ITERATIONS;
     while (i--) {
         Logger::println("THREAD %d\n", id);
-        Alarm::usleep(1000);
+        Thread::yield();
     }
     return 0;
 }

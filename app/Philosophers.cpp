@@ -17,13 +17,13 @@ int filosofo(void *arg) {
     int i  = ITERATIONS;
     while (i--) {
         Logger::println("Filósofo %d está pensando\n", id);
-        Alarm::usleep(100000);
+        Alarm::udelay(1000000);
 
         garfos[p1]->p();
         garfos[p2]->p();
 
         Logger::println("Filósofo %d está comendo\n", id);
-        Alarm::usleep(100000);
+        Alarm::udelay(1000000);
 
         garfos[p1]->v();
         garfos[p2]->v();
