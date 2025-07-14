@@ -6,9 +6,6 @@
 #include <Thread.hpp>
 #include <Traits.hpp>
 
-volatile inline uintptr_t &MTIME    = *reinterpret_cast<volatile uintptr_t *>(Machine::CLINT::ADDR + 0xBFF8);
-volatile inline uintptr_t &MTIMECMP = *reinterpret_cast<volatile uintptr_t *>(Machine::CLINT::ADDR + 0x4000);
-
 struct Timer {
     struct Channel {
         enum { SCHEDULER, ALARM };
@@ -19,9 +16,11 @@ struct Timer {
 
     static inline struct Channel CHANNELS[2];
 
-    static uintptr_t uclock() { return (MTIME * Traits<Timer>::MHz) / Machine::CLINT::CLOCK; }
+    static uintptr_t utime() { return (Machine::CLINT::MTIME * 1'000'000) / Machine::CLINT::CLOCK; }
 
-    static void reset() { MTIMECMP = MTIME + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency); }
+    static void reset() {
+        Machine::CLINT::MTIMECMP = Machine::CLINT::MTIME + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency);
+    }
 
     static void init() {
         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
@@ -51,7 +50,6 @@ struct Timer {
                 CHANNELS[Channel::ALARM].handler();
             }
         }
-
         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
             if (--CHANNELS[Channel::SCHEDULER].current == 0) {
                 CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;

@@ -14,8 +14,8 @@ int teste(void*) {
 int main() {
     Logger::println("Real Time Application: \n");
 
-    RT_Thread thread(teste, 0, 10000);
-    Thread::join(&thread);
+    RT_Thread thread(teste, 0, 100'000);
+	Thread::join(&thread);
 
     Logger::println("Done!\n");
     return 0;
