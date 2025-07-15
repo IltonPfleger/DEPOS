@@ -7,13 +7,13 @@ struct CPU {
 
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
 
-    static inline void *id() {
+    __attribute__((always_inline)) static inline void *id() {
         void *_id;
         __asm__ volatile("mv %0, tp" : "=r"(_id));
         return _id;
     }
 
-    static inline void id(void *_id) { __asm__ volatile("mv tp, %0" ::"r"(_id)); }
+    __attribute__((always_inline)) static inline void id(void *_id) { __asm__ volatile("mv tp, %0" ::"r"(_id)); }
 
     __attribute__((always_inline)) static inline unsigned int core() {
         unsigned int n;

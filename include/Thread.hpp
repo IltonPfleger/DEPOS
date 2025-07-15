@@ -26,8 +26,9 @@ struct Thread {
 
     static inline volatile Thread *running() { return reinterpret_cast<volatile Thread *>(CPU::id()); };
     static inline void running(Thread *t) { t->state = RUNNING, CPU::id(t); }
-    static inline void save() { running()->context = CPU::Context::get(); };
-    static inline void load() { CPU::Context::set(running()->context); };
+
+    __attribute__((always_inline)) static inline void save() { running()->context = CPU::Context::get(); };
+    __attribute__((always_inline)) static inline void load() { CPU::Context::set(running()->context); };
 
     static void join(Thread *);
     static void exit();
