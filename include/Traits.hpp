@@ -4,29 +4,31 @@
 template <typename T>
 struct Traits;
 
-template <typename T>
-struct Scheduler;
-template <typename T>
-struct RR;
-struct Thread;
-template <>
-struct Traits<Scheduler<Thread>> {
-    static constexpr unsigned long Frequency = 1'000'000;
-    using Criterion                          = RR<Thread>;
-};
-
 struct Timer;
 template <>
 struct Traits<Timer> {
     static constexpr const bool Enable             = true;
-    static constexpr const unsigned long MHz       = 1'000'000ULL;
+    static constexpr const unsigned long MHz       = 1'000'000;
     static constexpr const unsigned long Frequency = MHz;
+};
+
+template <typename T>
+struct Scheduler;
+template <typename T>
+struct RR;
+template <typename T>
+struct RateMonotonic;
+struct Thread;
+template <>
+struct Traits<Scheduler<Thread>> {
+    static constexpr unsigned long Frequency = Traits<Timer>::MHz;
+    using Criterion                          = RateMonotonic<Thread>;
 };
 
 struct Alarm;
 template <>
 struct Traits<Alarm> {
-    static constexpr const bool Enable             = true;
+    static constexpr const bool Enable = true;
     static constexpr const unsigned long Frequency = Traits<Timer>::MHz;
 };
 

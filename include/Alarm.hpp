@@ -3,6 +3,12 @@
 #include <Semaphore.hpp>
 #include <Traits.hpp>
 
+template <typename T>
+concept AlarmEnable = Traits<T>::Enable;
+
+template <typename T>
+concept AlarmMHz = (Traits<T>::Frequency >= Traits<Timer>::MHz);
+
 struct Alarm {
     struct Delay {
         RawSemaphore semaphore;
@@ -12,10 +18,9 @@ struct Alarm {
 
     static inline Delay *delays = nullptr;
 
-    template <typename T = void>
-        requires(Traits<Alarm>::Enable && Traits<Alarm>::Frequency >= 1'000'000)
+    template <AlarmEnable T = Alarm, AlarmMHz U = T>
     static void usleep(auto useconds) {
-        auto duration = useconds * Machine::CLINT::CLOCK / 1'000'000;
+        auto duration = useconds * Machine::CLINT::CLOCK / Traits<Timer>::MHz;
         Delay entry{RawSemaphore(0), Machine::CLINT::MTIME + duration, nullptr};
 
         CPU::Interrupt::disable();
