@@ -1,6 +1,5 @@
 #pragma once
-#include <IO/Logger.hpp>
-#include <Semaphore.hpp>
+#include <Thread.hpp>
 #include <Traits.hpp>
 
 template <typename T>
@@ -11,17 +10,18 @@ concept AlarmMHz = (Traits<T>::Frequency >= Traits<Timer>::MHz);
 
 struct Alarm {
     struct Delay {
-        RawSemaphore semaphore;
+        Thread::List waiting;
         unsigned long long clock;
         Delay *next;
     };
 
-    static inline Delay *delays = nullptr;
+    static inline Delay *delays           = nullptr;
+    static inline FIFO<Thread *> *waiting = nullptr;
 
     template <AlarmEnable T = Alarm, AlarmMHz U = T>
     static void usleep(auto useconds) {
         auto duration = useconds * Machine::CLINT::CLOCK / Traits<Timer>::MHz;
-        Delay entry{RawSemaphore(0), Machine::CLINT::MTIME + duration, nullptr};
+        Delay entry{Thread::List{}, Machine::CLINT::MTIME + duration, nullptr};
 
         CPU::Interrupt::disable();
         if (!delays || entry.clock < delays->clock) {
@@ -36,12 +36,12 @@ struct Alarm {
             entry.next    = current->next;
             current->next = &entry;
         }
-        entry.semaphore.p();
+        Thread::sleep(&entry.waiting);
     }
 
     static void handler() {
         if (delays && Machine::CLINT::MTIME >= delays->clock) {
-            delays->semaphore.v();
+            Thread::wakeup(&delays->waiting);
             delays = delays->next;
         }
     }

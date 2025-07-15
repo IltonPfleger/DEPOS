@@ -133,7 +133,7 @@ void RT_Thread::wait_next() {
     if (now < current->deadline) {
         Alarm::usleep(current->deadline - now);
     } else {
-        Logger::println("Missed deadline by %d us\n", now - current->deadline);
+        ERROR(true, "Missed deadline by %d us\n", now - current->deadline);
     }
     current->deadline += current->period;
 }
