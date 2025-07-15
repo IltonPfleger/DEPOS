@@ -34,37 +34,6 @@ struct Alarm {
         entry.semaphore.p();
     }
 
-    // template <typename T = void>
-    //     requires(Traits<Alarm>::Enable)
-    // static void delay(unsigned long seconds) {
-    //     CPU::Interrupt::disable();
-    //     unsigned long ticks = seconds * Traits<Alarm>::Frequency;
-    //     Delay entry{RawSemaphore(0), ticks, nullptr};
-
-    //    if (!delays || entry.clock < delays->clock) {
-    //        if (delays) delays->clock -= entry.clock;
-    //        entry.next = delays;
-    //        delays     = &entry;
-    //    } else {
-    //        unsigned long sum = delays->clock;
-    //        Delay *current    = delays;
-
-    //        while (current->next && sum + current->next->clock < entry.clock) {
-    //            current = current->next;
-    //            sum += current->clock;
-    //        }
-
-    //        entry.clock -= sum;
-
-    //        if (current->next) current->next->clock -= entry.clock;
-
-    //        entry.next    = current->next;
-    //        current->next = &entry;
-    //    }
-    //    entry.semaphore.p();
-    //    delays = delays->next;
-    //}
-
     static void handler() {
         if (delays && Machine::CLINT::MTIME >= delays->clock) {
             delays->semaphore.v();
