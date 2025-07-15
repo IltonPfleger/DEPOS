@@ -7,6 +7,11 @@ struct RR {
 };
 
 template <typename T>
+struct RateMonotonic {
+    static constexpr bool Timed = true;
+};
+
+template <typename T>
 struct Scheduler {
     POFO<T *> list;
 

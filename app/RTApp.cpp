@@ -3,12 +3,12 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-static constexpr int N = 100;
+static constexpr int N = 10;
 RT_Thread* thread[N];
 
 int teste(void* id) {
     while (1) {
-        Logger::println("THREAD %d!\n", (long long)id);
+        Logger::println("%d\n", (long long)id);
         RT_Thread::wait_next();
     }
     return 0;
