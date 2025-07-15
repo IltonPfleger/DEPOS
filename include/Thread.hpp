@@ -42,7 +42,7 @@ struct RT_Thread : Thread {
     typedef unsigned long Time;
 
     Interval period;
-    Time next;
+    Time deadline;
 
     RT_Thread(int (*)(void *), void *, Interval);
     static void wait_next();
