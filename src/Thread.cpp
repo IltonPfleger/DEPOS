@@ -8,11 +8,10 @@ static Thread *_idle_thread;
 static Thread *_user_thread;
 
 void dispatch(Thread *next) {
-    Thread *previous = const_cast<Thread *>(Thread::_running);
+    Thread *previous = const_cast<Thread *>(Thread::running());
     ERROR(next == nullptr, "[Thread::dispatch] Invalid thread.");
     ERROR(previous == next, "[Thread::dispatch] Same thread.");
-    Thread::_running        = next;
-    Thread::_running->state = Thread::RUNNING;
+    Thread::running(next);
     CPU::Context::transfer(&previous->context, next->context);
 }
 
@@ -60,7 +59,7 @@ Thread::~Thread() {
 void Thread::join(Thread *thread) {
     CPU::Interrupt::disable();
     if (thread->state != FINISHED) {
-        Thread *previous = const_cast<Thread *>(_running);
+        Thread *previous = const_cast<Thread *>(running());
 
         ERROR(thread == previous, "[Thread::join] Join itself.");
         ERROR(thread->joining != nullptr, "[Thread::join] Already joined.");
@@ -73,7 +72,7 @@ void Thread::join(Thread *thread) {
 
 void Thread::exit() {
     CPU::Interrupt::disable();
-    Thread *previous = const_cast<Thread *>(_running);
+    Thread *previous = const_cast<Thread *>(running());
     if (previous->joining) _scheduler.insert(previous->joining);
     previous->state = FINISHED;
     _count--;
@@ -82,26 +81,24 @@ void Thread::exit() {
 }
 
 void Thread::init() {
-    _idle_thread    = new (Memory::SYSTEM) Thread(idle, 0, IDLE);
-    _user_thread    = new (Memory::SYSTEM) Thread(main, 0, NORMAL);
-    Thread *first   = _scheduler.chose();
-    _running        = first;
-    _running->state = RUNNING;
+    _idle_thread  = new (Memory::SYSTEM) Thread(idle, 0, IDLE);
+    _user_thread  = new (Memory::SYSTEM) Thread(main, 0, NORMAL);
+    Thread *first = _scheduler.chose();
+    running(first);
     CPU::Context::jump(first->context);
 }
 
 void Thread::reschedule() {
-    Thread *previous = const_cast<Thread *>(_running);
+    Thread *previous = const_cast<Thread *>(running());
     previous->state  = READY;
     _scheduler.insert(previous);
-    Thread *next    = _scheduler.chose();
-    _running        = next;
-    _running->state = RUNNING;
+    Thread *next = _scheduler.chose();
+    running(next);
 }
 
 void Thread::yield() {
     CPU::Interrupt::disable();
-    Thread *previous = const_cast<Thread *>(_running);
+    Thread *previous = const_cast<Thread *>(running());
     previous->state  = READY;
     Thread *next     = _scheduler.chose();
     _scheduler.insert(previous);
@@ -109,7 +106,7 @@ void Thread::yield() {
 }
 
 void Thread::sleep(List *waiting) {
-    Thread *previous  = const_cast<Thread *>(_running);
+    Thread *previous  = const_cast<Thread *>(running());
     previous->state   = WAITING;
     previous->waiting = waiting;
     waiting->insert(previous);
@@ -129,14 +126,14 @@ RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Interval pe
     : Thread(function, args, NORMAL), period(period), deadline(Timer::utime() + period) {}
 
 void RT_Thread::wait_next() {
-    RT_Thread *running = const_cast<RT_Thread *>(reinterpret_cast<volatile RT_Thread *>(_running));
+    RT_Thread *current = const_cast<RT_Thread *>(reinterpret_cast<volatile RT_Thread *>(running()));
 
     RT_Thread::Time now = Timer::utime();
 
-    if (now < running->deadline) {
-        Alarm::usleep(running->deadline - now);
+    if (now < current->deadline) {
+        Alarm::usleep(current->deadline - now);
     } else {
-        Logger::println("Missed deadline by %d us\n", now - running->deadline);
+        Logger::println("Missed deadline by %d us\n", now - current->deadline);
     }
-    running->deadline += running->period;
+    current->deadline += current->period;
 }
