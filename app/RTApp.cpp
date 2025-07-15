@@ -3,9 +3,12 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-int teste(void*) {
+static constexpr int N = 100;
+RT_Thread* thread[N];
+
+int teste(void* id) {
     while (1) {
-        Logger::println("THREAD!\n");
+        Logger::println("THREAD %d!\n", (long long)id);
         RT_Thread::wait_next();
     }
     return 0;
@@ -14,9 +17,13 @@ int teste(void*) {
 int main() {
     Logger::println("Real Time Application: \n");
 
-    RT_Thread thread(teste, 0, 100'000);
-	Thread::join(&thread);
+    for (int i = 0; i < N; i++) thread[i] = new (Memory::APPLICATION) RT_Thread(teste, (void*)(long long)i, 100'000);
 
-    Logger::println("Done!\n");
+    for (int i = 0; i < N; i++) {
+        Thread::join(thread[i]);
+        delete thread[i];
+    }
+
+    Logger::println("Application Done!\n");
     return 0;
 }
