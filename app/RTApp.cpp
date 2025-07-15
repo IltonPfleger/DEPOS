@@ -8,7 +8,7 @@ RT_Thread* thread[N];
 
 int teste(void* id) {
     while (1) {
-        Logger::println("%d\n", (long long)id);
+        Logger::println("THREAD: %d\n", (long long)id);
         RT_Thread::wait_next();
     }
     return 0;
