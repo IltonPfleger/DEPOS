@@ -50,7 +50,7 @@ __attribute__((naked, section(".boot"))) void kboot() {
     CPU::Interrupt::disable();
     CPU::Trap::set(ktrap);
 
-    if (CPU::id() == 0) {
+    if (CPU::core() == 0) {
         CPU::Stack::set(STACK + Traits<Memory>::Page::SIZE);
         Kernel::init();
     } else {

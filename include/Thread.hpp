@@ -22,11 +22,12 @@ struct Thread {
 
     static inline int _count;
     static inline int _lock = 1;
-    static inline volatile Thread *_running;
     static inline Scheduler<Thread> _scheduler;
 
-    static inline void save() { _running->context = CPU::Context::get(); };
-    static inline void load() { CPU::Context::set(_running->context); };
+    static inline volatile Thread *running() { return reinterpret_cast<volatile Thread *>(CPU::id()); };
+    static inline void running(Thread *t) { t->state = RUNNING, CPU::id(t); }
+    static inline void save() { running()->context = CPU::Context::get(); };
+    static inline void load() { CPU::Context::set(running()->context); };
 
     static void join(Thread *);
     static void exit();

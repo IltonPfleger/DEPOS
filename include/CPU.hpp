@@ -7,10 +7,18 @@ struct CPU {
 
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
 
-    __attribute__((always_inline)) static inline unsigned int id() {
-        unsigned int id;
-        __asm__ volatile("csrr %0, mhartid" : "=r"(id));
-        return id;
+    static inline void *id() {
+        void *_id;
+        __asm__ volatile("mv %0, tp" : "=r"(_id));
+        return _id;
+    }
+
+    static inline void id(void *_id) { __asm__ volatile("mv tp, %0" ::"r"(_id)); }
+
+    __attribute__((always_inline)) static inline unsigned int core() {
+        unsigned int n;
+        __asm__ volatile("csrr %0, mhartid" : "=r"(n));
+        return n;
     }
 
     struct __attribute__((packed)) Context {
@@ -232,8 +240,5 @@ struct CPU {
 
     struct Stack {
         __attribute__((always_inline)) static inline void set(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
-        __attribute__((always_inline)) static inline void get(void **ptr) {
-            __asm__ volatile("sd sp, 0(%0)" : "=r"(ptr));
-        }
     };
 };
