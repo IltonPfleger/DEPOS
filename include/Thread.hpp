@@ -42,7 +42,7 @@ struct RT_Thread : Thread {
     typedef Interval Duration;
     typedef uintptr_t Time;
 
-    Interval &period = reinterpret_cast<Interval &>(rank);
+    Rank &period() { return rank; }
     Time deadline;
 
     RT_Thread(int (*)(void *), void *, Interval);
