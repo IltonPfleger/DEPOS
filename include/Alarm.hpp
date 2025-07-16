@@ -16,7 +16,6 @@ struct Alarm {
     };
 
     static inline Delay *delays           = nullptr;
-    static inline FIFO<Thread *> *waiting = nullptr;
 
     template <AlarmEnable T = Alarm, AlarmMHz U = T>
     static void usleep(auto useconds) {

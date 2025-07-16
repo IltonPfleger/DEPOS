@@ -25,6 +25,5 @@ struct SiFiveUART {
     static void put(char c) {
         while (TXDATA() & TX_EMPTY_MASK);
         TXDATA() = c;
-        while (TXDATA() & TX_EMPTY_MASK);
     }
 };
