@@ -12,11 +12,11 @@ struct Thread {
     enum { HIGH, NORMAL, LOW, IDLE = ~0ULL };
 
     void *stack;
+    State state;
     Rank rank;
     CPU::Context *context;
     Thread *joining;
     List *waiting;
-    State state;
 
     ~Thread();
     Thread(int (*)(void *), void *, Rank);
@@ -39,6 +39,7 @@ struct Thread {
 
 struct RT_Thread : Thread {
     typedef unsigned Interval;
+    typedef Interval Duration;
     typedef uintptr_t Time;
 
     Interval &period = reinterpret_cast<Interval &>(rank);

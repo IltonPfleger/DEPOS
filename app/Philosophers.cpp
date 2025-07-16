@@ -17,13 +17,13 @@ int filosofo(void *arg) {
     int i  = ITERATIONS;
     while (i--) {
         Logger::println("Filósofo %d está pensando\n", id);
-        Alarm::udelay(1000000);
+        Alarm::usleep(1000000);
 
         garfos[p1]->p();
         garfos[p2]->p();
 
         Logger::println("Filósofo %d está comendo\n", id);
-        Alarm::udelay(1000000);
+        Alarm::usleep(1000000);
 
         garfos[p1]->v();
         garfos[p2]->v();
@@ -39,7 +39,7 @@ int main(void *) {
     }
 
     for (int i = 0; i < FILOSOFOS; i++) {
-        threads[i] = new (Memory::APPLICATION) Thread(filosofo, (void *)(long long)i, Thread::Priority::NORMAL);
+        threads[i] = new (Memory::APPLICATION) Thread(filosofo, (void *)(long long)i, Thread::NORMAL);
     }
 
     for (int i = 0; i < FILOSOFOS; i++) {
