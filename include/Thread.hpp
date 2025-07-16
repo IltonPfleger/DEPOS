@@ -7,25 +7,26 @@
 
 struct Thread {
     typedef FIFO<Thread *> List;
-    enum Priority : unsigned { HIGH, NORMAL, LOW, IDLE = ~0U };
-    enum State { RUNNING, READY, WAITING, FINISHED };
+    typedef uintptr_t Rank;
+    enum class State { RUNNING, READY, WAITING, FINISHED };
+    enum { HIGH, NORMAL, LOW, IDLE = ~0ULL };
 
     void *stack;
+    Rank rank;
     CPU::Context *context;
     Thread *joining;
     List *waiting;
     State state;
-    Priority rank;
 
     ~Thread();
-    Thread(int (*)(void *), void *, Priority);
+    Thread(int (*)(void *), void *, Rank);
 
     static inline int _count;
     static inline int _lock = 1;
     static inline Scheduler<Thread> _scheduler;
 
     static inline volatile Thread *running() { return reinterpret_cast<volatile Thread *>(CPU::id()); };
-    static inline void running(Thread *t) { t->state = RUNNING, CPU::id(t); }
+    static inline void running(Thread *t) { t->state = State::RUNNING, CPU::id(t); }
 
     static void join(Thread *);
     static void exit();
@@ -37,10 +38,10 @@ struct Thread {
 };
 
 struct RT_Thread : Thread {
-    typedef unsigned long Interval;
-    typedef unsigned long Time;
+    typedef unsigned Interval;
+    typedef uintptr_t Time;
 
-    Interval period;
+    Interval &period = reinterpret_cast<Interval &>(rank);
     Time deadline;
 
     RT_Thread(int (*)(void *), void *, Interval);
