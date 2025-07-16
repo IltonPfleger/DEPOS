@@ -18,7 +18,7 @@ int main() {
     Logger::println("Real Time Application: \n");
 
     // for (int i = 0; i < N; i++) thread[i] = new (Memory::APPLICATION) RT_Thread(teste, (void*)(long long)i, 1'000);
-    thread[0] = new (Memory::APPLICATION) RT_Thread(teste, (void*)(long long)0, 1'000);
+    thread[0] = new (Memory::APPLICATION) RT_Thread(teste, (void*)(long long)0, 10'000);
     thread[1] = new (Memory::APPLICATION) RT_Thread(teste, (void*)(long long)1, 100'000);
 
     for (int i = 0; i < N; i++) {
