@@ -37,13 +37,13 @@ Thread::Thread(Function f, Argument a, Rank r) {
     // rank    = r;
     state = State::READY;
     _count++;
-    _scheduler.insert(this);
+    _scheduler.insert(this->link);
 }
 
 Thread::~Thread() {
     switch (state) {
         case (State::READY):
-            _scheduler.remove(this);
+            _scheduler.remove(this->link);
             _count--;
             break;
         case (State::WAITING):
@@ -73,7 +73,7 @@ void Thread::join(Thread *thread) {
 void Thread::exit() {
     CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(running());
-    if (previous->joining) _scheduler.insert(previous->joining);
+    if (previous->joining) _scheduler.insert(previous->joining->link);
     previous->state = State::FINISHED;
     _count--;
     Thread *next = _scheduler.chose();
@@ -91,7 +91,7 @@ void Thread::init() {
 void Thread::reschedule() {
     Thread *previous = const_cast<Thread *>(running());
     previous->state  = State::READY;
-    _scheduler.insert(previous);
+    _scheduler.insert(previous->link);
     Thread *next = _scheduler.chose();
     running(next);
 }
@@ -101,7 +101,7 @@ void Thread::yield() {
     Thread *previous = const_cast<Thread *>(running());
     previous->state  = State::READY;
     Thread *next     = _scheduler.chose();
-    _scheduler.insert(previous);
+    _scheduler.insert(previous->link);
     dispatch(next);
 }
 
@@ -119,7 +119,7 @@ void Thread::wakeup(List *waiting) {
     ERROR(awake == nullptr, "[Thread::wakeup] Empty queue.");
     awake->value->state   = State::READY;
     awake->value->waiting = nullptr;
-    _scheduler.insert(awake->value);
+    _scheduler.insert(awake);
 }
 
 // int entry(void *arg) {
