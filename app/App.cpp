@@ -23,7 +23,7 @@ int main(void *) {
     Logger::println("Application: \n");
 
     for (int i = 0; i < N; i++) {
-        threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i, Thread::Priority::NORMAL);
+        threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i, Thread::NORMAL);
     }
 
     for (int i = 0; i < N; i++) {
