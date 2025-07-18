@@ -105,7 +105,7 @@ void Thread::yield() {
     dispatch(next);
 }
 
-void Thread::sleep(List *waiting) {
+void Thread::sleep(Queue *waiting) {
     Thread *previous  = const_cast<Thread *>(running());
     previous->state   = State::WAITING;
     previous->waiting = waiting;
@@ -114,7 +114,7 @@ void Thread::sleep(List *waiting) {
     dispatch(next);
 }
 
-void Thread::wakeup(List *waiting) {
+void Thread::wakeup(Queue *waiting) {
     Element *awake = waiting->next();
     ERROR(awake == nullptr, "[Thread::wakeup] Empty queue.");
     awake->value->state   = State::READY;
@@ -122,26 +122,26 @@ void Thread::wakeup(List *waiting) {
     _scheduler.insert(awake);
 }
 
-// int entry(void *arg) {
-//     RT_Thread *current = const_cast<RT_Thread *>(reinterpret_cast<volatile RT_Thread *>(Thread::running()));
-//     auto now           = Alarm::utime();
-//     if (now < current->start) {
-//         Alarm::usleep(current->start - now);
-//     }
-//
-//     while (1) {
-//         current->function(arg);
-//
-//         now = Alarm::utime();
-//         if (now < current->start + current->deadline)
-//             Alarm::usleep(current->start + current->period - now);
-//         else
-//             ERROR(true, "Missed deadline by %d us\n", now - (current->start + current->deadline));
-//
-//         current->start += current->period;
-//     }
-//     return 0;
-// }
-//
-// RT_Thread::RT_Thread(Function f, Argument a, Microsecond p, Microsecond d, Microsecond c, Microsecond s)
-//     : Thread(entry, a, p), function(f), period(p), deadline(d), duration(c), start(s) {}
+int entry(void *arg) {
+    RT_Thread *current = const_cast<RT_Thread *>(reinterpret_cast<volatile RT_Thread *>(Thread::running()));
+    auto now           = Alarm::utime();
+    if (now < current->start) {
+        Alarm::usleep(current->start - now);
+    }
+
+    while (1) {
+        current->function(arg);
+
+        now = Alarm::utime();
+        if (now < current->start + current->deadline)
+            Alarm::usleep(current->start + current->period - now);
+        else
+            ERROR(true, "Missed deadline by %d us\n", now - (current->start + current->deadline));
+
+        current->start += current->period;
+    }
+    return 0;
+}
+
+RT_Thread::RT_Thread(Function f, Argument a, Microsecond p, Microsecond d, Microsecond c, Microsecond s)
+    : Thread(entry, a, p), function(f), period(p), deadline(d), duration(c), start(s) {}

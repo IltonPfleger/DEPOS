@@ -10,17 +10,19 @@ concept AlarmMHz = (Traits<T>::Frequency >= Traits<Timer>::MHz);
 
 struct Alarm {
     struct Delay {
-        Thread::List waiting;
+        Thread::Queue waiting;
         unsigned long long clock;
         Delay *next;
     };
 
     static inline Delay *delays = nullptr;
 
+    static uintptr_t utime() { return (Machine::CLINT::MTIME * 1'000'000) / Machine::CLINT::CLOCK; }
+
     template <AlarmEnable T = Alarm, AlarmMHz U = T>
     static void usleep(auto useconds) {
         auto duration = useconds * Machine::CLINT::CLOCK / Traits<Timer>::MHz;
-        Delay entry{Thread::List{}, Machine::CLINT::MTIME + duration, nullptr};
+        Delay entry{Thread::Queue{}, Machine::CLINT::MTIME + duration, nullptr};
 
         CPU::Interrupt::disable();
         if (!delays || entry.clock < delays->clock) {

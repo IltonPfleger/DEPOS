@@ -10,7 +10,7 @@ struct Thread {
     using Argument = void *;
     using Rank     = uintptr_t;
     using Element  = Scheduler<Thread>::Queue::Element;
-    using List     = FIFO<Thread *>;
+    using Queue    = FIFO<Thread *>;
     enum class State { RUNNING, READY, WAITING, FINISHED };
     enum { HIGH, NORMAL, LOW, IDLE = ~0ULL };
 
@@ -19,7 +19,7 @@ struct Thread {
     Rank rank;
     CPU::Context *context;
     Thread *joining;
-    List *waiting;
+    Queue *waiting;
     Element *link;
 
     ~Thread();
@@ -34,20 +34,20 @@ struct Thread {
     static void join(Thread *);
     static void exit();
     static void init();
-    static void sleep(List *);
-    static void wakeup(List *);
+    static void sleep(Queue *);
+    static void wakeup(Queue *);
     static void yield();
     static void reschedule();
 };
 
-// struct RT_Thread : Thread {
-//     typedef uintptr_t Microsecond;
-//
-//     const Function function;
-//     const Microsecond period;
-//     const Microsecond deadline;
-//     const Microsecond duration;
-//     Microsecond start;
-//
-//     RT_Thread(Function, Argument, Microsecond, Microsecond, Microsecond, Microsecond);
-// };
+struct RT_Thread : Thread {
+    typedef uintptr_t Microsecond;
+
+    const Function function;
+    const Microsecond period;
+    const Microsecond deadline;
+    const Microsecond duration;
+    Microsecond start;
+
+    RT_Thread(Function, Argument, Microsecond, Microsecond, Microsecond, Microsecond);
+};
