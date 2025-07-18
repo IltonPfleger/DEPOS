@@ -15,7 +15,7 @@ int teste(void* id) {
 int main() {
     Logger::println("Real Time Application: \n");
 
-    auto now = Alarm::utime() + 10'000;
+    auto now = Alarm::utime() + 1'000;
     for (int i = 0; i < N; i++)
         thread[i] = new (Memory::APPLICATION) RT_Thread(teste, (void*)(long long)i, 1'000, 1'000, 100, now + i * 1'000);
 
