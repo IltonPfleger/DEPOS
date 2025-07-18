@@ -53,6 +53,7 @@ Thread::~Thread() {
         default:
             break;
     }
+    delete this->link;
     Memory::kfree(stack);
 }
 
