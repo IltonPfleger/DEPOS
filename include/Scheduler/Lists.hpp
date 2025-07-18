@@ -3,9 +3,6 @@
 #include <Memory.hpp>
 #include <Meta.hpp>
 
-#pragma once
-#include <cstddef>
-
 template <typename T>
 struct LinkedList {
     struct Element {
@@ -38,9 +35,7 @@ struct LinkedList {
     void push_sorted(Element* e) {
         e->next = nullptr;
         if (!head || e->rank < head->rank) {
-            e->next = head;
-            head    = e;
-            if (!tail) tail = e;
+            push_front(e);
         } else {
             Element* current = head;
             while (current->next && e->rank >= current->next->rank) {

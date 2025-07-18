@@ -16,7 +16,6 @@ struct Timer {
 
     static inline struct Channel CHANNELS[2];
 
-    static uintptr_t utime() { return (Machine::CLINT::MTIME * 1'000'000) / Machine::CLINT::CLOCK; }
 
     static void reset() {
         Machine::CLINT::MTIMECMP = Machine::CLINT::MTIME + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency);
