@@ -22,7 +22,6 @@ struct Thread {
     Thread(int (*)(void *), void *, Rank);
 
     static inline int _count;
-    static inline int _lock = 1;
     static inline Scheduler<Thread> _scheduler;
 
     static inline volatile Thread *running() { return reinterpret_cast<volatile Thread *>(CPU::id()); };
@@ -37,14 +36,14 @@ struct Thread {
     static void reschedule();
 };
 
-struct RT_Thread : Thread {
-    typedef unsigned Interval;
-    typedef Interval Duration;
-    typedef uintptr_t Time;
-
-    Rank &period() { return rank; }
-    Time deadline;
-
-    RT_Thread(int (*)(void *), void *, Interval);
-    static void wait_next();
-};
+// struct RT_Thread : Thread {
+//     typedef unsigned Interval;
+//     typedef Interval Duration;
+//     typedef uintptr_t Time;
+//
+//     Rank &period() { return rank; }
+//     Time deadline;
+//
+//     RT_Thread(int (*)(void *), void *, Interval);
+//     static void wait_next();
+// };

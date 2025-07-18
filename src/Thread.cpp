@@ -120,15 +120,15 @@ void Thread::wakeup(List *waiting) {
     _scheduler.insert(awake);
 }
 
-RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Interval period)
-    : Thread(function, args, period), deadline(Timer::utime() + period) {}
-
-void RT_Thread::wait_next() {
-    RT_Thread *current  = const_cast<RT_Thread *>(reinterpret_cast<volatile RT_Thread *>(running()));
-    RT_Thread::Time now = Timer::utime();
-    if (now < current->deadline)
-        Alarm::usleep(current->deadline - now);
-    else
-        ERROR(true, "Missed deadline by %d us\n", now - current->deadline);
-    current->deadline += current->period();
-}
+// RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Interval period)
+//     : Thread(function, args, period), deadline(Timer::utime() + period) {}
+//
+// void RT_Thread::wait_next() {
+//     RT_Thread *current  = const_cast<RT_Thread *>(reinterpret_cast<volatile RT_Thread *>(running()));
+//     RT_Thread::Time now = Timer::utime();
+//     if (now < current->deadline)
+//         Alarm::usleep(current->deadline - now);
+//     else
+//         ERROR(true, "Missed deadline by %d us\n", now - current->deadline);
+//     current->deadline += current->period();
+// }
