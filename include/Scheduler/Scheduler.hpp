@@ -13,16 +13,17 @@ struct RateMonotonic {
 
 template <typename T>
 struct Scheduler {
-    POFO<T *> list;
+    using Queue = POFO<T*>;
+    Queue list;
 
     T *chose() {
-        T *element = list.next();
-        return element;
+        auto *element = list.next();
+        return element->value;
     }
 
-    void remove(T *element) { list.remove(element); }
+    void remove(T *element) { list.remove(element->link); }
 
-    void insert(T *element) { list.insert(element); }
+    void insert(T *element) { list.insert(element->link); }
 
     bool empty() { return list.empty(); }
 };

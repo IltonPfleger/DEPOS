@@ -6,8 +6,11 @@
 #include <Scheduler/Scheduler.hpp>
 
 struct Thread {
-    typedef FIFO<Thread *> List;
-    typedef uintptr_t Rank;
+    using Function = int (*)(void *);
+    using Argument = void *;
+    using Rank     = uintptr_t;
+    using Element  = Scheduler<Thread>::Queue::Element;
+    using List     = FIFO<Thread *>;
     enum class State { RUNNING, READY, WAITING, FINISHED };
     enum { HIGH, NORMAL, LOW, IDLE = ~0ULL };
 
@@ -17,9 +20,10 @@ struct Thread {
     CPU::Context *context;
     Thread *joining;
     List *waiting;
+    Element *link;
 
     ~Thread();
-    Thread(int (*)(void *), void *, Rank);
+    Thread(Function, Argument, Rank);
 
     static inline int _count;
     static inline Scheduler<Thread> _scheduler;
@@ -37,13 +41,13 @@ struct Thread {
 };
 
 // struct RT_Thread : Thread {
-//     typedef unsigned Interval;
-//     typedef Interval Duration;
-//     typedef uintptr_t Time;
+//     typedef uintptr_t Microsecond;
 //
-//     Rank &period() { return rank; }
-//     Time deadline;
+//     const Function function;
+//     const Microsecond period;
+//     const Microsecond deadline;
+//     const Microsecond duration;
+//     Microsecond start;
 //
-//     RT_Thread(int (*)(void *), void *, Interval);
-//     static void wait_next();
+//     RT_Thread(Function, Argument, Microsecond, Microsecond, Microsecond, Microsecond);
 // };
