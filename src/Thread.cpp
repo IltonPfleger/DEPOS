@@ -1,7 +1,6 @@
 #include <Alarm.hpp>
 #include <IO/Debug.hpp>
 #include <Thread.hpp>
-#include <Timer.hpp>
 
 extern int main(void *);
 static Thread *_idle_thread;
@@ -29,11 +28,14 @@ int idle(void *) {
     return 0;
 }
 
-Thread::Thread(int (*function)(void *), void *args, Rank rank) : state(State::READY), rank(rank) {
+Thread::Thread(Function f, Argument a, Rank r) {
     stack       = Memory::kmalloc();
     char *entry = reinterpret_cast<char *>(stack);
     entry += Traits<Memory>::Page::SIZE - sizeof(CPU::Context);
-    context = new (entry) CPU::Context(function, exit, args);
+    context = new (entry) CPU::Context(f, exit, a);
+    link    = new (Memory::SYSTEM) Element(this, r, nullptr);
+    // rank    = r;
+    state = State::READY;
     _count++;
     _scheduler.insert(this);
 }
@@ -45,7 +47,7 @@ Thread::~Thread() {
             _count--;
             break;
         case (State::WAITING):
-            waiting->remove(this);
+            waiting->remove(this->link);
             _count--;
             break;
         default:
@@ -107,28 +109,39 @@ void Thread::sleep(List *waiting) {
     Thread *previous  = const_cast<Thread *>(running());
     previous->state   = State::WAITING;
     previous->waiting = waiting;
-    waiting->insert(previous);
+    waiting->insert(previous->link);
     Thread *next = _scheduler.chose();
     dispatch(next);
 }
 
 void Thread::wakeup(List *waiting) {
-    Thread *awake = waiting->next();
+    Element *awake = waiting->next();
     ERROR(awake == nullptr, "[Thread::wakeup] Empty queue.");
-    awake->state   = State::READY;
-    awake->waiting = nullptr;
-    _scheduler.insert(awake);
+    awake->value->state   = State::READY;
+    awake->value->waiting = nullptr;
+    _scheduler.insert(awake->value);
 }
 
-// RT_Thread::RT_Thread(int (*function)(void *), void *args, RT_Thread::Interval period)
-//     : Thread(function, args, period), deadline(Timer::utime() + period) {}
+// int entry(void *arg) {
+//     RT_Thread *current = const_cast<RT_Thread *>(reinterpret_cast<volatile RT_Thread *>(Thread::running()));
+//     auto now           = Alarm::utime();
+//     if (now < current->start) {
+//         Alarm::usleep(current->start - now);
+//     }
 //
-// void RT_Thread::wait_next() {
-//     RT_Thread *current  = const_cast<RT_Thread *>(reinterpret_cast<volatile RT_Thread *>(running()));
-//     RT_Thread::Time now = Timer::utime();
-//     if (now < current->deadline)
-//         Alarm::usleep(current->deadline - now);
-//     else
-//         ERROR(true, "Missed deadline by %d us\n", now - current->deadline);
-//     current->deadline += current->period();
+//     while (1) {
+//         current->function(arg);
+//
+//         now = Alarm::utime();
+//         if (now < current->start + current->deadline)
+//             Alarm::usleep(current->start + current->period - now);
+//         else
+//             ERROR(true, "Missed deadline by %d us\n", now - (current->start + current->deadline));
+//
+//         current->start += current->period;
+//     }
+//     return 0;
 // }
+//
+// RT_Thread::RT_Thread(Function f, Argument a, Microsecond p, Microsecond d, Microsecond c, Microsecond s)
+//     : Thread(entry, a, p), function(f), period(p), deadline(d), duration(c), start(s) {}

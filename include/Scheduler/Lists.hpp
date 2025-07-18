@@ -3,55 +3,30 @@
 #include <Memory.hpp>
 #include <Meta.hpp>
 
-// TODO: If we have a doubly linked list, remove from tail is faster
+#pragma once
+#include <cstddef>
 
 template <typename T>
 struct LinkedList {
     struct Element {
-        T value;
-        Element *next;
+        const T value;
+        int rank;
+        Element* next = nullptr;
     };
+
+    Element* head = nullptr;
+    Element* tail = nullptr;
 
     bool empty() const { return head == nullptr; }
 
-    T remove_front() {
-        if (!head) return T{};
-        Element *e = head;
-        head       = e->next;
-        T value    = e->value;
-        if (!head) tail = nullptr;
-        delete e;
-        return value;
+    void push_front(Element* e) {
+        e->next = head;
+        head    = e;
+        if (!tail) tail = e;
     }
 
-    T remove_back() {
-        if (!head) return T{};
-        if (head == tail) {
-            T value = head->value;
-            delete head;
-            head = tail = nullptr;
-            return value;
-        }
-
-        Element *current = head;
-        while (current->next != tail) {
-            current = current->next;
-        }
-
-        T value = tail->value;
-        delete tail;
-        tail       = current;
-        tail->next = nullptr;
-        return value;
-    }
-
-    void push_front(const T &value) {
-        head = new (Memory::SYSTEM) Element{value, head};
-        if (!tail) tail = head;
-    }
-
-    void push_back(const T &value) {
-        Element *e = new (Memory::SYSTEM) Element{value, nullptr};
+    void push_back(Element* e) {
+        e->next = nullptr;
         if (!head) {
             head = tail = e;
         } else {
@@ -60,18 +35,15 @@ struct LinkedList {
         }
     }
 
-    void push_sorted(const T &value)
-        requires requires(const T &v) { v.rank; } || requires(const T &v) { v->rank; }
-    {
-        Element *e = new (Memory::SYSTEM) Element{value, nullptr};
-
-        if (!head || rank(value) < rank(head->value)) {
+    void push_sorted(Element* e) {
+        e->next = nullptr;
+        if (!head || e->rank < head->rank) {
             e->next = head;
             head    = e;
             if (!tail) tail = e;
         } else {
-            Element *current = head;
-            while (current->next && rank(value) >= rank(current->next->value)) {
+            Element* current = head;
+            while (current->next && e->rank >= current->next->rank) {
                 current = current->next;
             }
             e->next       = current->next;
@@ -80,66 +52,80 @@ struct LinkedList {
         }
     }
 
-    constexpr auto rank(const T &value)
-        requires requires(const T &v) { v.rank; } || requires(const T &v) { v->rank; }
-    {
-        if constexpr (Meta::IS_POINTER<T>::Result) {
-            return value->rank;
-        } else {
-            return value.rank;
-        }
+    Element* remove_front() {
+        if (!head) return nullptr;
+        Element* e = head;
+        head       = e->next;
+        if (!head) tail = nullptr;
+        e->next = nullptr;
+        return e;
     }
 
-    void remove(const T &value) {
-        Element *current  = head;
-        Element *previous = nullptr;
+    Element* remove_back() {
+        if (!head) return nullptr;
+        if (head == tail) {
+            Element* e = head;
+            head = tail = nullptr;
+            return e;
+        }
+        Element* current = head;
+        while (current->next != tail) {
+            current = current->next;
+        }
+        Element* e = tail;
+        tail       = current;
+        tail->next = nullptr;
+        return e;
+    }
 
-        while (current && current->value != value) {
+    void remove(Element* e) {
+        if (!head) return;
+        Element* current  = head;
+        Element* previous = nullptr;
+        while (current && current != e) {
             previous = current;
             current  = current->next;
         }
-
         if (!current) return;
-
         if (current == head) {
             head = current->next;
         } else {
             previous->next = current->next;
         }
-
         if (current == tail) {
             tail = previous;
         }
-
-        delete current;
-
+        e->next = nullptr;
         if (!head) tail = nullptr;
     }
-
-    Element *head = nullptr;
-    Element *tail = nullptr;
 };
 
 template <typename T>
 struct LIFO : private LinkedList<T> {
     using LinkedList<T>::empty;
     using LinkedList<T>::remove;
-    void insert(const T &value) { LinkedList<T>::push_front(value); }
-    T next() { return LinkedList<T>::remove_front(); }
+    using Element = typename LinkedList<T>::Element;
+
+    void insert(Element* value) { LinkedList<T>::push_front(value); }
+    Element* next() { return LinkedList<T>::remove_front(); }
 };
 
 template <typename T>
 struct FIFO : private LinkedList<T> {
     using LinkedList<T>::empty;
     using LinkedList<T>::remove;
-    void insert(const T &value) { LinkedList<T>::push_back(value); }
-    T next() { return LinkedList<T>::remove_front(); }
+    using Element = typename LinkedList<T>::Element;
+
+    void insert(Element* value) { LinkedList<T>::push_back(value); }
+    Element* next() { return LinkedList<T>::remove_front(); }
 };
 
 template <typename T>
 struct POFO : private LinkedList<T> {
     using LinkedList<T>::empty;
     using LinkedList<T>::remove;
-    void insert(const T &value) { LinkedList<T>::push_sorted(value); }
-    T next() { return LinkedList<T>::remove_front(); }
+    using Element = typename LinkedList<T>::Element;
+
+    void insert(Element* value) { LinkedList<T>::push_sorted(value); }
+    Element* next() { return LinkedList<T>::remove_front(); }
 };
