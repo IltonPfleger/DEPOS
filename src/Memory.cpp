@@ -55,7 +55,7 @@ void *Memory::kmalloc() {
 }
 
 void Memory::kfree(void *addr) {
-    if (addr == nullptr) return;
+    ERROR(addr == nullptr, "[Memory::free] Free nullptr");
     Page *page = reinterpret_cast<Page *>(addr);
     page->next = pages;
     pages      = page;
