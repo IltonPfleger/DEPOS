@@ -124,22 +124,20 @@ void Thread::wakeup(Queue *waiting) {
 }
 
 int entry(void *arg) {
-    RT_Thread *current = const_cast<RT_Thread *>(reinterpret_cast<volatile RT_Thread *>(Thread::running()));
+    RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));
     auto now           = Alarm::utime();
-    if (now < current->start) {
-        Alarm::usleep(current->start - now);
-    }
+    if (now < current->start) Alarm::usleep(current->start - now);
 
     while (1) {
         current->function(arg);
-
         now = Alarm::utime();
-        if (now < current->start + current->deadline)
-            Alarm::usleep(current->start + current->period - now);
-        else
-            ERROR(true, "Missed deadline by %d us\n", now - (current->start + current->deadline));
 
-        current->start += current->period;
+        if (now < current->start + current->deadline) {
+            current->start += current->period;
+            Alarm::usleep(current->start - now);
+        } else {
+            ERROR(true, "Missed deadline by %d us\n", now - (current->start + current->deadline));
+        }
     }
     return 0;
 }
