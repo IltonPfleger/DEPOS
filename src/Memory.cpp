@@ -1,5 +1,4 @@
 #include <IO/Debug.hpp>
-#include <IO/Logger.hpp>
 #include <Memory.hpp>
 
 extern "C" const char __KERNEL_START__[];
@@ -26,13 +25,13 @@ void Memory::init() {
     const uintptr_t HEAP_SIZE    = Machine::Memory::SIZE - KERNEL_SIZE;
     const uintptr_t HEAP_END     = HEAP_START + HEAP_SIZE;
 
-    Logger::println("Memory::init()\n");
-    Logger::println("KernelStart=%p\n", KERNEL_START);
-    Logger::println("KernelEnd=%p\n", KERNEL_END);
-    Logger::println("KernelSize=%d\n", KERNEL_SIZE);
-    Logger::println("HeapStart=%p\n", HEAP_START);
-    Logger::println("HeapSize=%d\n", HEAP_SIZE / (1024 * 1024));
-    Logger::println("HeapEnd=%p\n", HEAP_END);
+    TRACE("Memory::init()\n");
+    TRACE("KernelStart=%p\n", KERNEL_START);
+    TRACE("KernelEnd=%p\n", KERNEL_END);
+    TRACE("KernelSize=%d\n", KERNEL_SIZE);
+    TRACE("HeapStart=%p\n", HEAP_START);
+    TRACE("HeapSize=%d\n", HEAP_SIZE / (1024 * 1024));
+    TRACE("HeapEnd=%p\n", HEAP_END);
 
     uintptr_t n_pages = 0;
     uintptr_t current = HEAP_START;
@@ -44,14 +43,14 @@ void Memory::init() {
         current += Traits<Memory>::Page::SIZE;
     };
 
-    Logger::println("NumberOfPages=%d\n", n_pages);
-    Logger::println("Memory::init(done)\n");
+    TRACE("NumberOfPages=%d\n", n_pages);
+    TRACE("Memory::init(done)\n");
 }
 
 void *Memory::kmalloc() {
     Page *page = pages;
     if (page != nullptr) pages = page->next;
-    Logger::println("Memory::kmalloc()[return=%p]\n", page);
+    TRACE("Memory::kmalloc()[return=%p]\n", page);
     return reinterpret_cast<void *>(page);
 }
 
@@ -60,7 +59,7 @@ void Memory::kfree(void *addr) {
     Page *page = reinterpret_cast<Page *>(addr);
     page->next = pages;
     pages      = page;
-    Logger::println("Memory::kfree(%p)\n", page);
+    TRACE("Memory::kfree(%p)\n", page);
 }
 
 void *operator new(unsigned long, void *ptr) { return ptr; }

@@ -46,4 +46,5 @@ template <>
 struct Traits<Debug> {
     using Device                      = Machine::IO::UART;
     static constexpr const bool ERROR = true;
+    static constexpr const bool TRACE = true;
 };
