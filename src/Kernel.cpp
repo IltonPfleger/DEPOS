@@ -5,7 +5,7 @@
 #include <Thread.hpp>
 #include <Timer.hpp>
 
-static char STACK[Traits<Memory>::Page::SIZE];
+extern "C" char __BOOT_STACK__[];
 
 struct Kernel {
     static void init() {
@@ -51,7 +51,7 @@ __attribute__((naked, section(".boot"))) void kboot() {
     CPU::Trap::set(ktrap);
 
     if (CPU::core() == 0) {
-        CPU::Stack::set(STACK + Traits<Memory>::Page::SIZE);
+        CPU::Stack::set(__BOOT_STACK__);
         Kernel::init();
     } else {
         for (;;);

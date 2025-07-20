@@ -21,5 +21,8 @@ SECTIONS {
 	.bss : { *(.bss) *(COMMON) } :rw
 
 	PROVIDE(__KERNEL_END__ = .);
+	. = ALIGN(4096);
+	. += 4096;
+	PROVIDE(__BOOT_STACK__ = .);
 }
 
