@@ -7,13 +7,12 @@
 
 struct Thread {
     using Criterion = Traits<Scheduler<Thread>>::Criterion;
-    using Function  = int (*)(void *);
-    using Argument  = void *;
-    using Rank      = uintptr_t;
-    using Element   = Scheduler<Thread>::Queue::Element;
-    using Queue     = FIFO<Thread *>;
+    using Function = int (*)(void *);
+    using Argument = void *;
+    using Element  = Scheduler<Thread>::Queue::Element;
+    using Queue    = FIFO<Thread *>;
     enum class State { RUNNING, READY, WAITING, FINISHED };
-    enum : Rank { HIGH, NORMAL, LOW, IDLE = ~0ULL };
+    enum : Criterion::Rank { HIGH, NORMAL, LOW, IDLE = ~0ULL };
 
     void *stack;
     State state;
@@ -21,9 +20,10 @@ struct Thread {
     Thread *joining;
     Queue *waiting;
     Element *link;
+    Criterion criterion;
 
     ~Thread();
-    Thread(Function, Argument, Rank);
+    Thread(Function, Argument, Criterion);
 
     static inline int _count;
     static inline Scheduler<Thread> _scheduler;
@@ -41,11 +41,9 @@ struct Thread {
 };
 
 struct RT_Thread : Thread {
-    typedef uintptr_t Microsecond;
-
     const Function function;
-    const Microsecond period;
     const Microsecond deadline;
+    const Microsecond period;
     const Microsecond duration;
     Microsecond start;
 

@@ -28,13 +28,13 @@ int idle(void *) {
     return 0;
 }
 
-Thread::Thread(Function f, Argument a, Rank r) {
+Thread::Thread(Function f, Argument a, Criterion c) : criterion(c) {
     stack       = Memory::kmalloc();
     char *entry = reinterpret_cast<char *>(stack);
     entry += Traits<Memory>::Page::SIZE - sizeof(CPU::Context);
-    context = new (entry) CPU::Context(f, exit, a);
-    link  = new (Memory::SYSTEM) Element(this, r, nullptr);
-    state = State::READY;
+    context   = new (entry) CPU::Context(f, exit, a);
+    link      = new (Memory::SYSTEM) Element(this, criterion.priority(), nullptr);
+    state     = State::READY;
     _count++;
     _scheduler.insert(this->link);
 }
@@ -132,7 +132,7 @@ int entry(void *arg) {
         current->function(arg);
         now = Alarm::utime();
 
-        int miss = now - current->start - current->deadline;
+		int miss = (now - current->start) - current->deadline;
         ERROR(miss > 0, "Missed deadline: %dμ\n", miss);
 
         current->start += current->period;
@@ -141,5 +141,5 @@ int entry(void *arg) {
     return 0;
 }
 
-RT_Thread::RT_Thread(Function f, Argument a, Microsecond p, Microsecond d, Microsecond c, Microsecond s)
-    : Thread(entry, a, HIGH), function(f), period(p), deadline(d), duration(c), start(s) {}
+RT_Thread::RT_Thread(Function f, Argument a, Microsecond d, Microsecond p, Microsecond c, Microsecond s)
+    : Thread(entry, a, Criterion(d, p, c)), function(f), deadline(d), period(p), duration(c), start(s) {}
