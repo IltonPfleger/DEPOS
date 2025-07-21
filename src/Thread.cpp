@@ -33,8 +33,7 @@ Thread::Thread(Function f, Argument a, Rank r) {
     char *entry = reinterpret_cast<char *>(stack);
     entry += Traits<Memory>::Page::SIZE - sizeof(CPU::Context);
     context = new (entry) CPU::Context(f, exit, a);
-    link    = new (Memory::SYSTEM) Element(this, r, nullptr);
-    // rank    = r;
+    link  = new (Memory::SYSTEM) Element(this, r, nullptr);
     state = State::READY;
     _count++;
     _scheduler.insert(this->link);
@@ -69,6 +68,7 @@ void Thread::join(Thread *thread) {
         thread->joining = previous;
         dispatch(_scheduler.chose());
     }
+    CPU::Interrupt::enable();
 }
 
 void Thread::exit() {
@@ -132,15 +132,14 @@ int entry(void *arg) {
         current->function(arg);
         now = Alarm::utime();
 
-        if (now < current->start + current->deadline) {
-            current->start += current->period;
-            Alarm::usleep(current->start - now);
-        } else {
-            ERROR(true, "Missed deadline by %d us\n", now - (current->start + current->deadline));
-        }
+        int miss = now - current->start - current->deadline;
+        ERROR(miss > 0, "Missed deadline: %dμ\n", miss);
+
+        current->start += current->period;
+        Alarm::usleep(current->start - now);
     }
     return 0;
 }
 
 RT_Thread::RT_Thread(Function f, Argument a, Microsecond p, Microsecond d, Microsecond c, Microsecond s)
-    : Thread(entry, a, p), function(f), period(p), deadline(d), duration(c), start(s) {}
+    : Thread(entry, a, HIGH), function(f), period(p), deadline(d), duration(c), start(s) {}

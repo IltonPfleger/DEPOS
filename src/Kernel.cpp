@@ -23,13 +23,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Context::push<true>();
     Thread::running()->context = CPU::Context::get();
 
-    if (CPU::Trap::type() == CPU::Trap::Type::INTERRUPT) {
-        switch (CPU::Interrupt::type()) {
-            case CPU::Interrupt::Type::TIMER:
-                Timer::handler();
-                break;
-        }
-    } else {
+    if (CPU::Trap::type() == CPU::Trap::Type::EXCEPTION) {
         uintptr_t mcause, mepc, mtval;
         __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
         __asm__ volatile("csrr %0, mepc" : "=r"(mepc));
@@ -39,6 +33,12 @@ __attribute__((naked, aligned(4))) void ktrap() {
         Logger::println("mepc: %p\n", mepc);
         Logger::println("mtval: %p\n", mtval);
         while (1);
+    }
+
+    switch (CPU::Interrupt::type()) {
+        case CPU::Interrupt::Type::TIMER:
+            Timer::handler();
+            break;
     }
 
     CPU::Context::set(Thread::running()->context);

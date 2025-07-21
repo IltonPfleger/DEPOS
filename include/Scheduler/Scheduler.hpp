@@ -1,4 +1,5 @@
 #pragma once
+#include <Machine.hpp>
 #include <Scheduler/Lists.hpp>
 
 template <typename T>
@@ -9,6 +10,7 @@ struct RR {
 template <typename T>
 struct RateMonotonic {
     static constexpr bool Timed = true;
+    //uintptr_t rank() {}
 };
 
 template <typename T>
@@ -19,8 +21,5 @@ struct Scheduler : POFO<T *> {
     using Queue::next;
     using Queue::remove;
 
-    T *chose() {
-        auto *element = next();
-        return element->value;
-    }
+    T *chose() { return next()->value; }
 };
