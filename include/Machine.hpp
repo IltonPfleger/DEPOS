@@ -1,9 +1,6 @@
 #pragma once
 #include <IO/UART/SiFiveUART.hpp>
-#include <Meta.hpp>
-
-typedef Meta::TypeSelector<sizeof(void *) == 4, long long, int>::Result intptr_t;
-typedef Meta::TypeSelector<sizeof(void *) == 8, unsigned long long, unsigned>::Result uintptr_t;
+#include <Types.hpp>
 
 struct Machine {
     struct IO {
