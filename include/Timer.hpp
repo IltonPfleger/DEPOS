@@ -36,7 +36,6 @@ struct Timer {
         }
 
         if constexpr (Traits<Timer>::Enable) {
-            reset();
             CPU::Interrupt::Timer::enable();
         }
     }

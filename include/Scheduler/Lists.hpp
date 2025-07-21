@@ -1,14 +1,11 @@
 #pragma once
 
-#include <Memory.hpp>
-#include <Meta.hpp>
-
 template <typename T>
 struct LinkedList {
     struct Element {
         const T value;
-        int rank;
-        Element* next = nullptr;
+        unsigned long long rank;
+		Element* next;
     };
 
     Element* head = nullptr;

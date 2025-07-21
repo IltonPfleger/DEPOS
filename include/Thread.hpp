@@ -6,17 +6,17 @@
 #include <Scheduler/Scheduler.hpp>
 
 struct Thread {
-    using Function = int (*)(void *);
-    using Argument = void *;
-    using Rank     = uintptr_t;
-    using Element  = Scheduler<Thread>::Queue::Element;
-    using Queue    = FIFO<Thread *>;
+    using Criterion = Traits<Scheduler<Thread>>::Criterion;
+    using Function  = int (*)(void *);
+    using Argument  = void *;
+    using Rank      = uintptr_t;
+    using Element   = Scheduler<Thread>::Queue::Element;
+    using Queue     = FIFO<Thread *>;
     enum class State { RUNNING, READY, WAITING, FINISHED };
-    enum { HIGH, NORMAL, LOW, IDLE = ~0ULL };
+    enum : Rank { HIGH, NORMAL, LOW, IDLE = ~0ULL };
 
     void *stack;
     State state;
-    Rank rank;
     CPU::Context *context;
     Thread *joining;
     Queue *waiting;
