@@ -4,7 +4,6 @@ A lightweight and modular microkernel designed for RISC-V, focusing on simplicit
 * [x] Thread Management.
 * [X] Pluggable Schedulers.
 * [X] Synchronization Primitives.
-* [X] Alarms & Timers.
 * [X] Alarms & Timers. 
 * [x] Dynamic Memory Allocation.
 * [X] Libc-like I/O.
