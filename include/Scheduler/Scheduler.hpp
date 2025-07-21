@@ -4,19 +4,20 @@
 #include <Traits.hpp>
 #include <Types.hpp>
 
-// template <typename T>
-// struct RR {
-//     using Queue                 = FIFO<T *>;
-//     using Rank                  = decltype(Queue::Element::rank);
-//     static constexpr bool Timed = false;
-//     static Rank rank(const T &value) { return value.rank; }
-// };
+template <typename T>
+struct RR {
+    using Rank                  = uintptr_t;
+    static constexpr bool Timed = false;
+    Rank rank;
+    RR(Rank priority, ...) : rank(priority) {}
+    Rank priority() { return this->rank; }
+};
 
 template <typename T>
 struct RateMonotonic {
     using Rank = Microsecond;
-    Rank rank;
     static constexpr bool Timed = true;
+    Rank rank;
     RateMonotonic(Rank priority) : rank(priority) {}
     RateMonotonic(Microsecond, Microsecond p, Microsecond) : rank(p) {}
     Rank priority() { return this->rank; }
