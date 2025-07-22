@@ -48,8 +48,9 @@ int main(void *) {
     }
     lock->v();
 
+    for (int i = 0; i < FILOSOFOS; i++) Thread::join(threads[i]);
+
     for (int i = 0; i < FILOSOFOS; i++) {
-        Thread::join(threads[i]);
         delete threads[i];
         delete garfos[i];
     }
