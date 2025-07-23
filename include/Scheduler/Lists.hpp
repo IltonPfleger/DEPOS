@@ -5,13 +5,22 @@ struct LinkedList {
     struct Element {
         const T value;
         unsigned long long rank;
-		Element* next;
+        Element* next = nullptr;
     };
 
     Element* head = nullptr;
     Element* tail = nullptr;
 
     bool empty() const { return head == nullptr; }
+    int size() const {
+        int i      = 0;
+        Element* e = head;
+        while (e) {
+            e = e->next;
+            i++;
+        };
+        return i;
+    }
 
     void push_front(Element* e) {
         e->next = head;
@@ -115,6 +124,7 @@ struct FIFO : private LinkedList<T> {
 template <typename T>
 struct POFO : private LinkedList<T> {
     using LinkedList<T>::empty;
+    using LinkedList<T>::size;
     using LinkedList<T>::remove;
     using Element = typename LinkedList<T>::Element;
 

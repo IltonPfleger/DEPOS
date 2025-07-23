@@ -17,7 +17,7 @@ struct CPU {
 
     __attribute__((always_inline)) static inline unsigned int core() {
         unsigned int n;
-        __asm__ volatile("csrr %0, mhartid" : "=r"(n));
+        __asm__ volatile("csrr %0, mhartid" : "=&r"(n));
         return n;
     }
 
@@ -143,12 +143,6 @@ struct CPU {
 
         __attribute__((naked)) static Context *get() { __asm__ volatile("mv a0, sp\nret"); }
         __attribute__((naked)) static void set(Context *) { __asm__ volatile("mv sp, a0\nret"); }
-
-        __attribute__((naked)) static void transfer(CPU::Context **current, CPU::Context *next) {
-            push();
-            __asm__ volatile("sd sp, 0(%0)" ::"r"(current));
-            jump(next);
-        }
     };
 
     struct Atomic {
@@ -161,15 +155,11 @@ struct CPU {
                 "   sc.w t1, t0, (%0)\n"
                 "   bnez t1, 1b\n"
                 :
-                : "r"(value));
+                : "r"(value)
+                : "t0", "t1", "memory");
         }
 
-        static void unlock(int *value) {
-            __asm__ volatile(
-                "sw zero, (%0)\n"
-                :
-                : "r"(value));
-        }
+        static void unlock(int *value) { __asm__ volatile("sw zero, (%0)\n" : : "r"(value) : "memory"); }
 
         static int fdec(int *value) {
             int ret;

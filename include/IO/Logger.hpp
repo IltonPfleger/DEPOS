@@ -1,4 +1,5 @@
 #pragma once
+#include <Spin.hpp>
 
 struct Logger {
     static void init();

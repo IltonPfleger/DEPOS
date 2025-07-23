@@ -15,7 +15,7 @@ struct RR {
 
 template <typename T>
 struct RateMonotonic {
-    using Rank = Microsecond;
+    using Rank                  = Microsecond;
     static constexpr bool Timed = true;
     Rank rank;
     RateMonotonic(Rank priority) : rank(priority) {}
@@ -29,7 +29,14 @@ struct Scheduler : POFO<T *> {
     using Queue::empty;
     using Queue::next;
     using Queue::remove;
+    using Queue::size;
 
-    void insert(Queue::Element *value) { Queue::insert(value); }
-    T *chose() { return next()->value; }
+    void insert(Queue::Element *e) {
+		Queue::insert(e);
+	}
+    T *chose() {
+        typename Queue::Element *e = next();
+        if (e) return e->value;
+        return nullptr;
+    }
 };

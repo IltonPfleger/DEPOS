@@ -3,8 +3,8 @@
 
 extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
-static Memory::Page *pages               = nullptr;
-static Memory::Heap heaps[Memory::COUNT] = {0, 0};
+static Memory::Page *pages = nullptr;
+static Memory::Heap heaps[Memory::COUNT];
 
 static constexpr unsigned long ORDER(unsigned long bytes) {
     unsigned long order = 1;
@@ -57,8 +57,8 @@ void *Memory::kmalloc() {
 }
 
 void Memory::kfree(void *addr) {
-    Page *page = reinterpret_cast<Page *>(addr);
     lock.lock();
+    Page *page = reinterpret_cast<Page *>(addr);
     ERROR(page == nullptr, "[Memory::free] Free nullptr");
     page->next = pages;
     pages      = page;

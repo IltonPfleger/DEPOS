@@ -22,13 +22,13 @@ struct Thread;
 template <>
 struct Traits<Scheduler<Thread>> {
     static constexpr unsigned long Frequency = Traits<Timer>::MHz;
-    using Criterion                          = RateMonotonic<Thread>;
+    using Criterion                          = RR<Thread>;
 };
 
 struct Alarm;
 template <>
 struct Traits<Alarm> {
-    static constexpr const bool Enable = true;
+    static constexpr const bool Enable             = true;
     static constexpr const unsigned long Frequency = Traits<Timer>::MHz;
 };
 
