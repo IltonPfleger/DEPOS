@@ -17,10 +17,10 @@ struct Kernel {
             // Timer::init();
             Logger::println("Done!\n");
             Thread::init();
-            Thread::core();
+            // Thread::core();
         }
         // Logger::println("%d\n", CPU::core());
-        // Thread::core();
+        Thread::core();
         for (;;);
     }
 };
