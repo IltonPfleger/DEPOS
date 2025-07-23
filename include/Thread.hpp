@@ -41,6 +41,8 @@ struct Thread {
     static void wakeup(Queue *);
     static void yield();
     static void reschedule();
+
+    static int idle(void *);
 };
 
 // struct RT_Thread : Thread {
