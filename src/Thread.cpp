@@ -70,7 +70,10 @@ void Thread::join(Thread *thread) {
 
         previous->state = State::WAITING;
         thread->joining = previous;
-        dispatch(_scheduler.chose());
+        lock.lock();
+        Thread *next = _scheduler.chose();
+        lock.unlock();
+        dispatch(next);
     }
     CPU::Interrupt::enable();
 }
@@ -80,8 +83,8 @@ void Thread::exit() {
     Thread *previous = const_cast<Thread *>(running());
     if (previous->joining) _scheduler.insert(previous->joining->link);
     previous->state = State::FINISHED;
-    _count--;
-    Thread *next = _scheduler.chose();
+    _count          = _count - 1;
+    Thread *next    = _scheduler.chose();
     dispatch(next);
 }
 
@@ -106,10 +109,10 @@ void Thread::yield() {
     CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(running());
     previous->state  = State::READY;
-    //     lock.lock();
+    lock.lock();
     Thread *next = _scheduler.chose();
     _scheduler.insert(previous->link);
-    //     lock.unlock();
+    lock.unlock();
     dispatch(next);
 }
 
