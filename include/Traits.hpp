@@ -7,7 +7,7 @@ struct Traits;
 struct Timer;
 template <>
 struct Traits<Timer> {
-    static constexpr const bool Enable             = true;
+    static constexpr const bool Enable             = false;
     static constexpr const unsigned long MHz       = 1'000'000;
     static constexpr const unsigned long Frequency = MHz;
 };

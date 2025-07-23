@@ -3,7 +3,6 @@
 #include <Thread.hpp>
 
 extern int main(void *);
-static Thread *_idle_thread;
 static Thread *_user_thread;
 
 void dispatch(Thread *next) {
@@ -21,7 +20,7 @@ int idle(void *) {
     }
 
     CPU::Interrupt::disable();
-    delete _idle_thread;
+    delete Thread::running();
     delete _user_thread;
     Logger::println("*** QUARK is shutting down! ***\n");
     for (;;);
@@ -32,9 +31,9 @@ Thread::Thread(Function f, Argument a, Criterion c) : criterion(c) {
     stack       = Memory::kmalloc();
     char *entry = reinterpret_cast<char *>(stack);
     entry += Traits<Memory>::Page::SIZE - sizeof(CPU::Context);
-    context   = new (entry) CPU::Context(f, exit, a);
-    link      = new (Memory::SYSTEM) Element(this, criterion.priority(), nullptr);
-    state     = State::READY;
+    context = new (entry) CPU::Context(f, exit, a);
+    link    = new (Memory::SYSTEM) Element(this, criterion.priority(), nullptr);
+    state   = State::READY;
     _count++;
     _scheduler.insert(this->link);
 }
@@ -81,21 +80,22 @@ void Thread::exit() {
     dispatch(next);
 }
 
-void Thread::init() {
-    _idle_thread  = new (Memory::SYSTEM) Thread(idle, 0, IDLE);
-    _user_thread  = new (Memory::SYSTEM) Thread(main, 0, NORMAL);
+void Thread::init() { _user_thread = new (Memory::SYSTEM) Thread(main, 0, NORMAL); }
+
+void Thread::core() {
+    new (Memory::SYSTEM) Thread(idle, 0, IDLE);
     Thread *first = _scheduler.chose();
     running(first);
     CPU::Context::jump(first->context);
 }
 
-void Thread::reschedule() {
-    Thread *previous = const_cast<Thread *>(running());
-    previous->state  = State::READY;
-    _scheduler.insert(previous->link);
-    Thread *next = _scheduler.chose();
-    running(next);
-}
+// void Thread::reschedule() {
+//     Thread *previous = const_cast<Thread *>(running());
+//     previous->state  = State::READY;
+//     _scheduler.insert(previous->link);
+//     Thread *next = _scheduler.chose();
+//     running(next);
+// }
 
 void Thread::yield() {
     CPU::Interrupt::disable();
@@ -106,14 +106,14 @@ void Thread::yield() {
     dispatch(next);
 }
 
-void Thread::sleep(Queue *waiting) {
-    Thread *previous  = const_cast<Thread *>(running());
-    previous->state   = State::WAITING;
-    previous->waiting = waiting;
-    waiting->insert(previous->link);
-    Thread *next = _scheduler.chose();
-    dispatch(next);
-}
+// void Thread::sleep(Queue *waiting) {
+//     Thread *previous  = const_cast<Thread *>(running());
+//     previous->state   = State::WAITING;
+//     previous->waiting = waiting;
+//     waiting->insert(previous->link);
+//     Thread *next = _scheduler.chose();
+//     dispatch(next);
+// }
 
 void Thread::wakeup(Queue *waiting) {
     Element *awake = waiting->next();
@@ -123,23 +123,23 @@ void Thread::wakeup(Queue *waiting) {
     _scheduler.insert(awake);
 }
 
-int entry(void *arg) {
-    RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));
-    auto now           = Alarm::utime();
-    if (now < current->start) Alarm::usleep(current->start - now);
-
-    while (1) {
-        current->function(arg);
-        now = Alarm::utime();
-
-		int miss = (now - current->start) - current->deadline;
-        ERROR(miss > 0, "Missed deadline: %dμ\n", miss);
-
-        current->start += current->period;
-        Alarm::usleep(current->start - now);
-    }
-    return 0;
-}
-
-RT_Thread::RT_Thread(Function f, Argument a, Microsecond d, Microsecond p, Microsecond c, Microsecond s)
-    : Thread(entry, a, Criterion(d, p, c)), function(f), deadline(d), period(p), duration(c), start(s) {}
+// int entry(void *arg) {
+//     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));
+//     auto now           = Alarm::utime();
+//     if (now < current->start) Alarm::usleep(current->start - now);
+//
+//     while (1) {
+//         current->function(arg);
+//         now = Alarm::utime();
+//
+//		int miss = (now - current->start) - current->deadline;
+//         ERROR(miss > 0, "Missed deadline: %dμ\n", miss);
+//
+//         current->start += current->period;
+//         Alarm::usleep(current->start - now);
+//     }
+//     return 0;
+// }
+//
+// RT_Thread::RT_Thread(Function f, Argument a, Microsecond d, Microsecond p, Microsecond c, Microsecond s)
+//     : Thread(entry, a, Criterion(d, p, c)), function(f), deadline(d), period(p), duration(c), start(s) {}

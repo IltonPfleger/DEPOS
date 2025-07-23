@@ -7,10 +7,10 @@
 
 struct Thread {
     using Criterion = Traits<Scheduler<Thread>>::Criterion;
-    using Function = int (*)(void *);
-    using Argument = void *;
-    using Element  = Scheduler<Thread>::Queue::Element;
-    using Queue    = FIFO<Thread *>;
+    using Function  = int (*)(void *);
+    using Argument  = void *;
+    using Element   = Scheduler<Thread>::Queue::Element;
+    using Queue     = FIFO<Thread *>;
     enum class State { RUNNING, READY, WAITING, FINISHED };
     enum : Criterion::Rank { HIGH, NORMAL, LOW, IDLE = ~0ULL };
 
@@ -34,6 +34,7 @@ struct Thread {
     static void join(Thread *);
     static void exit();
     static void init();
+    static void core();
     static void sleep(Queue *);
     static void wakeup(Queue *);
     static void yield();
