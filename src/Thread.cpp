@@ -14,15 +14,17 @@ void dispatch(Thread *next) {
 }
 
 int idle(void *) {
-    while (Thread::_count > 1) {
-        CPU::idle();
-        if (!Thread::_scheduler.empty()) Thread::yield();
+    while (Thread::_count > Machine::CPUS) {
+        // CPU::idle();
+        // if (!Thread::_scheduler.empty()) Thread::yield();
     }
 
     CPU::Interrupt::disable();
+    Thread::lock.lock();
     delete Thread::running();
-    delete _user_thread;
+    if (CPU::core() == 0) delete _user_thread;
     Logger::println("*** QUARK is shutting down! ***\n");
+    Thread::lock.unlock();
     for (;;);
     return 0;
 }
@@ -91,8 +93,12 @@ void Thread::exit() {
 void Thread::init() { _user_thread = new (Memory::SYSTEM) Thread(main, 0, NORMAL); }
 
 void Thread::core() {
+    while (_count < 1);
     new (Memory::SYSTEM) Thread(idle, 0, IDLE);
+    while (_count < Machine::CPUS + 1);
+    lock.lock();
     Thread *first = _scheduler.chose();
+    lock.unlock();
     running(first);
     CPU::Context::jump(first->context);
 }
@@ -109,7 +115,7 @@ void Thread::yield() {
     CPU::Interrupt::disable();
     Thread *previous = const_cast<Thread *>(running());
     previous->state  = State::READY;
-    lock.lock();
+    // lock.lock();
     Thread *next = _scheduler.chose();
     _scheduler.insert(previous->link);
     lock.unlock();

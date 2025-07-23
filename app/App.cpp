@@ -22,7 +22,6 @@ static constexpr int ITERATIONS = 10;
 int main(void *) {
     Logger::println("Application: \n");
 
-    //while (1);
     // for (int i = 0; i < N; i++) {
     //     threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i, Thread::NORMAL);
     // }
