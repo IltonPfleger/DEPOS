@@ -161,17 +161,14 @@ struct CPU {
                 "   sc.w t1, t0, (%0)\n"
                 "   bnez t1, 1b\n"
                 :
-                : "r"(value)
-                : "t0", "t1", "memory");
+                : "r"(value));
         }
 
         static void unlock(int *value) {
             __asm__ volatile(
-                "li t0, 0\n"
-                "sw t0, (%0)\n"
+                "sw zero, (%0)\n"
                 :
-                : "r"(value)
-                : "t0", "memory");
+                : "r"(value));
         }
 
         static int fdec(int *value) {

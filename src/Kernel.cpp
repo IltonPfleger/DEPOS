@@ -5,7 +5,8 @@
 #include <Thread.hpp>
 #include <Timer.hpp>
 
-extern "C" char __BOOT_STACK__[];
+// extern "C" char __BOOT_STACK__[];
+alignas(Traits<Memory>::Page::SIZE) static char STACK[Machine::CPUS][Traits<Memory>::Page::SIZE];
 
 struct Kernel {
     static void init() {
@@ -18,7 +19,7 @@ struct Kernel {
             Thread::init();
             Thread::core();
         }
-        Logger::println("%d\n", CPU::core());
+        // Logger::println("%d\n", CPU::core());
         // Thread::core();
         for (;;);
     }
@@ -54,7 +55,8 @@ __attribute__((naked, aligned(4))) void ktrap() {
 
 __attribute__((naked, section(".boot"))) void kboot() {
     CPU::Interrupt::disable();
-    CPU::Stack::set(__BOOT_STACK__ + (CPU::core() * Traits<Memory>::Page::SIZE));
+    // CPU::Stack::set(__BOOT_STACK__ + (CPU::core() * Traits<Memory>::Page::SIZE));
     CPU::Trap::set(ktrap);
+    CPU::Stack::set(STACK[CPU::core()] + Traits<Memory>::Page::SIZE);
     Kernel::init();
 }

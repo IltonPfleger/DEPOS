@@ -4,6 +4,7 @@
 #include <Machine.hpp>
 #include <Memory.hpp>
 #include <Scheduler/Scheduler.hpp>
+#include <Spin.hpp>
 
 struct Thread {
     using Criterion = Traits<Scheduler<Thread>>::Criterion;
@@ -25,8 +26,9 @@ struct Thread {
     ~Thread();
     Thread(Function, Argument, Criterion);
 
-    static inline int _count;
+    static inline volatile int _count;
     static inline Scheduler<Thread> _scheduler;
+    static inline Spin lock;
 
     static inline volatile Thread *running() { return reinterpret_cast<volatile Thread *>(CPU::id()); };
     static inline void running(Thread *t) { t->state = State::RUNNING, CPU::id(t); }
@@ -41,12 +43,12 @@ struct Thread {
     static void reschedule();
 };
 
-struct RT_Thread : Thread {
-    const Function function;
-    const Microsecond deadline;
-    const Microsecond period;
-    const Microsecond duration;
-    Microsecond start;
-
-    RT_Thread(Function, Argument, Microsecond, Microsecond, Microsecond, Microsecond);
-};
+// struct RT_Thread : Thread {
+//     const Function function;
+//     const Microsecond deadline;
+//     const Microsecond period;
+//     const Microsecond duration;
+//     Microsecond start;
+//
+//     RT_Thread(Function, Argument, Microsecond, Microsecond, Microsecond, Microsecond);
+// };
