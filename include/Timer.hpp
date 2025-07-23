@@ -6,53 +6,53 @@
 #include <Thread.hpp>
 #include <Traits.hpp>
 
-struct Timer {
-    struct Channel {
-        enum { SCHEDULER, ALARM };
-        uintptr_t initial;
-        uintptr_t current;
-        void (*handler)();
-    };
-
-    static inline struct Channel CHANNELS[2];
-
-
-    static void reset() {
-        Machine::CLINT::MTIMECMP = Machine::CLINT::MTIME + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency);
-    }
-
-    static void init() {
-        if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
-            CHANNELS[Channel::SCHEDULER].handler = Thread::reschedule;
-            uintptr_t initial                    = Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
-            CHANNELS[Channel::SCHEDULER].initial = initial;
-            CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
-        }
-
-        if constexpr (Traits<Alarm>::Enable) {
-            CHANNELS[Channel::ALARM].handler = Alarm::handler;
-            CHANNELS[Channel::ALARM].initial = Traits<Timer>::Frequency / Traits<Alarm>::Frequency;
-            CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
-        }
-
-        if constexpr (Traits<Timer>::Enable) {
-            CPU::Interrupt::Timer::enable();
-        }
-    }
-
-    static void handler() {
-        reset();
-        if constexpr (Traits<Alarm>::Enable) {
-            if (--CHANNELS[Channel::ALARM].current == 0) {
-                CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
-                CHANNELS[Channel::ALARM].handler();
-            }
-        }
-        if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
-            if (--CHANNELS[Channel::SCHEDULER].current == 0) {
-                CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
-                CHANNELS[Channel::SCHEDULER].handler();
-            }
-        }
-    }
-};
+// struct Timer {
+//     struct Channel {
+//         enum { SCHEDULER, ALARM };
+//         uintptr_t initial;
+//         uintptr_t current;
+//         void (*handler)();
+//     };
+//
+//     static inline struct Channel CHANNELS[2];
+//
+//
+//     static void reset() {
+//         Machine::CLINT::MTIMECMP = Machine::CLINT::MTIME + (Machine::CLINT::CLOCK / Traits<Timer>::Frequency);
+//     }
+//
+//     static void init() {
+//         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
+//             CHANNELS[Channel::SCHEDULER].handler = Thread::reschedule;
+//             uintptr_t initial                    = Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
+//             CHANNELS[Channel::SCHEDULER].initial = initial;
+//             CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
+//         }
+//
+//         if constexpr (Traits<Alarm>::Enable) {
+//             CHANNELS[Channel::ALARM].handler = Alarm::handler;
+//             CHANNELS[Channel::ALARM].initial = Traits<Timer>::Frequency / Traits<Alarm>::Frequency;
+//             CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
+//         }
+//
+//         if constexpr (Traits<Timer>::Enable) {
+//             CPU::Interrupt::Timer::enable();
+//         }
+//     }
+//
+//     static void handler() {
+//         reset();
+//         if constexpr (Traits<Alarm>::Enable) {
+//             if (--CHANNELS[Channel::ALARM].current == 0) {
+//                 CHANNELS[Channel::ALARM].current = CHANNELS[Channel::ALARM].initial;
+//                 CHANNELS[Channel::ALARM].handler();
+//             }
+//         }
+//         if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
+//             if (--CHANNELS[Channel::SCHEDULER].current == 0) {
+//                 CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
+//                 CHANNELS[Channel::SCHEDULER].handler();
+//             }
+//         }
+//     }
+// };

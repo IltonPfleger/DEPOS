@@ -20,7 +20,7 @@ default:
 	make run
 
 run: $(TARGET)
-	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 
+	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -smp 4
 
 debug: $(TARGET)
 	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S

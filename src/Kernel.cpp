@@ -9,12 +9,18 @@ extern "C" char __BOOT_STACK__[];
 
 struct Kernel {
     static void init() {
-        Logger::init();
-        Logger::println("\nQ U A R K | [μKernel]\n");
-        Memory::init();
-        Timer::init();
-        Logger::println("Done!\n");
-        Thread::init();
+        if (CPU::core() == 0) {
+            Logger::init();
+            Logger::println("\nQ U A R K | [μKernel]\n");
+            Memory::init();
+            // Timer::init();
+            Logger::println("Done!\n");
+            Thread::init();
+            Thread::core();
+        }
+        Logger::println("%d\n", CPU::core());
+        // Thread::core();
+        for (;;);
     }
 };
 
@@ -37,7 +43,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
 
     switch (CPU::Interrupt::type()) {
         case CPU::Interrupt::Type::TIMER:
-            Timer::handler();
+            // Timer::handler();
             break;
     }
 
@@ -48,12 +54,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
 
 __attribute__((naked, section(".boot"))) void kboot() {
     CPU::Interrupt::disable();
+    CPU::Stack::set(__BOOT_STACK__ + (CPU::core() * Traits<Memory>::Page::SIZE));
     CPU::Trap::set(ktrap);
-
-    if (CPU::core() == 0) {
-        CPU::Stack::set(__BOOT_STACK__);
-        Kernel::init();
-    } else {
-        for (;;);
-    }
+    Kernel::init();
 }
