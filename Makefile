@@ -25,6 +25,9 @@ run: $(TARGET)
 debug: $(TARGET)
 	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
 
+gdb:
+	 gdb -ex "target remote tcp::1234" -ex "file build/quark.elf"
+
 $(TARGET): $(TARGET).elf
 	$(OBJCOPY) -O binary -S $< $@
 

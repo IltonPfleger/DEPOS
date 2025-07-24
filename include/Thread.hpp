@@ -7,7 +7,7 @@
 #include <Spin.hpp>
 
 struct Thread {
-    using Criterion = Traits<Scheduler<Thread>>::Criterion;
+    using Criterion = Traits::Scheduler<Thread>::Criterion;
     using Function  = int (*)(void *);
     using Argument  = void *;
     using Element   = Scheduler<Thread>::Queue::Element;
@@ -45,7 +45,7 @@ struct Thread {
     static void join(Thread *);
     static void exit();
     static void init();
-    static void core();
+    static void go();
     static void sleep(Queue *);
     static void wakeup(Queue *);
     static void yield();
