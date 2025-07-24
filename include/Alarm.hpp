@@ -25,6 +25,7 @@ struct Alarm {
         auto duration = useconds * Machine::CLINT::CLOCK / 1'000'000;
         Delay entry{Thread::Queue{}, *Machine::CLINT::MTIME + duration, nullptr};
 
+        CPU::Interrupt::disable();
         lock.lock();
         if (!delays || entry.clock < delays->clock) {
             entry.next = delays;
@@ -39,6 +40,7 @@ struct Alarm {
             current->next = &entry;
         }
         lock.unlock();
+        CPU::Interrupt::enable();
         Thread::sleep(&entry.waiting);
     }
 

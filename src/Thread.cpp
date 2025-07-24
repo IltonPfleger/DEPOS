@@ -135,22 +135,25 @@ void Thread::reschedule() {
     _lock.unlock();
 }
 
-// void Thread::sleep(Queue *waiting) {
-//     Thread *previous  = const_cast<Thread *>(running());
-//     previous->state   = State::WAITING;
-//     previous->waiting = waiting;
-//     waiting->insert(previous->link);
-//     Thread *next = _scheduler.chose();
-//     dispatch(next);
-// }
+void Thread::sleep(Queue *waiting) {
+    Thread *previous  = const_cast<Thread *>(running());
+    previous->state   = State::WAITING;
+    previous->waiting = waiting;
+    lock();
+    waiting->insert(previous->link);
+    Thread *next = _scheduler.chose();
+    dispatch(previous, next);
+}
 
-// void Thread::wakeup(Queue *waiting) {
-//     Element *awake = waiting->next();
-//     ERROR(awake == nullptr, "[Thread::wakeup] Empty queue.");
-//     awake->value->state   = State::READY;
-//     awake->value->waiting = nullptr;
-//     _scheduler.insert(awake);
-// }
+void Thread::wakeup(Queue *waiting) {
+    _lock.lock();
+    Element *awake = waiting->next();
+    ERROR(awake == nullptr, "[Thread::wakeup] Empty queue.");
+    awake->value->state   = State::READY;
+    awake->value->waiting = nullptr;
+    _scheduler.insert(awake);
+    _lock.unlock();
+}
 
 // int entry(void *arg) {
 //     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));
