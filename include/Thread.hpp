@@ -17,7 +17,7 @@ struct Thread {
 
     void *stack;
     State state;
-    CPU::Context *context;
+    volatile CPU::Context *context;
     Thread *joining;
     Queue *waiting;
     Element *link;
@@ -28,10 +28,19 @@ struct Thread {
 
     static inline volatile int _count;
     static inline Scheduler<Thread> _scheduler;
-    static inline Spin lock;
 
     static inline volatile Thread *running() { return reinterpret_cast<volatile Thread *>(CPU::id()); };
     static inline void running(Thread *t) { t->state = State::RUNNING, CPU::id(t); }
+
+    static inline Spin _lock;
+    static inline void lock() {
+        CPU::Interrupt::disable();
+        _lock.lock();
+    }
+    static inline void unlock() {
+        _lock.unlock();
+        CPU::Interrupt::enable();
+    }
 
     static void join(Thread *);
     static void exit();

@@ -27,13 +27,11 @@ template <typename T>
 struct Scheduler : POFO<T *> {
     using Queue = POFO<T *>;
     using Queue::empty;
+    using Queue::insert;
     using Queue::next;
     using Queue::remove;
     using Queue::size;
 
-    void insert(Queue::Element *e) {
-		Queue::insert(e);
-	}
     T *chose() {
         typename Queue::Element *e = next();
         if (e) return e->value;
