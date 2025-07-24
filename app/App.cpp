@@ -16,6 +16,7 @@ int thread_function(void *arg) {
     while (i--) {
         // mutex->p();
         Logger::println("THREAD: %d | ITERATION: %d\n", id, i);
+        Alarm::usleep(1000000);
         // mutex->v();
     }
     return 0;
