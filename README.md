@@ -7,5 +7,5 @@ A lightweight and modular microkernel designed for RISC-V, focusing on simplicit
 * [X] Alarms & Timers. 
 * [x] Dynamic Memory Allocation.
 * [X] Libc-like I/O.
-* [X] Multicore 
+* [X] Multicore.
 * [ ] Real-Time.
