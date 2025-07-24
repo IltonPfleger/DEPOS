@@ -134,15 +134,15 @@ struct CPU {
                 "addi sp, sp, %0\n" ::"i"(sizeof(Context)));
         }
 
-        __attribute__((naked)) static void jump(Context *next) {
+        __attribute__((naked)) static void jump(volatile Context *next) {
             __asm__ volatile("mv sp, %0" ::"r"(next));
             __asm__ volatile("li t0, 0x1800\ncsrs mstatus, t0\n" ::: "t0");
             pop();
             iret();
         }
 
-        __attribute__((naked)) static Context *get() { __asm__ volatile("mv a0, sp\nret"); }
-        __attribute__((naked)) static void set(Context *) { __asm__ volatile("mv sp, a0\nret"); }
+        __attribute__((naked)) static volatile Context *get() { __asm__ volatile("mv a0, sp\nret"); }
+        __attribute__((naked)) static void set(volatile Context *) { __asm__ volatile("mv sp, a0\nret"); }
     };
 
     struct Atomic {
