@@ -19,14 +19,14 @@ struct Memory {
     } Block;
 
     typedef struct Heap {
-        Block *blocks[Traits<Memory>::Page::ORDER + 1];
-        Spin lock;
+        Block *blocks[Traits::Memory::Page::ORDER + 1];
+        Spin lock{1};
     } Heap;
 
     static void init();
     static void *kmalloc();
     static void kfree(void *);
-    static inline Spin lock{};
+    static inline Spin lock{1};
 };
 
 void *operator new(unsigned long, void *);

@@ -4,7 +4,7 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-static constexpr int N          = 5;
+static constexpr int N          = 1;
 static constexpr int ITERATIONS = 10;
 
 static Thread *threads[N];

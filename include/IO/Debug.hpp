@@ -5,7 +5,7 @@
 #include <Traits.hpp>
 
 #define ERROR(expr, ...)                  \
-    if constexpr (Traits<Debug>::ERROR) { \
+    if constexpr (Traits::Debug::ERROR) { \
         if (expr) {                       \
             CPU::Interrupt::disable();    \
             Logger::println("\nERROR: "); \
@@ -15,7 +15,7 @@
     }
 
 #define TRACE(...)                        \
-    if constexpr (Traits<Debug>::TRACE) { \
+    if constexpr (Traits::Debug::TRACE) { \
         Logger::println("TRACE: ");     \
         Logger::println(__VA_ARGS__);     \
     }

@@ -40,7 +40,7 @@ Thread::Thread(Function f, Argument a, Criterion c) : state(State::READY), crite
     joining     = 0;
     stack       = Memory::kmalloc();
     link        = new (Memory::SYSTEM) Element(this, c.priority());
-    char *entry = reinterpret_cast<char *>(stack) + Traits<Memory>::Page::SIZE - sizeof(CPU::Context);
+    char *entry = reinterpret_cast<char *>(stack) + Traits::Memory::Page::SIZE - sizeof(CPU::Context);
     context     = new (entry) CPU::Context(f, exit, a);
 
     lock();
@@ -86,9 +86,10 @@ void Thread::join(Thread *thread) {
 }
 
 void Thread::exit() {
-    lock();
     Thread *previous = const_cast<Thread *>(running());
     previous->state  = State::FINISHED;
+
+    lock();
     if (previous->joining) {
         previous->joining->state = State::READY;
         _scheduler.insert(previous->joining->link);
@@ -99,13 +100,16 @@ void Thread::exit() {
     dispatch(previous, next);
 }
 
-void Thread::init() { _user_thread = new (Memory::SYSTEM) Thread(main, 0, NORMAL); }
-
-void Thread::core() {
-    while (_count != 1);
+void Thread::init() {
+    if (CPU::core() == 0) {
+        _user_thread = new (Memory::SYSTEM) Thread(main, 0, NORMAL);
+    }
     new (Memory::SYSTEM) Thread(idle, 0, IDLE);
-    while (_count != Machine::CPUS + 1);
-    lock();
+}
+
+void Thread::go() {
+    while (_count < Machine::CPUS);
+    _lock.lock();
     Thread *first = _scheduler.chose();
     running(first);
     _lock.unlock();
@@ -121,9 +125,10 @@ void Thread::yield() {
 }
 
 void Thread::reschedule() {
-    _lock.lock();
     Thread *previous = const_cast<Thread *>(running());
     previous->state  = State::READY;
+
+    _lock.lock();
     _scheduler.insert(previous->link);
     Thread *next = _scheduler.chose();
     running(next);

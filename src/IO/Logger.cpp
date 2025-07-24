@@ -5,9 +5,9 @@
 #include <cstdarg>
 
 constexpr char HEX[] = "0123456789ABCDEF";
-static Spin lock;
+//static Spin lock;
 
-inline void put(char value) { Traits<Debug>::Device::put(value); };
+inline void put(char value) { Traits::Debug::Device::put(value); };
 
 template <typename T>
 void printNumber(T value) {
@@ -28,12 +28,12 @@ static void printHex(T value) {
     }
 }
 
-void Logger::init() { Traits<Debug>::Device::init(); };
+void Logger::init() { Traits::Debug::Device::init(); };
 
 void Logger::println(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    lock.lock();
+    //lock.lock();
     while (*format) {
         if (*format != '%') {
             put(*format++);
@@ -64,6 +64,6 @@ void Logger::println(const char *format, ...) {
         }
         format++;
     }
-    lock.unlock();
+    //lock.unlock();
     va_end(args);
 }

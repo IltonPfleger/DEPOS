@@ -5,7 +5,7 @@
 #include <Thread.hpp>
 #include <Timer.hpp>
 
-static char STACK[Machine::CPUS][Traits<Memory>::Page::SIZE];
+static char STACK[Machine::CPUS][Traits::Memory::Page::SIZE];
 
 struct Kernel {
     static void init() {
@@ -13,13 +13,12 @@ struct Kernel {
             Logger::init();
             Logger::println("\nQ U A R K | [μKernel]\n");
             Memory::init();
-            Thread::init();
             Logger::println("Done!\n");
         }
-        Thread::core();
-        if (CPU::core() == 0) {
-            Timer::init();
-        }
+        Thread::init();
+        CPU::Interrupt::disable();
+        Timer::init();
+        Thread::go();
     }
 
     static void trap() {
@@ -55,6 +54,6 @@ __attribute__((naked, aligned(4))) void ktrap() {
 __attribute__((naked, section(".boot"))) void kboot() {
     CPU::Interrupt::disable();
     CPU::Trap::set(ktrap);
-    CPU::Stack::set(STACK[CPU::core()] + Traits<Memory>::Page::SIZE);
+    CPU::Stack::set(STACK[CPU::core()] + Traits::Memory::Page::SIZE);
     Kernel::init();
 }

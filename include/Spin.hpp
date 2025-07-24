@@ -1,10 +1,10 @@
 #pragma once
 #include <CPU.hpp>
 
-class Spin {
-    int _lock = 0;
+struct Spin {
+    int value = 0;
 
    public:
-    void lock() { CPU::Atomic::lock(&_lock); }
-    void unlock() { CPU::Atomic::unlock(&_lock); }
+    void lock() { CPU::Atomic::lock(&value); }
+    void unlock() { CPU::Atomic::unlock(&value); }
 };

@@ -15,7 +15,7 @@ struct Machine {
     struct CLINT {
         static constexpr const unsigned long long CLOCK = 1'000'000;
         static constexpr const uintptr_t ADDR           = 0x02000000;
-        static volatile inline uintptr_t &MTIME         = *reinterpret_cast<volatile uintptr_t *>(ADDR + 0xBFF8);
-        static volatile inline uintptr_t &MTIMECMP      = *reinterpret_cast<volatile uintptr_t *>(ADDR + 0x4000);
+        static constexpr const uintptr_t MTIMECMP       = ADDR + 0x4000;
+        static volatile inline uintmax_t *MTIME         = reinterpret_cast<volatile uintmax_t *>(ADDR + 0xBFF8);
     };
 };
