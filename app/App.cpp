@@ -4,7 +4,7 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-static constexpr int N          = 2;
+static constexpr int N          = 5;
 static constexpr int ITERATIONS = 10;
 
 static Thread *threads[N];
@@ -15,7 +15,7 @@ int thread_function(void *arg) {
     int i  = ITERATIONS;
     while (i--) {
         // mutex->p();
-        Logger::println("%d %d\n", id, i);
+        Logger::println("THREAD: %d | ITERATION: %d\n", id, i);
         // mutex->v();
     }
     return 0;

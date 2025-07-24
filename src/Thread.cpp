@@ -37,35 +37,37 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c) : state(State::READY), criterion(c) {
-    lock();
     joining     = 0;
     stack       = Memory::kmalloc();
     link        = new (Memory::SYSTEM) Element(this, c.priority());
     char *entry = reinterpret_cast<char *>(stack) + Traits<Memory>::Page::SIZE - sizeof(CPU::Context);
     context     = new (entry) CPU::Context(f, exit, a);
 
+    lock();
     _scheduler.insert(link);
     _count = _count + 1;
     unlock();
 }
 
 Thread::~Thread() {
-    lock();
     switch (state) {
         case (State::READY):
+            lock();
             _scheduler.remove(link);
             _count = _count - 1;
+            unlock();
             break;
         case (State::WAITING):
+            lock();
             waiting->remove(link);
             _count = _count - 1;
+            unlock();
             break;
         default:
             break;
     }
     Memory::kfree(stack);
     delete link;
-    unlock();
 }
 
 void Thread::join(Thread *thread) {
@@ -79,7 +81,7 @@ void Thread::join(Thread *thread) {
     ERROR(thread->joining != nullptr, "[Thread::join] Already joined.");
     previous->state = State::WAITING;
     thread->joining = previous;
-    Thread *next = _scheduler.chose();
+    Thread *next    = _scheduler.chose();
     dispatch(previous, next);
 }
 
@@ -119,11 +121,13 @@ void Thread::yield() {
 }
 
 void Thread::reschedule() {
-    //     Thread *previous = const_cast<Thread *>(running());
-    //     previous->state  = State::READY;
-    //     _scheduler.insert(previous->link);
-    //     Thread *next = _scheduler.chose();
-    //     running(next);
+    _lock.lock();
+    Thread *previous = const_cast<Thread *>(running());
+    previous->state  = State::READY;
+    _scheduler.insert(previous->link);
+    Thread *next = _scheduler.chose();
+    running(next);
+    _lock.unlock();
 }
 
 // void Thread::sleep(Queue *waiting) {

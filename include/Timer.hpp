@@ -47,11 +47,11 @@ struct Timer {
         //         CHANNELS[Channel::ALARM].handler();
         //     }
         // }
-        // if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
-        //    if (--CHANNELS[Channel::SCHEDULER].current == 0) {
-        //        CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
-        //        CHANNELS[Channel::SCHEDULER].handler();
-        //    }
-        //}
+        if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
+            if (--CHANNELS[Channel::SCHEDULER].current == 0) {
+                CHANNELS[Channel::SCHEDULER].current = CHANNELS[Channel::SCHEDULER].initial;
+                CHANNELS[Channel::SCHEDULER].handler();
+            }
+        }
     }
 };

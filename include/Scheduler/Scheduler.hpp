@@ -7,7 +7,7 @@
 template <typename T>
 struct RR {
     using Rank                  = uintptr_t;
-    static constexpr bool Timed = false;
+    static constexpr bool Timed = true;
     Rank rank;
     RR(Rank priority, ...) : rank(priority) {}
     Rank priority() { return this->rank; }
