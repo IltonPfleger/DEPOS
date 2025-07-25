@@ -15,7 +15,7 @@ struct Traits {
     };
 
     struct Alarm {
-        static constexpr const bool Enable             = true;
+        static constexpr const bool Enable             = false;
         static constexpr const unsigned long Frequency = Timer::MHz;
     };
 

@@ -15,10 +15,13 @@ struct Kernel {
             Memory::init();
             Logger::println("Done!\n");
         }
-        Thread::init();
-        CPU::Interrupt::disable();
-        Timer::init();
-        Thread::go();
+        if (CPU::core() <= Machine::CPUS - 1) {
+            Thread::init();
+            CPU::Interrupt::disable();
+            Timer::init();
+            Thread::go();
+        }
+        while (1);
     }
 
     static void trap() {
@@ -46,9 +49,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Context::push<true>();
     Thread::running()->context = CPU::Context::get();
     Kernel::trap();
-    CPU::Context::set(Thread::running()->context);
-    CPU::Context::pop();
-    CPU::iret();
+    CPU::Context::jump(Thread::running()->context);
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {

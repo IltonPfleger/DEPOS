@@ -8,96 +8,87 @@ struct LinkedList {
         Element* next = nullptr;
     };
 
-    Element* head = nullptr;
-    Element* tail = nullptr;
+    Element* _head = nullptr;
+    Element* _tail = nullptr;
 
-    bool empty() const { return head == nullptr; }
-    int size() const {
-        int i      = 0;
-        Element* e = head;
-        while (e) {
-            e = e->next;
-            i++;
-        };
-        return i;
-    }
+    bool empty() const { return _head == nullptr; }
 
     void push_front(Element* e) {
-        e->next = head;
-        head    = e;
-        if (!tail) tail = e;
+        e->next = _head;
+        _head   = e;
+        if (!_tail) _tail = e;
     }
 
     void push_back(Element* e) {
         e->next = nullptr;
-        if (!head) {
-            head = tail = e;
+        if (!_head) {
+            _head = _tail = e;
         } else {
-            tail->next = e;
-            tail       = e;
+            _tail->next = e;
+            _tail       = e;
         }
     }
 
     void push_sorted(Element* e) {
         e->next = nullptr;
-        if (!head || e->rank < head->rank) {
+        if (!_head || e->rank < _head->rank) {
             push_front(e);
         } else {
-            Element* current = head;
+            Element* current = _head;
             while (current->next && e->rank >= current->next->rank) {
                 current = current->next;
             }
             e->next       = current->next;
             current->next = e;
-            if (!e->next) tail = e;
+            if (!e->next) _tail = e;
         }
     }
 
     Element* remove_front() {
-        if (!head) return nullptr;
-        Element* e = head;
-        head       = e->next;
-        if (!head) tail = nullptr;
+        if (!_head) return nullptr;
+        Element* e = _head;
+        _head      = e->next;
+        if (!_head) _tail = nullptr;
         e->next = nullptr;
         return e;
     }
 
     Element* remove_back() {
-        if (!head) return nullptr;
-        if (head == tail) {
-            Element* e = head;
-            head = tail = nullptr;
+        if (!_head) return nullptr;
+        if (_head == _tail) {
+            Element* e = _head;
+            _head = _tail = nullptr;
             return e;
         }
-        Element* current = head;
-        while (current->next != tail) {
+        Element* current = _head;
+        while (current->next != _tail) {
             current = current->next;
         }
-        Element* e = tail;
-        tail       = current;
-        tail->next = nullptr;
+        Element* e  = _tail;
+        _tail       = current;
+        _tail->next = nullptr;
         return e;
     }
 
     void remove(Element* e) {
-        if (!head) return;
-        Element* current  = head;
+        if (!_head) return;
+        Element* current  = _head;
         Element* previous = nullptr;
         while (current && current != e) {
             previous = current;
             current  = current->next;
         }
         if (!current) return;
-        if (current == head) {
-            head = current->next;
+        if (current == _head) {
+            _head = current->next;
         } else {
             previous->next = current->next;
         }
-        if (current == tail) {
-            tail = previous;
+        if (current == _tail) {
+            _tail = previous;
         }
         e->next = nullptr;
-        if (!head) tail = nullptr;
+        if (!_head) _tail = nullptr;
     }
 };
 
@@ -124,7 +115,6 @@ struct FIFO : private LinkedList<T> {
 template <typename T>
 struct POFO : private LinkedList<T> {
     using LinkedList<T>::empty;
-    using LinkedList<T>::size;
     using LinkedList<T>::remove;
     using Element = typename LinkedList<T>::Element;
 
