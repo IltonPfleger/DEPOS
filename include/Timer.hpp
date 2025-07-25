@@ -47,12 +47,12 @@ class _Timer<true> {
 
     static void handler() {
         reset();
-        if constexpr (Traits::Alarm::Enable) {
-            if (--_channels[Channel::ALARM]._current[CPU::core()] == 0) {
-                _channels[Channel::ALARM]._current[CPU::core()] = _channels[Channel::ALARM]._initial;
-                _channels[Channel::ALARM]._handler();
-            }
-        }
+        // if constexpr (Traits::Alarm::Enable) {
+        //     if (--_channels[Channel::ALARM]._current[CPU::core()] == 0) {
+        //         _channels[Channel::ALARM]._current[CPU::core()] = _channels[Channel::ALARM]._initial;
+        //         _channels[Channel::ALARM]._handler();
+        //     }
+        // }
 
         if constexpr (Traits::Scheduler<Thread>::Criterion::Timed) {
             if (--_channels[Channel::SCHEDULER]._current[CPU::core()] == 0) {
