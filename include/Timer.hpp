@@ -18,7 +18,6 @@ class _Timer<true> {
     struct Channel {
         Tick _initial;
         Tick _current[Machine::CPUS];
-        void (*_handler)();
     };
 
     static inline Channel _channels[COUNT];
@@ -33,7 +32,6 @@ class _Timer<true> {
         CPU::Interrupt::Timer::enable();
 
         if constexpr (Traits::Scheduler<Thread>::Criterion::Timed) {
-            _channels[SCHEDULER]._handler = Thread::reschedule;
             _channels[SCHEDULER]._initial = Traits::Timer::Frequency / Traits::Scheduler<Thread>::Frequency;
             _channels[SCHEDULER]._current[CPU::core()] = _channels[SCHEDULER]._initial;
         }
@@ -56,8 +54,8 @@ class _Timer<true> {
 
         if constexpr (Traits::Scheduler<Thread>::Criterion::Timed) {
             if (--_channels[SCHEDULER]._current[CPU::core()] == 0) {
-				_channels[SCHEDULER]._current[CPU::core()] = _channels[SCHEDULER]._initial;
-                _channels[SCHEDULER]._handler();
+                _channels[SCHEDULER]._current[CPU::core()] = _channels[SCHEDULER]._initial;
+                Thread::reschedule();
             }
         }
     }
