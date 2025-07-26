@@ -20,16 +20,14 @@ struct Memory {
 
     typedef struct Heap {
         Block *blocks[Traits::Memory::Page::ORDER + 1];
-        Spin lock{1};
+        Spin lock{Spin::LOCKED};
     } Heap;
 
     static void init();
     static void *kmalloc();
     static void kfree(void *);
-    static inline Spin lock{1};
 };
 
 void *operator new(unsigned long, void *);
 void *operator new(unsigned long, Memory::Role);
 void operator delete(void *, unsigned long);
-void operator delete(void *);

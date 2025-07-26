@@ -5,42 +5,44 @@
 extern int main(void *);
 static Thread *_user_thread;
 
-__attribute__((naked)) void dispatch(Thread *previous, Thread *next) {
+__attribute__((naked)) static void dispatch(Thread *previous, Thread *next) {
     CPU::Context::push();
     previous->context = CPU::Context::get();
+    next->state       = Thread::State::RUNNING;
+    Thread::_lock.unlock();
 
     ERROR(next == nullptr, "[Thread::dispatch] Invalid thread.");
     ERROR(previous == next, "[Thread::dispatch] Same thread.");
-    next->state = Thread::State::RUNNING;
-    Thread::_lock.unlock();
     CPU::Context::jump(next->context);
 }
 
 int Thread::idle(void *) {
     while (_count > Machine::CPUS) {
         lock();
-        if (_scheduler.empty()) {
-            unlock();
-            continue;
-        }
-        Thread *next     = _scheduler.chose();
-        Thread *previous = const_cast<Thread *>(running());
-        previous->state  = State::READY;
-        _scheduler.insert(previous->link);
-        dispatch(previous, next);
+        TRACE("[Thread::idle]\n");
+        unlock();
+
+        // Thread *next = _scheduler.chose();
+
+        // if (next) {
+        //     Thread *previous = const_cast<Thread *>(running());
+        //     previous->state  = State::READY;
+        //     _scheduler.insert(previous->link);
+        //     dispatch(previous, next);
+        // } else {
+        //     unlock();
+        // }
     }
 
     CPU::Interrupt::disable();
-    if (CPU::core() == 0) {
-        Logger::println("*** QUARK is shutting down! ***\n");
-    }
-    for (;;);
+    if (CPU::core() == 0) Logger::println("*** QUARK Shutdown! ***\n");
+    for (;;) CPU::idle();
     return 0;
 }
 
 Thread::Thread(Function f, Argument a, Criterion c) : state(State::READY), criterion(c) {
-    joining     = 0;
     stack       = Memory::kmalloc();
+    joining     = 0;
     link        = new (Memory::SYSTEM) Element(this, c.priority());
     char *entry = reinterpret_cast<char *>(stack) + Traits::Memory::Page::SIZE - sizeof(CPU::Context);
     context     = new (entry) CPU::Context(f, exit, this, a);
@@ -71,14 +73,18 @@ Thread::~Thread() {
 }
 
 void Thread::join(Thread *thread) {
+    ERROR(thread == nullptr, "[Thread::join] Invalid thread.");
     lock();
+
+    Thread *previous = const_cast<Thread *>(running());
     if (thread->state == State::FINISHED) {
         unlock();
         return;
     }
-    Thread *previous = const_cast<Thread *>(running());
+
     ERROR(thread == previous, "[Thread::join] Join itself.");
     ERROR(thread->joining != nullptr, "[Thread::join] Already joined.");
+
     previous->state = State::WAITING;
     thread->joining = previous;
     Thread *next    = _scheduler.chose();
@@ -90,7 +96,6 @@ void Thread::exit() {
 
     Thread *previous = const_cast<Thread *>(running());
     previous->state  = State::FINISHED;
-
     if (previous->joining) {
         previous->joining->state = State::READY;
         _scheduler.insert(previous->joining->link);
@@ -106,8 +111,7 @@ void Thread::init() {
     new (Memory::SYSTEM) Thread(idle, 0, IDLE);
 }
 
-void Thread::go() {
-    while (_count < Machine::CPUS);
+void Thread::run() {
     lock();
     Thread *first = _scheduler.chose();
     first->state  = State::RUNNING;
@@ -122,8 +126,8 @@ void Thread::reschedule() {
     _scheduler.insert(previous->link);
     Thread *next = _scheduler.chose();
     next->state  = State::RUNNING;
-    CPU::thread(next);
     _lock.unlock();
+    CPU::thread(next);
 }
 
 // void Thread::sleep(Queue *waiting) {

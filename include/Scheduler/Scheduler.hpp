@@ -33,7 +33,8 @@ struct Scheduler : POFO<T *> {
     using Queue::remove;
 
     T *chose() {
-        if (empty()) return nullptr;
-        return next()->value;
+        auto e = next();
+        if (!e) return nullptr;
+        return e->value;
     }
 };

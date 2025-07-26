@@ -7,21 +7,24 @@ struct CPU {
 
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
 
-    __attribute__((always_inline)) static inline void *thread() {
-        void *ptr;
-        __asm__ volatile("mv %0, tp" : "=r"(ptr));
-        return ptr;
-    }
-
-    __attribute__((always_inline)) static inline void thread(void *ptr) { __asm__ volatile("mv tp, %0" ::"r"(ptr)); }
-
-    __attribute__((always_inline)) static inline unsigned int core() {
+    __attribute__((always_inline)) [[nodiscard]] static inline unsigned int core() {
         unsigned int n;
         __asm__ volatile("csrr %0, mhartid" : "=&r"(n));
         return n;
     }
 
-    struct __attribute__((packed)) Context {
+    __attribute__((always_inline)) static inline void *thread() {
+        void *ptr;
+        __asm__ volatile("mv %0, tp" : "=r"(ptr));
+        __asm__ volatile("" ::: "memory");
+        return ptr;
+    }
+
+    __attribute__((always_inline)) static inline void thread(void *ptr) {
+        __asm__ volatile("mv tp, %0" ::"r"(ptr) : "tp", "memory");
+    }
+
+    struct Context {
         uintptr_t ra;
         uintptr_t tp;
         uintptr_t t0, t1, t2, t3, t4, t5, t6;
@@ -115,36 +118,37 @@ struct CPU {
                 "ld s9, 208(sp)\n"
                 "ld s10, 216(sp)\n"
                 "ld s11, 224(sp)\n"
-                "addi sp, sp, %0\n" ::"i"(sizeof(Context))
-                : "memory");
+                "addi sp, sp, %0\n" ::"i"(sizeof(Context)));
         }
 
-        __attribute__((naked)) static void jump(volatile Context *next) {
+        __attribute__((naked)) static void jump(Context *next) {
             __asm__ volatile("mv sp, %0" ::"r"(next));
             __asm__ volatile("li t0, 0x1800\ncsrs mstatus, t0\n" ::: "t0");
             pop();
             iret();
         }
 
-        __attribute__((naked)) static volatile Context *get() { __asm__ volatile("mv a0, sp\nret"); }
-        __attribute__((naked)) static void set(volatile Context *) { __asm__ volatile("mv sp, a0\nret"); }
+        __attribute__((naked)) static Context *get() { __asm__ volatile("mv a0, sp\nret"); }
+        __attribute__((naked)) static void set(Context *) { __asm__ volatile("mv sp, a0\nret"); }
     };
 
     struct Atomic {
         static void lock(int *value) {
             __asm__ volatile(
-                "li t0, 1\n"
                 "1:\n"
-                "   lr.w t1, (%0)\n"
-                "   bnez t1, 1b\n"
-                "   sc.w t1, t0, (%0)\n"
-                "   bnez t1, 1b\n"
+                "lr.w t0, (%0)\n"
+                "bnez t0, 1b\n"
+                "sc.w t0, %1, (%0)\n"
+                "bnez t0, 1b\n"
                 :
-                : "r"(value)
-                : "t0", "t1", "memory");
+                : "r"(value), "r"(1)
+                : "t0", "memory");
         }
 
-        static void unlock(int *value) { __asm__ volatile("sw zero, (%0)\n" : : "r"(value) : "memory"); }
+        static void unlock(int *value) {
+            *value = 0;
+            __asm__ volatile("" ::: "memory");
+        }
 
         static int fdec(int *value) {
             int ret;

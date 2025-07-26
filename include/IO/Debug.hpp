@@ -2,6 +2,7 @@
 
 #include <CPU.hpp>
 #include <IO/Logger.hpp>
+#include <Spin.hpp>
 #include <Traits.hpp>
 
 #define ERROR(expr, ...)                  \
@@ -16,6 +17,6 @@
 
 #define TRACE(...)                        \
     if constexpr (Traits::Debug::TRACE) { \
-        Logger::println("TRACE: ");     \
+        Logger::println("TRACE: ");       \
         Logger::println(__VA_ARGS__);     \
     }

@@ -3,16 +3,17 @@
 
 extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
-static Memory::Page *pages               = nullptr;
+static Memory::Page *pages                     = nullptr;
 static Memory::Heap heaps[Memory::Role::COUNT] = {{}};
+static Spin lock{Spin::LOCKED};
 
-static constexpr unsigned long ORDER(unsigned long bytes) {
+static constexpr unsigned long calculateOrder(unsigned long bytes) {
     unsigned long order = 1;
     while ((1UL << order) < bytes) order++;
     return order;
 }
 
-static constexpr unsigned char &ROLE(uintptr_t page) {
+static unsigned char &getRole(void *page) {
     return *(reinterpret_cast<unsigned char *>(page) + Traits::Memory::Page::SIZE - 1);
 }
 
@@ -52,16 +53,17 @@ void Memory::init() {
 void *Memory::kmalloc() {
     lock.lock();
     Page *page = pages;
-    if (page != nullptr) pages = page->next;
-    TRACE("[Memory::kmalloc] {return=%p}\n", page);
+    ERROR(page == nullptr, "[Memory::kmalloc] Out of Memory.");
+    pages = page->next;
     lock.unlock();
+    TRACE("[Memory::kmalloc] {return=%p}\n", page);
     return reinterpret_cast<void *>(page);
 }
 
 void Memory::kfree(void *addr) {
     lock.lock();
     Page *page = reinterpret_cast<Page *>(addr);
-    ERROR(page == nullptr, "[Memory::free] Free nullptr");
+    ERROR(page == nullptr, "[Memory::free] Free nullptr.");
     page->next = pages;
     pages      = page;
     TRACE("[Memory::kfree] %p\n", page);
@@ -73,19 +75,18 @@ void *operator new(unsigned long, void *ptr) { return ptr; }
 void *operator new(unsigned long bytes, Memory::Role role) {
     if (bytes == 0 || bytes >= Traits::Memory::Page::SIZE) return 0;
 
-    auto order = ORDER(bytes);
+    auto order = calculateOrder(bytes);
     auto i     = order;
 
     heaps[role].lock.lock();
     while (i < Traits::Memory::Page::ORDER && !heaps[role].blocks[i]) i++;
     if (i == Traits::Memory::Page::ORDER) {
-        auto raw  = reinterpret_cast<uintptr_t>(Memory::kmalloc());
-        auto page = reinterpret_cast<Memory::Block *>(raw);
+        auto page = reinterpret_cast<Memory::Block *>(Memory::kmalloc());
         if (!page) {
             heaps[role].lock.unlock();
             return nullptr;
         };
-        ROLE(raw)             = role;
+        getRole(page)         = role;
         i                     = Traits::Memory::Page::ORDER;
         page->next            = heaps[role].blocks[i];
         heaps[role].blocks[i] = reinterpret_cast<Memory::Block *>(page);
@@ -111,8 +112,8 @@ void operator delete(void *ptr, unsigned long bytes) {
 
     auto addr  = reinterpret_cast<uintptr_t>(ptr);
     auto mask  = ~0ULL << Traits::Memory::Page::ORDER;
-    auto role  = ROLE(addr & mask);
-    auto order = ORDER(bytes);
+    auto role  = getRole(reinterpret_cast<void *>(addr & mask));
+    auto order = calculateOrder(bytes);
 
     heaps[role].lock.lock();
     while (order < Traits::Memory::Page::ORDER) {

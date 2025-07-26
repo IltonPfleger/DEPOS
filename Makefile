@@ -5,10 +5,9 @@ LD := $(TOOL)-ld
 OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 
-
 CFLAGS := -Wall -Wextra -pedantic -mcmodel=medany -Iinclude
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles -fcheck-new -Wno-dangling-pointer -Wno-sized-deallocation
-CFLAGS += -g -std=c++23 -march=rv64imac_zicsr -mabi=lp64 -O0
+CFLAGS += -g -std=c++20 -march=rv64gc -O0
 
 BUILD := build
 TARGET := $(BUILD)/quark
@@ -20,7 +19,7 @@ default:
 	make run
 
 run: $(TARGET)
-	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -smp 4
+	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -smp 5
 
 debug: $(TARGET)
 	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
@@ -40,7 +39,6 @@ $(BUILD)/%.o: src/%.cpp
 
 $(BUILD)/$(APPLICATION).o: app/$(APPLICATION).cpp
 	$(CC) $(CFLAGS) -c $< -o $@
-
 
 -include $(DEPS)
 

@@ -16,9 +16,9 @@ struct Thread {
     enum : Criterion::Rank { HIGH, NORMAL, LOW, IDLE = ~0ULL };
 
     void *stack;
-    State state;
-    volatile CPU::Context *context;
-    volatile Thread *joining;
+    volatile State state;
+    CPU::Context *volatile context;
+    Thread *volatile joining;
     Queue *waiting;
     Element *link;
     Criterion criterion;
@@ -29,14 +29,14 @@ struct Thread {
     static inline volatile int _count;
     static inline Scheduler<Thread> _scheduler;
 
-    static inline volatile Thread *running() { return reinterpret_cast<volatile Thread *>(CPU::thread()); };
+    static volatile Thread *running() { return reinterpret_cast<volatile Thread *>(CPU::thread()); };
 
     static inline Spin _lock;
-    static inline void lock() {
+    static void lock() {
         CPU::Interrupt::disable();
         _lock.lock();
     }
-    static inline void unlock() {
+    static void unlock() {
         _lock.unlock();
         CPU::Interrupt::enable();
     }
@@ -44,7 +44,7 @@ struct Thread {
     static void join(Thread *);
     static void exit();
     static void init();
-    static void go();
+    static void run();
     static void sleep(Queue *);
     static void wakeup(Queue *);
     static void yield();
@@ -53,12 +53,12 @@ struct Thread {
     static int idle(void *);
 };
 
-struct RT_Thread : Thread {
-    const Function function;
-    const Microsecond deadline;
-    const Microsecond period;
-    const Microsecond duration;
-    Microsecond start;
-
-    RT_Thread(Function, Argument, Microsecond, Microsecond, Microsecond, Microsecond);
-};
+// struct RT_Thread : Thread {
+//     const Function function;
+//     const Microsecond deadline;
+//     const Microsecond period;
+//     const Microsecond duration;
+//     Microsecond start;
+//
+//     RT_Thread(Function, Argument, Microsecond, Microsecond, Microsecond, Microsecond);
+// };

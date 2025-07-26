@@ -6,7 +6,8 @@
 
 constexpr char HEX[] = "0123456789ABCDEF";
 
-inline void put(char value) { Traits::Debug::Device::put(value); };
+inline void put(char value) { Traits::Debug::Device::put(value); }
+void Logger::init() { Traits::Debug::Device::init(); }
 
 template <typename T>
 void printNumber(T value) {
@@ -26,8 +27,6 @@ static void printHex(T value) {
         put(HEX[(value >> (i * 4)) & 0xF]);
     }
 }
-
-void Logger::init() { Traits::Debug::Device::init(); };
 
 void Logger::println(const char *format, ...) {
     va_list args;
