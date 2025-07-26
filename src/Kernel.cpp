@@ -15,13 +15,13 @@ struct Kernel {
             Memory::init();
             Logger::println("Done!\n");
         }
-        if (CPU::core() <= Machine::CPUS - 1) {
+        if (CPU::core() < Machine::CPUS) {
             Thread::init();
             CPU::Interrupt::disable();
             Timer::init();
-            Thread::go();
+            Thread::run();
         }
-        while (1);
+        for (;;);
     }
 
     static void trap() {
@@ -34,7 +34,7 @@ struct Kernel {
             Logger::println("mcause: %p\n", mcause);
             Logger::println("mepc: %p\n", mepc);
             Logger::println("mtval: %p\n", mtval);
-            while (1);
+            for (;;);
         }
 
         switch (CPU::Interrupt::type()) {

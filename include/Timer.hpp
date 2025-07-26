@@ -14,14 +14,14 @@ class _Timer {
 
 template <>
 class _Timer<true> {
+    enum { SCHEDULER, ALARM, COUNT };
     struct Channel {
-        enum { SCHEDULER, ALARM, COUNT };
         Tick _initial;
         Tick _current[Machine::CPUS];
         void (*_handler)();
     };
 
-    static inline Channel _channels[Channel::COUNT];
+    static inline Channel _channels[COUNT];
 
     static void reset() {
         *reinterpret_cast<volatile uintmax_t *>(Machine::CLINT::MTIMECMP + CPU::core() * 8) =
@@ -33,16 +33,16 @@ class _Timer<true> {
         CPU::Interrupt::Timer::enable();
 
         if constexpr (Traits::Scheduler<Thread>::Criterion::Timed) {
-            _channels[Channel::SCHEDULER]._handler = Thread::reschedule;
-            _channels[Channel::SCHEDULER]._initial = Traits::Timer::Frequency / Traits::Scheduler<Thread>::Frequency;
-            _channels[Channel::SCHEDULER]._current[CPU::core()] = _channels[Channel::SCHEDULER]._initial;
+            _channels[SCHEDULER]._handler = Thread::reschedule;
+            _channels[SCHEDULER]._initial = Traits::Timer::Frequency / Traits::Scheduler<Thread>::Frequency;
+            _channels[SCHEDULER]._current[CPU::core()] = _channels[SCHEDULER]._initial;
         }
 
-        if constexpr (Traits::Alarm::Enable) {
-            _channels[Channel::ALARM]._handler              = Alarm::handler;
-            _channels[Channel::ALARM]._initial              = Traits::Timer::Frequency / Traits::Alarm::Frequency;
-            _channels[Channel::ALARM]._current[CPU::core()] = _channels[Channel::ALARM]._initial;
-        }
+        // if constexpr (Traits::Alarm::Enable) {
+        //     _channels[Channel::ALARM]._handler              = Alarm::handler;
+        //     _channels[Channel::ALARM]._initial              = Traits::Timer::Frequency / Traits::Alarm::Frequency;
+        //     _channels[Channel::ALARM]._current[CPU::core()] = _channels[Channel::ALARM]._initial;
+        // }
     }
 
     static void handler() {
@@ -55,9 +55,9 @@ class _Timer<true> {
         // }
 
         if constexpr (Traits::Scheduler<Thread>::Criterion::Timed) {
-            if (--_channels[Channel::SCHEDULER]._current[CPU::core()] == 0) {
-                _channels[Channel::SCHEDULER]._current[CPU::core()] = _channels[Channel::SCHEDULER]._initial;
-                _channels[Channel::SCHEDULER]._handler();
+            if (--_channels[SCHEDULER]._current[CPU::core()] == 0) {
+				_channels[SCHEDULER]._current[CPU::core()] = _channels[SCHEDULER]._initial;
+                _channels[SCHEDULER]._handler();
             }
         }
     }
