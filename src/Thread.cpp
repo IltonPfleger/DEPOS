@@ -40,15 +40,16 @@ int Thread::idle(void *) {
     return 0;
 }
 
-Thread::Thread(Function f, Argument a, Criterion c) : state(State::READY), criterion(c) {
-    stack       = Memory::kmalloc();
-    joining     = 0;
-    link        = new (Memory::SYSTEM) Element(this, c.priority());
-    char *entry = reinterpret_cast<char *>(stack) + Traits::Memory::Page::SIZE - sizeof(CPU::Context);
-    context     = new (entry) CPU::Context(f, exit, this, a);
-
+Thread::Thread(Function f, Argument a, Criterion c)
+    : stack(reinterpret_cast<char *>(Memory::kmalloc())),
+      context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context)) CPU::Context(f, exit, this, a)),
+      state(State::READY),
+      joining(0),
+      criterion(c),
+      link(Element(this, c.priority())),
+      waiting(0) {
     lock();
-    _scheduler.insert(link);
+    _scheduler.insert(&link);
     _count = _count + 1;
     unlock();
 }
@@ -57,11 +58,11 @@ Thread::~Thread() {
     lock();
     switch (state) {
         case (State::READY):
-            _scheduler.remove(link);
+            _scheduler.remove(&link);
             _count = _count - 1;
             break;
         case (State::WAITING):
-            waiting->remove(link);
+            waiting->remove(&link);
             _count = _count - 1;
             break;
         default:
@@ -69,7 +70,6 @@ Thread::~Thread() {
     }
     unlock();
     Memory::kfree(stack);
-    delete link;
 }
 
 void Thread::join(Thread *thread) {
@@ -98,7 +98,7 @@ void Thread::exit() {
     previous->state  = State::FINISHED;
     if (previous->joining) {
         previous->joining->state = State::READY;
-        _scheduler.insert(previous->joining->link);
+        _scheduler.insert(&previous->joining->link);
         previous->joining = 0;
     }
     _count       = _count - 1;
@@ -123,7 +123,7 @@ void Thread::reschedule() {
     lock();
     Thread *previous = const_cast<Thread *>(running());
     previous->state  = State::READY;
-    _scheduler.insert(previous->link);
+    _scheduler.insert(&previous->link);
     Thread *next = _scheduler.chose();
     next->state  = State::RUNNING;
     _lock.unlock();

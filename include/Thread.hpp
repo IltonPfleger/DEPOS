@@ -15,13 +15,13 @@ struct Thread {
     enum class State { RUNNING, READY, WAITING, FINISHED };
     enum : Criterion::Rank { HIGH, NORMAL, LOW, IDLE = ~0ULL };
 
-    void *stack;
-    volatile State state;
+    char *stack;
     CPU::Context *volatile context;
+    volatile State state;
     Thread *volatile joining;
-    Queue *waiting;
-    Element *link;
     Criterion criterion;
+    Element link;
+    Queue *waiting;
 
     ~Thread();
     Thread(Function, Argument, Criterion);
