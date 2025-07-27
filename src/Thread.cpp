@@ -17,10 +17,10 @@ __attribute__((naked)) static void dispatch() {
 
 int Thread::idle(void *) {
     while (_count > Machine::CPUS) {
-        lock();
-        TRACE("[Thread::idle]\n");
-        unlock();
-        CPU::Interrupt::enable();
+        // lock();
+        // TRACE("[Thread::idle]\n");
+        // unlock();
+        // CPU::Interrupt::enable();
 
         // Thread *next = _scheduler.chose();
 
@@ -69,6 +69,12 @@ Thread::~Thread() {
         default:
             break;
     }
+
+    if (joining) {
+        joining->state = State::READY;
+        _scheduler.insert(&joining->link);
+    }
+
     unlock();
     CPU::Interrupt::enable();
     Memory::kfree(stack);
@@ -124,13 +130,26 @@ void Thread::run() {
 
 void Thread::reschedule() {
     lock();
+
+    if (_scheduler.empty()) {
+        unlock();
+        return;
+    }
+
     auto previous   = running();
     previous->state = State::READY;
     _scheduler.insert(&previous->link);
-    Thread *next = _scheduler.chose();
-    next->state  = State::RUNNING;
-    unlock();
-    CPU::thread(next);
+    dispatch();
+    CPU::Interrupt::disable();
+
+    // lock();
+    // auto previous   = running();
+    // previous->state = State::READY;
+    //_scheduler.insert(&previous->link);
+    // Thread *next = _scheduler.chose();
+    // next->state  = State::RUNNING;
+    // unlock();
+    // CPU::thread(next);
 }
 
 // void Thread::sleep(Queue *waiting) {
@@ -157,7 +176,7 @@ void Thread::reschedule() {
 
 // int entry(void *arg) {
 //     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));
-	//     auto now           = Alarm::utime();
+//     auto now           = Alarm::utime();
 //     if (now < current->start) Alarm::usleep(current->start - now);
 //
 //     while (1) {

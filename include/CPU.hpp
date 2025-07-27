@@ -13,7 +13,7 @@ struct CPU {
         return n;
     }
 
-    static inline void *thread() {
+    __attribute__((always_inline)) [[nodiscard]] static inline void *thread() {
         void *tp;
         __asm__ volatile("mv %0, tp" : "=r"(tp));
         return tp;
