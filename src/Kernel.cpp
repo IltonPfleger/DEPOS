@@ -1,5 +1,5 @@
 #include <CPU.hpp>
-#include <IO/Logger.hpp>
+#include <IO/Debug.hpp>
 #include <Machine.hpp>
 #include <Memory.hpp>
 #include <Thread.hpp>
@@ -30,11 +30,12 @@ struct Kernel {
             __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
             __asm__ volatile("csrr %0, mepc" : "=r"(mepc));
             __asm__ volatile("csrr %0, mtval" : "=r"(mtval));
-            Logger::println("Ohh it's a Trap!\n");
-            Logger::println("mcause: %p\n", mcause);
-            Logger::println("mepc: %p\n", mepc);
-            Logger::println("mtval: %p\n", mtval);
-            for (;;);
+            ERROR(true,
+                  "Ohh it's a Trap!\n"
+                  "mcause: %p\n"
+                  "mepc: %p\n"
+                  "mtval: %p\n",
+                  mcause, mepc, mtval);
         }
 
         switch (CPU::Interrupt::type()) {
@@ -47,9 +48,10 @@ struct Kernel {
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push<true>();
-    Thread::running()->context = CPU::Context::get();
+    // Thread::running()->context = CPU::Context::get();
     Kernel::trap();
-    CPU::Context::jump(Thread::running()->context);
+    // CPU::Context::jump(Thread::running()->context);
+    CPU::Context::jump(CPU::Context::get());
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
