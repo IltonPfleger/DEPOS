@@ -5,14 +5,13 @@
 extern int main(void *);
 static Thread *_user_thread;
 
-__attribute__((naked)) static void dispatch(Thread *previous, Thread *next) {
+__attribute__((naked)) static void dispatch() {
     CPU::Context::push();
-    previous->context = CPU::Context::get();
-    next->state       = Thread::State::RUNNING;
-    Thread::_lock.unlock();
+    Thread::running()->context = CPU::Context::get();
 
-    ERROR(next == nullptr, "[Thread::dispatch] Invalid thread.");
-    ERROR(previous == next, "[Thread::dispatch] Same thread.");
+    Thread *next = Thread::_scheduler.chose();
+    next->state  = Thread::State::RUNNING;
+    Thread::unlock();
     CPU::Context::jump(next->context);
 }
 
@@ -21,13 +20,14 @@ int Thread::idle(void *) {
         lock();
         TRACE("[Thread::idle]\n");
         unlock();
+        CPU::Interrupt::enable();
 
         // Thread *next = _scheduler.chose();
 
         // if (next) {
         //     Thread *previous = const_cast<Thread *>(running());
         //     previous->state  = State::READY;
-        //     _scheduler.insert(previous->link);
+        //     _scheduler.insert(&previous->link);
         //     dispatch(previous, next);
         // } else {
         //     unlock();
@@ -52,6 +52,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
     _scheduler.insert(&link);
     _count = _count + 1;
     unlock();
+    CPU::Interrupt::enable();
 }
 
 Thread::~Thread() {
@@ -69,14 +70,16 @@ Thread::~Thread() {
             break;
     }
     unlock();
+    CPU::Interrupt::enable();
     Memory::kfree(stack);
 }
 
 void Thread::join(Thread *thread) {
     ERROR(thread == nullptr, "[Thread::join] Invalid thread.");
+    auto *previous = running();
+
     lock();
 
-    Thread *previous = const_cast<Thread *>(running());
     if (thread->state == State::FINISHED) {
         unlock();
         return;
@@ -87,23 +90,23 @@ void Thread::join(Thread *thread) {
 
     previous->state = State::WAITING;
     thread->joining = previous;
-    Thread *next    = _scheduler.chose();
-    dispatch(previous, next);
+    dispatch();
 }
 
 void Thread::exit() {
-    lock();
+    auto previous = running();
 
-    Thread *previous = const_cast<Thread *>(running());
-    previous->state  = State::FINISHED;
+    lock();
+    previous->state = State::FINISHED;
+
     if (previous->joining) {
         previous->joining->state = State::READY;
         _scheduler.insert(&previous->joining->link);
         previous->joining = 0;
     }
-    _count       = _count - 1;
-    Thread *next = _scheduler.chose();
-    dispatch(previous, next);
+
+    _count = _count - 1;
+    dispatch();
 }
 
 void Thread::init() {
@@ -115,18 +118,18 @@ void Thread::run() {
     lock();
     Thread *first = _scheduler.chose();
     first->state  = State::RUNNING;
-    _lock.unlock();
+    unlock();
     CPU::Context::jump(first->context);
 }
 
 void Thread::reschedule() {
     lock();
-    Thread *previous = const_cast<Thread *>(running());
-    previous->state  = State::READY;
+    auto previous   = running();
+    previous->state = State::READY;
     _scheduler.insert(&previous->link);
     Thread *next = _scheduler.chose();
     next->state  = State::RUNNING;
-    _lock.unlock();
+    unlock();
     CPU::thread(next);
 }
 
@@ -154,7 +157,7 @@ void Thread::reschedule() {
 
 // int entry(void *arg) {
 //     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));
-//     auto now           = Alarm::utime();
+	//     auto now           = Alarm::utime();
 //     if (now < current->start) Alarm::usleep(current->start - now);
 //
 //     while (1) {

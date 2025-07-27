@@ -31,11 +31,11 @@ struct LinkedList {
 
     void push_sorted(Element* e) {
         e->next = nullptr;
-        if (!_head || e->rank < _head->rank) {
+        if (!_head || e->rank > _head->rank) {
             push_front(e);
         } else {
             Element* current = _head;
-            while (current->next && e->rank >= current->next->rank) {
+            while (current->next && e->rank <= current->next->rank) {
                 current = current->next;
             }
             e->next       = current->next;
