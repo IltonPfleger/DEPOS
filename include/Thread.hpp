@@ -13,7 +13,7 @@ struct Thread {
     using Element   = Scheduler<Thread>::Queue::Element;
     using Queue     = FIFO<Thread *>;
     enum class State { RUNNING, READY, WAITING, FINISHED };
-    enum : Criterion::Rank { HIGH, NORMAL, LOW, IDLE = ~0ULL };
+    enum : Criterion::Rank { IDLE, NORMAL };
 
     char *stack;
     CPU::Context *volatile context;
@@ -29,17 +29,14 @@ struct Thread {
     static inline volatile int _count;
     static inline Scheduler<Thread> _scheduler;
 
-    static volatile Thread *running() { return reinterpret_cast<volatile Thread *>(CPU::thread()); };
+    static inline Thread *running() { return reinterpret_cast<Thread *>(CPU::thread()); }
 
-    static inline Spin _lock;
+    static inline Spin spin;
     static void lock() {
         CPU::Interrupt::disable();
-        _lock.lock();
+        spin.lock();
     }
-    static void unlock() {
-        _lock.unlock();
-        CPU::Interrupt::enable();
-    }
+    static void unlock() { spin.unlock(); }
 
     static void join(Thread *);
     static void exit();

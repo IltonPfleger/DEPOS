@@ -13,11 +13,10 @@ struct CPU {
         return n;
     }
 
-    __attribute__((always_inline)) static inline void *thread() {
-        void *ptr;
-        __asm__ volatile("mv %0, tp" : "=r"(ptr));
-        __asm__ volatile("" ::: "memory");
-        return ptr;
+    static inline void *thread() {
+        void *tp;
+        __asm__ volatile("mv %0, tp" : "=r"(tp));
+        return tp;
     }
 
     __attribute__((always_inline)) static inline void thread(void *ptr) {
@@ -42,7 +41,6 @@ struct CPU {
         template <bool is_interrupt = false>
         __attribute__((always_inline)) static inline void push() {
             __asm__ volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
-
             __asm__ volatile(
                 "sd ra, 0(sp)\n"
                 "sd tp, 8(sp)\n"
@@ -128,8 +126,11 @@ struct CPU {
             iret();
         }
 
-        __attribute__((naked)) static Context *get() { __asm__ volatile("mv a0, sp\nret"); }
-        __attribute__((naked)) static void set(Context *) { __asm__ volatile("mv sp, a0\nret"); }
+        __attribute__((always_inline)) static inline Context *get() {
+            Context *context;
+            __asm__ volatile("mv %0, sp" : "=r"(context));
+            return context;
+        }
     };
 
     struct Atomic {
