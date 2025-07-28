@@ -23,14 +23,12 @@ class _Timer<true> {
     static inline Channel _channels[COUNT];
 
     static void reset() {
-        *reinterpret_cast<volatile uintmax_t *>(Machine::CLINT::MTIMECMP + CPU::core() * 8) =
+        *reinterpret_cast<volatile uintmax_t *>(Machine::CLINT::MTIMECMP + (CPU::core() * 8)) =
             *Machine::CLINT::MTIME + (Machine::CLINT::CLOCK / Traits::Timer::Frequency);
     }
 
    public:
     static void init() {
-        CPU::Interrupt::Timer::enable();
-
         if constexpr (Traits::Scheduler<Thread>::Criterion::Timed) {
             _channels[SCHEDULER]._initial = Traits::Timer::Frequency / Traits::Scheduler<Thread>::Frequency;
             _channels[SCHEDULER]._current[CPU::core()] = _channels[SCHEDULER]._initial;
@@ -41,6 +39,8 @@ class _Timer<true> {
         //     _channels[Channel::ALARM]._initial              = Traits::Timer::Frequency / Traits::Alarm::Frequency;
         //     _channels[Channel::ALARM]._current[CPU::core()] = _channels[Channel::ALARM]._initial;
         // }
+        // reset();
+        CPU::Interrupt::Timer::enable();
     }
 
     static void handler() {

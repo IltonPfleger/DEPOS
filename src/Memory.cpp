@@ -47,7 +47,6 @@ void Memory::init() {
     TRACE("NumberOfPages=%d\n", n_pages);
     TRACE("}\n");
     lock.unlock();
-    for (int i = 0; i < Role::COUNT; i++) heaps[i].lock.unlock();
 }
 
 void *Memory::kmalloc() {
@@ -55,8 +54,8 @@ void *Memory::kmalloc() {
     Page *page = pages;
     ERROR(page == nullptr, "[Memory::kmalloc] Out of Memory.");
     pages = page->next;
-    lock.unlock();
     TRACE("[Memory::kmalloc] {return=%p}\n", page);
+    lock.unlock();
     return reinterpret_cast<void *>(page);
 }
 
@@ -78,14 +77,13 @@ void *operator new(unsigned long bytes, Memory::Role role) {
     auto order = calculateOrder(bytes);
     auto i     = order;
 
-    heaps[role].lock.lock();
+    lock.lock();
     while (i < Traits::Memory::Page::ORDER && !heaps[role].blocks[i]) i++;
     if (i == Traits::Memory::Page::ORDER) {
+        lock.unlock();
         auto page = reinterpret_cast<Memory::Block *>(Memory::kmalloc());
-        if (!page) {
-            heaps[role].lock.unlock();
-            return nullptr;
-        };
+        if (!page) return nullptr;
+        lock.lock();
         getRole(page)         = role;
         i                     = Traits::Memory::Page::ORDER;
         page->next            = heaps[role].blocks[i];
@@ -103,7 +101,7 @@ void *operator new(unsigned long bytes, Memory::Role role) {
 
     Memory::Block *block      = heaps[role].blocks[order];
     heaps[role].blocks[order] = block->next;
-    heaps[role].lock.unlock();
+    lock.unlock();
     return reinterpret_cast<void *>(block);
 }
 
@@ -115,7 +113,7 @@ void operator delete(void *ptr, unsigned long bytes) {
     auto role  = getRole(reinterpret_cast<void *>(addr & mask));
     auto order = calculateOrder(bytes);
 
-    heaps[role].lock.lock();
+    lock.lock();
     while (order < Traits::Memory::Page::ORDER) {
         auto buddy = addr ^ (1UL << order);
 
@@ -137,9 +135,12 @@ void operator delete(void *ptr, unsigned long bytes) {
     new_block->next           = heaps[role].blocks[order];
     heaps[role].blocks[order] = new_block;
 
+    void *free = nullptr;
     if (order == Traits::Memory::Page::ORDER) {
-        Memory::kfree(heaps[role].blocks[order]);
+        free                      = heaps[role].blocks[order];
         heaps[role].blocks[order] = nullptr;
     }
-    heaps[role].lock.unlock();
+
+    lock.unlock();
+    if (free) Memory::kfree(free);
 }
