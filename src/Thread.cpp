@@ -8,11 +8,10 @@ static Spin spin;
 __attribute__((naked)) static void dispatch() {
     CPU::Context::push();
     Thread::running()->context = CPU::Context::get();
-
-    Thread *next = Thread::_scheduler.chose();
-    next->state  = Thread::State::RUNNING;
-
+    Thread *next               = Thread::_scheduler.chose();
     spin.release();
+
+    next->state = Thread::State::RUNNING;
     CPU::Context::jump(next->context);
 }
 
@@ -101,9 +100,9 @@ void Thread::join(Thread *thread) {
 }
 
 void Thread::exit() {
-    spin.lock();
+    auto previous = running();
 
-    auto previous   = running();
+    spin.lock();
     previous->state = State::FINISHED;
 
     if (previous->joining) {
@@ -121,17 +120,18 @@ void Thread::init() {
     if (!CPU::core()) new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
 
     spin.lock();
-
     Thread *first = _scheduler.chose();
-    first->state  = State::RUNNING;
-    CPU::thread(first);
-
     spin.release();
+
+    first->state = State::RUNNING;
+    CPU::thread(first);
 }
 
 void Thread::run() { CPU::Context::jump(running()->context); }
 
 void Thread::reschedule() {
+    auto previous = running();
+
     spin.acquire();
 
     if (_scheduler.empty()) {
@@ -139,18 +139,14 @@ void Thread::reschedule() {
         return;
     }
 
-    auto previous   = running();
     previous->state = State::READY;
     _scheduler.insert(&previous->link);
-
     Thread *next = Thread::_scheduler.chose();
-    next->state  = Thread::State::RUNNING;
-    CPU::thread(next);
 
     spin.release();
 
-    // dispatch();
-    // CPU::Interrupt::disable();
+    next->state = Thread::State::RUNNING;
+    CPU::thread(next);
 }
 
 // void Thread::sleep(Queue *waiting) {

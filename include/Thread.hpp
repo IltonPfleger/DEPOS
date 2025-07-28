@@ -13,7 +13,7 @@ struct Thread {
     using Argument  = void *;
     using Function  = int (*)(Argument);
     using Queue     = FIFO<Thread *>;
-    using Element   = Queue::Element;
+    using Element   = Queue::Node;
 
     char *stack;
     CPU::Context *volatile context;
