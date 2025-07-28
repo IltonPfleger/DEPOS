@@ -8,7 +8,6 @@
 
 struct Thread {
     enum class State { RUNNING, READY, WAITING, FINISHED };
-
     using Criterion = typename Traits::Scheduler<Thread>::Criterion;
     using Argument  = void *;
     using Function  = int (*)(Argument);
@@ -25,12 +24,7 @@ struct Thread {
 
     ~Thread();
     Thread(Function, Argument, Criterion);
-
-    static inline volatile int _count;
-    static inline Scheduler<Thread> _scheduler;
-
     static inline Thread *running() { return reinterpret_cast<Thread *>(CPU::thread()); }
-
     static void join(Thread *);
     static void exit();
     static void init();
