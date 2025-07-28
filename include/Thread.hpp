@@ -7,13 +7,13 @@
 #include <Spin.hpp>
 
 struct Thread {
-    using Criterion = Traits::Scheduler<Thread>::Criterion;
-    using Function  = int (*)(void *);
-    using Argument  = void *;
-    using Element   = Scheduler<Thread>::Queue::Element;
-    using Queue     = FIFO<Thread *>;
     enum class State { RUNNING, READY, WAITING, FINISHED };
-    enum : Criterion::Rank { IDLE, NORMAL };
+
+    using Criterion = typename Traits::Scheduler<Thread>::Criterion;
+    using Argument  = void *;
+    using Function  = int (*)(Argument);
+    using Queue     = FIFO<Thread *>;
+    using Element   = Queue::Element;
 
     char *stack;
     CPU::Context *volatile context;
@@ -31,13 +31,6 @@ struct Thread {
 
     static inline Thread *running() { return reinterpret_cast<Thread *>(CPU::thread()); }
 
-    static inline Spin spin;
-    static void lock() {
-        CPU::Interrupt::disable();
-        spin.lock();
-    }
-    static void unlock() { spin.unlock(); }
-
     static void join(Thread *);
     static void exit();
     static void init();
@@ -46,7 +39,6 @@ struct Thread {
     static void wakeup(Queue *);
     static void yield();
     static void reschedule();
-
     static int idle(void *);
 };
 

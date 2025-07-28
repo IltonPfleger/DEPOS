@@ -20,7 +20,6 @@ struct Memory {
 
     typedef struct Heap {
         Block *blocks[Traits::Memory::Page::ORDER + 1];
-        Spin lock{Spin::LOCKED};
     } Heap;
 
     static void init();

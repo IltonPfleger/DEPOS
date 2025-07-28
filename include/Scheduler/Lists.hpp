@@ -3,7 +3,7 @@
 template <typename T>
 struct LinkedList {
     struct Element {
-        const T value;
+        T value;
         unsigned long long rank;
         Element* next = nullptr;
     };
