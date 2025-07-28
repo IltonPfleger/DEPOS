@@ -6,7 +6,7 @@
 #include <Thread.hpp>
 
 static constexpr int N          = 5;
-static constexpr int ITERATIONS = 100;
+static constexpr int ITERATIONS = 5;
 
 static Thread *threads[N];
 // static Semaphore *mutex;
