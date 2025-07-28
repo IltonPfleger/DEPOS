@@ -3,12 +3,14 @@
 #include <Thread.hpp>
 
 extern int main(void *);
+static volatile int _count;
+static Scheduler<Thread> _scheduler;
 static Spin spin;
 
 __attribute__((naked)) static void dispatch() {
     CPU::Context::push();
     Thread::running()->context = CPU::Context::get();
-    Thread *next               = Thread::_scheduler.chose();
+    Thread *next               = _scheduler.chose();
     spin.release();
 
     next->state = Thread::State::RUNNING;
@@ -16,15 +18,9 @@ __attribute__((naked)) static void dispatch() {
 }
 
 int Thread::idle(void *) {
-    // while (_count > Machine::CPUS) {
-    //  if (!_scheduler.empty()) {
-    //      spin.lock();
-    //      auto previous   = running();
-    //      previous->state = State::READY;
-    //      _scheduler.insert(&previous->link);
-    //      dispatch();
-    //  }
-    //}
+    while (_count > Machine::CPUS) {
+        if (!_scheduler.empty()) yield();
+    }
 
     // CPU::Interrupt::disable();
     // if (CPU::core() == 0) Logger::println("*** QUARK Shutdown! ***\n");
@@ -125,9 +121,20 @@ void Thread::init() {
 
     first->state = State::RUNNING;
     CPU::thread(first);
+
+    while (_count < Machine::CPUS);
 }
 
 void Thread::run() { CPU::Context::jump(running()->context); }
+
+void Thread::yield() {
+    auto previous = running();
+
+    spin.lock();
+    previous->state = State::READY;
+    _scheduler.insert(&previous->link);
+    dispatch();
+}
 
 void Thread::reschedule() {
     auto previous = running();
@@ -141,7 +148,7 @@ void Thread::reschedule() {
 
     previous->state = State::READY;
     _scheduler.insert(&previous->link);
-    Thread *next = Thread::_scheduler.chose();
+    Thread *next = _scheduler.chose();
 
     spin.release();
 
@@ -150,25 +157,28 @@ void Thread::reschedule() {
 }
 
 // void Thread::sleep(Queue *waiting) {
-//     lock();
+//     spin.lock();
 //
-//     Thread *previous  = const_cast<Thread *>(running());
+//     auto previous     = running();
 //     previous->state   = State::WAITING;
 //     previous->waiting = waiting;
-//     waiting->insert(previous->link);
-//     Thread *next = _scheduler.chose();
-//     dispatch(previous, next);
+//     waiting->insert(&previous->link);
+//
+//     dispatch();
 // }
 //
 // void Thread::wakeup(Queue *waiting) {
-//     lock();
+//     spin.acquire();
 //
-//     Element *awake = waiting->next();
-//     ERROR(awake == nullptr, "[Thread::wakeup] Empty queue.");
+//     ERROR(waiting->empty(), "[Thread::wakeup] Empty queue.");
+//
+//     Element *awake        = waiting->next();
 //     awake->value->state   = State::READY;
 //     awake->value->waiting = nullptr;
+//
 //     _scheduler.insert(awake);
-//     _lock.unlock();
+//
+//     spin.release();
 // }
 
 // int entry(void *arg) {

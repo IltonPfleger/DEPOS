@@ -1,4 +1,5 @@
 #pragma once
+#include <IO/Debug.hpp>
 #include <Scheduler/Lists.hpp>
 #include <Thread.hpp>
 #include <Traits.hpp>
@@ -35,7 +36,7 @@ struct Scheduler : POFO<T *> {
 
     T *chose() {
         auto e = next();
-        if (!e) return nullptr;
+        ERROR(!e, "[Scheduler<T>::chose] Empty queue.");
         return e->value;
     }
 };

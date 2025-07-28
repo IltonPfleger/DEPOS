@@ -16,6 +16,7 @@ int thread_function(void *arg) {
     int i  = ITERATIONS;
     while (i--) {
         Logger::println("THREAD: %d | Core: %d\n", id, CPU::core());
+        // Alarm::usleep(10000);
     }
     return 0;
 }

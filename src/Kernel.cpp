@@ -15,12 +15,12 @@ struct Kernel {
             Memory::init();
             Logger::println("Done!\n");
         }
-        // if (CPU::core() < Machine::CPUS) {
-        Thread::init();
-        Timer::init();
-        Thread::run();
-        //}
-        // for (;;);
+        if (CPU::core() < Machine::CPUS) {
+            Thread::init();
+            Timer::init();
+            Thread::run();
+        }
+        for (;;);
     }
 
     static void trap() {
