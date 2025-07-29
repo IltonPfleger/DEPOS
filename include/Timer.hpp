@@ -7,9 +7,8 @@
 
 template <bool enabled = Traits::Timer::Enable>
 class _Timer {
-    static void handler() {}
-
    public:
+    static void handler() {}
     static void init() {}
 };
 
@@ -45,12 +44,12 @@ class _Timer<true> {
 
     static void handler() {
         reset();
-        if constexpr (Traits::Alarm::Enable) {
-            if (--_channels[ALARM]._current[CPU::core()] == 0) {
-                _channels[ALARM]._current[CPU::core()] = _channels[ALARM]._initial;
-                Alarm::handler();
-            }
-        }
+        //  if constexpr (Traits::Alarm::Enable) {
+        //      if (--_channels[ALARM]._current[CPU::core()] == 0) {
+        //          _channels[ALARM]._current[CPU::core()] = _channels[ALARM]._initial;
+        //          Alarm::handler();
+        //      }
+        //  }
 
         if constexpr (Traits::Scheduler<Thread>::Criterion::Timed) {
             if (--_channels[SCHEDULER]._current[CPU::core()] == 0) {

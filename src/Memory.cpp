@@ -5,7 +5,7 @@ extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
 static Memory::Page *pages                     = nullptr;
 static Memory::Heap heaps[Memory::Role::COUNT] = {{}};
-static Spin lock{Spin::LOCKED};
+static Spin lock(Spin::LOCKED);
 
 static constexpr unsigned long calculateOrder(unsigned long bytes) {
     unsigned long order = 1;

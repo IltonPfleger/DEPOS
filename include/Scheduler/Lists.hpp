@@ -9,7 +9,7 @@ struct Element {
 
 template <typename T>
 struct LinkedList {
-    using Node  = Element<T>;
+    using Node = Element<T>;
 
     Node* _head = nullptr;
     Node* _tail = nullptr;
@@ -34,11 +34,11 @@ struct LinkedList {
 
     void push_sorted(Node* e) {
         e->next = nullptr;
-        if (!_head || e->rank > _head->rank) {
+        if (!_head || e->rank < _head->rank) {
             push_front(e);
         } else {
             Node* current = _head;
-            while (current->next && e->rank <= current->next->rank) {
+            while (current->next && e->rank >= current->next->rank) {
                 current = current->next;
             }
             e->next       = current->next;
