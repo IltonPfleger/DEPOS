@@ -11,7 +11,7 @@ struct RR {
     using Rank                  = uintmax_t;
     Rank rank;
 
-    enum : Rank { IDLE, NORMAL };
+    enum : Rank { NORMAL, IDLE = ~0ULL };
     RR(Rank priority = NORMAL, ...) : rank(priority) {}
     Rank priority() const { return rank; }
 };

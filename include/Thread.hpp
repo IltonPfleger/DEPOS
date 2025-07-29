@@ -22,16 +22,19 @@ struct Thread {
     Element link;
     Queue *waiting;
 
+    static inline Spin spin{!Spin::LOCKED};
+
     ~Thread();
     Thread(Function, Argument, Criterion);
     static inline Thread *running() { return reinterpret_cast<Thread *>(CPU::thread()); }
-    static void join(Thread *);
+    static void join(Thread &);
     static void exit();
     static void init();
     static void run();
     static void sleep(Queue *);
     static void wakeup(Queue *);
     static void yield();
+    static void dispatch();
     static void reschedule();
     static int idle(void *);
 };

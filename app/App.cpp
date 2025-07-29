@@ -5,18 +5,20 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-static constexpr int N          = 5;
-static constexpr int ITERATIONS = 5;
+static constexpr int N          = 3;
+static constexpr int ITERATIONS = 100;
 
 static Thread *threads[N];
-// static Semaphore *mutex;
+static Semaphore *mutex;
 
 int thread_function(void *arg) {
     int id = (int)(long long)arg;
     int i  = ITERATIONS;
     while (i--) {
+        // mutex->p();
         Logger::println("THREAD: %d | Core: %d\n", id, CPU::core());
-        // Alarm::usleep(10000);
+        // mutex->v();
+        //     Alarm::usleep(10000);
     }
     return 0;
 }
@@ -24,7 +26,7 @@ int thread_function(void *arg) {
 int main(void *) {
     // Logger::println("Application: \n");
 
-    // mutex = new (Memory::APPLICATION) Semaphore(1);
+    mutex = new (Memory::APPLICATION) Semaphore(1);
 
     // int i = ITERATIONS;
     // while (i--) {
@@ -35,7 +37,7 @@ int main(void *) {
         threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);
     }
 
-    for (int i = 0; i < N; i++) Thread::join(threads[i]);
+    for (int i = 0; i < N; i++) Thread::join(*threads[i]);
 
     // for (int i = 0; i < N; i++) delete threads[i];
 

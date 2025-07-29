@@ -3,22 +3,26 @@
 #include <Thread.hpp>
 
 extern int main(void *);
-static volatile int _count;
+static volatile int _count = 0;
+static volatile bool boot  = true;
 static Scheduler<Thread> _scheduler;
-static Spin spin;
 
-__attribute__((naked)) static void dispatch() {
+__attribute__((naked)) void Thread::dispatch() {
     CPU::Context::push();
     Thread::running()->context = CPU::Context::get();
     Thread *next               = _scheduler.chose();
-    spin.release();
+    next->state                = Thread::State::RUNNING;
 
-    next->state = Thread::State::RUNNING;
+    spin.release();
     CPU::Context::jump(next->context);
 }
 
 int Thread::idle(void *) {
-    while (_count > Machine::CPUS) {
+    // while (_count > Machine::CPUS) {
+    while (1) {
+        // spin.lock();
+        // TRACE("[Thread::idle] {core=%d}\n", CPU::core());
+        // spin.unlock();
         if (!_scheduler.empty()) yield();
     }
 
@@ -62,35 +66,33 @@ Thread::~Thread() {
         _scheduler.insert(&joining->link);
     }
 
-    Memory::kfree(stack);
     spin.unlock();
+    Memory::kfree(stack);
 }
 
-void Thread::join(Thread *thread) {
-    ERROR(thread == nullptr, "[Thread::join] Invalid thread.");
-
+void Thread::join(Thread &thread) {
     spin.lock();
 
-    if (thread == running()) {
+    if (&thread == running()) {
         spin.unlock();
         ERROR(true, "[Thread::join] Join itself.");
         return;
     }
 
-    if (thread->joining != nullptr) {
+    if (thread.joining != nullptr) {
         spin.unlock();
         ERROR(true, "[Thread::join] Already joined.");
         return;
     }
 
-    if (thread->state == State::FINISHED) {
+    if (thread.state == State::FINISHED) {
         spin.unlock();
         return;
     }
 
     Thread *previous = running();
     previous->state  = State::WAITING;
-    thread->joining  = previous;
+    thread.joining   = previous;
 
     dispatch();
 }
@@ -113,19 +115,58 @@ void Thread::exit() {
 
 void Thread::init() {
     new (Memory::SYSTEM) Thread(idle, 0, Criterion::IDLE);
-    if (!CPU::core()) new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
+    if (CPU::core() == 0) {
+        new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
+        while (_count < Machine::CPUS + 1);
+        boot = false;
+    }
 
-    spin.lock();
+    while (boot);
+    CPU::Interrupt::disable();
+}
+
+void Thread::run() {
+    spin.acquire();
     Thread *first = _scheduler.chose();
     spin.release();
 
     first->state = State::RUNNING;
-    CPU::thread(first);
-
-    while (_count < Machine::CPUS);
+    CPU::Context::jump(first->context);
 }
 
-void Thread::run() { CPU::Context::jump(running()->context); }
+void Thread::reschedule() {
+    // auto previous = running();
+
+    // spin.acquire();
+
+    // if (_scheduler.empty()) {
+    //     spin.release();
+    //     return;
+    // }
+
+    // previous->state = State::READY;
+    // _scheduler.insert(&previous->link);
+
+    // dispatch();
+
+    // auto previous = running();
+
+    // spin.acquire();
+
+    // if (_scheduler.empty()) {
+    //     spin.release();
+    //     return;
+    // }
+
+    // Thread *next    = _scheduler.chose();
+    // previous->state = State::READY;
+    //_scheduler.insert(&previous->link);
+
+    // spin.release();
+
+    // next->state = Thread::State::RUNNING;
+    // CPU::thread(next);
+}
 
 void Thread::yield() {
     auto previous = running();
@@ -136,50 +177,24 @@ void Thread::yield() {
     dispatch();
 }
 
-void Thread::reschedule() {
-    auto previous = running();
+void Thread::sleep(Queue *waiting) {
+    auto previous     = running();
+    previous->state   = State::WAITING;
+    previous->waiting = waiting;
+    waiting->insert(&previous->link);
 
-    spin.acquire();
-
-    if (_scheduler.empty()) {
-        spin.release();
-        return;
-    }
-
-    previous->state = State::READY;
-    _scheduler.insert(&previous->link);
-    Thread *next = _scheduler.chose();
-
-    spin.release();
-
-    next->state = Thread::State::RUNNING;
-    CPU::thread(next);
+    dispatch();
 }
 
-// void Thread::sleep(Queue *waiting) {
-//     spin.lock();
-//
-//     auto previous     = running();
-//     previous->state   = State::WAITING;
-//     previous->waiting = waiting;
-//     waiting->insert(&previous->link);
-//
-//     dispatch();
-// }
-//
-// void Thread::wakeup(Queue *waiting) {
-//     spin.acquire();
-//
-//     ERROR(waiting->empty(), "[Thread::wakeup] Empty queue.");
-//
-//     Element *awake        = waiting->next();
-//     awake->value->state   = State::READY;
-//     awake->value->waiting = nullptr;
-//
-//     _scheduler.insert(awake);
-//
-//     spin.release();
-// }
+void Thread::wakeup(Queue *waiting) {
+    ERROR(waiting->empty(), "[Thread::wakeup] Empty queue.");
+
+    Element *awake        = waiting->next();
+    awake->value->state   = State::READY;
+    awake->value->waiting = nullptr;
+
+    _scheduler.insert(awake);
+}
 
 // int entry(void *arg) {
 //     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));

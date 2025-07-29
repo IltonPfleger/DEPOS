@@ -47,9 +47,11 @@ struct Kernel {
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push<true>();
-    Thread::running()->context = CPU::Context::get();
+    // Thread::running()->context = CPU::Context::get();
     Kernel::trap();
-    CPU::Context::jump(Thread::running()->context);
+    // CPU::Context::jump(Thread::running()->context);
+    CPU::Context::pop();
+    // CPU::Context::jump(CPU::Context::get());
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {

@@ -74,7 +74,7 @@ struct CPU {
             }
         }
 
-        __attribute__((naked)) static inline void pop() {
+        __attribute__((naked)) static void pop() {
             __asm__ volatile(
                 "ld t0, 232(sp)\n"
                 "csrw mepc, t0\n"
@@ -115,7 +115,8 @@ struct CPU {
 
         __attribute__((naked)) static void jump(Context *c) {
             __asm__ volatile("mv sp, %0" ::"r"(c));
-            __asm__ volatile("li t0, 0x1800\ncsrs mstatus, t0\n" ::: "t0");
+            __asm__ volatile("li t0, 0x1880\ncsrs mstatus, t0" ::: "t0");
+
             pop();
         }
 
@@ -123,59 +124,50 @@ struct CPU {
     };
 
     struct Atomic {
-        static void lock(int *value) {
+        static int tsl(volatile int *value) {
+            int old;
             __asm__ volatile(
                 "1:\n"
-                "lr.w t0, (%0)\n"
-                "bnez t0, 1b\n"
-                "sc.w t0, %1, (%0)\n"
-                "bnez t0, 1b\n"
-                "fence rw, rw\n"
-                :
+                "lr.w %0, (%1)\n"
+                "sc.w t3, %2, (%1)\n"
+                "bnez t3, 1b\n"
+                : "=&r"(old)
                 : "r"(value), "r"(1)
-                : "t0", "memory");
+                : "t3", "cc", "memory");
+            return old;
         }
 
-        static void unlock(int *value) {
-            __asm__ volatile("fence rw, rw" ::: "memory");
-            *value = 0;
-        }
-
-        static int fdec(int *value) {
-            int ret;
+        static int fdec(volatile int *value) {
+            int old;
             __asm__ volatile(
                 "1: lr.w %0, 0(%1)\n"
                 "addi t0, %0, -1\n"
                 "sc.w t0, t0, 0(%1)\n"
                 "bnez t0, 1b\n"
-                : "=&r"(ret)
+                : "=&r"(old)
                 : "r"(value)
-                : "memory");
-            return ret - 1;
+                : "t0", "cc", "memory");
+            return old - 1;
         }
 
-        static int fadd(int *value) {
-            int ret;
+        static int fadd(volatile int *value) {
+            int old;
             __asm__ volatile(
                 "1: lr.w %0, 0(%1)\n"
                 "addi t0, %0, 1\n"
                 "sc.w t0, t0, 0(%1)\n"
                 "bnez t0, 1b\n"
-                : "=&r"(ret)
+                : "=&r"(old)
                 : "r"(value)
-                : "memory");
-            return ret + 1;
+                : "t0", "cc", "memory");
+            return old + 1;
         }
     };
 
     struct Trap {
         enum class Type { INTERRUPT = 1, EXCEPTION = 0 };
 
-        static uintptr_t cause() {
-            uintptr_t r;
-            __asm__ volatile("csrr %0, mcause" : "=r"(r));
-            return r;
-        }
+        __attribute__((naked)) static uintmax_t cause() { __asm__ volatile("csrr a0, mcause\nret"); }
 
         static Type type() { return static_cast<Type>(cause() >> (Machine::XLEN - 1)); }
 
