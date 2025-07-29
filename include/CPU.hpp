@@ -7,13 +7,21 @@ struct CPU {
 
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
 
-    __attribute__((naked)) static unsigned int core() { __asm__ volatile("csrr a0, mhartid\nret"); }
-
-    __attribute__((naked)) static void *thread() { __asm__ volatile("mv a0, tp\nret"); }
-
-    __attribute__((always_inline)) static inline void thread(void *ptr) {
-        __asm__ volatile("mv tp, %0" ::"r"(ptr) : "tp", "memory");
+    __attribute__((always_inline)) [[nodiscard]] static inline unsigned int core() {
+        unsigned int id;
+        __asm__ volatile("csrr %0, mhartid" : "=r"(id));
+        return id;
     }
+
+    __attribute__((always_inline)) [[nodiscard]] static inline void *thread() {
+        void *tp;
+        __asm__ volatile("mv %0, tp" : "=r"(tp));
+        return tp;
+    }
+
+    //__attribute__((always_inline)) static inline void thread(void *ptr) {
+    //    __asm__ volatile("mv tp, %0" ::"r"(ptr) : "tp");
+    //}
 
     struct Context {
         uintptr_t ra;
@@ -27,7 +35,8 @@ struct CPU {
             ra  = reinterpret_cast<uintptr_t>(exit);
             tp  = reinterpret_cast<uintptr_t>(thread);
             epc = reinterpret_cast<uintptr_t>(entry);
-            a0  = reinterpret_cast<uintptr_t>(arg);
+            // estatus = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
+            a0 = reinterpret_cast<uintptr_t>(arg);
         }
 
         template <bool is_interrupt = false>
@@ -63,7 +72,7 @@ struct CPU {
                 "sd s9, 208(sp)\n"
                 "sd s10, 216(sp)\n"
                 "sd s11, 224(sp)\n" ::
-                    : "memory");
+                    : "t0", "memory");
             if constexpr (is_interrupt) {
                 __asm__ volatile(
                     "csrr t0, mepc\n"
@@ -116,11 +125,14 @@ struct CPU {
         __attribute__((naked)) static void jump(Context *c) {
             __asm__ volatile("mv sp, %0" ::"r"(c));
             __asm__ volatile("li t0, 0x1880\ncsrs mstatus, t0" ::: "t0");
-
             pop();
         }
 
-        __attribute__((naked)) static Context *get() { __asm__ volatile("mv a0, sp\nret" ::: "a0"); }
+        __attribute__((always_inline)) [[nodiscard]] static inline Context *get() {
+            Context *sp;
+            __asm__ volatile("mv %0, sp" : "=r"(sp));
+            return sp;
+        }
     };
 
     struct Atomic {

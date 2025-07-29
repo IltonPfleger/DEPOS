@@ -135,37 +135,20 @@ void Thread::run() {
 }
 
 void Thread::reschedule() {
-    // auto previous = running();
+    auto previous = running();
 
-    // spin.acquire();
+    spin.acquire();
 
-    // if (_scheduler.empty()) {
-    //     spin.release();
-    //     return;
-    // }
+    if (_scheduler.empty()) {
+        spin.release();
+        return;
+    }
 
-    // previous->state = State::READY;
-    // _scheduler.insert(&previous->link);
+    previous->state = State::READY;
+    _scheduler.insert(&previous->link);
 
-    // dispatch();
-
-    // auto previous = running();
-
-    // spin.acquire();
-
-    // if (_scheduler.empty()) {
-    //     spin.release();
-    //     return;
-    // }
-
-    // Thread *next    = _scheduler.chose();
-    // previous->state = State::READY;
-    //_scheduler.insert(&previous->link);
-
-    // spin.release();
-
-    // next->state = Thread::State::RUNNING;
-    // CPU::thread(next);
+    dispatch();
+    CPU::Interrupt::disable();
 }
 
 void Thread::yield() {
@@ -177,23 +160,23 @@ void Thread::yield() {
     dispatch();
 }
 
-void Thread::sleep(Queue *waiting) {
+void Thread::sleep(Queue &waiting) {
     auto previous = running();
 
     spin.acquire();
     previous->state   = State::WAITING;
-    previous->waiting = waiting;
-    waiting->insert(&previous->link);
+    previous->waiting = &waiting;
+    waiting.insert(&previous->link);
 
     dispatch();
 }
 
-void Thread::wakeup(Queue *waiting) {
+void Thread::wakeup(Queue &waiting) {
     spin.acquire();
 
-    ERROR(waiting->empty(), "[Thread::waiting] Empty queue.\n");
+    ERROR(waiting.empty(), "[Thread::waiting] Empty queue.\n");
 
-    Element *awake        = waiting->next();
+    Element *awake        = waiting.next();
     awake->value->state   = State::READY;
     awake->value->waiting = nullptr;
     _scheduler.insert(awake);
