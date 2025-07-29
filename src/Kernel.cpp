@@ -52,7 +52,9 @@ __attribute__((naked, aligned(4))) void ktrap() {
     //  Thread::running()->context = CPU::Context::get();
     Kernel::trap();
     //  CPU::Context::jump(Thread::running()->context);
-    CPU::Context::jump(CPU::Context::get());
+    //CPU::Context::jump(CPU::Context::get());
+    CPU::Context::pop();
+    CPU::iret();
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {

@@ -138,7 +138,7 @@ void operator delete(void *ptr, unsigned long bytes) {
     void *free = nullptr;
     if (order == Traits::Memory::Page::ORDER) {
         free                      = heaps[role].blocks[order];
-        heaps[role].blocks[order] = nullptr;
+        heaps[role].blocks[order] = heaps[role].blocks[order]->next;
     }
 
     lock.unlock();

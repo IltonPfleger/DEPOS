@@ -10,9 +10,9 @@ static Spin spin{!Spin::LOCKED};
 
 __attribute__((naked)) void Thread::dispatch() {
     CPU::Context::push();
-    Thread::running()->context = CPU::Context::get();
-    Thread *next               = _scheduler.chose();
-    next->state                = Thread::State::RUNNING;
+    running()->context = CPU::Context::get();
+    Thread *next       = _scheduler.chose();
+    next->state        = State::RUNNING;
 
     spin.release();
     CPU::Context::jump(next->context);
@@ -26,7 +26,7 @@ int Thread::idle(void *) {
         if (!_scheduler.empty()) yield();
     }
 
-    // CPU::Interrupt::disable();
+    CPU::Interrupt::disable();
     if (CPU::core() == 0) Logger::println("*** QUARK Shutdown! ***\n");
     for (;;);  // CPU::idle();
     return 0;
@@ -66,7 +66,7 @@ Thread::~Thread() {
         _scheduler.insert(&joining->link);
     }
 
-    spin.unlock();
+    spin.release();
     Memory::kfree(stack);
 }
 
@@ -160,29 +160,29 @@ void Thread::yield() {
     dispatch();
 }
 
-void Thread::sleep(Queue &waiting) {
-    auto previous = running();
-
-    spin.acquire();
-    previous->state   = State::WAITING;
-    previous->waiting = &waiting;
-    waiting.insert(&previous->link);
-
-    dispatch();
-}
-
-void Thread::wakeup(Queue &waiting) {
-    spin.acquire();
-
-    ERROR(waiting.empty(), "[Thread::waiting] Empty queue.\n");
-
-    Element *awake        = waiting.next();
-    awake->value->state   = State::READY;
-    awake->value->waiting = nullptr;
-    _scheduler.insert(awake);
-
-    spin.release();
-}
+// void Thread::sleep(Queue &waiting) {
+//     auto previous = running();
+//
+//     spin.acquire();
+//     previous->state   = State::WAITING;
+//     previous->waiting = &waiting;
+//     waiting.insert(&previous->link);
+//
+//     dispatch();
+// }
+//
+// void Thread::wakeup(Queue &waiting) {
+//     spin.acquire();
+//
+//     ERROR(waiting.empty(), "[Thread::waiting] Empty queue.\n");
+//
+//     Element *awake        = waiting.next();
+//     awake->value->state   = State::READY;
+//     awake->value->waiting = nullptr;
+//     _scheduler.insert(awake);
+//
+//     spin.release();
+// }
 
 // int entry(void *arg) {
 //     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));
