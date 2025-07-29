@@ -192,12 +192,11 @@ void Thread::wakeup(Queue *waiting) {
     spin.acquire();
 
     ERROR(waiting->empty(), "[Thread::waiting] Empty queue.\n");
-    // if (!waiting->empty()) {
+
     Element *awake        = waiting->next();
     awake->value->state   = State::READY;
     awake->value->waiting = nullptr;
     _scheduler.insert(awake);
-    //}
 
     spin.release();
 }

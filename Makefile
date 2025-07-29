@@ -6,8 +6,8 @@ OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 
 CFLAGS := -Wall -Wextra -pedantic -mcmodel=medany -Iinclude
-CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles -fcheck-new -Wno-dangling-pointer -Wno-sized-deallocation
-CFLAGS += -g -std=c++20 -march=rv64imac -mabi=lp64 -O0
+CFLAGS +=  -ffunction-sections -fdata-sections -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles -fcheck-new -Wno-dangling-pointer -Wno-sized-deallocation
+CFLAGS += -g -std=c++20 -O0
 
 BUILD := build
 TARGET := $(BUILD)/quark

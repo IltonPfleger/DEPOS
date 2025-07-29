@@ -2,10 +2,11 @@
 #include <CPU.hpp>
 #include <Thread.hpp>
 
-struct Semaphore {
-    volatile int value;
+class Semaphore {
+    volatile int value = 1;
     Thread::Queue waiting;
 
+   public:
     void p() {
         CPU::Interrupt::disable();
         if (CPU::Atomic::fdec(value) < 1)

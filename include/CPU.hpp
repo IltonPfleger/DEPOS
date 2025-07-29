@@ -141,26 +141,26 @@ struct CPU {
             int old;
             __asm__ volatile(
                 "1: lr.w %0, (%1)\n"
-                "addi %0, %0, -1\n"
-                "sc.w t3, %0, (%1)\n"
+                "addi t3, %0, -1\n"
+                "sc.w t3, t3, (%1)\n"
                 "bnez t3, 1b\n"
                 : "=&r"(old)
                 : "r"(&value)
                 : "t3", "cc", "memory");
-            return old + 1;
+            return old;
         }
 
         static int finc(volatile int &value) {
             int old;
             __asm__ volatile(
                 "1: lr.w %0, (%1)\n"
-                "addi %0, %0, 1\n"
-                "sc.w t3, %0, (%1)\n"
+                "addi t3, %0, 1\n"
+                "sc.w t3, t3, (%1)\n"
                 "bnez t3, 1b\n"
                 : "=&r"(old)
                 : "r"(&value)
                 : "t3", "cc", "memory");
-            return old - 1;
+            return old;
         }
     };
 
