@@ -9,16 +9,15 @@ static constexpr int N          = 3;
 static constexpr int ITERATIONS = 100;
 
 static Thread *threads[N];
-static Semaphore *mutex;
+static Semaphore mutex;
 
 int thread_function(void *arg) {
     int id = (int)(long long)arg;
     int i  = ITERATIONS;
     while (i--) {
-        mutex->p();
-		Logger::println("VALUE: %d\n", mutex->value);
+        mutex.p();
         Logger::println("THREAD: %d | Core: %d\n", id, CPU::core());
-        mutex->v();
+        mutex.v();
         // Thread::yield();
         // Alarm::usleep(10000);
     }
@@ -26,14 +25,7 @@ int thread_function(void *arg) {
 }
 
 int main(void *) {
-    // Logger::println("Application: \n");
-
-    mutex = new (Memory::APPLICATION) Semaphore{1};
-
-    // int i = ITERATIONS;
-    // while (i--) {
-    //     Logger::println("APP %d\n", i);
-    // }
+    Logger::println("Application: \n");
 
     for (int i = 0; i < N; i++) {
         threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);
@@ -44,6 +36,5 @@ int main(void *) {
     // for (int i = 0; i < N; i++) delete threads[i];
 
     Logger::println("Application Done!\n");
-    //  while (1);
     return 0;
 }

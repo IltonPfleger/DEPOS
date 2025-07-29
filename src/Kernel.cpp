@@ -1,5 +1,6 @@
 #include <CPU.hpp>
 #include <IO/Debug.hpp>
+#include <Language.hpp>
 #include <Machine.hpp>
 #include <Memory.hpp>
 #include <Thread.hpp>
@@ -10,6 +11,7 @@ static char STACK[Machine::CPUS][Traits::Memory::Page::SIZE];
 struct Kernel {
     static void init() {
         if (CPU::core() == 0) {
+            // Language::init();
             Logger::init();
             Logger::println("\nQ U A R K | [μKernel]\n");
             Memory::init();
@@ -47,11 +49,8 @@ struct Kernel {
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push<true>();
-    // Thread::running()->context = CPU::Context::get();
     Kernel::trap();
-    // CPU::Context::jump(Thread::running()->context);
     CPU::Context::pop();
-    // CPU::Context::jump(CPU::Context::get());
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
@@ -60,3 +59,5 @@ __attribute__((naked, section(".boot"))) void kboot() {
     CPU::Stack::set(STACK[CPU::core()] + Traits::Memory::Page::SIZE);
     Kernel::init();
 }
+
+void cPlusPlus() {}
