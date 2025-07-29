@@ -83,7 +83,7 @@ struct CPU {
             }
         }
 
-        __attribute__((naked)) static void pop() {
+        __attribute__((always_inline)) static inline void pop() {
             __asm__ volatile(
                 "ld t0, 232(sp)\n"
                 "csrw mepc, t0\n"
@@ -119,13 +119,13 @@ struct CPU {
                 "addi sp, sp, %0\n"
                 :
                 : "i"(sizeof(Context)));
-            iret();
         }
 
         __attribute__((naked)) static void jump(Context *c) {
             __asm__ volatile("mv sp, %0" ::"r"(c));
             __asm__ volatile("li t0, 0x1880\ncsrs mstatus, t0" ::: "t0");
             pop();
+            iret();
         }
 
         __attribute__((always_inline)) [[nodiscard]] static inline Context *get() {
