@@ -6,6 +6,7 @@ extern int main(void *);
 static volatile int _count = 0;
 static volatile bool boot  = true;
 static Scheduler<Thread> _scheduler;
+static Spin spin{!Spin::LOCKED};
 
 __attribute__((naked)) void Thread::dispatch() {
     CPU::Context::push();
@@ -18,8 +19,7 @@ __attribute__((naked)) void Thread::dispatch() {
 }
 
 int Thread::idle(void *) {
-    // while (_count > Machine::CPUS) {
-    while (1) {
+    while (_count > Machine::CPUS) {
         // spin.lock();
         // TRACE("[Thread::idle] {core=%d}\n", CPU::core());
         // spin.unlock();
@@ -27,7 +27,7 @@ int Thread::idle(void *) {
     }
 
     // CPU::Interrupt::disable();
-    // if (CPU::core() == 0) Logger::println("*** QUARK Shutdown! ***\n");
+    if (CPU::core() == 0) Logger::println("*** QUARK Shutdown! ***\n");
     for (;;);  // CPU::idle();
     return 0;
 }
@@ -191,13 +191,13 @@ void Thread::sleep(Queue *waiting) {
 void Thread::wakeup(Queue *waiting) {
     spin.acquire();
 
-    ERROR(waiting->empty(), "[Thread::wakeup] Empty queue.");
-
+    ERROR(waiting->empty(), "[Thread::waiting] Empty queue.\n");
+    // if (!waiting->empty()) {
     Element *awake        = waiting->next();
     awake->value->state   = State::READY;
     awake->value->waiting = nullptr;
-
     _scheduler.insert(awake);
+    //}
 
     spin.release();
 }

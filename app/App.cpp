@@ -16,9 +16,11 @@ int thread_function(void *arg) {
     int i  = ITERATIONS;
     while (i--) {
         mutex->p();
+		Logger::println("VALUE: %d\n", mutex->value);
         Logger::println("THREAD: %d | Core: %d\n", id, CPU::core());
         mutex->v();
-        //     Alarm::usleep(10000);
+        // Thread::yield();
+        // Alarm::usleep(10000);
     }
     return 0;
 }
@@ -26,7 +28,7 @@ int thread_function(void *arg) {
 int main(void *) {
     // Logger::println("Application: \n");
 
-    mutex = new (Memory::APPLICATION) Semaphore(1);
+    mutex = new (Memory::APPLICATION) Semaphore{1};
 
     // int i = ITERATIONS;
     // while (i--) {

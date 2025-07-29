@@ -22,7 +22,6 @@ struct Thread {
     Element link;
     Queue *waiting;
 
-    static inline Spin spin{!Spin::LOCKED};
 
     ~Thread();
     Thread(Function, Argument, Criterion);

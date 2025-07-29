@@ -137,30 +137,30 @@ struct CPU {
             return old;
         }
 
-        static int fdec(volatile int *value) {
+        static int fdec(volatile int &value) {
             int old;
             __asm__ volatile(
-                "1: lr.w %0, 0(%1)\n"
-                "addi t0, %0, -1\n"
-                "sc.w t0, t0, 0(%1)\n"
-                "bnez t0, 1b\n"
+                "1: lr.w %0, (%1)\n"
+                "addi %0, %0, -1\n"
+                "sc.w t3, %0, (%1)\n"
+                "bnez t3, 1b\n"
                 : "=&r"(old)
-                : "r"(value)
-                : "t0", "cc", "memory");
-            return old - 1;
+                : "r"(&value)
+                : "t3", "cc", "memory");
+            return old + 1;
         }
 
-        static int fadd(volatile int *value) {
+        static int finc(volatile int &value) {
             int old;
             __asm__ volatile(
-                "1: lr.w %0, 0(%1)\n"
-                "addi t0, %0, 1\n"
-                "sc.w t0, t0, 0(%1)\n"
-                "bnez t0, 1b\n"
+                "1: lr.w %0, (%1)\n"
+                "addi %0, %0, 1\n"
+                "sc.w t3, %0, (%1)\n"
+                "bnez t3, 1b\n"
                 : "=&r"(old)
-                : "r"(value)
-                : "t0", "cc", "memory");
-            return old + 1;
+                : "r"(&value)
+                : "t3", "cc", "memory");
+            return old - 1;
         }
     };
 
