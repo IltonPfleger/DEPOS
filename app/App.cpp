@@ -15,9 +15,9 @@ int thread_function(void *arg) {
     int id = (int)(long long)arg;
     int i  = ITERATIONS;
     while (i--) {
-        // mutex->p();
+        mutex->p();
         Logger::println("THREAD: %d | Core: %d\n", id, CPU::core());
-        // mutex->v();
+        mutex->v();
         //     Alarm::usleep(10000);
     }
     return 0;

@@ -10,17 +10,14 @@ class Semaphore {
     Semaphore(int value) : value(value) {}
 
     void p() {
-        Thread::spin.lock();
-        if (CPU::Atomic::fdec(&value) < 0) {
-            Thread::sleep(&waiting);
-        } else {
-            Thread::spin.unlock();
-        }
+        CPU::Interrupt::disable();
+        if (CPU::Atomic::fdec(&value) < 0) Thread::sleep(&waiting);
+        CPU::Interrupt::enable();
     }
 
     void v() {
-        Thread::spin.lock();
+        CPU::Interrupt::disable();
         if (CPU::Atomic::fadd(&value) <= 0) Thread::wakeup(&waiting);
-        Thread::spin.unlock();
+        CPU::Interrupt::enable();
     }
 };
