@@ -22,7 +22,6 @@ struct Thread {
     Element link;
     Queue *waiting;
 
-
     ~Thread();
     Thread(Function, Argument, Criterion);
     static inline Thread *running() { return reinterpret_cast<Thread *>(CPU::thread()); }
@@ -30,8 +29,8 @@ struct Thread {
     static void exit();
     static void init();
     static void run();
-    static void sleep(Queue *);
-    static void wakeup(Queue *);
+    static void sleep(Queue &);
+    static void wakeup(Queue &);
     static void yield();
     static void dispatch();
     static void reschedule();
