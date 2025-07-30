@@ -30,13 +30,14 @@ struct CPU {
         uintptr_t a0, a1, a2, a3, a4, a5, a6, a7;
         uintptr_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
         uintptr_t epc;
+        uintptr_t estatus;
 
         Context(int (*entry)(void *), void (*exit)(), void *thread, void *arg) {
-            ra  = reinterpret_cast<uintptr_t>(exit);
-            tp  = reinterpret_cast<uintptr_t>(thread);
-            epc = reinterpret_cast<uintptr_t>(entry);
-            // estatus = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
-            a0 = reinterpret_cast<uintptr_t>(arg);
+            ra      = reinterpret_cast<uintptr_t>(exit);
+            tp      = reinterpret_cast<uintptr_t>(thread);
+            epc     = reinterpret_cast<uintptr_t>(entry);
+            estatus = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
+            a0      = reinterpret_cast<uintptr_t>(arg);
         }
 
         template <bool is_interrupt = false>
@@ -75,16 +76,28 @@ struct CPU {
                     : "t0", "memory");
             if constexpr (is_interrupt) {
                 __asm__ volatile(
+                    "csrr t0, mstatus\n"
+                    "sd t0, 240(sp)\n"
                     "csrr t0, mepc\n"
                     "sd t0, 232(sp)\n" ::
                         : "t0", "memory");
             } else {
-                __asm__ volatile("sd ra, 232(sp)" ::: "memory");
+                __asm__ volatile(
+                    "li t0, 0x1800\n"
+                    "csrs mstatus, t0\n"
+                    "li t0, 0x80\n"
+                    "csrc mstatus, t0\n"
+                    "csrr t0, mstatus\n"
+                    "sd t0, 240(sp)\n"
+                    "sd ra, 232(sp)" ::
+                        : "t0", "memory");
             }
         }
 
         __attribute__((always_inline)) static inline void pop() {
             __asm__ volatile(
+                "ld t0, 240(sp)\n"
+                "csrw mstatus, t0\n"
                 "ld t0, 232(sp)\n"
                 "csrw mepc, t0\n"
                 "ld ra, 0(sp)\n"
@@ -123,7 +136,6 @@ struct CPU {
 
         __attribute__((naked)) static void jump(Context *c) {
             __asm__ volatile("mv sp, %0" ::"r"(c));
-            __asm__ volatile("li t0, 0x1880\ncsrs mstatus, t0" ::: "t0");
             pop();
             iret();
         }
