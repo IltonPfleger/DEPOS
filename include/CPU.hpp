@@ -148,44 +148,9 @@ struct CPU {
     };
 
     struct Atomic {
-        static int tsl(volatile int *value) {
-            int old;
-            __asm__ volatile(
-                "1:\n"
-                "lr.w %0, (%1)\n"
-                "sc.w t3, %2, (%1)\n"
-                "bnez t3, 1b\n"
-                : "=&r"(old)
-                : "r"(value), "r"(1)
-                : "t3", "cc", "memory");
-            return old;
-        }
-
-        static int fdec(volatile int &value) {
-            int old;
-            __asm__ volatile(
-                "1: lr.w %0, (%1)\n"
-                "addi t3, %0, -1\n"
-                "sc.w t3, t3, (%1)\n"
-                "bnez t3, 1b\n"
-                : "=&r"(old)
-                : "r"(&value)
-                : "t3", "cc", "memory");
-            return old;
-        }
-
-        static int finc(volatile int &value) {
-            int old;
-            __asm__ volatile(
-                "1: lr.w %0, (%1)\n"
-                "addi t3, %0, 1\n"
-                "sc.w t3, t3, (%1)\n"
-                "bnez t3, 1b\n"
-                : "=&r"(old)
-                : "r"(&value)
-                : "t3", "cc", "memory");
-            return old;
-        }
+        static int tsl(volatile int &value) { return __sync_lock_test_and_set(&value, 1); }
+        static int fdec(volatile int &value) { return __atomic_fetch_sub(&value, 1, __ATOMIC_SEQ_CST); }
+        static int finc(volatile int &value) { return __atomic_fetch_add(&value, 1, __ATOMIC_SEQ_CST); }
     };
 
     struct Trap {

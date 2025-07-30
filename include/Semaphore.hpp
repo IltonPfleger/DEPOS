@@ -1,5 +1,6 @@
 #pragma once
 #include <CPU.hpp>
+#include <IO/Debug.hpp>
 #include <Thread.hpp>
 
 class Semaphore {
@@ -9,6 +10,7 @@ class Semaphore {
    public:
     void p() {
         CPU::Interrupt::disable();
+        // TRACE("p() %d\n", value);
         if (CPU::Atomic::fdec(value) < 1)
             Thread::sleep(waiting);
         else
@@ -17,6 +19,7 @@ class Semaphore {
 
     void v() {
         CPU::Interrupt::disable();
+        // TRACE("v() %d\n", value);
         if (CPU::Atomic::finc(value) < 0) Thread::wakeup(waiting);
         CPU::Interrupt::enable();
     }

@@ -6,7 +6,7 @@ class Spin {
     volatile int locked         = !LOCKED;
     static constexpr int LOCKED = 1;
 
-    void acquire() { while (CPU::Atomic::tsl(&locked)); }
+    void acquire() { while (CPU::Atomic::tsl(locked)); }
 
     void release() { locked = !LOCKED; }
 
