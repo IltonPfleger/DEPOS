@@ -161,7 +161,7 @@ void Thread::yield() {
     CPU::Interrupt::enable();
 }
 
-void Thread::sleep(Queue &waiting) {
+void Thread::sleep(Queue &waiting, Spin &lock) {
     auto previous = running();
 
     spin.acquire();
@@ -169,18 +169,19 @@ void Thread::sleep(Queue &waiting) {
     previous->waiting = &waiting;
     waiting.insert(&previous->link);
 
+    lock.release();
     dispatch();
 }
 
 void Thread::wakeup(Queue &waiting) {
     spin.acquire();
 
-    if (!waiting.empty()) {
-        Element *awake        = waiting.next();
-        awake->value->state   = State::READY;
-        awake->value->waiting = nullptr;
-        _scheduler.insert(awake);
-    }
+    ERROR(waiting.empty(), "[Thread::wakeup] Empty queue.");
+
+    Element *awake        = waiting.next();
+    awake->value->state   = State::READY;
+    awake->value->waiting = nullptr;
+    _scheduler.insert(awake);
 
     spin.release();
 }

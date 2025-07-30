@@ -6,21 +6,21 @@
 class Semaphore {
     volatile int value = 1;
     Thread::Queue waiting;
+    Spin spin;
 
    public:
     void p() {
-        CPU::Interrupt::disable();
-        // TRACE("p() %d\n", value);
+        spin.lock();
         if (CPU::Atomic::fdec(value) < 1)
-            Thread::sleep(waiting);
+            Thread::sleep(waiting, spin);
         else
-            CPU::Interrupt::enable();
+            spin.release();
+        CPU::Interrupt::enable();
     }
 
     void v() {
-        CPU::Interrupt::disable();
-        // TRACE("v() %d\n", value);
+        spin.lock();
         if (CPU::Atomic::finc(value) < 0) Thread::wakeup(waiting);
-        CPU::Interrupt::enable();
+        spin.unlock();
     }
 };
