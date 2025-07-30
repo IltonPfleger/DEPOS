@@ -5,19 +5,19 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-static constexpr int N          = 3;
+static constexpr int N          = 5;
 static constexpr int ITERATIONS = 100;
 
 static Thread *threads[N];
-// static Semaphore mutex;
+static Semaphore mutex;
 
 int thread_function(void *arg) {
     int id = (int)(long long)arg;
     int i  = ITERATIONS;
     while (i--) {
-        // mutex.p();
+        mutex.p();
         Logger::println("THREAD: %d | Core: %d\n", id, CPU::core());
-        // mutex.v();
+        mutex.v();
         //  Thread::yield();
         //  Alarm::usleep(10000);
     }

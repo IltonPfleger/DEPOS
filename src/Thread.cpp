@@ -161,29 +161,29 @@ void Thread::yield() {
     CPU::Interrupt::enable();
 }
 
-// void Thread::sleep(Queue &waiting) {
-//     auto previous = running();
-//
-//     spin.acquire();
-//     previous->state   = State::WAITING;
-//     previous->waiting = &waiting;
-//     waiting.insert(&previous->link);
-//
-//     dispatch();
-// }
-//
-// void Thread::wakeup(Queue &waiting) {
-//     spin.acquire();
-//
-//     ERROR(waiting.empty(), "[Thread::waiting] Empty queue.\n");
-//
-//     Element *awake        = waiting.next();
-//     awake->value->state   = State::READY;
-//     awake->value->waiting = nullptr;
-//     _scheduler.insert(awake);
-//
-//     spin.release();
-// }
+void Thread::sleep(Queue &waiting) {
+    auto previous = running();
+
+    spin.acquire();
+    previous->state   = State::WAITING;
+    previous->waiting = &waiting;
+    waiting.insert(&previous->link);
+
+    dispatch();
+}
+
+void Thread::wakeup(Queue &waiting) {
+    spin.acquire();
+
+    if (!waiting.empty()) {
+        Element *awake        = waiting.next();
+        awake->value->state   = State::READY;
+        awake->value->waiting = nullptr;
+        _scheduler.insert(awake);
+    }
+
+    spin.release();
+}
 
 // int entry(void *arg) {
 //     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));
