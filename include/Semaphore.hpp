@@ -6,7 +6,6 @@
 class Semaphore {
     int value = 1;
     Thread::Queue waiting;
-    Spin spin;
 
    public:
     void p() {
