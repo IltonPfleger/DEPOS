@@ -95,6 +95,7 @@ void Thread::join(Thread &thread) {
     thread.joining   = previous;
 
     dispatch();
+    CPU::Interrupt::enable();
 }
 
 void Thread::exit() {
@@ -148,7 +149,6 @@ void Thread::reschedule() {
     _scheduler.insert(&previous->link);
 
     dispatch();
-    CPU::Interrupt::disable();
 }
 
 void Thread::yield() {
@@ -158,6 +158,7 @@ void Thread::yield() {
     previous->state = State::READY;
     _scheduler.insert(&previous->link);
     dispatch();
+    CPU::Interrupt::enable();
 }
 
 // void Thread::sleep(Queue &waiting) {

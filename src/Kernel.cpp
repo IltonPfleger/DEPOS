@@ -49,10 +49,7 @@ struct Kernel {
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push<true>();
-    //  Thread::running()->context = CPU::Context::get();
     Kernel::trap();
-    //  CPU::Context::jump(Thread::running()->context);
-    //CPU::Context::jump(CPU::Context::get());
     CPU::Context::pop();
     CPU::iret();
 }
