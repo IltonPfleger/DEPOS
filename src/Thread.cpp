@@ -20,15 +20,12 @@ __attribute__((naked)) void Thread::dispatch() {
 
 int Thread::idle(void *) {
     while (_count > Machine::CPUS) {
-        // spin.lock();
-        // TRACE("[Thread::idle] {core=%d}\n", CPU::core());
-        // spin.unlock();
         if (!_scheduler.empty()) yield();
     }
 
     CPU::Interrupt::disable();
     if (CPU::core() == 0) Logger::println("*** QUARK Shutdown! ***\n");
-    for (;;);  // CPU::idle();
+    for (;;);
     return 0;
 }
 
@@ -161,29 +158,23 @@ void Thread::yield() {
     CPU::Interrupt::enable();
 }
 
-void Thread::sleep(Queue &waiting, Spin &lock) {
-    auto previous = running();
+void Thread::lock() { spin.lock(); }
+void Thread::unlock() { spin.unlock(); }
 
-    spin.acquire();
+void Thread::sleep(Queue &waiting) {
+    auto previous     = running();
     previous->state   = State::WAITING;
     previous->waiting = &waiting;
     waiting.insert(&previous->link);
-
-    lock.release();
     dispatch();
 }
 
 void Thread::wakeup(Queue &waiting) {
-    spin.acquire();
-
     ERROR(waiting.empty(), "[Thread::wakeup] Empty queue.");
-
     Element *awake        = waiting.next();
     awake->value->state   = State::READY;
     awake->value->waiting = nullptr;
     _scheduler.insert(awake);
-
-    spin.release();
 }
 
 // int entry(void *arg) {

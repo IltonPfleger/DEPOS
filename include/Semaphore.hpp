@@ -10,17 +10,17 @@ class Semaphore {
 
    public:
     void p() {
-        spin.lock();
+        Thread::lock();
         if (CPU::Atomic::fdec(value) < 1)
-            Thread::sleep(waiting, spin);
+            Thread::sleep(waiting);
         else
-            spin.release();
+            Thread::unlock();
         CPU::Interrupt::enable();
     }
 
     void v() {
-        spin.lock();
+        Thread::lock();
         if (CPU::Atomic::finc(value) < 0) Thread::wakeup(waiting);
-        spin.unlock();
+        Thread::unlock();
     }
 };
