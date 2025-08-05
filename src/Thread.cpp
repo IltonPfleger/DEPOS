@@ -4,9 +4,9 @@
 
 extern int main(void *);
 static volatile int _count = 0;
-static volatile bool boot  = true;
 static Scheduler<Thread> _scheduler;
 static Spin spin{!Spin::LOCKED};
+static Spin boot{!Spin::LOCKED};
 
 //__attribute__((naked)) void save() {
 //    CPU::Context::push();
@@ -134,11 +134,10 @@ void Thread::init() {
     if (CPU::core() == 0) {
         new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
         while (_count < Machine::CPUS + 1);
-        boot = false;
+        boot.release();
     }
-
-    while (boot);
-    CPU::Interrupt::disable();
+    boot.lock();
+    boot.release();
 }
 
 void Thread::run() {
