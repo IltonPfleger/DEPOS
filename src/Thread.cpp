@@ -8,6 +8,24 @@ static volatile bool boot  = true;
 static Scheduler<Thread> _scheduler;
 static Spin spin{!Spin::LOCKED};
 
+//__attribute__((naked)) void save() {
+//    CPU::Context::push();
+//    reinterpret_cast<Thread *>(CPU::thread())->context = CPU::Context::get();
+//    __asm__ volatile("ret");
+//}
+//
+// void Thread::dispatch() {
+//    save();
+//    if (running()->context == CPU::Context::get()) {
+//        // spin.acquire();
+//        // if (running()->state == State::READY) _scheduler.push(&running()->link);
+//        Thread *next = _scheduler.chose();
+//        next->state  = State::RUNNING;
+//        spin.release();
+//        CPU::Context::jump(next->context);
+//    }
+//}
+
 __attribute__((naked)) void Thread::dispatch() {
     CPU::Context::push();
     running()->context = CPU::Context::get();
@@ -149,12 +167,8 @@ void Thread::reschedule() {
 }
 
 void Thread::yield() {
-    auto previous = running();
-
-    spin.lock();
-    previous->state = State::READY;
-    _scheduler.insert(&previous->link);
-    dispatch();
+    CPU::Interrupt::disable();
+    reschedule();
     CPU::Interrupt::enable();
 }
 
