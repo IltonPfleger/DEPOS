@@ -21,10 +21,6 @@ struct CPU {
         return tp;
     }
 
-    //__attribute__((always_inline)) static inline void thread(void *ptr) {
-    //    __asm__ volatile("mv tp, %0" ::"r"(ptr) : "tp");
-    //}
-
     struct Context {
         uintptr_t ra;
         uintptr_t tp;
@@ -96,7 +92,6 @@ struct CPU {
                 : "i"(sizeof(Context)));
         }
 
-        template <bool is_interrupt = false>
         __attribute__((always_inline)) static inline void push() {
             __asm__ volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
             __asm__ volatile(

@@ -48,7 +48,7 @@ struct Kernel {
 
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
-    CPU::Context::push<true>();
+    CPU::Context::push();
     Kernel::trap();
     CPU::Context::pop();
     CPU::iret();
