@@ -13,6 +13,8 @@ struct CPU {
         return id;
     }
 
+    __attribute__((always_inline)) static inline void stack(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
+
     __attribute__((always_inline)) [[nodiscard]] static inline void *thread() {
         void *tp;
         __asm__ volatile("mv %0, tp" : "=r"(tp));
@@ -38,6 +40,60 @@ struct CPU {
             epc     = reinterpret_cast<uintptr_t>(entry);
             estatus = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
             a0      = reinterpret_cast<uintptr_t>(arg);
+        }
+
+        __attribute__((always_inline)) static inline void save() {
+            __asm__ volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
+            __asm__ volatile(
+                "sd ra, 0(sp)\n"
+                "sd tp, 8(sp)\n"
+                "sd a0, 72(sp)\n"
+                "sd s0, 136(sp)\n"
+                "sd s1, 144(sp)\n"
+                "sd s2, 152(sp)\n"
+                "sd s3, 160(sp)\n"
+                "sd s4, 168(sp)\n"
+                "sd s5, 176(sp)\n"
+                "sd s6, 184(sp)\n"
+                "sd s7, 192(sp)\n"
+                "sd s8, 200(sp)\n"
+                "sd s9, 208(sp)\n"
+                "sd s10, 216(sp)\n"
+                "sd s11, 224(sp)\n"
+                "li t0, 0x1800\n"
+                "csrs mstatus, t0\n"
+                "li t0, 0x80\n"
+                "csrc mstatus, t0\n"
+                "csrr t0, mstatus\n"
+                "sd t0, 240(sp)\n"
+                "sd ra, 232(sp)" ::
+                    : "t0", "memory");
+        }
+
+        __attribute__((always_inline)) static inline void load() {
+            __asm__ volatile(
+                "ld t0, 240(sp)\n"
+                "csrw mstatus, t0\n"
+                "ld t0, 232(sp)\n"
+                "csrw mepc, t0\n"
+                "ld ra, 0(sp)\n"
+                "ld tp, 8(sp)\n"
+                "ld a0, 72(sp)\n"
+                "ld s0, 136(sp)\n"
+                "ld s1, 144(sp)\n"
+                "ld s2, 152(sp)\n"
+                "ld s3, 160(sp)\n"
+                "ld s4, 168(sp)\n"
+                "ld s5, 176(sp)\n"
+                "ld s6, 184(sp)\n"
+                "ld s7, 192(sp)\n"
+                "ld s8, 200(sp)\n"
+                "ld s9, 208(sp)\n"
+                "ld s10, 216(sp)\n"
+                "ld s11, 224(sp)\n"
+                "addi sp, sp, %0\n"
+                :
+                : "i"(sizeof(Context)));
         }
 
         template <bool is_interrupt = false>
@@ -72,26 +128,12 @@ struct CPU {
                 "sd s8, 200(sp)\n"
                 "sd s9, 208(sp)\n"
                 "sd s10, 216(sp)\n"
-                "sd s11, 224(sp)\n" ::
+                "sd s11, 224(sp)\n"
+                "csrr t0, mstatus\n"
+                "sd t0, 240(sp)\n"
+                "csrr t0, mepc\n"
+                "sd t0, 232(sp)\n" ::
                     : "t0", "memory");
-            if constexpr (is_interrupt) {
-                __asm__ volatile(
-                    "csrr t0, mstatus\n"
-                    "sd t0, 240(sp)\n"
-                    "csrr t0, mepc\n"
-                    "sd t0, 232(sp)\n" ::
-                        : "t0", "memory");
-            } else {
-                __asm__ volatile(
-                    "li t0, 0x1800\n"
-                    "csrs mstatus, t0\n"
-                    "li t0, 0x80\n"
-                    "csrc mstatus, t0\n"
-                    "csrr t0, mstatus\n"
-                    "sd t0, 240(sp)\n"
-                    "sd ra, 232(sp)" ::
-                        : "t0", "memory");
-            }
         }
 
         __attribute__((always_inline)) static inline void pop() {
@@ -136,7 +178,7 @@ struct CPU {
 
         __attribute__((naked)) static void jump(Context *c) {
             __asm__ volatile("mv sp, %0" ::"r"(c));
-            pop();
+            load();
             iret();
         }
 
@@ -181,9 +223,5 @@ struct CPU {
             static void enable() { __asm__ volatile("li t0, 0x80\ncsrs mie, t0" ::: "t0"); }
             static void disable() { __asm__ volatile("li t0, 0x80\ncsrc mie, t0" ::: "t0"); }
         };
-    };
-
-    struct Stack {
-        __attribute__((always_inline)) static inline void set(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
     };
 };

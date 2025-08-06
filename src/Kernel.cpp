@@ -57,6 +57,6 @@ __attribute__((naked, aligned(4))) void ktrap() {
 __attribute__((naked, section(".boot"))) void kboot() {
     CPU::Interrupt::disable();
     CPU::Trap::set(ktrap);
-    CPU::Stack::set(STACK[CPU::core()] + Traits::Memory::Page::SIZE);
+    CPU::stack(STACK[CPU::core()] + Traits::Memory::Page::SIZE);
     Kernel::init();
 }

@@ -27,7 +27,7 @@ static Spin boot{!Spin::LOCKED};
 //}
 
 __attribute__((naked)) void Thread::dispatch() {
-    CPU::Context::push();
+    CPU::Context::save();
     running()->context = CPU::Context::get();
     Thread *next       = _scheduler.chose();
     next->state        = State::RUNNING;
