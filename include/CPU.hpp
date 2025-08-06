@@ -56,14 +56,13 @@ struct CPU {
                 "sd s9, 208(sp)\n"
                 "sd s10, 216(sp)\n"
                 "sd s11, 224(sp)\n"
-                "li t0, 0x1800\n"
-                "csrs mstatus, t0\n"
-                "li t0, 0x80\n"
-                "csrc mstatus, t0\n"
                 "csrr t0, mstatus\n"
+                "andi t0, t0, ~0x80\n"
+                "li t1, 0x1800\n"
+                "or t0, t0, t1\n"
                 "sd t0, 240(sp)\n"
                 "sd ra, 232(sp)" ::
-                    : "t0", "memory");
+                    : "t0", "t1", "memory");
         }
 
         __attribute__((always_inline)) static inline void load() {
