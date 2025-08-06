@@ -24,6 +24,7 @@ struct Thread {
 
     ~Thread();
     Thread(Function, Argument, Criterion);
+
     static inline Thread *running() { return reinterpret_cast<Thread *>(CPU::thread()); }
     static void join(Thread &);
     static void exit();
