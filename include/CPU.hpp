@@ -29,13 +29,15 @@ struct CPU {
         uintptr_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
         uintptr_t epc;
         uintptr_t estatus;
+        uintptr_t sp;
 
-        Context(int (*entry)(void *), void (*exit)(), void *thread, void *arg) {
-            ra      = reinterpret_cast<uintptr_t>(exit);
-            tp      = reinterpret_cast<uintptr_t>(thread);
-            epc     = reinterpret_cast<uintptr_t>(entry);
-            estatus = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
-            a0      = reinterpret_cast<uintptr_t>(arg);
+        Context(int (*entry)(void *), void (*exit)(), void *tp, void *a0) {
+            ra       = reinterpret_cast<uintptr_t>(exit);
+            epc      = reinterpret_cast<uintptr_t>(entry);
+            estatus  = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
+            this->tp = reinterpret_cast<uintptr_t>(tp);
+            this->a0 = reinterpret_cast<uintptr_t>(a0);
+            this->sp = reinterpret_cast<uintptr_t>(this) + sizeof(Context);
         }
 
         __attribute__((always_inline)) static inline void save() {

@@ -6,25 +6,7 @@ extern int main(void *);
 static volatile int _count = 0;
 static Scheduler<Thread> _scheduler;
 static Spin spin{!Spin::LOCKED};
-static Spin boot{!Spin::LOCKED};
-
-//__attribute__((naked)) void save() {
-//    CPU::Context::push();
-//    reinterpret_cast<Thread *>(CPU::thread())->context = CPU::Context::get();
-//    __asm__ volatile("ret");
-//}
-//
-// void Thread::dispatch() {
-//    save();
-//    if (running()->context == CPU::Context::get()) {
-//        // spin.acquire();
-//        // if (running()->state == State::READY) _scheduler.push(&running()->link);
-//        Thread *next = _scheduler.chose();
-//        next->state  = State::RUNNING;
-//        spin.release();
-//        CPU::Context::jump(next->context);
-//    }
-//}
+static Spin boot{Spin::LOCKED};
 
 __attribute__((naked)) void Thread::dispatch() {
     CPU::Context::save();
@@ -49,12 +31,13 @@ int Thread::idle(void *) {
 
 Thread::Thread(Function f, Argument a, Criterion c)
     : stack(reinterpret_cast<char *>(Memory::kmalloc())),
-      context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context)) CPU::Context(f, exit, this, a)),
       state(State::READY),
       joining(0),
       criterion(c),
       link(Element(this, c.priority())),
       waiting(0) {
+    auto top = stack + Traits::Memory::Page::SIZE;
+    context  = new (top - sizeof(CPU::Context)) CPU::Context(f, exit, this, a);
     spin.lock();
     _scheduler.insert(&link);
     _count = _count + 1;
