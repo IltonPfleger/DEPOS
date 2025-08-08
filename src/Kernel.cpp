@@ -8,10 +8,9 @@
 
 static char STACK[Machine::CPUS][Traits::Memory::Page::SIZE];
 
-struct Kernel {
-    static void init() {
+namespace Kernel {
+    void init() {
         if (CPU::core() == 0) {
-            Language::init();
             Logger::init();
             Logger::println("\nQ U A R K | [μKernel]\n");
             Memory::init();
@@ -25,31 +24,25 @@ struct Kernel {
         for (;;);
     }
 
-    static void trap() {
-        if (CPU::Trap::type() == CPU::Trap::Type::EXCEPTION) {
-            uintptr_t mcause, mepc, mtval;
-            __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
-            __asm__ volatile("csrr %0, mepc" : "=r"(mepc));
-            __asm__ volatile("csrr %0, mtval" : "=r"(mtval));
-            ERROR(true,
-                  "Ohh it's a Trap!\n"
-                  "mcause: %p\n"
-                  "mepc: %p\n"
-                  "mtval: %p\n",
-                  mcause, mepc, mtval);
-        }
-
-        switch (CPU::Interrupt::type()) {
-            case CPU::Interrupt::Type::TIMER:
-                Timer::handler();
-        }
+    void exception() {
+        uintptr_t mcause, mepc, mtval;
+        __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
+        __asm__ volatile("csrr %0, mepc" : "=r"(mepc));
+        __asm__ volatile("csrr %0, mtval" : "=r"(mtval));
+        ERROR(true,
+              "Ohh it's a Trap!\n"
+              "mcause: %p\n"
+              "mepc: %p\n"
+              "mtval: %p\n",
+              mcause, mepc, mtval);
     }
+
 };
 
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
     CPU::Context::push();
-    Kernel::trap();
+    CPU::Trap::handler();
     CPU::Context::pop();
     CPU::iret();
 }

@@ -2,6 +2,14 @@
 
 #include <Machine.hpp>
 
+namespace Timer {
+    void handler();
+}
+
+namespace Kernel {
+    void exception();
+}
+
 struct CPU {
     __attribute__((always_inline)) static inline void iret() { __asm__ volatile("mret"); }
 
@@ -192,11 +200,32 @@ struct CPU {
     };
 
     struct Trap {
-        enum class Type { INTERRUPT = 1, EXCEPTION = 0 };
+        using Handler = void (*)();
 
-        __attribute__((naked)) static uintmax_t cause() { __asm__ volatile("csrr a0, mcause\nret"); }
+        static inline Handler interrupts[8] = {
+            nullptr,         // 0
+            nullptr,         // 1
+            nullptr,         // 2
+            nullptr,         // 3
+            nullptr,         // 4
+            nullptr,         // 5
+            nullptr,         // 6
+            Timer::handler,  // 7
+        };
 
-        static Type type() { return static_cast<Type>(cause() >> (Machine::XLEN - 1)); }
+        __attribute__((naked)) static uintmax_t icause() { __asm__ volatile("csrr a0, mcause\nret"); }
+
+        static void handler() {
+            auto cause        = icause();
+            bool is_interrupt = cause >> (Machine::XLEN - 1);
+            auto code         = (cause << 1) >> 1;
+
+            if (is_interrupt) {
+                interrupts[code]();
+            } else {
+                Kernel::exception();
+            }
+        }
 
         __attribute__((always_inline)) static inline void set(void (*ptr)()) {
             __asm__ volatile("csrw mtvec, %0" ::"r"(ptr));
@@ -204,14 +233,6 @@ struct CPU {
     };
 
     struct Interrupt {
-        enum class Type { TIMER = 7 };
-
-        static Type type() {
-            uintptr_t r = Trap::cause();
-            r           = (r << 1) >> 1;
-            return static_cast<Type>(r);
-        }
-
         __attribute__((always_inline)) static inline void disable() { __asm__ volatile("csrci mstatus, 0x8"); }
         __attribute__((always_inline)) static inline void enable() { __asm__ volatile("csrsi mstatus, 0x8"); }
 
