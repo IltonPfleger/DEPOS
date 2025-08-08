@@ -31,13 +31,12 @@ int Thread::idle(void *) {
 
 Thread::Thread(Function f, Argument a, Criterion c)
     : stack(reinterpret_cast<char *>(Memory::kmalloc())),
+      context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context)) CPU::Context(f, exit, this, a)),
       state(State::READY),
       joining(0),
       criterion(c),
       link(Element(this, c.priority())),
       waiting(0) {
-    auto top = stack + Traits::Memory::Page::SIZE;
-    context  = new (top - sizeof(CPU::Context)) CPU::Context(f, exit, this, a);
     spin.lock();
     _scheduler.insert(&link);
     _count = _count + 1;
