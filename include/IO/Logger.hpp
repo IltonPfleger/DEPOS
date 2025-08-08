@@ -1,7 +1,7 @@
 #pragma once
-#include <Spin.hpp>
+#include <Traits.hpp>
 
 struct Logger {
-    static void init();
+    static inline void init() { Traits::Debug::Device::init(); }
     static void println(const char *format, ...);
 };

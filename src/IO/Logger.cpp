@@ -1,22 +1,26 @@
 #include <IO/Logger.hpp>
-#include <Machine.hpp>
-#include <Spin.hpp>
-#include <Traits.hpp>
 #include <cstdarg>
 
 constexpr char HEX[] = "0123456789ABCDEF";
 
 inline void put(char value) { Traits::Debug::Device::put(value); }
-void Logger::init() { Traits::Debug::Device::init(); }
 
 template <typename T>
 void printNumber(T value) {
+    char buffer[32];
+    int position = 0;
+
     if (value < 0) {
         put('-');
-        value *= -1;
+        value = -value;
     }
-    if (value >= 10) printNumber<T>(value / 10);
-    put('0' + (value % 10));
+
+    do {
+        buffer[position++] = '0' + (value % 10);
+        value /= 10;
+    } while (value > 0);
+
+    while (position--) put(buffer[position]);
 }
 
 template <typename T>
@@ -28,7 +32,7 @@ static void printHex(T value) {
     }
 }
 
-void Logger::println(const char *format, ...) {
+void Logger::println(const char* format, ...) {
     va_list args;
     va_start(args, format);
     while (*format) {
@@ -36,8 +40,8 @@ void Logger::println(const char *format, ...) {
             put(*format++);
             continue;
         }
-        format++;
-        switch (*format) {
+
+        switch (*++format) {
             case 'c':
                 put((char)va_arg(args, int));
                 break;
@@ -48,7 +52,7 @@ void Logger::println(const char *format, ...) {
                 printNumber<unsigned int>(va_arg(args, unsigned int));
                 break;
             case 'x':
-                printHex<int>(va_arg(args, int));
+                printHex<unsigned int>(va_arg(args, unsigned int));
                 break;
             case 'p':
                 printHex<uintptr_t>(va_arg(args, uintptr_t));
@@ -59,7 +63,7 @@ void Logger::println(const char *format, ...) {
                 break;
             }
         }
-        format++;
+        ++format;
     }
     va_end(args);
 }
