@@ -15,19 +15,11 @@ struct CPU {
 
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
 
-    __attribute__((always_inline)) [[nodiscard]] static inline unsigned int core() {
-        unsigned int id;
-        __asm__ volatile("csrr %0, mhartid" : "=r"(id));
-        return id;
-    }
-
     __attribute__((always_inline)) static inline void stack(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
 
-    __attribute__((always_inline)) [[nodiscard]] static inline void *thread() {
-        void *tp;
-        __asm__ volatile("mv %0, tp" : "=r"(tp));
-        return tp;
-    }
+    __attribute__((naked)) static unsigned int core() { __asm__ volatile("csrr a0, mhartid\nret"); }
+
+    __attribute__((naked)) static void *thread() { __asm__ volatile("mv a0, tp\nret"); }
 
     struct Context {
         uintptr_t ra;
@@ -194,7 +186,7 @@ struct CPU {
     };
 
     struct Atomic {
-        static int tsl(volatile int &value) { return __sync_lock_test_and_set(&value, 1); }
+        static int tsl(volatile int &value) { return __atomic_test_and_set(&value, __ATOMIC_SEQ_CST); }
         static int fdec(volatile int &value) { return __atomic_fetch_sub(&value, 1, __ATOMIC_SEQ_CST); }
         static int finc(volatile int &value) { return __atomic_fetch_add(&value, 1, __ATOMIC_SEQ_CST); }
     };
