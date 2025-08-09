@@ -36,8 +36,7 @@ namespace Kernel {
               "mtval: %p\n",
               mcause, mepc, mtval);
     }
-
-};
+}
 
 __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Interrupt::disable();
