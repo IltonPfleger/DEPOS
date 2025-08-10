@@ -91,8 +91,8 @@ struct CPU {
         }
 
         __attribute__((always_inline)) static inline void push() {
-            __asm__ volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
             __asm__ volatile(
+                "addi sp, sp, %0\n"
                 "sd ra, 0(sp)\n"
                 "sd tp, 8(sp)\n"
                 "sd t0, 16(sp)\n"
@@ -125,11 +125,11 @@ struct CPU {
                 "csrr t0, mstatus\n"
                 "sd t0, 240(sp)\n"
                 "csrr t0, mepc\n"
-                "sd t0, 232(sp)\n" ::
-                    : "t0", "memory");
+                "sd t0, 232(sp)\n" ::"i"(-sizeof(Context))
+                : "memory");
         }
 
-        __attribute__((always_inline)) static inline void pop() {
+        __attribute__((naked)) static void pop() {
             __asm__ volatile(
                 "ld t0, 240(sp)\n"
                 "csrw mstatus, t0\n"
@@ -167,6 +167,7 @@ struct CPU {
                 "addi sp, sp, %0\n"
                 :
                 : "i"(sizeof(Context)));
+            CPU::iret();
         }
 
         __attribute__((naked)) static void jump(Context *c) {
