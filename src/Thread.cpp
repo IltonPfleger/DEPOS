@@ -10,9 +10,15 @@ static Spin boot{Spin::LOCKED};
 
 __attribute__((naked)) void Thread::dispatch() {
     CPU::Context::save();
-    running()->context = CPU::Context::get();
-    Thread *next       = _scheduler.chose();
-    next->state        = State::RUNNING;
+    auto previous     = running();
+    previous->context = CPU::Context::get();
+
+    if (previous->state == State::READY) {
+        _scheduler.insert(&previous->link);
+    }
+
+    Thread *next = _scheduler.chose();
+    next->state  = State::RUNNING;
 
     spin.release();
     CPU::Context::load(next->context);
@@ -132,18 +138,12 @@ void Thread::run() {
 }
 
 void Thread::reschedule() {
-    auto previous = running();
+    if (_scheduler.empty()) return;
+
+    auto previous   = running();
+    previous->state = State::READY;
 
     spin.acquire();
-
-    if (_scheduler.empty()) {
-        spin.release();
-        return;
-    }
-
-    previous->state = State::READY;
-    _scheduler.insert(&previous->link);
-
     dispatch();
 }
 
