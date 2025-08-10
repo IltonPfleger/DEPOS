@@ -64,7 +64,7 @@ struct CPU {
                 : "memory");
         }
 
-        __attribute__((always_inline)) static inline void load() {
+        __attribute__((naked)) static inline void load() {
             __asm__ volatile(
                 "ld t0, 240(sp)\n"
                 "csrw mstatus, t0\n"
@@ -88,6 +88,7 @@ struct CPU {
                 "addi sp, sp, %0\n"
                 :
                 : "i"(sizeof(Context)));
+            CPU::iret();
         }
 
         __attribute__((always_inline)) static inline void push() {
