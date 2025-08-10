@@ -37,7 +37,7 @@ int Thread::idle(void *) {
 
 Thread::Thread(Function f, Argument a, Criterion c)
     : stack(reinterpret_cast<char *>(Memory::kmalloc())),
-      context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context)) CPU::Context(f, exit, this, a)),
+      context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context)) CPU::Context(f, a, exit, this)),
       state(State::READY),
       joining(0),
       criterion(c),
