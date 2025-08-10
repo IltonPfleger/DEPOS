@@ -29,7 +29,6 @@ struct CPU {
         uintptr_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
         uintptr_t epc;
         uintptr_t estatus;
-        uintptr_t sp;
 
         Context(int (*entry)(void *), void (*exit)(), void *tp, void *a0) {
             ra       = reinterpret_cast<uintptr_t>(exit);
@@ -37,15 +36,13 @@ struct CPU {
             estatus  = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
             this->tp = reinterpret_cast<uintptr_t>(tp);
             this->a0 = reinterpret_cast<uintptr_t>(a0);
-            this->sp = reinterpret_cast<uintptr_t>(this) + sizeof(Context);
         }
 
         __attribute__((always_inline)) static inline void save() {
-            __asm__ volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
             __asm__ volatile(
+                "addi sp, sp, %0\n"
                 "sd ra, 0(sp)\n"
                 "sd tp, 8(sp)\n"
-                "sd a0, 72(sp)\n"
                 "sd s0, 136(sp)\n"
                 "sd s1, 144(sp)\n"
                 "sd s2, 152(sp)\n"
@@ -63,8 +60,8 @@ struct CPU {
                 "li t1, 0x1800\n"
                 "or t0, t0, t1\n"
                 "sd t0, 240(sp)\n"
-                "sd ra, 232(sp)" ::
-                    : "t0", "t1", "memory");
+                "sd ra, 232(sp)" ::"i"(-sizeof(Context))
+                : "memory");
         }
 
         __attribute__((always_inline)) static inline void load() {
