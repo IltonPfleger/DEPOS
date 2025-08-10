@@ -15,7 +15,7 @@ __attribute__((naked)) void Thread::dispatch() {
     next->state        = State::RUNNING;
 
     spin.release();
-    CPU::Context::jump(next->context);
+    CPU::Context::load(next->context);
 }
 
 int Thread::idle(void *) {
@@ -128,7 +128,7 @@ void Thread::run() {
     spin.release();
 
     first->state = State::RUNNING;
-    CPU::Context::jump(first->context);
+    CPU::Context::load(first->context);
 }
 
 void Thread::reschedule() {

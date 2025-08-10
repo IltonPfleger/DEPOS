@@ -64,8 +64,10 @@ struct CPU {
                 : "memory");
         }
 
-        __attribute__((naked)) static inline void load() {
+        __attribute__((naked)) static inline void load(Context *c) {
+            (void)c;
             __asm__ volatile(
+                "mv sp, a0\n"
                 "ld t0, 240(sp)\n"
                 "csrw mstatus, t0\n"
                 "ld t0, 232(sp)\n"
@@ -169,12 +171,6 @@ struct CPU {
                 :
                 : "i"(sizeof(Context)));
             CPU::iret();
-        }
-
-        __attribute__((naked)) static void jump(Context *c) {
-            __asm__ volatile("mv sp, %0" ::"r"(c));
-            load();
-            iret();
         }
 
         __attribute__((always_inline)) [[nodiscard]] static inline Context *get() {
