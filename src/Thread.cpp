@@ -14,10 +14,10 @@ __attribute__((naked)) void Thread::dispatch() {
     previous->context = CPU::Context::get();
 
     if (previous->state == State::READY) {
-        _scheduler.insert(&previous->link);
+        _scheduler.push(&previous->link);
     }
 
-    Thread *next = _scheduler.chose();
+    Thread *next = _scheduler.pop();
     next->state  = State::RUNNING;
 
     spin.release();
@@ -44,7 +44,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
       link(Element(this, c.priority())),
       waiting(0) {
     spin.lock();
-    _scheduler.insert(&link);
+    _scheduler.push(&link);
     _count = _count + 1;
     spin.unlock();
 }
@@ -66,7 +66,7 @@ Thread::~Thread() {
 
     if (joining) {
         joining->state = State::READY;
-        _scheduler.insert(&joining->link);
+        _scheduler.push(&joining->link);
     }
 
     spin.release();
@@ -99,7 +99,7 @@ void Thread::exit() {
 
     if (previous->joining) {
         previous->joining->state = State::READY;
-        _scheduler.insert(&previous->joining->link);
+        _scheduler.push(&previous->joining->link);
         previous->joining = 0;
     }
 
@@ -120,7 +120,7 @@ void Thread::init() {
 
 void Thread::run() {
     spin.acquire();
-    Thread *first = _scheduler.chose();
+    Thread *first = _scheduler.pop();
     spin.release();
 
     first->state = State::RUNNING;
@@ -159,7 +159,7 @@ void Thread::wakeup(Queue &waiting) {
     Element *awake        = waiting.next();
     awake->value->state   = State::READY;
     awake->value->waiting = nullptr;
-    _scheduler.insert(awake);
+    _scheduler.push(awake);
 }
 
 // int entry(void *arg) {

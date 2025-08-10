@@ -27,15 +27,15 @@ struct RR {
 // };
 
 template <typename T>
-struct Scheduler : POFO<T *> {
+struct Scheduler : private POFO<T *> {
     using Queue = POFO<T *>;
     using Queue::empty;
-    using Queue::insert;
-    using Queue::next;
     using Queue::remove;
 
-    T *chose() {
-        auto e = next();
+    void push(Queue::Node *n) { Queue::insert(n); }
+
+    T *pop() {
+        auto e = Queue::next();
         ERROR(!e, "[Scheduler<T>::chose] Empty queue.");
         return e->value;
     }
