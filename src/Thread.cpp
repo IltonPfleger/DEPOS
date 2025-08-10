@@ -74,14 +74,10 @@ Thread::~Thread() {
 }
 
 void Thread::join(Thread &thread) {
+    auto previous = running();
+    ERROR(&thread == previous, "[Thread::join] Join itself.");
+
     spin.lock();
-
-    if (&thread == running()) {
-        spin.unlock();
-        ERROR(true, "[Thread::join] Join itself.");
-        return;
-    }
-
     if (thread.joining != nullptr) {
         spin.unlock();
         ERROR(true, "[Thread::join] Already joined.");
@@ -93,9 +89,8 @@ void Thread::join(Thread &thread) {
         return;
     }
 
-    Thread *previous = running();
-    previous->state  = State::WAITING;
-    thread.joining   = previous;
+    previous->state = State::WAITING;
+    thread.joining  = previous;
 
     dispatch();
     CPU::Interrupt::enable();
