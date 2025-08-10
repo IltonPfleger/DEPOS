@@ -76,14 +76,9 @@ Thread::~Thread() {
 void Thread::join(Thread &thread) {
     auto previous = running();
     ERROR(&thread == previous, "[Thread::join] Join itself.");
+    ERROR(thread.joining, "[Thread::join] Already joined.");
 
     spin.lock();
-    if (thread.joining != nullptr) {
-        spin.unlock();
-        ERROR(true, "[Thread::join] Already joined.");
-        return;
-    }
-
     if (thread.state == State::FINISHED) {
         spin.unlock();
         return;
