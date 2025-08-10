@@ -43,7 +43,6 @@ __attribute__((naked, aligned(4))) void ktrap() {
     CPU::Context::push();
     CPU::Trap::handler();
     CPU::Context::pop();
-    CPU::iret();
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
