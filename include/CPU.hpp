@@ -30,12 +30,12 @@ struct CPU {
         uintptr_t epc;
         uintptr_t estatus;
 
-        Context(int (*entry)(void *), void (*exit)(), void *tp, void *a0) {
-            ra       = reinterpret_cast<uintptr_t>(exit);
-            epc      = reinterpret_cast<uintptr_t>(entry);
-            estatus  = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
-            this->tp = reinterpret_cast<uintptr_t>(tp);
-            this->a0 = reinterpret_cast<uintptr_t>(a0);
+        Context(int (*entry)(void *), void *a0, void (*exit)(), void *tp) {
+            this->ra      = reinterpret_cast<uintptr_t>(exit);
+            this->epc     = reinterpret_cast<uintptr_t>(entry);
+            this->estatus = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
+            this->tp      = reinterpret_cast<uintptr_t>(tp);
+            this->a0      = reinterpret_cast<uintptr_t>(a0);
         }
 
         __attribute__((always_inline)) static inline void save() {
