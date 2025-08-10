@@ -13,10 +13,10 @@ namespace Timer {
 
     static inline Channel _scheduler;
 
-    static void reset() {
+    static void reset(auto core) {
         static constexpr uintmax_t ticks = Machine::CLINT::CLOCK / Traits::Timer::Frequency;
-        *reinterpret_cast<volatile uintmax_t *>(Machine::CLINT::MTIMECMP + (CPU::core() * 8)) =
-            *Machine::CLINT::MTIME + ticks;
+        auto counter                     = reinterpret_cast<volatile uintmax_t *>(Machine::CLINT::MTIMECMP);
+        counter[core]                    = *Machine::CLINT::MTIME + ticks;
     }
 
     void init() {
@@ -34,7 +34,8 @@ namespace Timer {
     }
 
     void handler() {
-        reset();
+        auto core = CPU::core();
+        reset(core);
         //  if constexpr (Traits::Alarm::Enable) {
         //      if (--_channels[ALARM]._current[CPU::core()] == 0) {
         //          _channels[ALARM]._current[CPU::core()] = _channels[ALARM]._initial;
@@ -43,8 +44,8 @@ namespace Timer {
         //  }
 
         if constexpr (Traits::Scheduler<Thread>::Criterion::Timed) {
-            if (--_scheduler._current[CPU::core()] == 0) {
-                _scheduler._current[CPU::core()] = _scheduler._initial;
+            if (--_scheduler._current[core] == 0) {
+                _scheduler._current[core] = _scheduler._initial;
                 Thread::reschedule();
             }
         }
