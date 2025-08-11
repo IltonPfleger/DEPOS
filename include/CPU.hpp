@@ -13,6 +13,8 @@ namespace Kernel {
 struct CPU {
     __attribute__((always_inline)) static inline void iret() { __asm__ volatile("mret"); }
 
+    __attribute__((always_inline)) static inline void ret() { __asm__ volatile("ret"); }
+
     __attribute__((always_inline)) static inline void idle() { __asm__ volatile("wfi"); }
 
     __attribute__((always_inline)) static inline void stack(void *ptr) { __asm__ volatile("mv sp, %0" ::"r"(ptr)); }
@@ -31,11 +33,19 @@ struct CPU {
         uintptr_t estatus;
 
         Context(int (*entry)(void *), void *a0, void (*exit)(), void *tp) {
-            this->ra      = reinterpret_cast<uintptr_t>(exit);
-            this->epc     = reinterpret_cast<uintptr_t>(entry);
-            this->estatus = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
-            this->tp      = reinterpret_cast<uintptr_t>(tp);
-            this->a0      = reinterpret_cast<uintptr_t>(a0);
+            this->ra = reinterpret_cast<uintptr_t>(start);
+            this->tp = reinterpret_cast<uintptr_t>(tp);
+            this->s0 = reinterpret_cast<uintptr_t>(entry);
+            this->s1 = reinterpret_cast<uintptr_t>(a0);
+            this->s2 = reinterpret_cast<uintptr_t>(exit);
+        }
+
+        __attribute__((naked)) static void start() {
+            register int (*f)(void *) asm("s0");
+            register void *a asm("s1");
+            register void (*exit)() asm("s2");
+            f(a);
+            exit();
         }
 
         __attribute__((always_inline)) static inline void save() {
@@ -54,13 +64,7 @@ struct CPU {
                 "sd s8, 200(sp)\n"
                 "sd s9, 208(sp)\n"
                 "sd s10, 216(sp)\n"
-                "sd s11, 224(sp)\n"
-                "csrr t0, mstatus\n"
-                "andi t0, t0, ~0x80\n"
-                "li t1, 0x1800\n"
-                "or t0, t0, t1\n"
-                "sd t0, 240(sp)\n"
-                "sd ra, 232(sp)" ::"i"(-sizeof(Context))
+                "sd s11, 224(sp)\n" ::"i"(-sizeof(Context))
                 : "memory");
         }
 
@@ -90,11 +94,9 @@ struct CPU {
                 : "r"(c->s0), "r"(c->s1), "r"(c->s2), "r"(c->s3), "r"(c->s4), "r"(c->s5), "r"(c->s6), "r"(c->s7),
                   "r"(c->s8), "r"(c->s9), "r"(c->s10), "r"(c->s11)
                 : "memory");
-            asm volatile("csrw mepc, %0" ::"r"(c->epc));
-            asm volatile("csrw mstatus, %0" ::"r"(c->estatus));
             asm volatile("mv a0, %0" ::"r"(c->a0));
             asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
-            CPU::iret();
+            CPU::ret();
         }
 
         __attribute__((always_inline)) static inline void push() {
