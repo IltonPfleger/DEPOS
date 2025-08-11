@@ -64,32 +64,36 @@ struct CPU {
                 : "memory");
         }
 
-        __attribute__((naked)) static inline void load(Context *c) {
-            (void)c;
-            __asm__ volatile(
-                "mv sp, a0\n"
-                "ld t0, 240(sp)\n"
-                "csrw mstatus, t0\n"
-                "ld t0, 232(sp)\n"
-                "csrw mepc, t0\n"
-                "ld ra, 0(sp)\n"
-                "ld tp, 8(sp)\n"
-                "ld a0, 72(sp)\n"
-                "ld s0, 136(sp)\n"
-                "ld s1, 144(sp)\n"
-                "ld s2, 152(sp)\n"
-                "ld s3, 160(sp)\n"
-                "ld s4, 168(sp)\n"
-                "ld s5, 176(sp)\n"
-                "ld s6, 184(sp)\n"
-                "ld s7, 192(sp)\n"
-                "ld s8, 200(sp)\n"
-                "ld s9, 208(sp)\n"
-                "ld s10, 216(sp)\n"
-                "ld s11, 224(sp)\n"
-                "addi sp, sp, %0\n"
+        __attribute__((naked)) static void load(Context *c) {
+            asm volatile(
+                "mv ra, %0\n"
+                "mv tp, %1\n"
+                "mv sp, %2\n"
                 :
-                : "i"(sizeof(Context)));
+                : "r"(c->ra), "r"(c->tp), "r"(c)
+                : "memory");
+
+            asm volatile(
+                "mv s0, %0\n"
+                "mv s1, %1\n"
+                "mv s2, %2\n"
+                "mv s3, %3\n"
+                "mv s4, %4\n"
+                "mv s5, %5\n"
+                "mv s6, %6\n"
+                "mv s7, %7\n"
+                "mv s8, %8\n"
+                "mv s9, %9\n"
+                "mv s10, %10\n"
+                "mv s11, %11\n"
+                :
+                : "r"(c->s0), "r"(c->s1), "r"(c->s2), "r"(c->s3), "r"(c->s4), "r"(c->s5), "r"(c->s6), "r"(c->s7),
+                  "r"(c->s8), "r"(c->s9), "r"(c->s10), "r"(c->s11)
+                : "memory");
+            asm volatile("csrw mepc, %0" ::"r"(c->epc));
+            asm volatile("csrw mstatus, %0" ::"r"(c->estatus));
+            asm volatile("mv a0, %0" ::"r"(c->a0));
+            asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
             CPU::iret();
         }
 
