@@ -45,6 +45,7 @@ struct CPU {
             register int (*f)(void *) asm("s0");
             register void *a asm("s1");
             register void (*exit)() asm("s2");
+            CPU::Interrupt::enable();
             f(a);
             exit();
         }
