@@ -59,13 +59,13 @@ void *Memory::kmalloc() {
 }
 
 void Memory::kfree(void *addr) {
-    lock.acquire();
     Page *page = reinterpret_cast<Page *>(addr);
     ERROR(page == nullptr, "[Memory::free] Free nullptr.");
+    lock.acquire();
     page->next = pages;
     pages      = page;
-    TRACE("[Memory::kfree] %p\n", page);
     lock.release();
+    TRACE("[Memory::kfree] %p\n", page);
 }
 
 void *operator new(unsigned long, void *ptr) { return ptr; }
