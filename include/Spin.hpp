@@ -3,11 +3,11 @@
 #include <IO/Debug.hpp>
 
 class Spin {
-   public:
     volatile bool locked         = !LOCKED;
     volatile bool interrupts     = true;
     static constexpr bool LOCKED = true;
 
+   public:
     void acquire() {
         volatile auto i = CPU::Interrupt::off();
         while (__atomic_test_and_set(&locked, __ATOMIC_ACQUIRE));

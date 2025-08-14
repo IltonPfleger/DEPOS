@@ -5,7 +5,7 @@
 extern int main(void *);
 static volatile int _count = 0;
 static Scheduler<Thread> _scheduler;
-static Spin _lock(!Spin::LOCKED, false);
+static Spin _lock;
 
 __attribute__((naked)) void Thread::dispatch() {
     CPU::Context::save();

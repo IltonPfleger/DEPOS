@@ -277,7 +277,7 @@ struct CPU {
             uintmax_t mstatus;
             asm volatile("csrr %0, mstatus" : "=r"(mstatus));
             asm volatile("csrci mstatus, 0x8");
-            return (mstatus & 0x8);
+            return (mstatus & 0x8) >> 3;
         }
 
         __attribute__((always_inline)) static inline void disable() { asm volatile("csrci mstatus, 0x8"); }
