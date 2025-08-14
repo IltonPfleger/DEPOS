@@ -5,7 +5,7 @@
 extern int main(void *);
 static volatile int _count = 0;
 static Scheduler<Thread> _scheduler;
-static Spin spin{!Spin::LOCKED};
+static Spin _lock(!Spin::LOCKED, false);
 
 __attribute__((naked)) void Thread::dispatch() {
     CPU::Context::save();
@@ -19,17 +19,17 @@ __attribute__((naked)) void Thread::dispatch() {
     Thread *next = _scheduler.pop();
     next->state  = State::RUNNING;
 
-    spin.release();
+    _lock.release();
     CPU::Context::load(next->context);
 }
 
 int Thread::idle(void *) {
     while (_count > Machine::CPUS) {
-        // if (!_scheduler.empty()) yield();
+        if (!_scheduler.empty()) yield();
     }
 
     CPU::Interrupt::disable();
-    if (CPU::core() == 0) Logger::println("*** QUARK Shutdown! ***\n");
+    if (CPU::core() == 0) Logger::println("*** Shutdown! ***\n");
     for (;;);
     return 0;
 }
@@ -42,14 +42,14 @@ Thread::Thread(Function f, Argument a, Criterion c)
       criterion(c),
       link(Element(this, c.priority())),
       waiting(0) {
-    spin.acquire();
+    _lock.acquire();
     _scheduler.push(&link);
     _count = _count + 1;
-    spin.release();
+    _lock.release();
 }
 
 // Thread::~Thread() {
-//     spin.acquire();
+//     _lock.acquire();
 //     switch (state) {
 //         case (State::READY):
 //             _scheduler.remove(&link);
@@ -68,7 +68,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
 //         _scheduler.push(&joining->link);
 //     }
 //
-//     spin.release();
+//     _lock.release();
 //     Memory::kfree(stack);
 // }
 
@@ -78,9 +78,9 @@ Thread::Thread(Function f, Argument a, Criterion c)
 //     ERROR(thread.joining, "[Thread::join] Already joined.");
 //
 //     CPU::Interrupt::disable();
-//     spin.acquire();
+//     _lock.acquire();
 //     if (thread.state == State::FINISHED) {
-//         spin.release();
+//         _lock.release();
 //         CPU::Interrupt::enable();
 //         return;
 //     }
@@ -96,7 +96,7 @@ void Thread::exit() {
     CPU::Interrupt::disable();
     auto previous = running();
 
-    spin.acquire();
+    _lock.acquire();
     previous->state = State::FINISHED;
 
     if (previous->joining) {
@@ -115,9 +115,9 @@ void Thread::init() {
 }
 
 void Thread::run() {
-    spin.acquire();
+    _lock.acquire();
     Thread *first = _scheduler.pop();
-    spin.release();
+    _lock.release();
 
     first->state = State::RUNNING;
     CPU::Context::load(first->context);
@@ -129,18 +129,18 @@ void Thread::reschedule() {
     auto previous   = running();
     previous->state = State::READY;
 
-    spin.acquire();
+    _lock.acquire();
     dispatch();
 }
 
-// void Thread::yield() {
-//     CPU::Interrupt::disable();
-//     reschedule();
-//     CPU::Interrupt::enable();
-// }
+void Thread::yield() {
+    CPU::Interrupt::disable();
+    reschedule();
+    CPU::Interrupt::enable();
+}
 
-// void Thread::lock() { spin.lock(); }
-// void Thread::unlock() { spin.unlock(); }
+// void Thread::_lock() { _lock._lock(); }
+// void Thread::un_lock() { _lock.un_lock(); }
 //
 // void Thread::sleep(Queue &waiting) {
 //     auto previous     = running();

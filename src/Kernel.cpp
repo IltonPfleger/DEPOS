@@ -13,7 +13,7 @@ namespace Kernel {
     void init() {
         if (CPU::core() == 0) {
             Logger::init();
-            Logger::println("\nQ U A R K | [μKernel]\n");
+            Logger::println("\nD E P O S | [μKernel]\n");
             Memory::init();
             Thread::init();
             Logger::println("Done!\n");
