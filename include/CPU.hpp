@@ -25,20 +25,22 @@ struct CPU {
     __attribute__((naked)) static void *thread() { asm volatile("mv a0, tp\nret"); }
 
     struct Context {
-        uintptr_t ra;
-        uintptr_t tp;
+        struct Saved {
+            uintptr_t ra;
+            uintptr_t tp;
+            uintptr_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
+        } saved;
         uintptr_t t0, t1, t2, t3, t4, t5, t6;
         uintptr_t a0, a1, a2, a3, a4, a5, a6, a7;
-        uintptr_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
         uintptr_t mepc;
         uintptr_t mstatus;
 
         Context(int (*entry)(void *), void *a0, void (*exit)(), void *tp) {
-            this->ra = reinterpret_cast<uintptr_t>(start);
-            this->tp = reinterpret_cast<uintptr_t>(tp);
-            this->s0 = reinterpret_cast<uintptr_t>(entry);
-            this->s1 = reinterpret_cast<uintptr_t>(a0);
-            this->s2 = reinterpret_cast<uintptr_t>(exit);
+            this->saved.ra = reinterpret_cast<uintptr_t>(start);
+            this->saved.tp = reinterpret_cast<uintptr_t>(tp);
+            this->saved.s0 = reinterpret_cast<uintptr_t>(entry);
+            this->saved.s1 = reinterpret_cast<uintptr_t>(a0);
+            this->saved.s2 = reinterpret_cast<uintptr_t>(exit);
         }
 
         __attribute__((naked)) static void start() {
@@ -68,11 +70,14 @@ struct CPU {
                 "sd s10, %c[s10](sp)\n"
                 "sd s11, %c[s11](sp)\n"
                 :
-                : "i"(-sizeof(Context)), [ra] "i"(OFFSET(Context, ra)), [tp] "i"(OFFSET(Context, tp)),
-                  [s0] "i"(OFFSET(Context, s0)), [s1] "i"(OFFSET(Context, s1)), [s2] "i"(OFFSET(Context, s2)),
-                  [s3] "i"(OFFSET(Context, s3)), [s4] "i"(OFFSET(Context, s4)), [s5] "i"(OFFSET(Context, s5)),
-                  [s6] "i"(OFFSET(Context, s6)), [s7] "i"(OFFSET(Context, s7)), [s8] "i"(OFFSET(Context, s8)),
-                  [s9] "i"(OFFSET(Context, s9)), [s10] "i"(OFFSET(Context, s10)), [s11] "i"(OFFSET(Context, s11))
+                : "i"(-sizeof(Context::Saved)), [ra] "i"(OFFSET(Context, saved.ra)),
+                  [tp] "i"(OFFSET(Context, saved.tp)), [s0] "i"(OFFSET(Context, saved.s0)),
+                  [s1] "i"(OFFSET(Context, saved.s1)), [s2] "i"(OFFSET(Context, saved.s2)),
+                  [s3] "i"(OFFSET(Context, saved.s3)), [s4] "i"(OFFSET(Context, saved.s4)),
+                  [s5] "i"(OFFSET(Context, saved.s5)), [s6] "i"(OFFSET(Context, saved.s6)),
+                  [s7] "i"(OFFSET(Context, saved.s7)), [s8] "i"(OFFSET(Context, saved.s8)),
+                  [s9] "i"(OFFSET(Context, saved.s9)), [s10] "i"(OFFSET(Context, saved.s10)),
+                  [s11] "i"(OFFSET(Context, saved.s11))
                 : "memory");
         }
 
@@ -97,12 +102,14 @@ struct CPU {
                 "addi sp, sp, %0\n"
                 "ret\n"
                 :
-                : "i"(sizeof(Context)), [ra] "i"(OFFSET(Context, ra)), [tp] "i"(OFFSET(Context, tp)),
-                  [s0] "i"(OFFSET(Context, s0)), [s1] "i"(OFFSET(Context, s1)), [s2] "i"(OFFSET(Context, s2)),
-                  [s3] "i"(OFFSET(Context, s3)), [s4] "i"(OFFSET(Context, s4)), [s5] "i"(OFFSET(Context, s5)),
-                  [s6] "i"(OFFSET(Context, s6)), [s7] "i"(OFFSET(Context, s7)), [s8] "i"(OFFSET(Context, s8)),
-                  [s9] "i"(OFFSET(Context, s9)), [s10] "i"(OFFSET(Context, s10)), [s11] "i"(OFFSET(Context, s11))
-                : "memory");
+                : "i"(sizeof(Context::Saved)), [ra] "i"(OFFSET(Context, saved.ra)), [tp] "i"(OFFSET(Context, saved.tp)),
+                  [s0] "i"(OFFSET(Context, saved.s0)), [s1] "i"(OFFSET(Context, saved.s1)),
+                  [s2] "i"(OFFSET(Context, saved.s2)), [s3] "i"(OFFSET(Context, saved.s3)),
+                  [s4] "i"(OFFSET(Context, saved.s4)), [s5] "i"(OFFSET(Context, saved.s5)),
+                  [s6] "i"(OFFSET(Context, saved.s6)), [s7] "i"(OFFSET(Context, saved.s7)),
+                  [s8] "i"(OFFSET(Context, saved.s8)), [s9] "i"(OFFSET(Context, saved.s9)),
+                  [s10] "i"(OFFSET(Context, saved.s10)), [s11] "i"(OFFSET(Context, saved.s11))
+                :);
         }
 
         __attribute__((always_inline)) static inline void push() {
@@ -126,7 +133,7 @@ struct CPU {
                 "sd a6, %c[a6](sp)\n"
                 "sd a7, %c[a7](sp)\n"
                 :
-                : "i"(-sizeof(Context)), [ra] "i"(OFFSET(Context, ra)), [tp] "i"(OFFSET(Context, tp)),
+                : "i"(-sizeof(Context)), [ra] "i"(OFFSET(Context, saved.ra)), [tp] "i"(OFFSET(Context, saved.tp)),
                   [t0] "i"(OFFSET(Context, t0)), [t1] "i"(OFFSET(Context, t1)), [t2] "i"(OFFSET(Context, t2)),
                   [t3] "i"(OFFSET(Context, t3)), [t4] "i"(OFFSET(Context, t4)), [t5] "i"(OFFSET(Context, t5)),
                   [t6] "i"(OFFSET(Context, t6)), [a0] "i"(OFFSET(Context, a0)), [a1] "i"(OFFSET(Context, a1)),
@@ -150,13 +157,14 @@ struct CPU {
                 "csrr t0, mstatus\n"
                 "sd t0, %c[mstatus](sp)\n"
                 "csrr t0, mepc\n"
-                "sd t0, %c[mepc](sp)\n"
-                :
-                : [s0] "i"(OFFSET(Context, s0)), [s1] "i"(OFFSET(Context, s1)), [s2] "i"(OFFSET(Context, s2)),
-                  [s3] "i"(OFFSET(Context, s3)), [s4] "i"(OFFSET(Context, s4)), [s5] "i"(OFFSET(Context, s5)),
-                  [s6] "i"(OFFSET(Context, s6)), [s7] "i"(OFFSET(Context, s7)), [s8] "i"(OFFSET(Context, s8)),
-                  [s9] "i"(OFFSET(Context, s9)), [s10] "i"(OFFSET(Context, s10)), [s11] "i"(OFFSET(Context, s11)),
-                  [mepc] "i"(OFFSET(Context, mepc)), [mstatus] "i"(OFFSET(Context, mstatus))
+                "sd t0, %c[mepc](sp)\n" ::[s0] "i"(OFFSET(Context, saved.s0)),
+                [s1] "i"(OFFSET(Context, saved.s1)), [s2] "i"(OFFSET(Context, saved.s2)),
+                [s3] "i"(OFFSET(Context, saved.s3)), [s4] "i"(OFFSET(Context, saved.s4)),
+                [s5] "i"(OFFSET(Context, saved.s5)), [s6] "i"(OFFSET(Context, saved.s6)),
+                [s7] "i"(OFFSET(Context, saved.s7)), [s8] "i"(OFFSET(Context, saved.s8)),
+                [s9] "i"(OFFSET(Context, saved.s9)), [s10] "i"(OFFSET(Context, saved.s10)),
+                [s11] "i"(OFFSET(Context, saved.s11)), [mstatus] "i"(OFFSET(Context, mstatus)),
+                [mepc] "i"(OFFSET(Context, mepc))
                 : "memory");
         }
 
@@ -184,13 +192,13 @@ struct CPU {
                 "ld a6, %c[a6](sp)\n"
                 "ld a7, %c[a7](sp)\n"
                 :
-                : [ra] "i"(OFFSET(Context, ra)), [tp] "i"(OFFSET(Context, tp)), [t0] "i"(OFFSET(Context, t0)),
-                  [t1] "i"(OFFSET(Context, t1)), [t2] "i"(OFFSET(Context, t2)), [t3] "i"(OFFSET(Context, t3)),
-                  [t4] "i"(OFFSET(Context, t4)), [t5] "i"(OFFSET(Context, t5)), [t6] "i"(OFFSET(Context, t6)),
-                  [a0] "i"(OFFSET(Context, a0)), [a1] "i"(OFFSET(Context, a1)), [a2] "i"(OFFSET(Context, a2)),
-                  [a3] "i"(OFFSET(Context, a3)), [a4] "i"(OFFSET(Context, a4)), [a5] "i"(OFFSET(Context, a5)),
-                  [a6] "i"(OFFSET(Context, a6)), [a7] "i"(OFFSET(Context, a7)), [mepc] "i"(OFFSET(Context, mepc)),
-                  [mstatus] "i"(OFFSET(Context, mstatus)));
+                : [ra] "i"(OFFSET(Context, saved.ra)), [tp] "i"(OFFSET(Context, saved.tp)),
+                  [t0] "i"(OFFSET(Context, t0)), [t1] "i"(OFFSET(Context, t1)), [t2] "i"(OFFSET(Context, t2)),
+                  [t3] "i"(OFFSET(Context, t3)), [t4] "i"(OFFSET(Context, t4)), [t5] "i"(OFFSET(Context, t5)),
+                  [t6] "i"(OFFSET(Context, t6)), [a0] "i"(OFFSET(Context, a0)), [a1] "i"(OFFSET(Context, a1)),
+                  [a2] "i"(OFFSET(Context, a2)), [a3] "i"(OFFSET(Context, a3)), [a4] "i"(OFFSET(Context, a4)),
+                  [a5] "i"(OFFSET(Context, a5)), [a6] "i"(OFFSET(Context, a6)), [a7] "i"(OFFSET(Context, a7)),
+                  [mepc] "i"(OFFSET(Context, mepc)), [mstatus] "i"(OFFSET(Context, mstatus)));
 
             asm volatile(
                 "ld s0, %c[s0](sp)\n"
@@ -207,11 +215,13 @@ struct CPU {
                 "ld s11, %c[s11](sp)\n"
                 "addi sp, sp, %0\n"
                 :
-                : "i"(sizeof(Context)), [s0] "i"(OFFSET(Context, s0)), [s1] "i"(OFFSET(Context, s1)),
-                  [s2] "i"(OFFSET(Context, s2)), [s3] "i"(OFFSET(Context, s3)), [s4] "i"(OFFSET(Context, s4)),
-                  [s5] "i"(OFFSET(Context, s5)), [s6] "i"(OFFSET(Context, s6)), [s7] "i"(OFFSET(Context, s7)),
-                  [s8] "i"(OFFSET(Context, s8)), [s9] "i"(OFFSET(Context, s9)), [s10] "i"(OFFSET(Context, s10)),
-                  [s11] "i"(OFFSET(Context, s11)));
+                : "i"(sizeof(Context)), [s0] "i"(OFFSET(Context, saved.s0)), [s1] "i"(OFFSET(Context, saved.s1)),
+                  [s2] "i"(OFFSET(Context, saved.s2)), [s3] "i"(OFFSET(Context, saved.s3)),
+                  [s4] "i"(OFFSET(Context, saved.s4)), [s5] "i"(OFFSET(Context, saved.s5)),
+                  [s6] "i"(OFFSET(Context, saved.s6)), [s7] "i"(OFFSET(Context, saved.s7)),
+                  [s8] "i"(OFFSET(Context, saved.s8)), [s9] "i"(OFFSET(Context, saved.s9)),
+                  [s10] "i"(OFFSET(Context, saved.s10)), [s11] "i"(OFFSET(Context, saved.s11))
+                : "memory");
 
             CPU::iret();
         }
