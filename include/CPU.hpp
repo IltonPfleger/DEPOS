@@ -106,7 +106,6 @@ struct CPU {
         }
 
         __attribute__((always_inline)) static inline void push() {
-            // Bloco 1 - registradores não-salvos (caller-saved) + alguns fixed
             asm volatile(
                 "addi sp, sp, %0\n"
                 "sd ra, %c[ra](sp)\n"
@@ -225,7 +224,6 @@ struct CPU {
     };
 
     struct Atomic {
-        static int tsl(volatile int &value) { return __atomic_test_and_set(&value, __ATOMIC_SEQ_CST); }
         static int fdec(volatile int &value) { return __atomic_fetch_sub(&value, 1, __ATOMIC_SEQ_CST); }
         static int finc(volatile int &value) { return __atomic_fetch_add(&value, 1, __ATOMIC_SEQ_CST); }
     };
@@ -264,6 +262,14 @@ struct CPU {
     };
 
     struct Interrupt {
+        static void on() { asm volatile("csrsi mstatus, 0x8"); }
+        static bool off() {
+            uintmax_t mstatus;
+            asm volatile("csrr %0, mstatus" : "=r"(mstatus));
+            asm volatile("csrci mstatus, 0x8");
+            return (mstatus & 0x8);
+        }
+
         __attribute__((always_inline)) static inline void disable() { asm volatile("csrci mstatus, 0x8"); }
         __attribute__((always_inline)) static inline void enable() { asm volatile("csrsi mstatus, 0x8"); }
 

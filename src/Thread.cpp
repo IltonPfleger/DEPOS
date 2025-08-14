@@ -6,7 +6,6 @@ extern int main(void *);
 static volatile int _count = 0;
 static Scheduler<Thread> _scheduler;
 static Spin spin{!Spin::LOCKED};
-static Spin boot{Spin::LOCKED};
 
 __attribute__((naked)) void Thread::dispatch() {
     CPU::Context::save();
@@ -26,7 +25,7 @@ __attribute__((naked)) void Thread::dispatch() {
 
 int Thread::idle(void *) {
     while (_count > Machine::CPUS) {
-        if (!_scheduler.empty()) yield();
+        // if (!_scheduler.empty()) yield();
     }
 
     CPU::Interrupt::disable();
@@ -43,58 +42,61 @@ Thread::Thread(Function f, Argument a, Criterion c)
       criterion(c),
       link(Element(this, c.priority())),
       waiting(0) {
-    spin.lock();
+    spin.acquire();
     _scheduler.push(&link);
     _count = _count + 1;
-    spin.unlock();
-}
-
-Thread::~Thread() {
-    spin.lock();
-    switch (state) {
-        case (State::READY):
-            _scheduler.remove(&link);
-            _count = _count - 1;
-            break;
-        case (State::WAITING):
-            waiting->remove(&link);
-            _count = _count - 1;
-            break;
-        default:
-            break;
-    }
-
-    if (joining) {
-        joining->state = State::READY;
-        _scheduler.push(&joining->link);
-    }
-
     spin.release();
-    Memory::kfree(stack);
 }
 
-void Thread::join(Thread &thread) {
-    auto previous = running();
-    ERROR(&thread == previous, "[Thread::join] Join itself.");
-    ERROR(thread.joining, "[Thread::join] Already joined.");
+// Thread::~Thread() {
+//     spin.acquire();
+//     switch (state) {
+//         case (State::READY):
+//             _scheduler.remove(&link);
+//             _count = _count - 1;
+//             break;
+//         case (State::WAITING):
+//             waiting->remove(&link);
+//             _count = _count - 1;
+//             break;
+//         default:
+//             break;
+//     }
+//
+//     if (joining) {
+//         joining->state = State::READY;
+//         _scheduler.push(&joining->link);
+//     }
+//
+//     spin.release();
+//     Memory::kfree(stack);
+// }
 
-    spin.lock();
-    if (thread.state == State::FINISHED) {
-        spin.unlock();
-        return;
-    }
-
-    previous->state = State::WAITING;
-    thread.joining  = previous;
-
-    dispatch();
-    CPU::Interrupt::enable();
-}
+// void Thread::join(Thread &thread) {
+//     auto previous = running();
+//     ERROR(&thread == previous, "[Thread::join] Join itself.");
+//     ERROR(thread.joining, "[Thread::join] Already joined.");
+//
+//     CPU::Interrupt::disable();
+//     spin.acquire();
+//     if (thread.state == State::FINISHED) {
+//         spin.release();
+//         CPU::Interrupt::enable();
+//         return;
+//     }
+//
+//     previous->state = State::WAITING;
+//     thread.joining  = previous;
+//
+//     dispatch();
+//     CPU::Interrupt::enable();
+// }
 
 void Thread::exit() {
+    CPU::Interrupt::disable();
     auto previous = running();
 
-    spin.lock();
+    spin.acquire();
     previous->state = State::FINISHED;
 
     if (previous->joining) {
@@ -108,14 +110,8 @@ void Thread::exit() {
 }
 
 void Thread::init() {
-    new (Memory::SYSTEM) Thread(idle, 0, Criterion::IDLE);
-    if (CPU::core() == 0) {
-        new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
-        while (_count < Machine::CPUS + 1);
-        boot.release();
-    }
-    boot.lock();
-    boot.release();
+    new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
+    for (int i = 0; i < Machine::CPUS; i++) new (Memory::SYSTEM) Thread(idle, 0, Criterion::IDLE);
 }
 
 void Thread::run() {
@@ -137,30 +133,30 @@ void Thread::reschedule() {
     dispatch();
 }
 
-void Thread::yield() {
-    CPU::Interrupt::disable();
-    reschedule();
-    CPU::Interrupt::enable();
-}
+// void Thread::yield() {
+//     CPU::Interrupt::disable();
+//     reschedule();
+//     CPU::Interrupt::enable();
+// }
 
-void Thread::lock() { spin.lock(); }
-void Thread::unlock() { spin.unlock(); }
-
-void Thread::sleep(Queue &waiting) {
-    auto previous     = running();
-    previous->state   = State::WAITING;
-    previous->waiting = &waiting;
-    waiting.insert(&previous->link);
-    dispatch();
-}
-
-void Thread::wakeup(Queue &waiting) {
-    ERROR(waiting.empty(), "[Thread::wakeup] Empty queue.");
-    Element *awake        = waiting.next();
-    awake->value->state   = State::READY;
-    awake->value->waiting = nullptr;
-    _scheduler.push(awake);
-}
+// void Thread::lock() { spin.lock(); }
+// void Thread::unlock() { spin.unlock(); }
+//
+// void Thread::sleep(Queue &waiting) {
+//     auto previous     = running();
+//     previous->state   = State::WAITING;
+//     previous->waiting = &waiting;
+//     waiting.insert(&previous->link);
+//     dispatch();
+// }
+//
+// void Thread::wakeup(Queue &waiting) {
+//     ERROR(waiting.empty(), "[Thread::wakeup] Empty queue.");
+//     Element *awake        = waiting.next();
+//     awake->value->state   = State::READY;
+//     awake->value->waiting = nullptr;
+//     _scheduler.push(awake);
+// }
 
 // int entry(void *arg) {
 //     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));

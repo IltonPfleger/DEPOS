@@ -7,6 +7,7 @@
 #include <Timer.hpp>
 
 static char STACK[Machine::CPUS][Traits::Memory::Page::SIZE];
+static volatile bool boot = true;
 
 namespace Kernel {
     void init() {
@@ -14,14 +15,16 @@ namespace Kernel {
             Logger::init();
             Logger::println("\nQ U A R K | [μKernel]\n");
             Memory::init();
-            Logger::println("Done!\n");
-        }
-        if (CPU::core() < Machine::CPUS) {
             Thread::init();
+            Logger::println("Done!\n");
+            boot = false;
+        }
+        while (boot);
+        if (CPU::core() < Machine::CPUS) {
             Timer::init();
             Thread::run();
         }
-        for (;;);
+        while (1);
     }
 
     void exception() {

@@ -1,22 +1,24 @@
 #pragma once
 #include <CPU.hpp>
+#include <IO/Debug.hpp>
 
 class Spin {
    public:
-    volatile int locked         = !LOCKED;
-    static constexpr int LOCKED = 1;
+    volatile bool locked         = !LOCKED;
+    volatile bool interrupts     = true;
+    static constexpr bool LOCKED = true;
 
-    void acquire() { while (CPU::Atomic::tsl(locked)); }
-
-    void release() { locked = !LOCKED; }
-
-    void lock() {
-        CPU::Interrupt::disable();
-        acquire();
+    void acquire() {
+        volatile auto i = CPU::Interrupt::off();
+        while (__atomic_test_and_set(&locked, __ATOMIC_ACQUIRE));
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+        interrupts = i;
     }
 
-    void unlock() {
-        release();
-        CPU::Interrupt::enable();
+    void release() {
+        volatile auto i = interrupts;
+        __atomic_thread_fence(__ATOMIC_RELEASE);
+        __atomic_clear(&locked, __ATOMIC_RELEASE);
+        if (i) CPU::Interrupt::on();
     }
 };
