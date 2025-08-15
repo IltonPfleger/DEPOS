@@ -1,4 +1,4 @@
-# Just Another RISC-V µKernel. 
+# Just Another RISC-V Kernel. 
 A lightweight and modular microkernel designed for RISC-V, focusing on simplicity, performance, and extensibility.
 ## Features
 * [x] Thread Management.
