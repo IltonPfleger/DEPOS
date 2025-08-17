@@ -7,7 +7,7 @@ struct Machine {
         using UART = SiFiveUART;
     };
     static constexpr const int XLEN = 64;
-    static constexpr const int CPUS = 4;
+    static constexpr const int CPUS = 5;
     struct Memory {
         static constexpr const unsigned int ORDER = 30;
         static constexpr const unsigned int SIZE  = (1 << ORDER);

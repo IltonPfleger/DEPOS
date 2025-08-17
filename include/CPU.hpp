@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Machine.hpp>
+#define OFFSET(type, member) ((unsigned long)&(((type *)0)->member))
 
 namespace Timer {
     void handler();
@@ -22,158 +23,208 @@ struct CPU {
     __attribute__((naked)) static void *thread() { __asm__ volatile("mv a0, tp\nret"); }
 
     struct Context {
-        uintptr_t ra;
-        uintptr_t tp;
+        struct Saved {
+            uintptr_t ra;
+            uintptr_t tp;
+            uintptr_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
+            uintptr_t epc;
+            uintptr_t estatus;
+        } saved;
         uintptr_t t0, t1, t2, t3, t4, t5, t6;
         uintptr_t a0, a1, a2, a3, a4, a5, a6, a7;
-        uintptr_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
-        uintptr_t epc;
-        uintptr_t estatus;
 
         Context(int (*entry)(void *), void *a0, void (*exit)(), void *tp) {
-            this->ra      = reinterpret_cast<uintptr_t>(exit);
-            this->epc     = reinterpret_cast<uintptr_t>(entry);
-            this->estatus = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
-            this->tp      = reinterpret_cast<uintptr_t>(tp);
-            this->a0      = reinterpret_cast<uintptr_t>(a0);
+            this->saved.ra      = reinterpret_cast<uintptr_t>(exit);
+            this->saved.tp      = reinterpret_cast<uintptr_t>(tp);
+            this->saved.epc     = reinterpret_cast<uintptr_t>(entry);
+            this->saved.estatus = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
+            this->a0            = reinterpret_cast<uintptr_t>(a0);
         }
 
         __attribute__((always_inline)) static inline void save() {
-            __asm__ volatile(
+            asm volatile(
                 "addi sp, sp, %0\n"
-                "sd ra, 0(sp)\n"
-                "sd tp, 8(sp)\n"
-                "sd s0, 136(sp)\n"
-                "sd s1, 144(sp)\n"
-                "sd s2, 152(sp)\n"
-                "sd s3, 160(sp)\n"
-                "sd s4, 168(sp)\n"
-                "sd s5, 176(sp)\n"
-                "sd s6, 184(sp)\n"
-                "sd s7, 192(sp)\n"
-                "sd s8, 200(sp)\n"
-                "sd s9, 208(sp)\n"
-                "sd s10, 216(sp)\n"
-                "sd s11, 224(sp)\n"
+                "sd ra, %c[ra](sp)\n"
+                "sd tp, %c[tp](sp)\n"
+                "sd s0, %c[s0](sp)\n"
+                "sd s1, %c[s1](sp)\n"
+                "sd s2, %c[s2](sp)\n"
+                "sd s3, %c[s3](sp)\n"
+                "sd s4, %c[s4](sp)\n"
+                "sd s5, %c[s5](sp)\n"
+                "sd s6, %c[s6](sp)\n"
+                "sd s7, %c[s7](sp)\n"
+                "sd s8, %c[s8](sp)\n"
+                "sd s9, %c[s9](sp)\n"
+                "sd s10, %c[s10](sp)\n"
+                "sd s11, %c[s11](sp)\n"
                 "csrr t0, mstatus\n"
                 "andi t0, t0, ~0x80\n"
                 "li t1, 0x1800\n"
                 "or t0, t0, t1\n"
-                "sd t0, 240(sp)\n"
-                "sd ra, 232(sp)" ::"i"(-sizeof(Context))
-                : "memory");
+                "sd t0, %c[estatus](sp)\n"
+                "sd ra, %c[epc](sp)"
+                :
+                : "i"(-sizeof(Context::Saved)), [ra] "i"(OFFSET(Context, saved.ra)),
+                  [tp] "i"(OFFSET(Context, saved.tp)), [s0] "i"(OFFSET(Context, saved.s0)),
+                  [s1] "i"(OFFSET(Context, saved.s1)), [s2] "i"(OFFSET(Context, saved.s2)),
+                  [s3] "i"(OFFSET(Context, saved.s3)), [s4] "i"(OFFSET(Context, saved.s4)),
+                  [s5] "i"(OFFSET(Context, saved.s5)), [s6] "i"(OFFSET(Context, saved.s6)),
+                  [s7] "i"(OFFSET(Context, saved.s7)), [s8] "i"(OFFSET(Context, saved.s8)),
+                  [s9] "i"(OFFSET(Context, saved.s9)), [s10] "i"(OFFSET(Context, saved.s10)),
+                  [s11] "i"(OFFSET(Context, saved.s11)), [estatus] "i"(OFFSET(Context, saved.estatus)),
+                  [epc] "i"(OFFSET(Context, saved.epc))
+                : "cc", "memory");
         }
 
         __attribute__((naked)) static void load(Context *c) {
             asm volatile(
-                "mv ra, %0\n"
-                "mv tp, %1\n"
-                "mv sp, %2\n"
+                "mv sp, %0\n"
+                "ld ra, %c[ra](sp)\n"
+                "ld tp, %c[tp](sp)\n"
+                "ld s0, %c[s0](sp)\n"
+                "ld a0, %c[a0](sp)\n"
+                "ld s1, %c[s1](sp)\n"
+                "ld s2, %c[s2](sp)\n"
+                "ld s3, %c[s3](sp)\n"
+                "ld s4, %c[s4](sp)\n"
+                "ld s5, %c[s5](sp)\n"
+                "ld s6, %c[s6](sp)\n"
+                "ld s7, %c[s7](sp)\n"
+                "ld s8, %c[s8](sp)\n"
+                "ld s9, %c[s9](sp)\n"
+                "ld s10, %c[s10](sp)\n"
+                "ld s11, %c[s11](sp)\n"
+                "ld t0, %c[estatus](sp)\n"
+                "ld t1, %c[epc](sp)\n"
+                "csrw mstatus, t0\n"
+                "csrw mepc, t1\n"
+                "addi sp, sp, %1\n"
                 :
-                : "r"(c->ra), "r"(c->tp), "r"(c)
-                : "memory");
-
-            asm volatile(
-                "mv s0, %0\n"
-                "mv s1, %1\n"
-                "mv s2, %2\n"
-                "mv s3, %3\n"
-                "mv s4, %4\n"
-                "mv s5, %5\n"
-                "mv s6, %6\n"
-                "mv s7, %7\n"
-                "mv s8, %8\n"
-                "mv s9, %9\n"
-                "mv s10, %10\n"
-                "mv s11, %11\n"
-                :
-                : "r"(c->s0), "r"(c->s1), "r"(c->s2), "r"(c->s3), "r"(c->s4), "r"(c->s5), "r"(c->s6), "r"(c->s7),
-                  "r"(c->s8), "r"(c->s9), "r"(c->s10), "r"(c->s11)
-                : "memory");
-            asm volatile("csrw mepc, %0" ::"r"(c->epc));
-            asm volatile("csrw mstatus, %0" ::"r"(c->estatus));
-            asm volatile("mv a0, %0" ::"r"(c->a0));
-            asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
+                : "r"(c), "i"(sizeof(Context::Saved)), [ra] "i"(OFFSET(Context, saved.ra)),
+                  [tp] "i"(OFFSET(Context, saved.tp)), [s0] "i"(OFFSET(Context, saved.s0)),
+                  [s1] "i"(OFFSET(Context, saved.s1)), [a0] "i"(OFFSET(Context, a0)),
+                  [s2] "i"(OFFSET(Context, saved.s2)), [s3] "i"(OFFSET(Context, saved.s3)),
+                  [s4] "i"(OFFSET(Context, saved.s4)), [s5] "i"(OFFSET(Context, saved.s5)),
+                  [s6] "i"(OFFSET(Context, saved.s6)), [s7] "i"(OFFSET(Context, saved.s7)),
+                  [s8] "i"(OFFSET(Context, saved.s8)), [s9] "i"(OFFSET(Context, saved.s9)),
+                  [s10] "i"(OFFSET(Context, saved.s10)), [s11] "i"(OFFSET(Context, saved.s11)),
+                  [estatus] "i"(OFFSET(Context, saved.estatus)), [epc] "i"(OFFSET(Context, saved.epc))
+                : "memory", "cc");
             CPU::iret();
         }
 
         __attribute__((always_inline)) static inline void push() {
-            __asm__ volatile(
+            asm volatile(
                 "addi sp, sp, %0\n"
-                "sd ra, 0(sp)\n"
-                "sd tp, 8(sp)\n"
-                "sd t0, 16(sp)\n"
-                "sd t1, 24(sp)\n"
-                "sd t2, 32(sp)\n"
-                "sd t3, 40(sp)\n"
-                "sd t4, 48(sp)\n"
-                "sd t5, 56(sp)\n"
-                "sd t6, 64(sp)\n"
-                "sd a0, 72(sp)\n"
-                "sd a1, 80(sp)\n"
-                "sd a2, 88(sp)\n"
-                "sd a3, 96(sp)\n"
-                "sd a4, 104(sp)\n"
-                "sd a5, 112(sp)\n"
-                "sd a6, 120(sp)\n"
-                "sd a7, 128(sp)\n"
-                "sd s0, 136(sp)\n"
-                "sd s1, 144(sp)\n"
-                "sd s2, 152(sp)\n"
-                "sd s3, 160(sp)\n"
-                "sd s4, 168(sp)\n"
-                "sd s5, 176(sp)\n"
-                "sd s6, 184(sp)\n"
-                "sd s7, 192(sp)\n"
-                "sd s8, 200(sp)\n"
-                "sd s9, 208(sp)\n"
-                "sd s10, 216(sp)\n"
-                "sd s11, 224(sp)\n"
+                "sd ra, %c[ra](sp)\n"
+                "sd tp, %c[tp](sp)\n"
+                "sd t0, %c[t0](sp)\n"
+                "sd t1, %c[t1](sp)\n"
+                "sd t2, %c[t2](sp)\n"
+                "sd t3, %c[t3](sp)\n"
+                "sd t4, %c[t4](sp)\n"
+                "sd t5, %c[t5](sp)\n"
+                "sd t6, %c[t6](sp)\n"
+                "sd a0, %c[a0](sp)\n"
+                "sd a1, %c[a1](sp)\n"
+                "sd a2, %c[a2](sp)\n"
+                "sd a3, %c[a3](sp)\n"
+                "sd a4, %c[a4](sp)\n"
+                "sd a5, %c[a5](sp)\n"
+                "sd a6, %c[a6](sp)\n"
+                "sd a7, %c[a7](sp)\n"
+                :
+                : "i"(-sizeof(Context)), [ra] "i"(OFFSET(Context, saved.ra)), [tp] "i"(OFFSET(Context, saved.tp)),
+                  [t0] "i"(OFFSET(Context, t0)), [t1] "i"(OFFSET(Context, t1)), [t2] "i"(OFFSET(Context, t2)),
+                  [t3] "i"(OFFSET(Context, t3)), [t4] "i"(OFFSET(Context, t4)), [t5] "i"(OFFSET(Context, t5)),
+                  [t6] "i"(OFFSET(Context, t6)), [a0] "i"(OFFSET(Context, a0)), [a1] "i"(OFFSET(Context, a1)),
+                  [a2] "i"(OFFSET(Context, a2)), [a3] "i"(OFFSET(Context, a3)), [a4] "i"(OFFSET(Context, a4)),
+                  [a5] "i"(OFFSET(Context, a5)), [a6] "i"(OFFSET(Context, a6)), [a7] "i"(OFFSET(Context, a7))
+                : "memory");
+
+            asm volatile(
+                "sd s0, %c[s0](sp)\n"
+                "sd s1, %c[s1](sp)\n"
+                "sd s2, %c[s2](sp)\n"
+                "sd s3, %c[s3](sp)\n"
+                "sd s4, %c[s4](sp)\n"
+                "sd s5, %c[s5](sp)\n"
+                "sd s6, %c[s6](sp)\n"
+                "sd s7, %c[s7](sp)\n"
+                "sd s8, %c[s8](sp)\n"
+                "sd s9, %c[s9](sp)\n"
+                "sd s10, %c[s10](sp)\n"
+                "sd s11, %c[s11](sp)\n"
                 "csrr t0, mstatus\n"
-                "sd t0, 240(sp)\n"
+                "sd t0, %c[estatus](sp)\n"
                 "csrr t0, mepc\n"
-                "sd t0, 232(sp)\n" ::"i"(-sizeof(Context))
+                "sd t0, %c[epc](sp)\n" ::[s0] "i"(OFFSET(Context, saved.s0)),
+                [s1] "i"(OFFSET(Context, saved.s1)), [s2] "i"(OFFSET(Context, saved.s2)),
+                [s3] "i"(OFFSET(Context, saved.s3)), [s4] "i"(OFFSET(Context, saved.s4)),
+                [s5] "i"(OFFSET(Context, saved.s5)), [s6] "i"(OFFSET(Context, saved.s6)),
+                [s7] "i"(OFFSET(Context, saved.s7)), [s8] "i"(OFFSET(Context, saved.s8)),
+                [s9] "i"(OFFSET(Context, saved.s9)), [s10] "i"(OFFSET(Context, saved.s10)),
+                [s11] "i"(OFFSET(Context, saved.s11)), [estatus] "i"(OFFSET(Context, saved.estatus)),
+                [epc] "i"(OFFSET(Context, saved.epc))
                 : "memory");
         }
 
         __attribute__((naked)) static void pop() {
-            __asm__ volatile(
-                "ld t0, 240(sp)\n"
+            asm volatile(
+                "ld t0, %c[estatus](sp)\n"
                 "csrw mstatus, t0\n"
-                "ld t0, 232(sp)\n"
+                "ld t0, %c[epc](sp)\n"
                 "csrw mepc, t0\n"
-                "ld ra, 0(sp)\n"
-                "ld tp, 8(sp)\n"
-                "ld t0, 16(sp)\n"
-                "ld t1, 24(sp)\n"
-                "ld t2, 32(sp)\n"
-                "ld t3, 40(sp)\n"
-                "ld t4, 48(sp)\n"
-                "ld t5, 56(sp)\n"
-                "ld t6, 64(sp)\n"
-                "ld a0, 72(sp)\n"
-                "ld a1, 80(sp)\n"
-                "ld a2, 88(sp)\n"
-                "ld a3, 96(sp)\n"
-                "ld a4, 104(sp)\n"
-                "ld a5, 112(sp)\n"
-                "ld a6, 120(sp)\n"
-                "ld a7, 128(sp)\n"
-                "ld s0, 136(sp)\n"
-                "ld s1, 144(sp)\n"
-                "ld s2, 152(sp)\n"
-                "ld s3, 160(sp)\n"
-                "ld s4, 168(sp)\n"
-                "ld s5, 176(sp)\n"
-                "ld s6, 184(sp)\n"
-                "ld s7, 192(sp)\n"
-                "ld s8, 200(sp)\n"
-                "ld s9, 208(sp)\n"
-                "ld s10, 216(sp)\n"
-                "ld s11, 224(sp)\n"
+                "ld ra, %c[ra](sp)\n"
+                "ld tp, %c[tp](sp)\n"
+                "ld t0, %c[t0](sp)\n"
+                "ld t1, %c[t1](sp)\n"
+                "ld t2, %c[t2](sp)\n"
+                "ld t3, %c[t3](sp)\n"
+                "ld t4, %c[t4](sp)\n"
+                "ld t5, %c[t5](sp)\n"
+                "ld t6, %c[t6](sp)\n"
+                "ld a0, %c[a0](sp)\n"
+                "ld a1, %c[a1](sp)\n"
+                "ld a2, %c[a2](sp)\n"
+                "ld a3, %c[a3](sp)\n"
+                "ld a4, %c[a4](sp)\n"
+                "ld a5, %c[a5](sp)\n"
+                "ld a6, %c[a6](sp)\n"
+                "ld a7, %c[a7](sp)\n"
+                :
+                : [ra] "i"(OFFSET(Context, saved.ra)), [tp] "i"(OFFSET(Context, saved.tp)),
+                  [t0] "i"(OFFSET(Context, t0)), [t1] "i"(OFFSET(Context, t1)), [t2] "i"(OFFSET(Context, t2)),
+                  [t3] "i"(OFFSET(Context, t3)), [t4] "i"(OFFSET(Context, t4)), [t5] "i"(OFFSET(Context, t5)),
+                  [t6] "i"(OFFSET(Context, t6)), [a0] "i"(OFFSET(Context, a0)), [a1] "i"(OFFSET(Context, a1)),
+                  [a2] "i"(OFFSET(Context, a2)), [a3] "i"(OFFSET(Context, a3)), [a4] "i"(OFFSET(Context, a4)),
+                  [a5] "i"(OFFSET(Context, a5)), [a6] "i"(OFFSET(Context, a6)), [a7] "i"(OFFSET(Context, a7)),
+                  [epc] "i"(OFFSET(Context, saved.epc)), [estatus] "i"(OFFSET(Context, saved.estatus)));
+
+            asm volatile(
+                "ld s0, %c[s0](sp)\n"
+                "ld s1, %c[s1](sp)\n"
+                "ld s2, %c[s2](sp)\n"
+                "ld s3, %c[s3](sp)\n"
+                "ld s4, %c[s4](sp)\n"
+                "ld s5, %c[s5](sp)\n"
+                "ld s6, %c[s6](sp)\n"
+                "ld s7, %c[s7](sp)\n"
+                "ld s8, %c[s8](sp)\n"
+                "ld s9, %c[s9](sp)\n"
+                "ld s10, %c[s10](sp)\n"
+                "ld s11, %c[s11](sp)\n"
                 "addi sp, sp, %0\n"
                 :
-                : "i"(sizeof(Context)));
+                : "i"(sizeof(Context)), [s0] "i"(OFFSET(Context, saved.s0)), [s1] "i"(OFFSET(Context, saved.s1)),
+                  [s2] "i"(OFFSET(Context, saved.s2)), [s3] "i"(OFFSET(Context, saved.s3)),
+                  [s4] "i"(OFFSET(Context, saved.s4)), [s5] "i"(OFFSET(Context, saved.s5)),
+                  [s6] "i"(OFFSET(Context, saved.s6)), [s7] "i"(OFFSET(Context, saved.s7)),
+                  [s8] "i"(OFFSET(Context, saved.s8)), [s9] "i"(OFFSET(Context, saved.s9)),
+                  [s10] "i"(OFFSET(Context, saved.s10)), [s11] "i"(OFFSET(Context, saved.s11))
+                : "memory");
+
             CPU::iret();
         }
 
