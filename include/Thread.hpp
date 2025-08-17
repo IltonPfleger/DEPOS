@@ -1,12 +1,10 @@
 #pragma once
 
-#include <CPU.hpp>
-#include <Machine.hpp>
-#include <Memory.hpp>
-#include <Scheduler/Scheduler.hpp>
-#include <Spin.hpp>
+#include <Scheduler.hpp>
+#include <Traits.hpp>
 
-struct Thread {
+class Thread {
+   public:
     enum class State { RUNNING, READY, WAITING, FINISHED };
     using Criterion = typename Traits::Scheduler<Thread>::Criterion;
     using Argument  = void *;
@@ -14,18 +12,10 @@ struct Thread {
     using Queue     = FIFO<Thread *>;
     using Element   = Queue::Node;
 
-    char *stack;
-    CPU::Context *volatile context;
-    volatile State state;
-    Thread *volatile joining;
-    Criterion criterion;
-    Element link;
-    Queue *waiting;
-
     ~Thread();
     Thread(Function, Argument, Criterion);
 
-    static inline Thread *running() { return reinterpret_cast<Thread *>(CPU::thread()); }
+    static Thread *running();
     static void join(Thread &);
     static void exit();
     static void init();
@@ -38,6 +28,15 @@ struct Thread {
     static void dispatch();
     static void reschedule();
     static int idle(void *);
+
+   private:
+    char *stack;
+    CPU::Context *volatile context;
+    volatile State state;
+    Thread *volatile joining;
+    Criterion criterion;
+    Element link;
+    Queue *waiting;
 };
 
 // struct RT_Thread : Thread {

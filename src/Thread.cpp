@@ -1,5 +1,8 @@
 #include <Alarm.hpp>
+#include <CPU.hpp>
 #include <IO/Debug.hpp>
+#include <Memory.hpp>
+#include <Spin.hpp>
 #include <Thread.hpp>
 
 extern int main(void *);
@@ -7,6 +10,8 @@ static volatile int _count = 0;
 static Scheduler<Thread> _scheduler;
 static Spin spin{!Spin::LOCKED};
 static Spin boot{Spin::LOCKED};
+
+Thread *Thread::running() { return reinterpret_cast<Thread *>(CPU::thread()); }
 
 __attribute__((naked)) void Thread::dispatch() {
     CPU::Context::save();
