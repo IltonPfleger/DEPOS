@@ -8,8 +8,7 @@
 extern int main(void *);
 static volatile int _count = 0;
 static Scheduler<Thread> _scheduler;
-static Spin spin{!Spin::LOCKED};
-static Spin boot{Spin::LOCKED};
+static Spin _lock;
 
 Thread *Thread::running() { return reinterpret_cast<Thread *>(CPU::thread()); }
 
@@ -25,7 +24,7 @@ __attribute__((naked)) void Thread::dispatch() {
     Thread *next = _scheduler.pop();
     next->state  = State::RUNNING;
 
-    spin.release();
+    _lock.release();
     CPU::Context::load(next->context);
 }
 
@@ -48,14 +47,14 @@ Thread::Thread(Function f, Argument a, Criterion c)
       criterion(c),
       link(Element(this, c.priority())),
       waiting(0) {
-    spin.lock();
+    _lock.lock();
     _scheduler.push(&link);
     _count = _count + 1;
-    spin.unlock();
+    _lock.unlock();
 }
 
 Thread::~Thread() {
-    spin.lock();
+    _lock.lock();
     switch (state) {
         case (State::READY):
             _scheduler.remove(&link);
@@ -74,7 +73,7 @@ Thread::~Thread() {
         _scheduler.push(&joining->link);
     }
 
-    spin.release();
+    _lock.release();
     Memory::kfree(stack);
 }
 
@@ -83,9 +82,9 @@ void Thread::join(Thread &thread) {
     ERROR(&thread == previous, "[Thread::join] Join itself.");
     ERROR(thread.joining, "[Thread::join] Already joined.");
 
-    spin.lock();
+    _lock.lock();
     if (thread.state == State::FINISHED) {
-        spin.unlock();
+        _lock.unlock();
         return;
     }
 
@@ -99,7 +98,7 @@ void Thread::join(Thread &thread) {
 void Thread::exit() {
     auto previous = running();
 
-    spin.lock();
+    _lock.lock();
     previous->state = State::FINISHED;
 
     if (previous->joining) {
@@ -113,20 +112,15 @@ void Thread::exit() {
 }
 
 void Thread::init() {
-    new (Memory::SYSTEM) Thread(idle, 0, Criterion::IDLE);
-    if (CPU::core() == 0) {
-        new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
-        while (_count < Machine::CPUS + 1);
-        boot.release();
-    }
-    boot.lock();
-    boot.release();
+    for (int i = 0; i < Machine::CPUS; ++i) new (Memory::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+    new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
+    CPU::Interrupt::disable();
 }
 
 void Thread::run() {
-    spin.acquire();
+    _lock.acquire();
     Thread *first = _scheduler.pop();
-    spin.release();
+    _lock.release();
 
     first->state = State::RUNNING;
     CPU::Context::load(first->context);
@@ -138,7 +132,7 @@ void Thread::reschedule() {
     auto previous   = running();
     previous->state = State::READY;
 
-    spin.acquire();
+    _lock.acquire();
     dispatch();
 }
 
@@ -148,8 +142,8 @@ void Thread::yield() {
     CPU::Interrupt::enable();
 }
 
-void Thread::lock() { spin.lock(); }
-void Thread::unlock() { spin.unlock(); }
+void Thread::lock() { _lock.lock(); }
+void Thread::unlock() { _lock.unlock(); }
 
 void Thread::sleep(Queue &waiting) {
     auto previous     = running();
