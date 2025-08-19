@@ -50,7 +50,7 @@ __attribute__((naked, aligned(4))) void ktrap() {
 
 __attribute__((naked, section(".boot"))) void kboot() {
     CPU::init();
-    CPU::Trap::set(ktrap);
     CPU::stack(STACK[CPU::core()] + Traits::Memory::Page::SIZE);
+    CPU::Trap::set(ktrap);
     Kernel::init();
 }

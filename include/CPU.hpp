@@ -28,18 +28,18 @@ struct CPU {
     };
 
     template <const int R>
-    __attribute__((always_inline)) static inline void csrw(Register r) {
+    static void csrw(Register r) {
         asm volatile("csrw %0, %1" ::"i"(R), "r"(r));
     }
 
     template <const int R>
-    __attribute__((always_inline)) static inline auto csrr() {
+    static Register csrr() {
         Register r;
         asm volatile("csrr %0, %1" : "=r"(r) : "i"(R));
         return r;
     }
 
-    __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
+    static void idle() { asm volatile("wfi"); }
 
     __attribute__((always_inline)) static inline void ret() {
         if constexpr (MODE == Mode::SUPERVISOR)
@@ -56,9 +56,9 @@ struct CPU {
 
     __attribute__((naked)) static void init() { asm("ret"); }
 
-    __attribute__((always_inline)) static inline void stack(void *ptr) { asm volatile("mv sp, %0" ::"r"(ptr)); }
+    __attribute__((always_inline)) static inline void stack(void *sp) { asm volatile("mv sp, %0" ::"r"(sp)); }
 
-    __attribute__((always_inline)) static inline void *thread() {
+    static void *thread() {
         register void *tp asm("tp");
         return tp;
     }
