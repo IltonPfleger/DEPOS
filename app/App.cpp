@@ -33,12 +33,10 @@ int main(void *) {
     }
     mutex.v();
 
-    // for (int i = 0; i < N; i++) Thread::join(*threads[i]);
+    for (int i = 0; i < N; i++) Thread::join(*threads[i]);
 
     // for (int i = 0; i < N; i++) delete threads[i];
 
-    mutex.p();
     Logger::println("Application Done!\n");
-    mutex.v();
     return 0;
 }
