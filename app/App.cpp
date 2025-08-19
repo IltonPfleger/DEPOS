@@ -27,9 +27,11 @@ int thread_function(void *arg) {
 int main(void *) {
     Logger::println("Application: \n");
 
+    mutex.p();
     for (int i = 0; i < N; i++) {
         threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);
     }
+    mutex.v();
 
     // for (int i = 0; i < N; i++) Thread::join(*threads[i]);
 

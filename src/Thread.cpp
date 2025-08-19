@@ -28,7 +28,7 @@ int Thread::idle(void *) {
     }
 
     CPU::Interrupt::disable();
-    if (CPU::core() == 0) Logger::println("*** QUARK Shutdown! ***\n");
+    if (CPU::core() == 0) Logger::println("*** Shutdown! ***\n");
     for (;;);
     return 0;
 }

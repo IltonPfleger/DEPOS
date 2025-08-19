@@ -1,17 +1,18 @@
 #pragma once
 #include <CPU.hpp>
-#include <IO/Debug.hpp>
+#include <Spin.hpp>
 #include <Thread.hpp>
 
 class Semaphore {
-    int value = 1;
+    volatile int _value = 1;
     Thread::Queue waiting;
+    Spin _lock;
 
    public:
     void p() {
         Thread::lock();
-        value--;
-        if (value + 1 < 1)
+        _value--;
+        if (_value + 1 < 1)
             Thread::sleep(waiting);
         else
             Thread::unlock();
@@ -20,8 +21,8 @@ class Semaphore {
 
     void v() {
         Thread::lock();
-        value++;
-        if (value - 1 < 0) Thread::wakeup(waiting);
+        _value++;
+        if (_value - 1 < 0) Thread::wakeup(waiting);
         Thread::unlock();
     }
 };
