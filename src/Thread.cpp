@@ -12,7 +12,7 @@ static Spin _lock;
 
 inline Thread *Thread::running() { return reinterpret_cast<Thread *>(CPU::thread()); }
 
-void Thread::dispatch(Thread *previous, Thread *next, Spin *lock = &_lock) {
+void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->state = State::RUNNING;
     if (next == previous) {
         lock->release();
@@ -102,7 +102,7 @@ void Thread::exit() {
     }
 
     _count = _count - 1;
-    dispatch(previous, _scheduler.pop());
+    dispatch(previous, _scheduler.pop(), &_lock);
 }
 
 void Thread::init() {
@@ -125,7 +125,7 @@ void Thread::reschedule() {
 
     _lock.acquire();
     _scheduler.push(&previous->link);
-    dispatch(previous, _scheduler.pop());
+    dispatch(previous, _scheduler.pop(), &_lock);
 }
 
 void Thread::yield() {
@@ -134,23 +134,28 @@ void Thread::yield() {
     CPU::Interrupt::enable();
 }
 
-void Thread::lock() { _lock.lock(); }
-void Thread::unlock() { _lock.unlock(); }
-
-void Thread::sleep(Queue &waiting) {
+void Thread::sleep(Queue &waiting, Spin &lock) {
     auto previous     = running();
     previous->state   = State::WAITING;
     previous->waiting = &waiting;
     waiting.insert(&previous->link);
-    dispatch(previous, _scheduler.pop());
+
+    _lock.acquire();
+    auto next = _scheduler.pop();
+    _lock.release();
+
+    dispatch(previous, next, &lock);
 }
 
 void Thread::wakeup(Queue &waiting) {
-    ERROR(waiting.empty(), "[Thread::wakeup] Empty queue.");
-    Element *awake        = waiting.next();
+    Element *awake = waiting.next();
+    ERROR(!awake, "[Thread::wakeup] Empty queue.");
     awake->value->state   = State::READY;
     awake->value->waiting = nullptr;
+
+    _lock.acquire();
     _scheduler.push(awake);
+    _lock.release();
 }
 
 // int entry(void *arg) {

@@ -20,11 +20,9 @@ class Thread {
     static void exit();
     static void init();
     static void run();
-    static void sleep(Queue &);
+    static void sleep(Queue &, Spin &);
     static void wakeup(Queue &);
     static void yield();
-    static void lock();
-    static void unlock();
     static void dispatch(Thread *, Thread *, Spin *);
     static void reschedule();
     static int idle(void *);

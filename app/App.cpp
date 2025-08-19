@@ -37,6 +37,8 @@ int main(void *) {
 
     // for (int i = 0; i < N; i++) delete threads[i];
 
+    mutex.p();
     Logger::println("Application Done!\n");
+    mutex.v();
     return 0;
 }
