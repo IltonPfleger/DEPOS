@@ -15,14 +15,18 @@ OBJS := $(shell find src/ -type f -name "*.cpp" | sed 's|src/|\./build/|g' | sed
 OBJS += $(BUILD)/$(APPLICATION).o
 DEPS = $(OBJS:.o=.d)
 
+
+CPUS=$(shell sed -n 's|.*CPUS *= *\([0-9]*\).*|\1|p' include/Machine.hpp)
+MACHINE=$(shell sed -n 's|.*MACHINE *= *"\([^*]*\)".*|\1|p' include/Machine.hpp)
+
 default:
 	make run
 
 run: $(TARGET)
-	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -smp 5
+	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios $(TARGET) -nographic -m 1024
 
 debug: $(TARGET)
-	$(QEMU) -M sifive_u -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
+	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
 
 gdb:
 	 gdb -ex "target remote tcp::1234" -ex "file build/quark.elf"
