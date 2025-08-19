@@ -10,7 +10,7 @@ static volatile int _count = 0;
 static Scheduler<Thread> _scheduler;
 static Spin _lock;
 
-Thread *Thread::running() { return reinterpret_cast<Thread *>(CPU::thread()); }
+inline Thread *Thread::running() { return reinterpret_cast<Thread *>(CPU::thread()); }
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock = &_lock) {
     next->state = State::RUNNING;
@@ -19,12 +19,12 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock = &_lock) {
         return;
     }
 
-    CPU::Context::swtch(&previous->context, next->context, &_lock);
+    CPU::Context::swtch(&previous->context, next->context, lock);
 }
 
 int Thread::idle(void *) {
     while (_count > Machine::CPUS) {
-        // if (!_scheduler.empty()) yield();
+        if (!_scheduler.empty()) yield();
     }
 
     CPU::Interrupt::disable();
@@ -90,9 +90,9 @@ Thread::Thread(Function f, Argument a, Criterion c)
 // }
 
 void Thread::exit() {
-    auto previous = running();
-
     _lock.lock();
+
+    auto previous = running();
     previous->state = State::FINISHED;
 
     if (previous->joining) {
@@ -108,15 +108,13 @@ void Thread::exit() {
 void Thread::init() {
     for (int i = 0; i < Machine::CPUS; ++i) new (Memory::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
-    CPU::Interrupt::disable();
 }
 
 void Thread::run() {
-    CPU::Context *tmp = nullptr;
     _lock.acquire();
     Thread *first = _scheduler.pop();
     first->state  = State::RUNNING;
-    CPU::Context::swtch(&tmp, first->context, &_lock);
+    CPU::Context::swtch(&first->context, first->context, &_lock);
 }
 
 void Thread::reschedule() {
@@ -130,11 +128,11 @@ void Thread::reschedule() {
     dispatch(previous, _scheduler.pop());
 }
 
-// void Thread::yield() {
-//     CPU::Interrupt::disable();
-//     reschedule();
-//     CPU::Interrupt::enable();
-// }
+void Thread::yield() {
+    CPU::Interrupt::disable();
+    reschedule();
+    CPU::Interrupt::enable();
+}
 //
 // void Thread::lock() { _lock.lock(); }
 // void Thread::unlock() { _lock.unlock(); }
