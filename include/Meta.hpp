@@ -1,6 +1,7 @@
 #pragma once
 
 #define OFFSET_OF(type, member) ((unsigned long)&(((type *)0)->member))
+#define ASM(i) asm(#i)
 
 struct Meta {
     template <bool B, typename True, typename False>

@@ -12,17 +12,59 @@ namespace Kernel {
 }
 
 struct CPU {
-    __attribute__((always_inline)) static inline void iret() { asm volatile("mret"); }
+    enum class Mode { SUPERVISOR, MACHINE };
+    static constexpr Mode MODE = Mode::MACHINE;
 
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
 
-    __attribute__((always_inline)) static inline void stack(void *ptr) { asm volatile("mv sp, %0" ::"r"(ptr)); }
+    __attribute__((always_inline)) static inline void ret() {
+        if constexpr (MODE == Mode::SUPERVISOR)
+            asm volatile("sret");
+        else
+            asm volatile("mret");
+    }
+
+    __attribute__((always_inline)) static inline void epc(uintmax_t value) {
+        if constexpr (MODE == Mode::SUPERVISOR)
+            asm volatile("csrw sepc, %0" ::"r"(value));
+        else
+            asm volatile("csrw mepc, %0" ::"r"(value));
+    }
+
+    __attribute__((always_inline)) static inline uintmax_t epc() {
+        uintmax_t value;
+        if constexpr (MODE == Mode::SUPERVISOR)
+            asm volatile("csrr %0, sepc" : "=r"(value));
+        else
+            asm volatile("csrr %0, mepc" : "=r"(value));
+        return value;
+    }
+
+    __attribute__((always_inline)) static inline void status(uintmax_t value) {
+        if constexpr (MODE == Mode::SUPERVISOR)
+            asm volatile("csrw sstatus, %0" ::"r"(value));
+        else
+            asm volatile("csrw mstatus, %0" ::"r"(value));
+    }
+
+    __attribute__((always_inline)) static inline uintmax_t status() {
+        uintmax_t value;
+        if constexpr (MODE == Mode::SUPERVISOR)
+            asm volatile("csrr %0, sstatus" : "=r"(value));
+        else
+            asm volatile("csrr %0, mstatus" : "=r"(value));
+        return value;
+    }
 
     __attribute__((always_inline)) static inline unsigned int core() {
         unsigned int id;
         asm volatile("csrr %0, mhartid" : "=r"(id));
         return id;
     }
+
+    __attribute__((naked)) static void init() { asm("ret"); }
+
+    __attribute__((always_inline)) static inline void stack(void *ptr) { asm volatile("mv sp, %0" ::"r"(ptr)); }
 
     __attribute__((always_inline)) static inline void *thread() {
         register void *tp asm("tp");
@@ -47,7 +89,9 @@ struct CPU {
         }
 
         __attribute__((naked)) static void load() {
+            Context *c = nullptr;
             asm volatile(
+                "mv %0, sp\n"
                 "ld ra, %c[ra](sp)\n"
                 "ld tp, %c[tp](sp)\n"
                 "ld s0, %c[s0](sp)\n"
@@ -63,26 +107,25 @@ struct CPU {
                 "ld s9, %c[s9](sp)\n"
                 "ld s10, %c[s10](sp)\n"
                 "ld s11, %c[s11](sp)\n"
-                "ld t0, %c[status](sp)\n"
-                "ld t1, %c[pc](sp)\n"
-                "csrw mstatus, t0\n"
-                "csrw mepc, t1\n"
                 :
-                : [ra] "i"(OFFSET_OF(Context, ra)), [tp] "i"(OFFSET_OF(Context, tp)), [s0] "i"(OFFSET_OF(Context, s0)),
-                  [s1] "i"(OFFSET_OF(Context, s1)), [a0] "i"(OFFSET_OF(Context, a0)), [s2] "i"(OFFSET_OF(Context, s2)),
-                  [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)),
-                  [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)),
-                  [s9] "i"(OFFSET_OF(Context, s9)), [s10] "i"(OFFSET_OF(Context, s10)),
-                  [s11] "i"(OFFSET_OF(Context, s11)), [status] "i"(OFFSET_OF(Context, status)),
-                  [pc] "i"(OFFSET_OF(Context, pc))
-                : "memory");
+                : "r"(c), [ra] "i"(OFFSET_OF(Context, ra)), [tp] "i"(OFFSET_OF(Context, tp)),
+                  [s0] "i"(OFFSET_OF(Context, s0)), [s1] "i"(OFFSET_OF(Context, s1)), [a0] "i"(OFFSET_OF(Context, a0)),
+                  [s2] "i"(OFFSET_OF(Context, s2)), [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)),
+                  [s5] "i"(OFFSET_OF(Context, s5)), [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)),
+                  [s8] "i"(OFFSET_OF(Context, s8)), [s9] "i"(OFFSET_OF(Context, s9)),
+                  [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11)));
+
+            CPU::epc(c->pc);
+            CPU::status(c->status);
             asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
-            CPU::iret();
+            CPU::ret();
         }
 
         __attribute__((naked)) static void swtch(Context **previous, Context *next, Spin *lock) {
-            asm volatile("addi sp, sp, %0\n" : : "i"(-sizeof(Context)) : "memory");
+            Context *c = nullptr;
+            asm volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
             asm volatile(
+                "mv %0, sp\n"
                 "sd ra, %c[ra](sp)\n"
                 "sd tp, %c[tp](sp)\n"
                 "sd s0, %c[s0](sp)\n"
@@ -97,21 +140,16 @@ struct CPU {
                 "sd s9, %c[s9](sp)\n"
                 "sd s10, %c[s10](sp)\n"
                 "sd s11, %c[s11](sp)\n"
-                "csrr t0, mstatus\n"
-                "andi t0, t0, ~0x80\n"
-                "li t1, 0x1800\n"
-                "or t0, t0, t1\n"
-                "sd t0, %c[status](sp)\n"
-                "sd ra, %c[pc](sp)"
-                :
+                : "=r"(c)
                 : [ra] "i"(OFFSET_OF(Context, ra)), [tp] "i"(OFFSET_OF(Context, tp)), [s0] "i"(OFFSET_OF(Context, s0)),
                   [s1] "i"(OFFSET_OF(Context, s1)), [s2] "i"(OFFSET_OF(Context, s2)), [s3] "i"(OFFSET_OF(Context, s3)),
                   [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)), [s6] "i"(OFFSET_OF(Context, s6)),
                   [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)), [s9] "i"(OFFSET_OF(Context, s9)),
-                  [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11)),
-                  [status] "i"(OFFSET_OF(Context, status)), [pc] "i"(OFFSET_OF(Context, pc))
+                  [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11))
                 : "memory");
-            asm("sd sp, (%0)" ::"r"(previous));
+            c->pc     = c->ra;
+            c->status = (CPU::status() & ~0x80) | 0x1800;
+            *previous = c;
             asm("mv sp, %0" ::"r"(next));
             lock->release();
             load();
@@ -188,7 +226,7 @@ struct CPU {
                   [status] "i"(OFFSET_OF(Context, status)));
 
             asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
-            CPU::iret();
+            CPU::ret();
         }
     };
 
@@ -230,8 +268,8 @@ struct CPU {
     };
 
     struct Interrupt {
-        __attribute__((always_inline)) static inline void disable() { asm("csrci mstatus, 0x8"); }
-        __attribute__((always_inline)) static inline void enable() { asm("csrsi mstatus, 0x8"); }
+        static void disable() { asm("csrci mstatus, 0x8"); }
+        static void enable() { asm("csrsi mstatus, 0x8"); }
 
         static void on() { enable(); }
         static bool off() {
