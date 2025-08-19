@@ -9,13 +9,21 @@ namespace Timer {
 
 namespace Kernel {
     void exception();
+    void ktrap();
 }
 
 struct CPU {
     typedef uintmax_t Register;
     enum class Mode { SUPERVISOR, MACHINE };
 
-    static constexpr Mode MODE        = Mode::MACHINE;
+    static constexpr Mode MODE = Mode::SUPERVISOR;
+
+    static constexpr const int PMPADDR0 = 0x3B0;
+    static constexpr const int PMPCFG0  = 0x3A0;
+    static constexpr const int MODELEG  = 0x302;
+    static constexpr const int MIDELEG  = 0x303;
+    static constexpr const int SATP     = 0x180;
+
     static constexpr const int STATUS = MODE == Mode::SUPERVISOR ? 0x100 : 0x300;
     static constexpr const int EPC    = MODE == Mode::SUPERVISOR ? 0x141 : 0x341;
     static constexpr const int CAUSE  = MODE == Mode::SUPERVISOR ? 0x142 : 0x342;
@@ -54,7 +62,21 @@ struct CPU {
         return id;
     }
 
-    __attribute__((naked)) static void init() { asm("ret"); }
+    static void init() {
+        CPU::Interrupt::disable();
+        CPU::csrw<SATP>(0);
+        CPU::csrw<TVEC>(reinterpret_cast<Register>(&Kernel::ktrap));
+        CPU::csrw<MODELEG>(0xffff);
+        CPU::csrw<MIDELEG>(0xffff);
+        CPU::csrw<PMPADDR0>(0x3fffffffffffffull);
+        CPU::csrw<PMPCFG0>(0xf);
+        CPU::csrw<STATUS>((CPU::csrr<STATUS>() & ~0x1800) | MPP | ~PIE);
+        Register ra;
+        asm("mv %0, ra" : "=r"(ra));
+        csrw<EPC>(ra);
+        Machine::IO::UART::put('O');
+        asm("mret");
+    }
 
     __attribute__((always_inline)) static inline void stack(void *sp) { asm volatile("mv sp, %0" ::"r"(sp)); }
 
@@ -297,10 +319,6 @@ struct CPU {
             } else {
                 Kernel::exception();
             }
-        }
-
-        __attribute__((always_inline)) static inline void set(void (*p)()) {
-            csrw<TVEC>(reinterpret_cast<Register>(p));
         }
     };
 

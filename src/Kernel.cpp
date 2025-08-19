@@ -40,17 +40,17 @@ namespace Kernel {
               "mtval: %p\n",
               mcause, mepc, mtval);
     }
-}
 
-__attribute__((naked, aligned(4))) void ktrap() {
-    CPU::Context::push();
-    CPU::Trap::handler();
-    CPU::Context::pop();
+    __attribute__((naked, aligned(4))) void ktrap() {
+        CPU::Context::push();
+        CPU::Trap::handler();
+        CPU::Context::pop();
+    }
+
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
-    CPU::init();
     CPU::stack(STACK[CPU::core()] + Traits::Memory::Page::SIZE);
-    CPU::Trap::set(ktrap);
+    CPU::init();
     Kernel::init();
 }
