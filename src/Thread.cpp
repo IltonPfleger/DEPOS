@@ -92,7 +92,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
 void Thread::exit() {
     _lock.lock();
 
-    auto previous = running();
+    auto previous   = running();
     previous->state = State::FINISHED;
 
     if (previous->joining) {
@@ -133,25 +133,25 @@ void Thread::yield() {
     reschedule();
     CPU::Interrupt::enable();
 }
-//
-// void Thread::lock() { _lock.lock(); }
-// void Thread::unlock() { _lock.unlock(); }
-//
-// void Thread::sleep(Queue &waiting) {
-//     auto previous     = running();
-//     previous->state   = State::WAITING;
-//     previous->waiting = &waiting;
-//     waiting.insert(&previous->link);
-//     dispatch();
-// }
-//
-// void Thread::wakeup(Queue &waiting) {
-//     ERROR(waiting.empty(), "[Thread::wakeup] Empty queue.");
-//     Element *awake        = waiting.next();
-//     awake->value->state   = State::READY;
-//     awake->value->waiting = nullptr;
-//     _scheduler.push(awake);
-// }
+
+void Thread::lock() { _lock.lock(); }
+void Thread::unlock() { _lock.unlock(); }
+
+void Thread::sleep(Queue &waiting) {
+    auto previous     = running();
+    previous->state   = State::WAITING;
+    previous->waiting = &waiting;
+    waiting.insert(&previous->link);
+    dispatch(previous, _scheduler.pop());
+}
+
+void Thread::wakeup(Queue &waiting) {
+    ERROR(waiting.empty(), "[Thread::wakeup] Empty queue.");
+    Element *awake        = waiting.next();
+    awake->value->state   = State::READY;
+    awake->value->waiting = nullptr;
+    _scheduler.push(awake);
+}
 
 // int entry(void *arg) {
 //     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));
