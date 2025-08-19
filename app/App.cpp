@@ -18,7 +18,7 @@ int thread_function(void *arg) {
         // mutex.p();
         Logger::println("THREAD: %d | Core: %d", id, CPU::core());
         // mutex.v();
-        // Thread::yield();
+        Thread::yield();
         //   Alarm::usleep(10000);
     }
     return 0;
