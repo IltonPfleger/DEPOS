@@ -5,7 +5,7 @@ LD := $(TOOL)-ld
 OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 
-CFLAGS := -Wall -Wextra -pedantic -mcmodel=medany -Iinclude
+CFLAGS := -Wall -Wextra -Werror -pedantic -mcmodel=medany -Iinclude
 CFLAGS +=  -ffunction-sections -fdata-sections -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles -fcheck-new -Wno-dangling-pointer -Wno-sized-deallocation
 CFLAGS += -g -std=c++20 -march=rv64gc -mabi=lp64 
 
