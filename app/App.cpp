@@ -15,11 +15,11 @@ int thread_function(void *arg) {
     int id = (int)(long long)arg;
     int i  = ITERATIONS;
     while (i--) {
-        mutex.p();
+        // mutex.p();
         Logger::println("THREAD: %d | Core: %d", id, CPU::core());
-        mutex.v();
-        Thread::yield();
-        //  Alarm::usleep(10000);
+        // mutex.v();
+        // Thread::yield();
+        //   Alarm::usleep(10000);
     }
     return 0;
 }
@@ -31,7 +31,7 @@ int main(void *) {
         threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);
     }
 
-    for (int i = 0; i < N; i++) Thread::join(*threads[i]);
+    // for (int i = 0; i < N; i++) Thread::join(*threads[i]);
 
     // for (int i = 0; i < N; i++) delete threads[i];
 
