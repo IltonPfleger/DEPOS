@@ -12,8 +12,16 @@ namespace Kernel {
 }
 
 struct CPU {
+    typedef uintmax_t Register;
     enum class Mode { SUPERVISOR, MACHINE };
+
     static constexpr Mode MODE = Mode::MACHINE;
+
+    enum : Register {
+        IE  = MODE == Mode::SUPERVISOR ? (1 << 1) : (1 << 3),
+        PIE = MODE == Mode::SUPERVISOR ? (1 << 5) : (1 << 7),
+        MPP = MODE == Mode::SUPERVISOR ? (1 << 11) : (3 << 11)
+    };
 
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
 
@@ -24,15 +32,15 @@ struct CPU {
             asm volatile("mret");
     }
 
-    __attribute__((always_inline)) static inline void epc(uintmax_t value) {
+    __attribute__((always_inline)) static inline void epc(Register value) {
         if constexpr (MODE == Mode::SUPERVISOR)
             asm volatile("csrw sepc, %0" ::"r"(value));
         else
             asm volatile("csrw mepc, %0" ::"r"(value));
     }
 
-    __attribute__((always_inline)) static inline uintmax_t epc() {
-        uintmax_t value;
+    __attribute__((always_inline)) static inline Register epc() {
+        Register value;
         if constexpr (MODE == Mode::SUPERVISOR)
             asm volatile("csrr %0, sepc" : "=r"(value));
         else
@@ -40,15 +48,15 @@ struct CPU {
         return value;
     }
 
-    __attribute__((always_inline)) static inline void status(uintmax_t value) {
+    __attribute__((always_inline)) static inline void status(Register value) {
         if constexpr (MODE == Mode::SUPERVISOR)
             asm volatile("csrw sstatus, %0" ::"r"(value));
         else
             asm volatile("csrw mstatus, %0" ::"r"(value));
     }
 
-    __attribute__((always_inline)) static inline uintmax_t status() {
-        uintmax_t value;
+    __attribute__((always_inline)) static inline Register status() {
+        Register value;
         if constexpr (MODE == Mode::SUPERVISOR)
             asm volatile("csrr %0, sstatus" : "=r"(value));
         else
@@ -56,10 +64,26 @@ struct CPU {
         return value;
     }
 
+    __attribute__((always_inline)) static Register cause() {
+        Register value;
+        if constexpr (MODE == Mode::SUPERVISOR)
+            asm volatile("csrr %0, scause" : "=r"(value));
+        else
+            asm volatile("csrr %0, mcause" : "=r"(value));
+        return value;
+    }
+
     __attribute__((always_inline)) static inline unsigned int core() {
         unsigned int id;
         asm volatile("csrr %0, mhartid" : "=r"(id));
         return id;
+    }
+
+    __attribute__((always_inline)) static inline void tvec(Register value) {
+        if constexpr (MODE == Mode::SUPERVISOR)
+            asm volatile("csrw stvec, %0" ::"r"(value));
+        else
+            asm volatile("csrw mtvec, %0" ::"r"(value));
     }
 
     __attribute__((naked)) static void init() { asm("ret"); }
@@ -89,7 +113,10 @@ struct CPU {
         }
 
         __attribute__((naked)) static void load() {
-            Context *c = nullptr;
+            register Context *c asm("t0");
+            asm volatile("mv %0, sp" : "=r"(c));
+            CPU::epc(c->pc);
+            CPU::status(c->status);
             asm volatile(
                 "mv %0, sp\n"
                 "ld ra, %c[ra](sp)\n"
@@ -115,17 +142,15 @@ struct CPU {
                   [s8] "i"(OFFSET_OF(Context, s8)), [s9] "i"(OFFSET_OF(Context, s9)),
                   [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11)));
 
-            CPU::epc(c->pc);
-            CPU::status(c->status);
             asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
             CPU::ret();
         }
 
         __attribute__((naked)) static void swtch(Context **previous, Context *next, Spin *lock) {
-            Context *c = nullptr;
+            register Context *c asm("t0");
             asm volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
+            asm volatile("mv %0, sp" : "=r"(c));
             asm volatile(
-                "mv %0, sp\n"
                 "sd ra, %c[ra](sp)\n"
                 "sd tp, %c[tp](sp)\n"
                 "sd s0, %c[s0](sp)\n"
@@ -140,7 +165,7 @@ struct CPU {
                 "sd s9, %c[s9](sp)\n"
                 "sd s10, %c[s10](sp)\n"
                 "sd s11, %c[s11](sp)\n"
-                : "=r"(c)
+                :
                 : [ra] "i"(OFFSET_OF(Context, ra)), [tp] "i"(OFFSET_OF(Context, tp)), [s0] "i"(OFFSET_OF(Context, s0)),
                   [s1] "i"(OFFSET_OF(Context, s1)), [s2] "i"(OFFSET_OF(Context, s2)), [s3] "i"(OFFSET_OF(Context, s3)),
                   [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)), [s6] "i"(OFFSET_OF(Context, s6)),
@@ -148,7 +173,7 @@ struct CPU {
                   [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11))
                 : "memory");
             c->pc     = c->ra;
-            c->status = (CPU::status() & ~0x80) | 0x1800;
+            c->status = (CPU::status() & ~PIE) | MPP;
             *previous = c;
             asm("mv sp, %0" ::"r"(next));
             lock->release();
@@ -156,8 +181,9 @@ struct CPU {
         }
 
         __attribute__((always_inline)) static inline void push() {
+            asm volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
+
             asm volatile(
-                "addi sp, sp, %0\n"
                 "sd ra, %c[ra](sp)\n"
                 "sd tp, %c[tp](sp)\n"
                 "sd t0, %c[t0](sp)\n"
@@ -176,13 +202,17 @@ struct CPU {
                 "sd a6, %c[a6](sp)\n"
                 "sd a7, %c[a7](sp)\n"
                 :
-                : "i"(-sizeof(Context)), [ra] "i"(OFFSET_OF(Context, ra)), [tp] "i"(OFFSET_OF(Context, tp)),
-                  [t0] "i"(OFFSET_OF(Context, t0)), [t1] "i"(OFFSET_OF(Context, t1)), [t2] "i"(OFFSET_OF(Context, t2)),
-                  [t3] "i"(OFFSET_OF(Context, t3)), [t4] "i"(OFFSET_OF(Context, t4)), [t5] "i"(OFFSET_OF(Context, t5)),
-                  [t6] "i"(OFFSET_OF(Context, t6)), [a0] "i"(OFFSET_OF(Context, a0)), [a1] "i"(OFFSET_OF(Context, a1)),
-                  [a2] "i"(OFFSET_OF(Context, a2)), [a3] "i"(OFFSET_OF(Context, a3)), [a4] "i"(OFFSET_OF(Context, a4)),
-                  [a5] "i"(OFFSET_OF(Context, a5)), [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7))
+                : [ra] "i"(OFFSET_OF(Context, ra)), [tp] "i"(OFFSET_OF(Context, tp)), [t0] "i"(OFFSET_OF(Context, t0)),
+                  [t1] "i"(OFFSET_OF(Context, t1)), [t2] "i"(OFFSET_OF(Context, t2)), [t3] "i"(OFFSET_OF(Context, t3)),
+                  [t4] "i"(OFFSET_OF(Context, t4)), [t5] "i"(OFFSET_OF(Context, t5)), [t6] "i"(OFFSET_OF(Context, t6)),
+                  [a0] "i"(OFFSET_OF(Context, a0)), [a1] "i"(OFFSET_OF(Context, a1)), [a2] "i"(OFFSET_OF(Context, a2)),
+                  [a3] "i"(OFFSET_OF(Context, a3)), [a4] "i"(OFFSET_OF(Context, a4)), [a5] "i"(OFFSET_OF(Context, a5)),
+                  [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7))
                 : "memory");
+            // register Context *c asm("t0");
+            // asm volatile("mv %0, sp" : "=r"(c));
+            // c->status = CPU::status();
+            // c->pc     = CPU::epc();
 
             asm volatile(
                 "csrr t0, mstatus\n"
@@ -244,16 +274,10 @@ struct CPU {
             Timer::handler,  // 7
         };
 
-        static auto mcause() {
-            uintmax_t mcause;
-            asm("csrr %0, mcause" : "=r"(mcause));
-            return mcause;
-        }
-
         static void handler() {
-            auto cause        = mcause();
-            bool is_interrupt = cause >> (Machine::XLEN - 1);
-            auto code         = (cause << 1) >> 1;
+            auto _cause       = cause();
+            bool is_interrupt = _cause >> (Machine::XLEN - 1);
+            auto code         = (_cause << 1) >> 1;
 
             if (is_interrupt) {
                 interrupts[code]();
@@ -262,21 +286,18 @@ struct CPU {
             }
         }
 
-        __attribute__((always_inline)) static inline void set(void (*ptr)()) {
-            asm volatile("csrw mtvec, %0" ::"r"(ptr));
-        }
+        __attribute__((always_inline)) static inline void set(void (*p)()) { tvec(reinterpret_cast<Register>(p)); }
     };
 
     struct Interrupt {
-        static void disable() { asm("csrci mstatus, 0x8"); }
-        static void enable() { asm("csrsi mstatus, 0x8"); }
+        static void disable() { status(status() & ~IE); }
+        static void enable() { status(status() | IE); }
 
         static void on() { enable(); }
         static bool off() {
-            uintmax_t mstatus;
-            asm("csrr %0, mstatus" : "=r"(mstatus));
+            Register _status = status();
             disable();
-            return (mstatus & 0x8) != 0;
+            return (_status & 0x8) != 0;
         }
 
         struct Timer {
