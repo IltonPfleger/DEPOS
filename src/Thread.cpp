@@ -12,20 +12,14 @@ static Spin _lock;
 
 Thread *Thread::running() { return reinterpret_cast<Thread *>(CPU::thread()); }
 
-__attribute__((naked)) void Thread::dispatch() {
-    CPU::Context::save();
-    auto previous     = running();
-    previous->context = CPU::Context::get();
-
-    if (previous->state == State::READY) {
-        _scheduler.push(&previous->link);
+void Thread::dispatch(Thread *previous, Thread *next, Spin *lock = &_lock) {
+    next->state = State::RUNNING;
+    if (next == previous) {
+        lock->release();
+        return;
     }
 
-    Thread *next = _scheduler.pop();
-    next->state  = State::RUNNING;
-
-    _lock.release();
-    CPU::Context::load(next->context);
+    CPU::Context::swtch(&previous->context, next->context, &_lock);
 }
 
 int Thread::idle(void *) {
@@ -108,7 +102,7 @@ void Thread::exit() {
     }
 
     _count = _count - 1;
-    dispatch();
+    dispatch(previous, _scheduler.pop());
 }
 
 void Thread::init() {
@@ -118,12 +112,11 @@ void Thread::init() {
 }
 
 void Thread::run() {
+    CPU::Context *tmp = nullptr;
     _lock.acquire();
     Thread *first = _scheduler.pop();
-    _lock.release();
-
-    first->state = State::RUNNING;
-    CPU::Context::load(first->context);
+    first->state  = State::RUNNING;
+    CPU::Context::swtch(&tmp, first->context, &_lock);
 }
 
 void Thread::reschedule() {
@@ -133,7 +126,8 @@ void Thread::reschedule() {
     previous->state = State::READY;
 
     _lock.acquire();
-    dispatch();
+    _scheduler.push(&previous->link);
+    dispatch(previous, _scheduler.pop());
 }
 
 // void Thread::yield() {

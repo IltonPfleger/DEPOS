@@ -25,13 +25,13 @@ class Thread {
     static void yield();
     static void lock();
     static void unlock();
-    static void dispatch();
+    static void dispatch(Thread *, Thread *, Spin *);
     static void reschedule();
     static int idle(void *);
 
    private:
     char *stack;
-    CPU::Context *volatile context;
+    CPU::Context *context;
     volatile State state;
     Thread *volatile joining;
     Criterion criterion;
