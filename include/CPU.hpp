@@ -187,16 +187,15 @@ struct CPU {
                   [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7)), [pc] "i"(OFFSET_OF(Context, pc)),
                   [status] "i"(OFFSET_OF(Context, status)));
 
-            asm volatile("addi sp, sp, %0\n" : : "i"(sizeof(Context)) : "memory");
-
+            asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
             CPU::iret();
         }
     };
 
-    struct Atomic {
-        static int fdec(volatile int &value) { return __atomic_fetch_sub(&value, 1, __ATOMIC_SEQ_CST); }
-        static int finc(volatile int &value) { return __atomic_fetch_add(&value, 1, __ATOMIC_SEQ_CST); }
-    };
+    // struct Atomic {
+    //     static int fdec(volatile int &value) { return __atomic_fetch_sub(&value, 1, __ATOMIC_SEQ_CST); }
+    //     static int finc(volatile int &value) { return __atomic_fetch_add(&value, 1, __ATOMIC_SEQ_CST); }
+    // };
 
     struct Trap {
         using Handler = void (*)();

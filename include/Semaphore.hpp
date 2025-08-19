@@ -4,25 +4,22 @@
 #include <Thread.hpp>
 
 class Semaphore {
-    volatile int _value = 1;
+    int _value = 1;
     Thread::Queue waiting;
     Spin _lock;
 
    public:
     void p() {
-        Thread::lock();
-        _value--;
-        if (_value + 1 < 1)
-            Thread::sleep(waiting);
+        _lock.lock();
+        if (_value-- < 1)
+            Thread::sleep(waiting, _lock);
         else
-            Thread::unlock();
-        CPU::Interrupt::enable();
+            _lock.unlock();
     }
 
     void v() {
-        Thread::lock();
-        _value++;
-        if (_value - 1 < 0) Thread::wakeup(waiting);
-        Thread::unlock();
+        _lock.lock();
+        if (_value++ < 0) Thread::wakeup(waiting);
+        _lock.unlock();
     }
 };
