@@ -15,4 +15,4 @@ void Spin::unlock() {
     auto i = interrupts;
     release();
     if (i) CPU::Interrupt::on();
-};
+}

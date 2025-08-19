@@ -86,6 +86,7 @@ void Thread::join(Thread &thread) {
     thread.joining  = previous;
 
     dispatch(previous, _scheduler.pop(), &_lock);
+    CPU::Interrupt::enable();
 }
 
 void Thread::exit() {
