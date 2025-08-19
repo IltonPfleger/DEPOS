@@ -71,23 +71,22 @@ Thread::Thread(Function f, Argument a, Criterion c)
 //     Memory::kfree(stack);
 // }
 
-// void Thread::join(Thread &thread) {
-//     auto previous = running();
-//     ERROR(&thread == previous, "[Thread::join] Join itself.");
-//     ERROR(thread.joining, "[Thread::join] Already joined.");
-//
-//     _lock.lock();
-//     if (thread.state == State::FINISHED) {
-//         _lock.unlock();
-//         return;
-//     }
-//
-//     previous->state = State::WAITING;
-//     thread.joining  = previous;
-//
-//     dispatch();
-//     CPU::Interrupt::enable();
-// }
+void Thread::join(Thread &thread) {
+    auto previous = running();
+    ERROR(&thread == previous, "[Thread::join] Join itself.");
+    ERROR(thread.joining, "[Thread::join] Already joined.");
+
+    _lock.lock();
+    if (thread.state == State::FINISHED) {
+        _lock.unlock();
+        return;
+    }
+
+    previous->state = State::WAITING;
+    thread.joining  = previous;
+
+    dispatch(previous, _scheduler.pop(), &_lock);
+}
 
 void Thread::exit() {
     _lock.lock();
