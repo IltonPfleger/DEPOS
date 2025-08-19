@@ -30,7 +30,7 @@ __attribute__((naked)) void Thread::dispatch() {
 
 int Thread::idle(void *) {
     while (_count > Machine::CPUS) {
-        if (!_scheduler.empty()) yield();
+        // if (!_scheduler.empty()) yield();
     }
 
     CPU::Interrupt::disable();
@@ -41,7 +41,7 @@ int Thread::idle(void *) {
 
 Thread::Thread(Function f, Argument a, Criterion c)
     : stack(reinterpret_cast<char *>(Memory::kmalloc())),
-      context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context::Saved)) CPU::Context(f, a, exit, this)),
+      context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context)) CPU::Context(f, a, exit, this)),
       state(State::READY),
       joining(0),
       criterion(c),
@@ -53,47 +53,47 @@ Thread::Thread(Function f, Argument a, Criterion c)
     _lock.unlock();
 }
 
-Thread::~Thread() {
-    _lock.lock();
-    switch (state) {
-        case (State::READY):
-            _scheduler.remove(&link);
-            _count = _count - 1;
-            break;
-        case (State::WAITING):
-            waiting->remove(&link);
-            _count = _count - 1;
-            break;
-        default:
-            break;
-    }
+// Thread::~Thread() {
+//     _lock.lock();
+//     switch (state) {
+//         case (State::READY):
+//             _scheduler.remove(&link);
+//             _count = _count - 1;
+//             break;
+//         case (State::WAITING):
+//             waiting->remove(&link);
+//             _count = _count - 1;
+//             break;
+//         default:
+//             break;
+//     }
+//
+//     if (joining) {
+//         joining->state = State::READY;
+//         _scheduler.push(&joining->link);
+//     }
+//
+//     _lock.release();
+//     Memory::kfree(stack);
+// }
 
-    if (joining) {
-        joining->state = State::READY;
-        _scheduler.push(&joining->link);
-    }
-
-    _lock.release();
-    Memory::kfree(stack);
-}
-
-void Thread::join(Thread &thread) {
-    auto previous = running();
-    ERROR(&thread == previous, "[Thread::join] Join itself.");
-    ERROR(thread.joining, "[Thread::join] Already joined.");
-
-    _lock.lock();
-    if (thread.state == State::FINISHED) {
-        _lock.unlock();
-        return;
-    }
-
-    previous->state = State::WAITING;
-    thread.joining  = previous;
-
-    dispatch();
-    CPU::Interrupt::enable();
-}
+// void Thread::join(Thread &thread) {
+//     auto previous = running();
+//     ERROR(&thread == previous, "[Thread::join] Join itself.");
+//     ERROR(thread.joining, "[Thread::join] Already joined.");
+//
+//     _lock.lock();
+//     if (thread.state == State::FINISHED) {
+//         _lock.unlock();
+//         return;
+//     }
+//
+//     previous->state = State::WAITING;
+//     thread.joining  = previous;
+//
+//     dispatch();
+//     CPU::Interrupt::enable();
+// }
 
 void Thread::exit() {
     auto previous = running();
@@ -136,30 +136,30 @@ void Thread::reschedule() {
     dispatch();
 }
 
-void Thread::yield() {
-    CPU::Interrupt::disable();
-    reschedule();
-    CPU::Interrupt::enable();
-}
-
-void Thread::lock() { _lock.lock(); }
-void Thread::unlock() { _lock.unlock(); }
-
-void Thread::sleep(Queue &waiting) {
-    auto previous     = running();
-    previous->state   = State::WAITING;
-    previous->waiting = &waiting;
-    waiting.insert(&previous->link);
-    dispatch();
-}
-
-void Thread::wakeup(Queue &waiting) {
-    ERROR(waiting.empty(), "[Thread::wakeup] Empty queue.");
-    Element *awake        = waiting.next();
-    awake->value->state   = State::READY;
-    awake->value->waiting = nullptr;
-    _scheduler.push(awake);
-}
+// void Thread::yield() {
+//     CPU::Interrupt::disable();
+//     reschedule();
+//     CPU::Interrupt::enable();
+// }
+//
+// void Thread::lock() { _lock.lock(); }
+// void Thread::unlock() { _lock.unlock(); }
+//
+// void Thread::sleep(Queue &waiting) {
+//     auto previous     = running();
+//     previous->state   = State::WAITING;
+//     previous->waiting = &waiting;
+//     waiting.insert(&previous->link);
+//     dispatch();
+// }
+//
+// void Thread::wakeup(Queue &waiting) {
+//     ERROR(waiting.empty(), "[Thread::wakeup] Empty queue.");
+//     Element *awake        = waiting.next();
+//     awake->value->state   = State::READY;
+//     awake->value->waiting = nullptr;
+//     _scheduler.push(awake);
+// }
 
 // int entry(void *arg) {
 //     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));

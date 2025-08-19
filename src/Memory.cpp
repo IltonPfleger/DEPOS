@@ -81,7 +81,7 @@ void *operator new(unsigned long bytes, Memory::Role role) {
     if (i == Traits::Memory::Page::ORDER) {
         lock.unlock();
         auto page = reinterpret_cast<Memory::Block *>(Memory::kmalloc());
-        if (!page) return nullptr;
+        ERROR(!page, "[operator new] Out of memory.");
         lock.lock();
         getRole(page)         = role;
         i                     = Traits::Memory::Page::ORDER;
