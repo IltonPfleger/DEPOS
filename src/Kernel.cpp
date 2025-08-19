@@ -11,6 +11,7 @@ static volatile bool boot = true;
 
 namespace Kernel {
     void init() {
+        CPU::Interrupt::disable();
         if (CPU::core() == 0) {
             Logger::init();
             Logger::println("\n[Kernel]\n");
@@ -42,14 +43,12 @@ namespace Kernel {
 }
 
 __attribute__((naked, aligned(4))) void ktrap() {
-    CPU::Interrupt::disable();
     CPU::Context::push();
     CPU::Trap::handler();
     CPU::Context::pop();
 }
 
 __attribute__((naked, section(".boot"))) void kboot() {
-    CPU::Interrupt::disable();
     CPU::init();
     CPU::Trap::set(ktrap);
     CPU::stack(STACK[CPU::core()] + Traits::Memory::Page::SIZE);
