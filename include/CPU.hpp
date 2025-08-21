@@ -121,12 +121,10 @@ struct CPU {
         }
 
         __attribute__((naked)) static void load() {
-            Context *c;
-            asm volatile("mv %0, sp" : "=r"(c));
+            register Context *c asm("sp");
             csrw<KEPC>(c->pc);
             csrw<KSTATUS>(c->status);
             asm volatile(
-                "mv %0, sp\n"
                 "ld ra, %c[ra](sp)\n"
                 "ld tp, %c[tp](sp)\n"
                 "ld s0, %c[s0](sp)\n"
@@ -143,7 +141,7 @@ struct CPU {
                 "ld s10, %c[s10](sp)\n"
                 "ld s11, %c[s11](sp)\n"
                 :
-                : "r"(c), [ra] "i"(OFFSET_OF(Context, ra)), [tp] "i"(OFFSET_OF(Context, tp)),
+                :  [ra] "i"(OFFSET_OF(Context, ra)), [tp] "i"(OFFSET_OF(Context, tp)),
                   [s0] "i"(OFFSET_OF(Context, s0)), [s1] "i"(OFFSET_OF(Context, s1)), [a0] "i"(OFFSET_OF(Context, a0)),
                   [s2] "i"(OFFSET_OF(Context, s2)), [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)),
                   [s5] "i"(OFFSET_OF(Context, s5)), [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)),
@@ -250,9 +248,7 @@ struct CPU {
         }
 
         __attribute__((naked)) static void pop() {
-            Context *c;
-            asm volatile("mv %0, sp" : "=r"(c));
-
+            register Context *c asm("sp");
             csrw<KSTATUS>(c->status);
             csrw<KEPC>(c->pc);
 
