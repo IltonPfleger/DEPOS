@@ -15,16 +15,46 @@ struct CPU {
     typedef uintmax_t Register;
     enum class Mode { SUPERVISOR, MACHINE };
 
-    static constexpr Mode MODE        = Mode::MACHINE;
-    static constexpr const int STATUS = MODE == Mode::SUPERVISOR ? 0x100 : 0x300;
-    static constexpr const int EPC    = MODE == Mode::SUPERVISOR ? 0x141 : 0x341;
-    static constexpr const int CAUSE  = MODE == Mode::SUPERVISOR ? 0x142 : 0x342;
-    static constexpr const int TVEC   = MODE == Mode::SUPERVISOR ? 0x105 : 0x305;
+    static constexpr Mode MODE = Mode::MACHINE;
+
+    static constexpr const int MIE = 0x304;
+    static constexpr const int SIE = 0x104;
+    static constexpr const int KIE = MODE == Mode::SUPERVISOR ? SIE : MIE;
+
+    static constexpr const int MSTATUS = 0x300;
+    static constexpr const int SSTATUS = 0x100;
+    static constexpr const int KSTATUS = MODE == Mode::SUPERVISOR ? SSTATUS : MSTATUS;
+
+    static constexpr const int MEPC = 0x341;
+    static constexpr const int SEPC = 0x141;
+    static constexpr const int KEPC = MODE == Mode::SUPERVISOR ? SEPC : MEPC;
+
+    static constexpr const int MCAUSE = 0x342;
+    static constexpr const int SCAUSE = 0x142;
+    static constexpr const int KCAUSE = MODE == Mode::SUPERVISOR ? SCAUSE : MCAUSE;
+
+    static constexpr const int MTVEC = 0x305;
+    static constexpr const int STVEC = 0x105;
 
     enum : Register {
-        IE  = MODE == Mode::SUPERVISOR ? (1 << 1) : (1 << 3),
-        PIE = MODE == Mode::SUPERVISOR ? (1 << 5) : (1 << 7),
-        MPP = MODE == Mode::SUPERVISOR ? (1 << 11) : (3 << 11)
+        SUPERVISOR2SUPERVISOR = 1 << 8,
+        MACHINE2SUPERVISOR    = 1 << 11,
+        MACHINE2MACHINE       = 3 << 11,
+        KERNEL2KERNEL         = MODE == Mode::SUPERVISOR ? SUPERVISOR2SUPERVISOR : MACHINE2MACHINE,
+        KERNEL2USER           = MODE == Mode::SUPERVISOR ? SUPERVISOR2SUPERVISOR : MACHINE2MACHINE,
+        MACHINE_IRQ           = 1 << 3,
+        SUPERVISOR_IRQ        = 1 << 1,
+        KERNEL_IRQ            = MODE == Mode::SUPERVISOR ? SUPERVISOR_IRQ : MACHINE_IRQ,
+
+        MPP  = 3 << 11,                                 // Machine Previous Previlege Mask
+        UPIE = 1 << 4,                                  // User Previous Interrupt Enable
+        SPIE = 1 << 5,                                  // Supervisor Previous Interrupt Enable
+        MPIE = 1 << 7,                                  // Machine Previous Interrupt Enable
+        KPIE = MODE == Mode::SUPERVISOR ? SPIE : MPIE,  // Kernel Previous Interrupt Enable
+        UTIE = 1ULL << 4,                               // User Timer Interrupt Enable
+        STIE = 1ULL << 5,                               // Supervisor Timer Interrupt Enable
+        MTIE = 1ULL << 7,                               // Machine Timer Interrupt Enable
+        KTIE = MODE == Mode::SUPERVISOR ? STIE : MTIE,  // Kernel Timer Interrupt Enable
     };
 
     template <const int R>
@@ -37,6 +67,16 @@ struct CPU {
         Register r;
         asm volatile("csrr %0, %1" : "=r"(r) : "i"(R));
         return r;
+    }
+
+    template <const int R>
+    __attribute__((always_inline)) static inline void csrs(Register r) {
+        asm volatile("csrs %0, %1" ::"i"(R), "r"(r));
+    }
+
+    template <const int R>
+    __attribute__((always_inline)) static inline auto csrc(Register r) {
+        asm volatile("csrc %0, %1" ::"i"(R), "r"(r));
     }
 
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
@@ -76,15 +116,15 @@ struct CPU {
             this->ra     = reinterpret_cast<uintptr_t>(exit);
             this->tp     = reinterpret_cast<uintptr_t>(tp);
             this->pc     = reinterpret_cast<uintptr_t>(entry);
-            this->status = reinterpret_cast<uintptr_t>(0ULL | (3 << 11) | (1 << 7));
+            this->status = reinterpret_cast<uintptr_t>(0ULL | KERNEL2USER | KPIE);
             this->a0     = reinterpret_cast<uintptr_t>(a0);
         }
 
         __attribute__((naked)) static void load() {
             Context *c;
             asm volatile("mv %0, sp" : "=r"(c));
-            csrw<EPC>(c->pc);
-            csrw<STATUS>(c->status);
+            csrw<KEPC>(c->pc);
+            csrw<KSTATUS>(c->status);
             asm volatile(
                 "mv %0, sp\n"
                 "ld ra, %c[ra](sp)\n"
@@ -141,7 +181,7 @@ struct CPU {
             Context *c;
             asm volatile("mv %0, sp" : "=r"(c));
             c->pc     = c->ra;
-            c->status = (csrr<STATUS>() & ~PIE) | MPP;
+            c->status = (csrr<KSTATUS>() & (~KPIE | ~MPP)) | KERNEL2KERNEL;
             *previous = c;
             asm("mv sp, %0" ::"r"(next));
             lock->release();
@@ -204,8 +244,8 @@ struct CPU {
 
             asm volatile(
                 "sd %0, %c[status](sp)\n"
-                "sd %1, %c[pc](sp)" ::"r"(csrr<STATUS>()),
-                "r"(csrr<EPC>()), [status] "i"(OFFSET_OF(Context, status)), [pc] "i"(OFFSET_OF(Context, pc))
+                "sd %1, %c[pc](sp)" ::"r"(csrr<KSTATUS>()),
+                "r"(csrr<KEPC>()), [status] "i"(OFFSET_OF(Context, status)), [pc] "i"(OFFSET_OF(Context, pc))
                 : "memory");
         }
 
@@ -213,8 +253,8 @@ struct CPU {
             Context *c;
             asm volatile("mv %0, sp" : "=r"(c));
 
-            csrw<STATUS>(c->status);
-            csrw<EPC>(c->pc);
+            csrw<KSTATUS>(c->status);
+            csrw<KEPC>(c->pc);
 
             asm volatile(
                 "ld ra, %c[ra](sp)\n"
@@ -288,7 +328,7 @@ struct CPU {
         };
 
         static void handler() {
-            auto cause        = csrr<CAUSE>();
+            auto cause        = csrr<KCAUSE>();
             bool is_interrupt = cause >> (Machine::XLEN - 1);
             auto code         = (cause << 1) >> 1;
 
@@ -300,24 +340,24 @@ struct CPU {
         }
 
         __attribute__((always_inline)) static inline void set(void (*p)()) {
-            csrw<TVEC>(reinterpret_cast<Register>(p));
+            csrw<MTVEC>(reinterpret_cast<Register>(p));
         }
     };
 
     struct Interrupt {
-        static void disable() { csrw<STATUS>(csrr<STATUS>() & ~IE); }
-        static void enable() { csrw<STATUS>(csrr<STATUS>() | IE); }
+        static void disable() { csrc<KSTATUS>(KERNEL_IRQ); }
+        static void enable() { csrs<KSTATUS>(KERNEL_IRQ); }
 
         static void on() { enable(); }
         static bool off() {
-            Register status = csrr<STATUS>();
+            Register status = csrr<KSTATUS>();
             disable();
             return (status & 0x8) != 0;
         }
 
         struct Timer {
-            static void enable() { asm("li t0, 0x80\ncsrs mie, t0" ::: "t0"); }
-            static void disable() { asm("li t0, 0x80\ncsrc mie, t0" ::: "t0"); }
+            static void enable() { csrs<KIE>(KTIE); }
+            static void disable() { csrc<KIE>(KTIE); }
         };
     };
 };
