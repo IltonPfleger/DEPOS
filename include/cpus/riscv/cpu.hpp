@@ -95,30 +95,29 @@ struct RISCV {
 
     __attribute__((naked)) static void init() {
         asm volatile("csrr tp, mhartid");
-        RISCV::sp(stack[RISCV::core()] + Traits::Memory::Page::SIZE);
+        sp(stack[core()] + Traits::Memory::Page::SIZE);
         // RISCV::csrc<MSTATUS>(RISCV::MACHINE_IRQ);
 
         if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && Meta::SAME<Mode, Supervisor>::Result) {
-            if (RISCV::core() == 0) {
-                for (;;) RISCV::idle();
+            if (core() == 0) {
+                for (;;) idle();
             }
         }
 
         if constexpr (Traits::Timer::Enable) {
-            RISCV::csrs<Mode::IE>(static_cast<Register>(Machine::TIE) | static_cast<Register>(Supervisor::TIE));
+            csrs<Mode::IE>(static_cast<Register>(Machine::TIE) | static_cast<Register>(Supervisor::TIE));
         }
 
         if constexpr (Meta::SAME<Mode, Supervisor>::Result) {
-            // csrw<MTVEC>(irq2s);
             // csrw<STVEC>(Kernel::ktrap);
             csrw<Machine::TVEC>(MIC::entry);
-            // RISCV::csrs<Machine::IE>(Machine::TIE);
-            RISCV::csrw<Machine::MEDELEG>(0xFFFF);
-            RISCV::csrw<Machine::MIDELEG>(0xFFFF);
-            RISCV::csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-            RISCV::csrw<Machine::PMPCFG0>(0x1F);
-            RISCV::csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIE);
-            RISCV::csrc<Machine::STATUS>(Supervisor::PIE | Supervisor::IRQE);
+            // csrs<Machine::IE>(Machine::TIE);
+            csrw<Machine::MEDELEG>(0xFFFF);
+            csrw<Machine::MIDELEG>(0xFFFF);
+            csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
+            csrw<Machine::PMPCFG0>(0x1F);
+            csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIE);
+            csrc<Machine::STATUS>(Supervisor::PIE | Supervisor::IRQE);
         } else {
             csrs<Machine::STATUS>(Machine::ME2ME);
             csrw<Machine::TVEC>(MIC::entry);
