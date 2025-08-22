@@ -1,6 +1,6 @@
 #pragma once
 
-#define OFFSET_OF(type, member) ((unsigned long)&(((type *)0)->member))
+#define OFFSET_OF(type, member) ((unsigned long)&(((type*)0)->member))
 #define ASM(i) asm(#i)
 
 struct Meta {
@@ -13,6 +13,14 @@ struct Meta {
     struct TypeSelector<false, True, False> {
         using Result = False;
     };
+
+    static consteval bool StringCompare(const char* a, const char* b) {
+        if (!a || !b) return false;
+        for (int i = 0;; ++i) {
+            if (a[i] != b[i]) return false;
+            if (a[i] == '\0') return true;
+        }
+    }
 
     // template <bool Cond, typename T = void, typename F = void>
     // struct IF {
