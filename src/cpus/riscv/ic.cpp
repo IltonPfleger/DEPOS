@@ -1,3 +1,4 @@
+#include <IO/Logger.hpp>
 #include <cpus/riscv/cpu.hpp>
 
 namespace Timer {
@@ -14,6 +15,7 @@ void MIC::handler() {
     auto cause        = RISCV::csrr<RISCV::Machine::CAUSE>();
     bool is_interrupt = cause >> (Traits::Machine::XLEN - 1);
     auto code         = (cause << 1) >> 1;
+    Logger::println("X\n");
 
     if (is_interrupt) {
         switch (code) {

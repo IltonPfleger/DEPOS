@@ -40,7 +40,7 @@ struct RISCV {
 
     struct Supervisor {
         enum : Register {
-            PP      = 3 << 11,    // Previous Previlege
+            PP      = 1ULL << 8,  // Previous Previlege
             ME2ME   = 1ULL << 8,  // Supervisor to Supervisor
             ME2USER = ME2ME,      // Supervisor to User
             IRQE    = 1ULL << 1,  // Interrupt Enable
@@ -105,15 +105,15 @@ struct RISCV {
         }
 
         if constexpr (Traits::Timer::Enable) {
-            csrs<Mode::IE>(static_cast<Register>(Machine::TIE) | static_cast<Register>(Supervisor::TIE));
+            csrs<Machine::IE>(static_cast<Register>(Machine::TIE) | static_cast<Register>(Supervisor::TIE));
         }
 
         if constexpr (Meta::SAME<Mode, Supervisor>::Result) {
             // csrw<STVEC>(Kernel::ktrap);
             csrw<Machine::TVEC>(MIC::entry);
             // csrs<Machine::IE>(Machine::TIE);
-            csrw<Machine::MEDELEG>(0xFFFF);
-            csrw<Machine::MIDELEG>(0xFFFF);
+            // csrw<Machine::MEDELEG>(0xFFFF);
+            // csrw<Machine::MIDELEG>(0xFFFF);
             csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
             csrw<Machine::PMPCFG0>(0x1F);
             csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIE);
