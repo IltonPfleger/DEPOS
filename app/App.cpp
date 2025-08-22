@@ -8,32 +8,33 @@
 static constexpr int N          = 5;
 static constexpr int ITERATIONS = 5;
 
-static Thread *threads[N];
-static Semaphore mutex;
-
-int thread_function(void *arg) {
-    int id = (int)(long long)arg;
-    int i  = ITERATIONS;
-    while (i--) {
-        mutex.p();
-        Logger::println("THREAD: %d | Core: %d\n", id, Machine::CPU::core());
-        mutex.v();
-        Thread::yield();
-        //   Alarm::usleep(10000);
-    }
-    return 0;
-}
+// static Thread *threads[N];
+// static Semaphore mutex;
+//
+// int thread_function(void *arg) {
+//     int id = (int)(long long)arg;
+//     int i  = ITERATIONS;
+//     while (i--) {
+//         mutex.p();
+//         Logger::println("THREAD: %d | Core: %d\n", id, Machine::CPU::core());
+//         mutex.v();
+//         Thread::yield();
+//         //   Alarm::usleep(10000);
+//     }
+//     return 0;
+// }
 
 int main(void *) {
     Logger::println("Application: \n");
 
-    mutex.p();
-    for (int i = 0; i < N; i++) {
-        threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);
-    }
-    mutex.v();
+    // mutex.p();
+    // for (int i = 0; i < N; i++) {
+    //     threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i,
+    //     Thread::Criterion::NORMAL);
+    // }
+    // mutex.v();
 
-    for (int i = 0; i < N; i++) Thread::join(*threads[i]);
+    // for (int i = 0; i < N; i++) Thread::join(*threads[i]);
 
     // for (int i = 0; i < N; i++) delete threads[i];
 
