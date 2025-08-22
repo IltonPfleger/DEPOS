@@ -121,9 +121,12 @@ struct CPU {
         }
 
         __attribute__((naked)) static void load() {
-            register Context *c asm("sp");
-            csrw<KEPC>(c->pc);
-            csrw<KSTATUS>(c->status);
+            asm volatile(
+                "ld t0, %c[status](sp)\n"
+                "csrw %0, t0\n"
+                "ld t0, %c[pc](sp)\n"
+                "csrw %1, t0" ::"i"(KSTATUS),
+                "i"(KEPC), [pc] "i"(OFFSET_OF(Context, pc)), [status] "i"(OFFSET_OF(Context, status)));
             asm volatile(
                 "ld ra, %c[ra](sp)\n"
                 "ld tp, %c[tp](sp)\n"
@@ -141,13 +144,12 @@ struct CPU {
                 "ld s10, %c[s10](sp)\n"
                 "ld s11, %c[s11](sp)\n"
                 :
-                :  [ra] "i"(OFFSET_OF(Context, ra)), [tp] "i"(OFFSET_OF(Context, tp)),
-                  [s0] "i"(OFFSET_OF(Context, s0)), [s1] "i"(OFFSET_OF(Context, s1)), [a0] "i"(OFFSET_OF(Context, a0)),
-                  [s2] "i"(OFFSET_OF(Context, s2)), [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)),
-                  [s5] "i"(OFFSET_OF(Context, s5)), [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)),
-                  [s8] "i"(OFFSET_OF(Context, s8)), [s9] "i"(OFFSET_OF(Context, s9)),
-                  [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11)));
-
+                : [ra] "i"(OFFSET_OF(Context, ra)), [tp] "i"(OFFSET_OF(Context, tp)), [s0] "i"(OFFSET_OF(Context, s0)),
+                  [s1] "i"(OFFSET_OF(Context, s1)), [a0] "i"(OFFSET_OF(Context, a0)), [s2] "i"(OFFSET_OF(Context, s2)),
+                  [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)),
+                  [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)),
+                  [s9] "i"(OFFSET_OF(Context, s9)), [s10] "i"(OFFSET_OF(Context, s10)),
+                  [s11] "i"(OFFSET_OF(Context, s11)));
             asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
             CPU::ret();
         }
@@ -176,12 +178,18 @@ struct CPU {
                   [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)), [s9] "i"(OFFSET_OF(Context, s9)),
                   [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11))
                 : "memory");
-            Context *c;
-            asm volatile("mv %0, sp" : "=r"(c));
-            c->pc     = c->ra;
-            c->status = (csrr<KSTATUS>() & (~KPIE | ~MPP)) | KERNEL2KERNEL;
-            *previous = c;
-            asm("mv sp, %0" ::"r"(next));
+            asm volatile(
+                "csrr t0, mstatus\n"
+                "and  t0, t0, %0\n"
+                "or   t0, t0, %1\n"
+                "sd   t0, %c[status](sp)\n"
+                "sd   ra, %c[pc](sp)\n"
+                "sd   sp, (%[prev])\n"
+                "mv   sp, %[next]\n"
+                :
+                : "r"(~(KPIE | MPP)), "r"(KERNEL2KERNEL), [status] "i"(OFFSET_OF(Context, status)),
+                  [pc] "i"(OFFSET_OF(Context, pc)), [prev] "r"(previous), [next] "r"(next)
+                : "memory");
             lock->release();
             load();
         }
@@ -218,40 +226,21 @@ struct CPU {
                   [a3] "i"(OFFSET_OF(Context, a3)), [a4] "i"(OFFSET_OF(Context, a4)), [a5] "i"(OFFSET_OF(Context, a5)),
                   [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7))
                 : "memory");
-
             asm volatile(
-                "sd s0, %c[s0](sp)\n"
-                "sd s1, %c[s1](sp)\n"
-                "sd s2, %c[s2](sp)\n"
-                "sd s3, %c[s3](sp)\n"
-                "sd s4, %c[s4](sp)\n"
-                "sd s5, %c[s5](sp)\n"
-                "sd s6, %c[s6](sp)\n"
-                "sd s7, %c[s7](sp)\n"
-                "sd s8, %c[s8](sp)\n"
-                "sd s9, %c[s9](sp)\n"
-                "sd s10, %c[s10](sp)\n"
-                "sd s11, %c[s11](sp)\n"
-                :
-                : [s0] "i"(OFFSET_OF(Context, s0)), [s1] "i"(OFFSET_OF(Context, s1)), [s2] "i"(OFFSET_OF(Context, s2)),
-                  [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)),
-                  [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)),
-                  [s9] "i"(OFFSET_OF(Context, s9)), [s10] "i"(OFFSET_OF(Context, s10)),
-                  [s11] "i"(OFFSET_OF(Context, s11))
-                : "memory");
-
-            asm volatile(
-                "sd %0, %c[status](sp)\n"
-                "sd %1, %c[pc](sp)" ::"r"(csrr<KSTATUS>()),
-                "r"(csrr<KEPC>()), [status] "i"(OFFSET_OF(Context, status)), [pc] "i"(OFFSET_OF(Context, pc))
-                : "memory");
+                "csrr t0, %0\n"
+                "sd t0, %c[status](sp)\n"
+                "csrr t0, %1\n"
+                "sd t0, %c[pc](sp)" ::"i"(KSTATUS),
+                "i"(KEPC), [status] "i"(OFFSET_OF(Context, status)), [pc] "i"(OFFSET_OF(Context, pc)));
         }
 
         __attribute__((naked)) static void pop() {
-            register Context *c asm("sp");
-            csrw<KSTATUS>(c->status);
-            csrw<KEPC>(c->pc);
-
+            asm volatile(
+                "ld t0, %c[status](sp)\n"
+                "csrw %0, t0\n"
+                "ld t0, %c[pc](sp)\n"
+                "csrw %1, t0" ::"i"(KSTATUS),
+                "i"(KEPC), [pc] "i"(OFFSET_OF(Context, pc)), [status] "i"(OFFSET_OF(Context, status)));
             asm volatile(
                 "ld ra, %c[ra](sp)\n"
                 "ld tp, %c[tp](sp)\n"
@@ -267,7 +256,6 @@ struct CPU {
                   [t1] "i"(OFFSET_OF(Context, t1)), [t2] "i"(OFFSET_OF(Context, t2)), [t3] "i"(OFFSET_OF(Context, t3)),
                   [t4] "i"(OFFSET_OF(Context, t4)), [t5] "i"(OFFSET_OF(Context, t5)), [t6] "i"(OFFSET_OF(Context, t6))
                 : "memory");
-
             asm volatile(
                 "ld a0, %c[a0](sp)\n"
                 "ld a1, %c[a1](sp)\n"
@@ -282,28 +270,6 @@ struct CPU {
                   [a3] "i"(OFFSET_OF(Context, a3)), [a4] "i"(OFFSET_OF(Context, a4)), [a5] "i"(OFFSET_OF(Context, a5)),
                   [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7))
                 : "memory");
-
-            asm volatile(
-                "ld s0, %c[s0](sp)\n"
-                "ld s1, %c[s1](sp)\n"
-                "ld s2, %c[s2](sp)\n"
-                "ld s3, %c[s3](sp)\n"
-                "ld s4, %c[s4](sp)\n"
-                "ld s5, %c[s5](sp)\n"
-                "ld s6, %c[s6](sp)\n"
-                "ld s7, %c[s7](sp)\n"
-                "ld s8, %c[s8](sp)\n"
-                "ld s9, %c[s9](sp)\n"
-                "ld s10, %c[s10](sp)\n"
-                "ld s11, %c[s11](sp)\n"
-                :
-                : [s0] "i"(OFFSET_OF(Context, s0)), [s1] "i"(OFFSET_OF(Context, s1)), [s2] "i"(OFFSET_OF(Context, s2)),
-                  [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)),
-                  [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)),
-                  [s9] "i"(OFFSET_OF(Context, s9)), [s10] "i"(OFFSET_OF(Context, s10)),
-                  [s11] "i"(OFFSET_OF(Context, s11))
-                : "memory");
-
             asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
             CPU::ret();
         }
