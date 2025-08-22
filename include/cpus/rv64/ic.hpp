@@ -1,4 +1,0 @@
-class MIC {};
-
-
-class SIC {};

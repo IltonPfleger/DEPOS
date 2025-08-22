@@ -1,4 +1,4 @@
-#include <CPU.hpp>
+#include <Machine.hpp>
 #include <Spin.hpp>
 
 void Spin::acquire() { while (__atomic_test_and_set(&locked, __ATOMIC_SEQ_CST)); }
@@ -6,7 +6,7 @@ void Spin::acquire() { while (__atomic_test_and_set(&locked, __ATOMIC_SEQ_CST));
 void Spin::release() { __atomic_clear(&locked, __ATOMIC_SEQ_CST); }
 
 void Spin::lock() {
-    auto i = CPU::Interrupt::off();
+    auto i = Machine::CPU::Interrupt::off();
     acquire();
     interrupts = i;
 }
@@ -14,5 +14,5 @@ void Spin::lock() {
 void Spin::unlock() {
     auto i = interrupts;
     release();
-    if (i) CPU::Interrupt::on();
+    if (i) Machine::CPU::Interrupt::on();
 }

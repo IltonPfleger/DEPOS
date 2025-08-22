@@ -2,27 +2,23 @@
 
 #include <Spin.hpp>
 #include <Traits.hpp>
-#include <cpus/rv64/clint.hpp>
-
-namespace Timer {
-    void handler();
-}
+#include <Types.hpp>
+#include <cpus/riscv/clint.hpp>
+#include <cpus/riscv/ic.hpp>
 
 namespace Kernel {
     void init();
-    void ktrap();
-    void exception();
 }
 
 static inline char stack[Traits::Machine::CPUS][Traits::Memory::Page::SIZE];
 
-struct RV64 {
-    typedef uintmax_t Register;
+struct RISCV {
+    using Register = uintmax_t;
+    using CLINT    = SiFiveCLINT;
     enum class Mode { SUPERVISOR, MACHINE };
 
     static constexpr Mode MODE = Mode::MACHINE;
 
-    static constexpr const int MENVCFG  = 0x30A;
     static constexpr const int PMPADDR0 = 0x3B0;
     static constexpr const int PMPCFG0  = 0x3A0;
     static constexpr const int MHARTID  = 0xF14;
@@ -119,79 +115,38 @@ struct RV64 {
 
     __attribute__((always_inline)) static inline void sp(void *s) { asm volatile("mv sp, %0" ::"r"(s)); }
 
-    __attribute__((naked, aligned(4))) static void irq2s() {
-        asm volatile(
-            "addi sp, sp, -128\n"
-            "sd ra, 0(sp)\n"
-            "sd t0, 8(sp)\n"
-            "sd t1, 16(sp)\n"
-            "sd t2, 24(sp)\n"
-            "sd t3, 32(sp)\n"
-            "sd t4, 40(sp)\n"
-            "sd t5, 48(sp)\n"
-            "sd t6, 56(sp)\n"
-            "sd a0, 64(sp)\n"
-            "sd a1, 72(sp)\n"
-            "sd a2, 80(sp)\n"
-            "sd a3, 88(sp)\n"
-            "sd a4, 96(sp)\n"
-            "sd a5, 104(sp)\n"
-            "sd a6, 112(sp)\n"
-            "sd a7, 120(sp)\n");
-        CLINT::reset(RV64::core());
-        // Machine::IO::UART::put('A');
-        //  RV64::csrc<MIE>(MTIE);
-        // csrc<MIP>(MTIP);  // USANDO S AAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        // csrs<MIP>(STIP);
-        asm volatile(
-            "ld a0, 64(sp)\n"
-            "ld a1, 72(sp)\n"
-            "ld a2, 80(sp)\n"
-            "ld a3, 88(sp)\n"
-            "ld a4, 96(sp)\n"
-            "ld a5, 104(sp)\n"
-            "ld a6, 112(sp)\n"
-            "ld a7, 120(sp)\n"
-            "ld t0, 8(sp)\n"
-            "ld t1, 16(sp)\n"
-            "ld t2, 24(sp)\n"
-            "ld t3, 32(sp)\n"
-            "ld t4, 40(sp)\n"
-            "ld t5, 48(sp)\n"
-            "ld t6, 56(sp)\n"
-            "ld ra, 0(sp)\n"
-            "addi sp, sp, 128\n");
-        RV64::mret();
-    }
-
     __attribute__((naked)) static void init() {
         asm volatile("csrr tp, mhartid");
-        sp(stack[core()] + Traits::Memory::Page::SIZE);
-        // RV64::csrc<MSTATUS>(RV64::MACHINE_IRQ);
+        RISCV::sp(stack[RISCV::core()] + Traits::Memory::Page::SIZE);
+        // RISCV::csrc<MSTATUS>(RISCV::MACHINE_IRQ);
 
-        // if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && MODE == Mode::SUPERVISOR) {
-        //     if (RV64::core() == 0) {
-        //         for (;;) RV64::idle();
-        //     }
-        // }
+        if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && MODE == Mode::SUPERVISOR) {
+            if (RISCV::core() == 0) {
+                for (;;) RISCV::idle();
+            }
+        }
 
-        // if constexpr (MODE == Mode::SUPERVISOR) {
-        //     csrw<MTVEC>(irq2s);
-        //     csrw<STVEC>(Kernel::ktrap);
-        //     RV64::csrs<MIE>(MTIE);
-        //     RV64::csrw<MODELEG>(0xFFFF);
-        //     RV64::csrw<MIDELEG>(0xFFFF);
-        //     RV64::csrw<PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-        //     RV64::csrw<PMPCFG0>(0x1F);
-        //     RV64::csrs<MSTATUS>(MACHINE2SUPERVISOR | MPIE);
-        //     RV64::csrc<MSTATUS>(SPIE | SUPERVISOR_IRQ);
-        // } else {
-        csrs<MSTATUS>(MACHINE2MACHINE);
-        csrw<MTVEC>(Kernel::ktrap);
-        //}
+        if constexpr (Traits::Timer::Enable) {
+            RISCV::csrs<MIE>(MTIE | STIE | MTIE);
+        }
+
+        if constexpr (MODE == Mode::SUPERVISOR) {
+            // csrw<MTVEC>(irq2s);
+            // csrw<STVEC>(Kernel::ktrap);
+            // RISCV::csrs<MIE>(MTIE);
+            RISCV::csrw<MODELEG>(0xFFFF);
+            RISCV::csrw<MIDELEG>(0xFFFF);
+            RISCV::csrw<PMPADDR0>(0x3FFFFFFFFFFFFFULL);
+            RISCV::csrw<PMPCFG0>(0x1F);
+            RISCV::csrs<MSTATUS>(MACHINE2SUPERVISOR | MPIE);
+            RISCV::csrc<MSTATUS>(SPIE | SUPERVISOR_IRQ);
+        } else {
+            csrs<MSTATUS>(MACHINE2MACHINE);
+            csrw<MTVEC>(MIC::entry);
+        }
 
         csrw<MEPC>(Kernel::init);
-        mret();
+        RISCV::mret();
     }
 
     struct Context {
@@ -242,7 +197,7 @@ struct RV64 {
                   [s9] "i"(OFFSET_OF(Context, s9)), [s10] "i"(OFFSET_OF(Context, s10)),
                   [s11] "i"(OFFSET_OF(Context, s11)));
             asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
-            RV64::ret();
+            RISCV::ret();
         }
 
         __attribute__((naked)) static void swtch(Context **previous, Context *next, Spin *lock) {
@@ -362,36 +317,36 @@ struct RV64 {
                   [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7))
                 : "memory");
             asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
-            RV64::ret();
+            RISCV::ret();
         }
     };
 
-    struct Trap {
-        using Handler = void (*)();
+    // struct Trap {
+    //     using Handler = void (*)();
 
-        static inline Handler interrupts[8] = {
-            nullptr,         // 0
-            nullptr,         // 1
-            nullptr,         // 2
-            nullptr,         // 3
-            nullptr,         // 4
-            nullptr,         // 5
-            nullptr,         // 6
-            Timer::handler,  // 7
-        };
+    //    static inline Handler interrupts[8] = {
+    //        nullptr,         // 0
+    //        nullptr,         // 1
+    //        nullptr,         // 2
+    //        nullptr,         // 3
+    //        nullptr,         // 4
+    //        nullptr,         // 5
+    //        nullptr,         // 6
+    //        Timer::handler,  // 7
+    //    };
 
-        static void handler() {
-            auto cause        = csrr<KCAUSE>();
-            bool is_interrupt = cause >> (Traits::Machine::XLEN - 1);
-            auto code         = (cause << 1) >> 1;
+    //    static void handler() {
+    //        auto cause        = csrr<KCAUSE>();
+    //        bool is_interrupt = cause >> (Traits::Machine::XLEN - 1);
+    //        auto code         = (cause << 1) >> 1;
 
-            if (is_interrupt) {
-                interrupts[code]();
-            } else {
-                Kernel::exception();
-            }
-        }
-    };
+    //        if (is_interrupt) {
+    //            interrupts[code]();
+    //        } else {
+    //            Kernel::exception();
+    //        }
+    //    }
+    //};
 
     struct Interrupt {
         static void disable() { csrc<KSTATUS>(KERNEL_IRQ); }
