@@ -20,7 +20,7 @@ struct CPU {
     typedef uintmax_t Register;
     enum class Mode { SUPERVISOR, MACHINE };
 
-    static constexpr Mode MODE = Mode::MACHINE;
+    static constexpr Mode MODE = Mode::SUPERVISOR;
 
     static constexpr const int PMPADDR0 = 0x3B0;
     static constexpr const int PMPCFG0  = 0x3A0;
@@ -121,7 +121,7 @@ struct CPU {
     __attribute__((naked)) static void init() {
         asm volatile("csrr tp, mhartid");
         CPU::sp(stack[CPU::core()] + Traits::Memory::Page::SIZE);
-        CPU::csrc<MSTATUS>(CPU::MACHINE_IRQ);
+        // CPU::csrc<MSTATUS>(CPU::MACHINE_IRQ);
 
         if constexpr (Meta::StringCompare(Machine::MACHINE, "sifive_u") && MODE == Mode::SUPERVISOR) {
             if (CPU::core() == 0) {
@@ -132,7 +132,7 @@ struct CPU {
         if constexpr (MODE == Mode::SUPERVISOR) {
             // csrw<MTVEC>(irq2s);
             csrw<STVEC>(Kernel::ktrap);
-            CPU::csrs<MIE>(MTIE);
+            // CPU::csrs<MIE>(MTIE);
             CPU::csrw<MODELEG>(0xFFFF);
             CPU::csrw<MIDELEG>(0xFFFF);
             CPU::csrw<PMPADDR0>(0x3FFFFFFFFFFFFFULL);
@@ -224,15 +224,15 @@ struct CPU {
                   [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11))
                 : "memory");
             asm volatile(
-                "csrr t0, mstatus\n"
-                "and  t0, t0, %0\n"
-                "or   t0, t0, %1\n"
+                "csrr t0, %0\n"
+                "and  t0, t0, %1\n"
+                "or   t0, t0, %2\n"
                 "sd   t0, %c[status](sp)\n"
                 "sd   ra, %c[pc](sp)\n"
                 "sd   sp, (%[prev])\n"
                 "mv   sp, %[next]\n"
                 :
-                : "r"(~(KPIE | MPP)), "r"(KERNEL2KERNEL), [status] "i"(OFFSET_OF(Context, status)),
+                : "i"(KSTATUS), "r"(~(KPIE | MPP)), "r"(KERNEL2KERNEL), [status] "i"(OFFSET_OF(Context, status)),
                   [pc] "i"(OFFSET_OF(Context, pc)), [prev] "r"(previous), [next] "r"(next)
                 : "memory");
             lock->release();
