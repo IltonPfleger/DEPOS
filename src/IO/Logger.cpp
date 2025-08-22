@@ -3,7 +3,7 @@
 
 constexpr char HEX[] = "0123456789ABCDEF";
 
-inline void put(char value) { Traits::Debug::Device::put(value); }
+inline void put(char value) { Machine::IO::put(value); }
 
 template <typename T>
 void printNumber(T value) {
