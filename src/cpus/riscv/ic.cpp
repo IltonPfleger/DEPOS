@@ -11,7 +11,7 @@ __attribute__((naked, aligned(4))) void MIC::entry() {
 }
 
 void MIC::handler() {
-    auto cause        = RISCV::csrr<RISCV::MCAUSE>();
+    auto cause        = RISCV::csrr<RISCV::Machine::CAUSE>();
     bool is_interrupt = cause >> (Traits::Machine::XLEN - 1);
     auto code         = (cause << 1) >> 1;
 

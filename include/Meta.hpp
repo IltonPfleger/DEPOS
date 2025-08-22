@@ -32,15 +32,15 @@ struct Meta {
     //     using Result = T;
     // };
 
-    // template <typename T, typename U>
-    // struct SAME {
-    //     static constexpr bool Result = false;
-    // };
+    template <typename T, typename U>
+    struct SAME {
+        static constexpr bool Result = false;
+    };
 
-    // template <typename T>
-    // struct SAME<T, T> {
-    //     static constexpr bool Result = true;
-    // };
+    template <typename T>
+    struct SAME<T, T> {
+        static constexpr bool Result = true;
+    };
 
     // template <typename T>
     // struct REMOVE_POINTER {

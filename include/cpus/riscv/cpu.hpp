@@ -13,62 +13,65 @@ namespace Kernel {
 static inline char stack[Traits::Machine::CPUS][Traits::Memory::Page::SIZE];
 
 struct RISCV {
-    using Register = uintmax_t;
-    using CLINT    = SiFiveCLINT;
-    enum class Mode { SUPERVISOR, MACHINE };
-
-    static constexpr Mode MODE = Mode::MACHINE;
-
-    static constexpr const int PMPADDR0 = 0x3B0;
-    static constexpr const int PMPCFG0  = 0x3A0;
-    static constexpr const int MHARTID  = 0xF14;
-    static constexpr const int MODELEG  = 0x302;
-    static constexpr const int MIDELEG  = 0x303;
-    static constexpr const int SATP     = 0x180;
-
-    static constexpr const int MIE = 0x304;
-    static constexpr const int SIE = 0x104;
-    static constexpr const int KIE = MODE == Mode::SUPERVISOR ? SIE : MIE;
-
-    static constexpr const int MIP = 0x344;
-    static constexpr const int SIP = 0x144;
-
-    static constexpr const int MSTATUS = 0x300;
-    static constexpr const int SSTATUS = 0x100;
-    static constexpr const int KSTATUS = MODE == Mode::SUPERVISOR ? SSTATUS : MSTATUS;
-
-    static constexpr const int MEPC = 0x341;
-    static constexpr const int SEPC = 0x141;
-    static constexpr const int KEPC = MODE == Mode::SUPERVISOR ? SEPC : MEPC;
-
-    static constexpr const int MCAUSE = 0x342;
-    static constexpr const int SCAUSE = 0x142;
-    static constexpr const int KCAUSE = MODE == Mode::SUPERVISOR ? SCAUSE : MCAUSE;
-
-    static constexpr const int MTVEC = 0x305;
-    static constexpr const int STVEC = 0x105;
-
-    enum : Register {
-        SUPERVISOR2SUPERVISOR = 1 << 8,
-        MACHINE2SUPERVISOR    = 1 << 11,
-        MACHINE2MACHINE       = 3 << 11,
-        KERNEL2KERNEL         = MODE == Mode::SUPERVISOR ? SUPERVISOR2SUPERVISOR : MACHINE2MACHINE,
-        KERNEL2USER           = MODE == Mode::SUPERVISOR ? SUPERVISOR2SUPERVISOR : MACHINE2MACHINE,
-        MACHINE_IRQ           = 1 << 3,
-        SUPERVISOR_IRQ        = 1 << 1,
-        KERNEL_IRQ            = MODE == Mode::SUPERVISOR ? SUPERVISOR_IRQ : MACHINE_IRQ,
-
-        MPP  = 3 << 11,                                 // Machine Previous Previlege Mask
-        UPIE = 1 << 4,                                  // User Previous Interrupt Enable
-        SPIE = 1 << 5,                                  // Supervisor Previous Interrupt Enable
-        MPIE = 1 << 7,                                  // Machine Previous Interrupt Enable
-        KPIE = MODE == Mode::SUPERVISOR ? SPIE : MPIE,  // Kernel Previous Interrupt Enable
-        UTIE = 1ULL << 4,                               // User Timer Interrupt Enable
-        STIE = 1ULL << 5,                               // Supervisor Timer Interrupt Enable
-        MTIE = 1ULL << 7,                               // Machine Timer Interrupt Enable
-        KTIE = MODE == Mode::SUPERVISOR ? STIE : MTIE,  // Kernel Timer Interrupt Enable
-
+    typedef uintmax_t Register;
+    struct Machine {
+        enum : Register {
+            PP            = 3 << 11,  // Previous Previlege
+            TO_ME         = 3ULL << 11,
+            TO_USER       = TO_ME,
+            TO_SUPERVISOR = 1ULL << 11,
+            IRQE          = 1ULL << 3,  // Interrupt Enable
+            TIE           = 1ULL << 7,  // Timer Interrupt Enable
+            PIE           = 1ULL << 7,  // Previous Interrupt Enable
+        };
+        static constexpr const int STATUS = 0x300;
+        static constexpr const int IE     = 0x304;
+        static constexpr const int TVEC   = 0x305;
+        static constexpr const int EPC    = 0x341;
+        static constexpr const int CAUSE  = 0x342;
+        static constexpr const int IP     = 0x344;
+        __attribute__((always_inline)) static inline void ret() { asm volatile("mret"); }
     };
+
+    struct Supervisor {
+        enum : Register {
+            PP      = 3 << 11,  // Previous Previlege
+            TO_ME   = 1ULL << 8,
+            TO_USER = TO_ME,
+            IRQE    = 1ULL << 1,
+            TIE     = 1ULL << 5,  // Timer Interrupt Enable
+            PIE     = 1ULL << 5,  // Previous Interrupt Enable
+        };
+        static constexpr const int STATUS = 0x100;
+        static constexpr const int IE     = 0x104;
+        static constexpr const int TVEC   = 0x105;
+        static constexpr const int EPC    = 0x141;
+        static constexpr const int CAUSE  = 0x142;
+        static constexpr const int IP     = 0x144;
+        __attribute__((always_inline)) static inline void ret() { asm volatile("sret"); }
+    };
+
+    using CLINT = SiFiveCLINT;
+    using Mode  = Machine;
+
+    // enum class Mode { SUPERVISOR, MACHINE };
+
+    // static constexpr Mode MODE = Mode::MACHINE;
+
+    // static constexpr const int PMPADDR0 = 0x3B0;
+    // static constexpr const int PMPCFG0  = 0x3A0;
+    // static constexpr const int MHARTID  = 0xF14;
+    // static constexpr const int MODELEG  = 0x302;
+    // static constexpr const int MIDELEG  = 0x303;
+    // static constexpr const int SATP     = 0x180;
+
+    // static constexpr const int KIE = MODE == Mode::SUPERVISOR ? SIE : MIE;
+
+    // static constexpr const int KSTATUS = MODE == Mode::SUPERVISOR ? SSTATUS : MSTATUS;
+
+    // static constexpr const int KEPC = MODE == Mode::SUPERVISOR ? SEPC : MEPC;
+
+    // static constexpr const int KCAUSE = MODE == Mode::SUPERVISOR ? SCAUSE : MCAUSE;
 
     template <const int R>
     static void csrw(auto r) {
@@ -98,16 +101,7 @@ struct RISCV {
     }
 
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
-    __attribute__((always_inline)) static inline void mret() { asm volatile("mret"); }
     __attribute__((always_inline)) static inline void sret() { asm volatile("sret"); }
-
-    __attribute__((always_inline)) static inline void ret() {
-        if constexpr (MODE == Mode::SUPERVISOR)
-            sret();
-        else
-            mret();
-    }
-
     __attribute__((always_inline)) inline static auto core() {
         register unsigned int tp asm("tp");
         return tp;
@@ -120,33 +114,33 @@ struct RISCV {
         RISCV::sp(stack[RISCV::core()] + Traits::Memory::Page::SIZE);
         // RISCV::csrc<MSTATUS>(RISCV::MACHINE_IRQ);
 
-        if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && MODE == Mode::SUPERVISOR) {
-            if (RISCV::core() == 0) {
-                for (;;) RISCV::idle();
-            }
-        }
+        // if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && MODE == Mode::SUPERVISOR) {
+        //     if (RISCV::core() == 0) {
+        //         for (;;) RISCV::idle();
+        //     }
+        // }
 
         if constexpr (Traits::Timer::Enable) {
-            RISCV::csrs<MIE>(MTIE | STIE | MTIE);
+            RISCV::csrs<Mode::IE>(static_cast<Register>(Machine::TIE) | static_cast<Register>(Supervisor::TIE));
         }
 
-        if constexpr (MODE == Mode::SUPERVISOR) {
-            // csrw<MTVEC>(irq2s);
-            // csrw<STVEC>(Kernel::ktrap);
-            // RISCV::csrs<MIE>(MTIE);
-            RISCV::csrw<MODELEG>(0xFFFF);
-            RISCV::csrw<MIDELEG>(0xFFFF);
-            RISCV::csrw<PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-            RISCV::csrw<PMPCFG0>(0x1F);
-            RISCV::csrs<MSTATUS>(MACHINE2SUPERVISOR | MPIE);
-            RISCV::csrc<MSTATUS>(SPIE | SUPERVISOR_IRQ);
-        } else {
-            csrs<MSTATUS>(MACHINE2MACHINE);
-            csrw<MTVEC>(MIC::entry);
-        }
+        // if constexpr (MODE == Mode::SUPERVISOR) {
+        //     // csrw<MTVEC>(irq2s);
+        //     // csrw<STVEC>(Kernel::ktrap);
+        //     // RISCV::csrs<MIE>(MTIE);
+        //     RISCV::csrw<MODELEG>(0xFFFF);
+        //     RISCV::csrw<MIDELEG>(0xFFFF);
+        //     RISCV::csrw<PMPADDR0>(0x3FFFFFFFFFFFFFULL);
+        //     RISCV::csrw<PMPCFG0>(0x1F);
+        //     RISCV::csrs<MSTATUS>(MACHINETO_SUPERVISOR | MPIE);
+        //     RISCV::csrc<MSTATUS>(SPIE | SUPERVISOR_IRQ);
+        // } else {
+        csrs<Machine::STATUS>(Machine::TO_ME);
+        csrw<Machine::TVEC>(MIC::entry);
+        //}
 
-        csrw<MEPC>(Kernel::init);
-        RISCV::mret();
+        csrw<Machine::EPC>(Kernel::init);
+        Machine::ret();
     }
 
     struct Context {
@@ -162,17 +156,18 @@ struct RISCV {
             this->ra     = reinterpret_cast<uintptr_t>(exit);
             this->gp     = reinterpret_cast<uintptr_t>(gp);
             this->pc     = reinterpret_cast<uintptr_t>(entry);
-            this->status = reinterpret_cast<uintptr_t>(0ULL | KERNEL2USER | KPIE);
+            this->status = reinterpret_cast<uintptr_t>(0ULL | Mode::TO_USER | Mode::PIE);
             this->a0     = reinterpret_cast<uintptr_t>(a0);
         }
 
+        template <typename T = Mode>
         __attribute__((naked)) static void load() {
             asm volatile(
                 "ld t0, %c[status](sp)\n"
                 "csrw %0, t0\n"
                 "ld t0, %c[pc](sp)\n"
-                "csrw %1, t0" ::"i"(KSTATUS),
-                "i"(KEPC), [pc] "i"(OFFSET_OF(Context, pc)), [status] "i"(OFFSET_OF(Context, status)));
+                "csrw %1, t0" ::"i"(T::STATUS),
+                "i"(T::EPC), [pc] "i"(OFFSET_OF(Context, pc)), [status] "i"(OFFSET_OF(Context, status)));
             asm volatile(
                 "ld ra, %c[ra](sp)\n"
                 "ld gp, %c[gp](sp)\n"
@@ -189,20 +184,21 @@ struct RISCV {
                 "ld s9, %c[s9](sp)\n"
                 "ld s10, %c[s10](sp)\n"
                 "ld s11, %c[s11](sp)\n"
+                "addi sp, sp, %[size]\n"
                 :
                 : [ra] "i"(OFFSET_OF(Context, ra)), [gp] "i"(OFFSET_OF(Context, gp)), [s0] "i"(OFFSET_OF(Context, s0)),
                   [s1] "i"(OFFSET_OF(Context, s1)), [a0] "i"(OFFSET_OF(Context, a0)), [s2] "i"(OFFSET_OF(Context, s2)),
                   [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)),
                   [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)),
                   [s9] "i"(OFFSET_OF(Context, s9)), [s10] "i"(OFFSET_OF(Context, s10)),
-                  [s11] "i"(OFFSET_OF(Context, s11)));
-            asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
-            RISCV::ret();
+                  [s11] "i"(OFFSET_OF(Context, s11)), [size] "i"(sizeof(Context)));
+            T::ret();
         }
 
+        template <typename T = Mode>
         __attribute__((naked)) static void swtch(Context **previous, Context *next, Spin *lock) {
-            asm volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
             asm volatile(
+                "addi sp, sp, %[size]\n"
                 "sd ra, %c[ra](sp)\n"
                 "sd gp, %c[gp](sp)\n"
                 "sd s0, %c[s0](sp)\n"
@@ -222,7 +218,7 @@ struct RISCV {
                   [s1] "i"(OFFSET_OF(Context, s1)), [s2] "i"(OFFSET_OF(Context, s2)), [s3] "i"(OFFSET_OF(Context, s3)),
                   [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)), [s6] "i"(OFFSET_OF(Context, s6)),
                   [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)), [s9] "i"(OFFSET_OF(Context, s9)),
-                  [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11))
+                  [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11)), [size] "i"(-sizeof(Context))
                 : "memory");
             asm volatile(
                 "csrr t0, %0\n"
@@ -233,16 +229,17 @@ struct RISCV {
                 "sd   sp, (%[prev])\n"
                 "mv   sp, %[next]\n"
                 :
-                : "i"(KSTATUS), "r"(~(KPIE | MPP)), "r"(KERNEL2KERNEL), [status] "i"(OFFSET_OF(Context, status)),
+                : "i"(T::STATUS), "r"(~(T::PIE | T::PP)), "r"(T::TO_ME), [status] "i"(OFFSET_OF(Context, status)),
                   [pc] "i"(OFFSET_OF(Context, pc)), [prev] "r"(previous), [next] "r"(next)
                 : "memory");
             lock->release();
             load();
         }
 
+        template <typename T = Mode>
         __attribute__((always_inline)) static inline void push() {
-            asm volatile("addi sp, sp, %0" ::"i"(-sizeof(Context)));
             asm volatile(
+                "addi sp, sp, %[size]\n"
                 "sd ra, %c[ra](sp)\n"
                 "sd gp, %c[gp](sp)\n"
                 "sd t0, %c[t0](sp)\n"
@@ -252,13 +249,6 @@ struct RISCV {
                 "sd t4, %c[t4](sp)\n"
                 "sd t5, %c[t5](sp)\n"
                 "sd t6, %c[t6](sp)\n"
-                :
-                : [ra] "i"(OFFSET_OF(Context, ra)), [gp] "i"(OFFSET_OF(Context, gp)), [t0] "i"(OFFSET_OF(Context, t0)),
-                  [t1] "i"(OFFSET_OF(Context, t1)), [t2] "i"(OFFSET_OF(Context, t2)), [t3] "i"(OFFSET_OF(Context, t3)),
-                  [t4] "i"(OFFSET_OF(Context, t4)), [t5] "i"(OFFSET_OF(Context, t5)), [t6] "i"(OFFSET_OF(Context, t6))
-                : "memory");
-
-            asm volatile(
                 "sd a0, %c[a0](sp)\n"
                 "sd a1, %c[a1](sp)\n"
                 "sd a2, %c[a2](sp)\n"
@@ -268,25 +258,30 @@ struct RISCV {
                 "sd a6, %c[a6](sp)\n"
                 "sd a7, %c[a7](sp)\n"
                 :
-                : [a0] "i"(OFFSET_OF(Context, a0)), [a1] "i"(OFFSET_OF(Context, a1)), [a2] "i"(OFFSET_OF(Context, a2)),
+                : [ra] "i"(OFFSET_OF(Context, ra)), [gp] "i"(OFFSET_OF(Context, gp)), [t0] "i"(OFFSET_OF(Context, t0)),
+                  [t1] "i"(OFFSET_OF(Context, t1)), [t2] "i"(OFFSET_OF(Context, t2)), [t3] "i"(OFFSET_OF(Context, t3)),
+                  [t4] "i"(OFFSET_OF(Context, t4)), [t5] "i"(OFFSET_OF(Context, t5)), [t6] "i"(OFFSET_OF(Context, t6)),
+                  [a0] "i"(OFFSET_OF(Context, a0)), [a1] "i"(OFFSET_OF(Context, a1)), [a2] "i"(OFFSET_OF(Context, a2)),
                   [a3] "i"(OFFSET_OF(Context, a3)), [a4] "i"(OFFSET_OF(Context, a4)), [a5] "i"(OFFSET_OF(Context, a5)),
-                  [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7))
+                  [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7)), [size] "i"(-sizeof(Context))
                 : "memory");
+
             asm volatile(
                 "csrr t0, %0\n"
                 "sd t0, %c[status](sp)\n"
                 "csrr t0, %1\n"
-                "sd t0, %c[pc](sp)" ::"i"(KSTATUS),
-                "i"(KEPC), [status] "i"(OFFSET_OF(Context, status)), [pc] "i"(OFFSET_OF(Context, pc)));
+                "sd t0, %c[pc](sp)" ::"i"(T::STATUS),
+                "i"(T::EPC), [status] "i"(OFFSET_OF(Context, status)), [pc] "i"(OFFSET_OF(Context, pc)));
         }
 
+        template <typename T = Mode>
         __attribute__((naked)) static void pop() {
             asm volatile(
                 "ld t0, %c[status](sp)\n"
                 "csrw %0, t0\n"
                 "ld t0, %c[pc](sp)\n"
-                "csrw %1, t0" ::"i"(KSTATUS),
-                "i"(KEPC), [pc] "i"(OFFSET_OF(Context, pc)), [status] "i"(OFFSET_OF(Context, status)));
+                "csrw %1, t0" ::"i"(T::STATUS),
+                "i"(T::EPC), [pc] "i"(OFFSET_OF(Context, pc)), [status] "i"(OFFSET_OF(Context, status)));
             asm volatile(
                 "ld ra, %c[ra](sp)\n"
                 "ld gp, %c[gp](sp)\n"
@@ -297,12 +292,6 @@ struct RISCV {
                 "ld t4, %c[t4](sp)\n"
                 "ld t5, %c[t5](sp)\n"
                 "ld t6, %c[t6](sp)\n"
-                :
-                : [ra] "i"(OFFSET_OF(Context, ra)), [gp] "i"(OFFSET_OF(Context, gp)), [t0] "i"(OFFSET_OF(Context, t0)),
-                  [t1] "i"(OFFSET_OF(Context, t1)), [t2] "i"(OFFSET_OF(Context, t2)), [t3] "i"(OFFSET_OF(Context, t3)),
-                  [t4] "i"(OFFSET_OF(Context, t4)), [t5] "i"(OFFSET_OF(Context, t5)), [t6] "i"(OFFSET_OF(Context, t6))
-                : "memory");
-            asm volatile(
                 "ld a0, %c[a0](sp)\n"
                 "ld a1, %c[a1](sp)\n"
                 "ld a2, %c[a2](sp)\n"
@@ -311,57 +300,28 @@ struct RISCV {
                 "ld a5, %c[a5](sp)\n"
                 "ld a6, %c[a6](sp)\n"
                 "ld a7, %c[a7](sp)\n"
+                "addi sp, sp, %[size]\n"
                 :
-                : [a0] "i"(OFFSET_OF(Context, a0)), [a1] "i"(OFFSET_OF(Context, a1)), [a2] "i"(OFFSET_OF(Context, a2)),
+                : [ra] "i"(OFFSET_OF(Context, ra)), [gp] "i"(OFFSET_OF(Context, gp)), [t0] "i"(OFFSET_OF(Context, t0)),
+                  [t1] "i"(OFFSET_OF(Context, t1)), [t2] "i"(OFFSET_OF(Context, t2)), [t3] "i"(OFFSET_OF(Context, t3)),
+                  [t4] "i"(OFFSET_OF(Context, t4)), [t5] "i"(OFFSET_OF(Context, t5)), [t6] "i"(OFFSET_OF(Context, t6)),
+                  [a0] "i"(OFFSET_OF(Context, a0)), [a1] "i"(OFFSET_OF(Context, a1)), [a2] "i"(OFFSET_OF(Context, a2)),
                   [a3] "i"(OFFSET_OF(Context, a3)), [a4] "i"(OFFSET_OF(Context, a4)), [a5] "i"(OFFSET_OF(Context, a5)),
-                  [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7))
+                  [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7)), [size] "i"(sizeof(Context))
                 : "memory");
-            asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
-            RISCV::ret();
+            T::ret();
         }
     };
 
-    // struct Trap {
-    //     using Handler = void (*)();
-
-    //    static inline Handler interrupts[8] = {
-    //        nullptr,         // 0
-    //        nullptr,         // 1
-    //        nullptr,         // 2
-    //        nullptr,         // 3
-    //        nullptr,         // 4
-    //        nullptr,         // 5
-    //        nullptr,         // 6
-    //        Timer::handler,  // 7
-    //    };
-
-    //    static void handler() {
-    //        auto cause        = csrr<KCAUSE>();
-    //        bool is_interrupt = cause >> (Traits::Machine::XLEN - 1);
-    //        auto code         = (cause << 1) >> 1;
-
-    //        if (is_interrupt) {
-    //            interrupts[code]();
-    //        } else {
-    //            Kernel::exception();
-    //        }
-    //    }
-    //};
-
     struct Interrupt {
-        static void disable() { csrc<KSTATUS>(KERNEL_IRQ); }
-        static void enable() { csrs<KSTATUS>(KERNEL_IRQ); }
+        static void disable() { csrc<Mode::STATUS>(Mode::IRQE); }
+        static void enable() { csrs<Mode::STATUS>(Mode::IRQE); }
 
         static void on() { enable(); }
         static bool off() {
-            Register status = csrr<KSTATUS>();
+            Register status = csrr<Mode::STATUS>();
             disable();
             return (status & 0x8) != 0;
         }
-
-        struct Timer {
-            static void enable() { csrs<KIE>(KTIE); }
-            static void disable() { csrc<KIE>(KTIE); }
-        };
     };
 };
