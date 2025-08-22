@@ -16,13 +16,18 @@ struct RISCV {
     typedef uintmax_t Register;
     struct Machine {
         enum : Register {
-            PP            = 3 << 11,  // Previous Previlege
-            TO_ME         = 3ULL << 11,
-            TO_USER       = TO_ME,
-            TO_SUPERVISOR = 1ULL << 11,
-            IRQE          = 1ULL << 3,  // Interrupt Enable
-            TIE           = 1ULL << 7,  // Timer Interrupt Enable
-            PIE           = 1ULL << 7,  // Previous Interrupt Enable
+            PMPADDR0      = 0x3B0,
+            PMPCFG0       = 0x3A0,
+            MHARTID       = 0xF14,
+            MEDELEG       = 0x302,       // Machine Exception Delegation
+            MIDELEG       = 0x303,       // Machine Interrupt Delegation
+            PP            = 3 << 11,     // Previous Previlege
+            ME2ME         = 3ULL << 11,  // Machine to Machine
+            ME2USER       = ME2ME,       // Machine to User
+            ME2SUPERVISOR = 1ULL << 11,  // Machine to Supervisor
+            IRQE          = 1ULL << 3,   // Interrupt Enable
+            TIE           = 1ULL << 7,   // Timer Interrupt Enable
+            PIE           = 1ULL << 7,   // Previous Interrupt Enable
         };
         static constexpr const int STATUS = 0x300;
         static constexpr const int IE     = 0x304;
@@ -35,10 +40,10 @@ struct RISCV {
 
     struct Supervisor {
         enum : Register {
-            PP      = 3 << 11,  // Previous Previlege
-            TO_ME   = 1ULL << 8,
-            TO_USER = TO_ME,
-            IRQE    = 1ULL << 1,
+            PP      = 3 << 11,    // Previous Previlege
+            ME2ME   = 1ULL << 8,  // Supervisor to Supervisor
+            ME2USER = ME2ME,      // Supervisor to User
+            IRQE    = 1ULL << 1,  // Interrupt Enable
             TIE     = 1ULL << 5,  // Timer Interrupt Enable
             PIE     = 1ULL << 5,  // Previous Interrupt Enable
         };
@@ -52,26 +57,7 @@ struct RISCV {
     };
 
     using CLINT = SiFiveCLINT;
-    using Mode  = Machine;
-
-    // enum class Mode { SUPERVISOR, MACHINE };
-
-    // static constexpr Mode MODE = Mode::MACHINE;
-
-    // static constexpr const int PMPADDR0 = 0x3B0;
-    // static constexpr const int PMPCFG0  = 0x3A0;
-    // static constexpr const int MHARTID  = 0xF14;
-    // static constexpr const int MODELEG  = 0x302;
-    // static constexpr const int MIDELEG  = 0x303;
-    // static constexpr const int SATP     = 0x180;
-
-    // static constexpr const int KIE = MODE == Mode::SUPERVISOR ? SIE : MIE;
-
-    // static constexpr const int KSTATUS = MODE == Mode::SUPERVISOR ? SSTATUS : MSTATUS;
-
-    // static constexpr const int KEPC = MODE == Mode::SUPERVISOR ? SEPC : MEPC;
-
-    // static constexpr const int KCAUSE = MODE == Mode::SUPERVISOR ? SCAUSE : MCAUSE;
+    using Mode  = Supervisor;
 
     template <const int R>
     static void csrw(auto r) {
@@ -101,43 +87,42 @@ struct RISCV {
     }
 
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
-    __attribute__((always_inline)) static inline void sret() { asm volatile("sret"); }
+    __attribute__((always_inline)) static inline void sp(void *s) { asm volatile("mv sp, %0" ::"r"(s)); }
     __attribute__((always_inline)) inline static auto core() {
         register unsigned int tp asm("tp");
         return tp;
     }
-
-    __attribute__((always_inline)) static inline void sp(void *s) { asm volatile("mv sp, %0" ::"r"(s)); }
 
     __attribute__((naked)) static void init() {
         asm volatile("csrr tp, mhartid");
         RISCV::sp(stack[RISCV::core()] + Traits::Memory::Page::SIZE);
         // RISCV::csrc<MSTATUS>(RISCV::MACHINE_IRQ);
 
-        // if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && MODE == Mode::SUPERVISOR) {
-        //     if (RISCV::core() == 0) {
-        //         for (;;) RISCV::idle();
-        //     }
-        // }
+        if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && Meta::SAME<Mode, Supervisor>::Result) {
+            if (RISCV::core() == 0) {
+                for (;;) RISCV::idle();
+            }
+        }
 
         if constexpr (Traits::Timer::Enable) {
             RISCV::csrs<Mode::IE>(static_cast<Register>(Machine::TIE) | static_cast<Register>(Supervisor::TIE));
         }
 
-        // if constexpr (MODE == Mode::SUPERVISOR) {
-        //     // csrw<MTVEC>(irq2s);
-        //     // csrw<STVEC>(Kernel::ktrap);
-        //     // RISCV::csrs<MIE>(MTIE);
-        //     RISCV::csrw<MODELEG>(0xFFFF);
-        //     RISCV::csrw<MIDELEG>(0xFFFF);
-        //     RISCV::csrw<PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-        //     RISCV::csrw<PMPCFG0>(0x1F);
-        //     RISCV::csrs<MSTATUS>(MACHINETO_SUPERVISOR | MPIE);
-        //     RISCV::csrc<MSTATUS>(SPIE | SUPERVISOR_IRQ);
-        // } else {
-        csrs<Machine::STATUS>(Machine::TO_ME);
-        csrw<Machine::TVEC>(MIC::entry);
-        //}
+        if constexpr (Meta::SAME<Mode, Supervisor>::Result) {
+            // csrw<MTVEC>(irq2s);
+            // csrw<STVEC>(Kernel::ktrap);
+            csrw<Machine::TVEC>(MIC::entry);
+            // RISCV::csrs<Machine::IE>(Machine::TIE);
+            RISCV::csrw<Machine::MEDELEG>(0xFFFF);
+            RISCV::csrw<Machine::MIDELEG>(0xFFFF);
+            RISCV::csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
+            RISCV::csrw<Machine::PMPCFG0>(0x1F);
+            RISCV::csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIE);
+            RISCV::csrc<Machine::STATUS>(Supervisor::PIE | Supervisor::IRQE);
+        } else {
+            csrs<Machine::STATUS>(Machine::ME2ME);
+            csrw<Machine::TVEC>(MIC::entry);
+        }
 
         csrw<Machine::EPC>(Kernel::init);
         Machine::ret();
@@ -156,7 +141,7 @@ struct RISCV {
             this->ra     = reinterpret_cast<uintptr_t>(exit);
             this->gp     = reinterpret_cast<uintptr_t>(gp);
             this->pc     = reinterpret_cast<uintptr_t>(entry);
-            this->status = reinterpret_cast<uintptr_t>(0ULL | Mode::TO_USER | Mode::PIE);
+            this->status = reinterpret_cast<uintptr_t>(0ULL | Mode::ME2USER | Mode::PIE);
             this->a0     = reinterpret_cast<uintptr_t>(a0);
         }
 
@@ -229,7 +214,7 @@ struct RISCV {
                 "sd   sp, (%[prev])\n"
                 "mv   sp, %[next]\n"
                 :
-                : "i"(T::STATUS), "r"(~(T::PIE | T::PP)), "r"(T::TO_ME), [status] "i"(OFFSET_OF(Context, status)),
+                : "i"(T::STATUS), "r"(~(T::PIE | T::PP)), "r"(T::ME2ME), [status] "i"(OFFSET_OF(Context, status)),
                   [pc] "i"(OFFSET_OF(Context, pc)), [prev] "r"(previous), [next] "r"(next)
                 : "memory");
             lock->release();

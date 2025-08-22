@@ -5,9 +5,9 @@ namespace Timer {
 }
 
 __attribute__((naked, aligned(4))) void MIC::entry() {
-    RISCV::Context::push();
+    RISCV::Context::push<RISCV::Machine>();
     handler();
-    RISCV::Context::pop();
+    RISCV::Context::pop<RISCV::Machine>();
 }
 
 void MIC::handler() {
