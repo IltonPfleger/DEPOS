@@ -10,8 +10,7 @@ static volatile bool boot = true;
 
 namespace Kernel {
     void init() {
-        CPU::Interrupt::disable();
-        if (CPU::core() == 0) {
+        if (CPU::core() == Machine::BSP) {
             Logger::init();
             Logger::println("\n[Kernel]\n");
             Memory::init();
@@ -34,16 +33,16 @@ namespace Kernel {
     }
 
     void exception() {
-        // uintptr_t mcause, mepc, mtval;
-        //__asm__ volatile("csrr %0, mcause" : "=r"(mcause));
-        //__asm__ volatile("csrr %0, mepc" : "=r"(mepc));
-        //__asm__ volatile("csrr %0, mtval" : "=r"(mtval));
-        // ERROR(true,
-        //       "Ohh it's a Trap!\n"
-        //       "mcause: %p\n"
-        //       "mepc: %p\n"
-        //       "mtval: %p\n",
-        //       mcause, mepc, mtval);
+        uintptr_t mcause, mepc, mtval;
+        __asm__ volatile("csrr %0, scause" : "=r"(mcause));
+        __asm__ volatile("csrr %0, sepc" : "=r"(mepc));
+        __asm__ volatile("csrr %0, stval" : "=r"(mtval));
+        ERROR(true,
+              "Ohh it's a Trap!\n"
+              "mcause: %p\n"
+              "mepc: %p\n"
+              "mtval: %p\n",
+              mcause, mepc, mtval);
     }
 }
 
