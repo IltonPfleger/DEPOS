@@ -2,7 +2,7 @@
 
 #include <Spin.hpp>
 #include <Traits.hpp>
-#include <Types.hpp>
+#include <cpus/rv64/clint.hpp>
 
 namespace Timer {
     void handler();
@@ -16,12 +16,13 @@ namespace Kernel {
 
 static inline char stack[Traits::Machine::CPUS][Traits::Memory::Page::SIZE];
 
-struct CPU {
+struct RV64 {
     typedef uintmax_t Register;
     enum class Mode { SUPERVISOR, MACHINE };
 
     static constexpr Mode MODE = Mode::MACHINE;
 
+    static constexpr const int MENVCFG  = 0x30A;
     static constexpr const int PMPADDR0 = 0x3B0;
     static constexpr const int PMPCFG0  = 0x3A0;
     static constexpr const int MHARTID  = 0xF14;
@@ -118,34 +119,79 @@ struct CPU {
 
     __attribute__((always_inline)) static inline void sp(void *s) { asm volatile("mv sp, %0" ::"r"(s)); }
 
+    __attribute__((naked, aligned(4))) static void irq2s() {
+        asm volatile(
+            "addi sp, sp, -128\n"
+            "sd ra, 0(sp)\n"
+            "sd t0, 8(sp)\n"
+            "sd t1, 16(sp)\n"
+            "sd t2, 24(sp)\n"
+            "sd t3, 32(sp)\n"
+            "sd t4, 40(sp)\n"
+            "sd t5, 48(sp)\n"
+            "sd t6, 56(sp)\n"
+            "sd a0, 64(sp)\n"
+            "sd a1, 72(sp)\n"
+            "sd a2, 80(sp)\n"
+            "sd a3, 88(sp)\n"
+            "sd a4, 96(sp)\n"
+            "sd a5, 104(sp)\n"
+            "sd a6, 112(sp)\n"
+            "sd a7, 120(sp)\n");
+        CLINT::reset(RV64::core());
+        // Machine::IO::UART::put('A');
+        //  RV64::csrc<MIE>(MTIE);
+        // csrc<MIP>(MTIP);  // USANDO S AAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        // csrs<MIP>(STIP);
+        asm volatile(
+            "ld a0, 64(sp)\n"
+            "ld a1, 72(sp)\n"
+            "ld a2, 80(sp)\n"
+            "ld a3, 88(sp)\n"
+            "ld a4, 96(sp)\n"
+            "ld a5, 104(sp)\n"
+            "ld a6, 112(sp)\n"
+            "ld a7, 120(sp)\n"
+            "ld t0, 8(sp)\n"
+            "ld t1, 16(sp)\n"
+            "ld t2, 24(sp)\n"
+            "ld t3, 32(sp)\n"
+            "ld t4, 40(sp)\n"
+            "ld t5, 48(sp)\n"
+            "ld t6, 56(sp)\n"
+            "ld ra, 0(sp)\n"
+            "addi sp, sp, 128\n");
+        RV64::mret();
+    }
+
     __attribute__((naked)) static void init() {
         asm volatile("csrr tp, mhartid");
-        CPU::sp(stack[CPU::core()] + Traits::Memory::Page::SIZE);
-        // CPU::csrc<MSTATUS>(CPU::MACHINE_IRQ);
+        sp(stack[core()] + Traits::Memory::Page::SIZE);
+        // RV64::csrc<MSTATUS>(RV64::MACHINE_IRQ);
 
-        if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && MODE == Mode::SUPERVISOR) {
-            if (CPU::core() == 0) {
-                for (;;) CPU::idle();
-            }
-        }
+        // if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && MODE == Mode::SUPERVISOR) {
+        //     if (RV64::core() == 0) {
+        //         for (;;) RV64::idle();
+        //     }
+        // }
 
-        if constexpr (MODE == Mode::SUPERVISOR) {
-            // csrw<MTVEC>(irq2s);
-            csrw<STVEC>(Kernel::ktrap);
-            // CPU::csrs<MIE>(MTIE);
-            CPU::csrw<MODELEG>(0xFFFF);
-            CPU::csrw<MIDELEG>(0xFFFF);
-            CPU::csrw<PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-            CPU::csrw<PMPCFG0>(0x1F);
-            CPU::csrs<MSTATUS>(MACHINE2SUPERVISOR | MPIE);
-            CPU::csrc<MSTATUS>(SPIE | SUPERVISOR_IRQ);
-        } else {
-            csrs<MSTATUS>(MACHINE2MACHINE);
-            csrw<MTVEC>(Kernel::ktrap);
-        }
+        // if constexpr (MODE == Mode::SUPERVISOR) {
+        //     csrw<MTVEC>(irq2s);
+        //     csrw<STVEC>(Kernel::ktrap);
+        //     RV64::csrs<MIE>(MTIE);
+        //     RV64::csrw<MODELEG>(0xFFFF);
+        //     RV64::csrw<MIDELEG>(0xFFFF);
+        //     RV64::csrw<PMPADDR0>(0x3FFFFFFFFFFFFFULL);
+        //     RV64::csrw<PMPCFG0>(0x1F);
+        //     RV64::csrs<MSTATUS>(MACHINE2SUPERVISOR | MPIE);
+        //     RV64::csrc<MSTATUS>(SPIE | SUPERVISOR_IRQ);
+        // } else {
+        csrs<MSTATUS>(MACHINE2MACHINE);
+        csrw<MTVEC>(Kernel::ktrap);
+        //}
 
         csrw<MEPC>(Kernel::init);
-        CPU::mret();
+        mret();
     }
 
     struct Context {
@@ -196,7 +242,7 @@ struct CPU {
                   [s9] "i"(OFFSET_OF(Context, s9)), [s10] "i"(OFFSET_OF(Context, s10)),
                   [s11] "i"(OFFSET_OF(Context, s11)));
             asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
-            CPU::ret();
+            RV64::ret();
         }
 
         __attribute__((naked)) static void swtch(Context **previous, Context *next, Spin *lock) {
@@ -316,7 +362,7 @@ struct CPU {
                   [a6] "i"(OFFSET_OF(Context, a6)), [a7] "i"(OFFSET_OF(Context, a7))
                 : "memory");
             asm volatile("addi sp, sp, %0" ::"i"(sizeof(Context)));
-            CPU::ret();
+            RV64::ret();
         }
     };
 
@@ -344,10 +390,6 @@ struct CPU {
             } else {
                 Kernel::exception();
             }
-        }
-
-        __attribute__((always_inline)) static inline void set(void (*p)()) {
-            csrw<MTVEC>(reinterpret_cast<Register>(p));
         }
     };
 

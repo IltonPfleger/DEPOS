@@ -17,7 +17,5 @@ struct Machine {
         static constexpr const uintptr_t MTIMECMP       = ADDR + 0x4000;
         static volatile inline uintmax_t *MTIME         = reinterpret_cast<volatile uintmax_t *>(ADDR + 0xBFF8);
     };
-    struct IO {
-        using UART = SiFiveUART;
-    };
+    using IO = SiFiveUART;
 };

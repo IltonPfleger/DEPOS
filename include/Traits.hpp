@@ -1,5 +1,4 @@
 #pragma once
-#include <Machine.hpp>
 
 struct Thread;
 template <typename T>
@@ -8,6 +7,13 @@ template <typename T>
 struct RateMonotonic;
 
 struct Traits {
+    struct Machine {
+        static constexpr const char *NAME = "sifive_u";
+        static constexpr const int XLEN   = 64;
+        static constexpr const int CPUS   = 5;
+        static constexpr const int BSP    = 1;
+    };
+
     struct Timer {
         static constexpr bool Enable             = true;
         static constexpr unsigned long MHz       = 1'000'000;
@@ -27,7 +33,6 @@ struct Traits {
     };
 
     struct Debug {
-        using Device                      = Machine::IO::UART;
         static constexpr const bool ERROR = true;
         static constexpr const bool TRACE = true;
     };
