@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Machine.hpp>
 #include <Scheduler.hpp>
 #include <Traits.hpp>
 
@@ -11,6 +12,7 @@ class Thread {
     using Function  = int (*)(Argument);
     using Queue     = FIFO<Thread *>;
     using Element   = Queue::Node;
+    using CPU       = Machine::CPU;
 
     ~Thread();
     Thread(Function, Argument, Criterion);

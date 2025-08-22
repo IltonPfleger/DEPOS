@@ -1,5 +1,4 @@
 #include <Alarm.hpp>
-#include <CPU.hpp>
 #include <IO/Debug.hpp>
 #include <Memory.hpp>
 #include <Spin.hpp>
@@ -23,7 +22,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
 }
 
 int Thread::idle(void *) {
-    while (_count > Machine::CPUS) {
+    while (_count > Traits::Machine::CPUS) {
         // if (!_scheduler.empty()) yield();
     }
 
@@ -106,7 +105,7 @@ void Thread::exit() {
 }
 
 void Thread::init() {
-    for (int i = 0; i < Machine::CPUS; ++i) new (Memory::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+    for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Memory::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
 }
 

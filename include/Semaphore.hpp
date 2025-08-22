@@ -1,5 +1,4 @@
 #pragma once
-#include <CPU.hpp>
 #include <Spin.hpp>
 #include <Thread.hpp>
 

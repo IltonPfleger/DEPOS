@@ -1,6 +1,6 @@
 #include <Traits.hpp>
 
-class CLINT {
+class SiFiveCLINT {
     static constexpr const unsigned long long CLOCK = 1'000'000;
     static constexpr const uintptr_t ADDR           = 0x02000000;
     static constexpr const uintptr_t MTIMECMP       = ADDR + 0x4000;
