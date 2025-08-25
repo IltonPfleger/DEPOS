@@ -10,15 +10,16 @@ namespace Kernel {
     void init();
 }
 
-static inline char stack[Traits::Machine::CPUS][Traits::Memory::Page::SIZE];
+__attribute__((aligned(16))) static inline char stack[Traits::Machine::CPUS][Traits::Memory::Page::SIZE];
 
-struct RISCV {
+class RISCV {
+   public:
     typedef uintmax_t Register;
     struct Machine {
         enum : Register {
             PMPADDR0      = 0x3B0,
             PMPCFG0       = 0x3A0,
-            MHARTID       = 0xF14,
+            MHARTID       = 0xF14,       // Core Number/ID
             MEDELEG       = 0x302,       // Machine Exception Delegation
             MIDELEG       = 0x303,       // Machine Interrupt Delegation
             PP            = 3 << 11,     // Previous Previlege
@@ -26,7 +27,7 @@ struct RISCV {
             ME2USER       = ME2ME,       // Machine to User
             ME2SUPERVISOR = 1ULL << 11,  // Machine to Supervisor
             IRQE          = 1ULL << 3,   // Interrupt Enable
-            TIE           = 1ULL << 7,   // Timer Interrupt Enable
+            TI            = 1ULL << 7,   // Timer Interrupt Enable
             PIE           = 1ULL << 7,   // Previous Interrupt Enable
         };
         static constexpr const int STATUS = 0x300;
@@ -44,7 +45,7 @@ struct RISCV {
             ME2ME   = 1ULL << 8,  // Supervisor to Supervisor
             ME2USER = ME2ME,      // Supervisor to User
             IRQE    = 1ULL << 1,  // Interrupt Enable
-            TIE     = 1ULL << 5,  // Timer Interrupt Enable
+            TI      = 1ULL << 5,  // Timer Interrupt Enable
             PIE     = 1ULL << 5,  // Previous Interrupt Enable
         };
         static constexpr const int STATUS = 0x100;
@@ -61,7 +62,7 @@ struct RISCV {
 
     template <const int R>
     static void csrw(auto r) {
-        asm volatile("csrw %0, %1" ::"i"(R), "r"(r));
+        asm volatile("csrw %c0, %1" ::"i"(R), "r"(r));
     }
 
     template <const int R>
@@ -105,17 +106,16 @@ struct RISCV {
         }
 
         if constexpr (Traits::Timer::Enable) {
-            csrs<Machine::IE>(static_cast<Register>(Machine::TIE) | static_cast<Register>(Supervisor::TIE));
+            csrs<Machine::IE>(static_cast<Register>(Machine::TI) | static_cast<Register>(Supervisor::TI));
         }
 
         if constexpr (Meta::SAME<Mode, Supervisor>::Result) {
-            // csrw<STVEC>(Kernel::ktrap);
+            csrw<Supervisor::TVEC>(SIC::entry);
             csrw<Machine::TVEC>(MIC::entry);
-            // csrs<Machine::IE>(Machine::TIE);
-            // csrw<Machine::MEDELEG>(0xFFFF);
-            // csrw<Machine::MIDELEG>(0xFFFF);
+            csrw<Machine::MEDELEG>(0xF87F);
+            csrw<Machine::MIDELEG>(0xFFFF);
             csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-            csrw<Machine::PMPCFG0>(0x1F);
+            csrw<Machine::PMPCFG0>(0b11111);
             csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIE);
             csrc<Machine::STATUS>(Supervisor::PIE | Supervisor::IRQE);
         } else {
@@ -127,7 +127,8 @@ struct RISCV {
         Machine::ret();
     }
 
-    struct Context {
+    class Context {
+       public:
         uintptr_t ra;
         uintptr_t gp;
         uintptr_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
@@ -140,7 +141,7 @@ struct RISCV {
             this->ra     = reinterpret_cast<uintptr_t>(exit);
             this->gp     = reinterpret_cast<uintptr_t>(gp);
             this->pc     = reinterpret_cast<uintptr_t>(entry);
-            this->status = reinterpret_cast<uintptr_t>(0ULL | Mode::ME2USER | Mode::PIE);
+            this->status = static_cast<Register>(Mode::ME2USER | Mode::PIE);
             this->a0     = reinterpret_cast<uintptr_t>(a0);
         }
 
@@ -221,7 +222,7 @@ struct RISCV {
         }
 
         template <typename T = Mode>
-        __attribute__((always_inline)) static inline void push() {
+        __attribute__((always_inline)) static inline Context *push() {
             asm volatile(
                 "addi sp, sp, %[size]\n"
                 "sd ra, %c[ra](sp)\n"
@@ -256,6 +257,8 @@ struct RISCV {
                 "csrr t0, %1\n"
                 "sd t0, %c[pc](sp)" ::"i"(T::STATUS),
                 "i"(T::EPC), [status] "i"(OFFSET_OF(Context, status)), [pc] "i"(OFFSET_OF(Context, pc)));
+            register Context *sp asm("sp");
+            return sp;
         }
 
         template <typename T = Mode>
@@ -305,7 +308,7 @@ struct RISCV {
         static bool off() {
             Register status = csrr<Mode::STATUS>();
             disable();
-            return (status & 0x8) != 0;
+            return (status & Mode::IRQE) != 0;
         }
     };
 };

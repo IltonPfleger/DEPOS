@@ -32,15 +32,15 @@ namespace Timer {
         // CPU::Interrupt::Timer::enable();
     }
 
-    void handler() {
-        auto core = Machine::CPU::core();
-        // reset(core);
-        //    if constexpr (Traits::Alarm::Enable) {
-        //        if (--_channels[ALARM]._current[CPU::core()] == 0) {
-        //            _channels[ALARM]._current[CPU::core()] = _channels[ALARM]._initial;
-        //            Alarm::handler();
-        //        }
-        //    }
+    void handler(unsigned int core) {
+        // auto core = Machine::CPU::core();
+        //  reset(core);
+        //     if constexpr (Traits::Alarm::Enable) {
+        //         if (--_channels[ALARM]._current[CPU::core()] == 0) {
+        //             _channels[ALARM]._current[CPU::core()] = _channels[ALARM]._initial;
+        //             Alarm::handler();
+        //         }
+        //     }
 
         if constexpr (Traits::Scheduler<Thread>::Criterion::Timed) {
             if (--_scheduler._current[core] == 0) {

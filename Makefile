@@ -16,8 +16,8 @@ OBJS += $(BUILD)/$(APPLICATION).o
 DEPS = $(OBJS:.o=.d)
 
 
-CPUS=$(shell sed -n 's|.*CPUS *= *\([0-9]*\).*|\1|p' include/Machine.hpp)
-MACHINE=$(shell sed -n 's|.*MACHINE *= *"\([^*]*\)".*|\1|p' include/Machine.hpp)
+CPUS=$(shell sed -n 's|.*CPUS *= *\([0-9]*\).*|\1|p' include/Traits.hpp)
+MACHINE=$(shell sed -n 's|.*NAME *= *"\([^*]*\)".*|\1|p' include/Traits.hpp)
 
 default:
 	make run
