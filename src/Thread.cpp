@@ -27,7 +27,7 @@ int Thread::idle(void *) {
     }
 
     CPU::Interrupt::disable();
-    if (CPU::core() == 0) Logger::println("*** Shutdown! ***\n");
+    if (CPU::core() == Traits::Machine::BSP) Logger::println("*** Shutdown! ***\n");
     for (;;);
     return 0;
 }
