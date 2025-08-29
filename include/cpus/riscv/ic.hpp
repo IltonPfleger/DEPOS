@@ -3,21 +3,28 @@ namespace Timer {
 }
 
 class MIC {
-   public:
-    class Syscall {
-       public:
-        enum Type { TIMER };
-        static void handler(Type);
-    };
-
     static void error();
     static void handler(void*);
+
+   public:
     __attribute__((naked, aligned(4))) static void entry();
 };
 
 class SIC {
-   public:
     static void error();
-    static void handler(void*);
+    static void handler();
+
+   public:
     __attribute__((naked, aligned(4))) static void entry();
+};
+
+class Syscall {
+    friend MIC;
+
+   public:
+    enum Code { RESET_CLINT_TIMER };
+    static void call(Code);
+
+   private:
+    static void handler(Code);
 };

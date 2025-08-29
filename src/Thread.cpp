@@ -23,7 +23,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
 
 int Thread::idle(void *) {
     while (_count > Traits::Machine::CPUS) {
-        if (!_scheduler.empty()) yield();
+        // if (!_scheduler.empty()) yield();
     }
 
     CPU::Interrupt::disable();
