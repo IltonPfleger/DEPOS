@@ -13,21 +13,20 @@ void MIC::handler(void* args) {
 
     if (is_interrupt) {
         switch (code) {
-            case 7:
-                RISCV::csrc<RISCV::Machine::IE>(RISCV::Machine::TI);
-                RISCV::csrs<RISCV::Machine::IP>(RISCV::Supervisor::TI);
-                /// auto core = RISCV::core();
-                /// RISCV::CLINT::reset(core);
-                // RISCV::csrs<RISCV::Machine::IP>(RISCV::Supervisor::TI);
-                // RISCV::csrs<RISCV::Supervisor::IP>(RISCV::Supervisor::TI);
-                //    TRACE("%x\n", RISCV::csrr<RISCV::Machine::STATUS>());
-                //      RISCV::csrc<RISCV::Machine::IE>(RISCV::Machine::TI);
-                //        Timer::handler();
+            case Interrupt::TIMER:
+                if constexpr (Meta::SAME<RISCV::Mode, RISCV::Supervisor>::Result) {
+                    RISCV::csrc<RISCV::Machine::IE>(RISCV::Machine::TI);
+                    RISCV::csrs<RISCV::Machine::IP>(RISCV::Supervisor::TI);
+                } else {
+                    auto core = RISCV::core();
+                    RISCV::CLINT::reset(core);
+                    Timer::handler(core);
+                }
         }
     } else {
         RISCV::Context* context = reinterpret_cast<RISCV::Context*>(args);
         switch (cause) {
-            case 9:
+            case Exception::SYSCALL:
                 context->pc += 4;
                 Syscall::handler(static_cast<Syscall::Code>(context->a0));
                 break;
@@ -39,16 +38,13 @@ void MIC::handler(void* args) {
 }
 
 void MIC::error() {
-    uintptr_t mcause, mepc, mtval;
-    __asm__ volatile("csrr %0, mcause" : "=r"(mcause));
-    __asm__ volatile("csrr %0, mepc" : "=r"(mepc));
-    __asm__ volatile("csrr %0, mtval" : "=r"(mtval));
+    uintmax_t mcause = RISCV::csrr<RISCV::Machine::STATUS>();
+    uintmax_t mepc   = RISCV::csrr<RISCV::Machine::EPC>();
     ERROR(true,
           "Ohh it's a Trap!\n"
           "mcause: %p\n"
-          "mepc: %p\n"
-          "mtval: %p\n",
-          mcause, mepc, mtval);
+          "mepc: %p\n",
+          mcause, mepc);
 }
 
 void SIC::entry() {
@@ -64,7 +60,7 @@ void SIC::handler() {
     auto core         = RISCV::core();
     if (is_interrupt) {
         switch (code) {
-            case 5:
+            case Interrupt::TIMER:
                 Syscall::call(Syscall::RESET_CLINT_TIMER);
                 Timer::handler(core);
                 break;
@@ -75,16 +71,13 @@ void SIC::handler() {
 }
 
 void SIC::error() {
-    uintptr_t scause, sepc, stval;
-    __asm__ volatile("csrr %0, scause" : "=r"(scause));
-    __asm__ volatile("csrr %0, sepc" : "=r"(sepc));
-    __asm__ volatile("csrr %0, stval" : "=r"(stval));
+    uintmax_t scause = RISCV::csrr<RISCV::Supervisor::STATUS>();
+    uintmax_t sepc   = RISCV::csrr<RISCV::Supervisor::EPC>();
     ERROR(true,
           "Ohh it's a Trap!\n"
           "scause: %p\n"
-          "sepc: %p\n"
-          "stval: %p\n",
-          scause, sepc, stval);
+          "sepc: %p\n",
+          scause, sepc);
 }
 
 void Syscall::call(Code code) {
