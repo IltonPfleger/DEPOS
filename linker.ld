@@ -20,13 +20,6 @@ SECTIONS {
 
 	.bss : { *(.bss) *(COMMON) } :rw
 
-	.init_array :
-    {
-        __init_array_start = .;
-        KEEP(*( .init_array* ))
-        __init_array_end = .;
-    } 
-
 	PROVIDE(__KERNEL_END__ = .);
 }
 

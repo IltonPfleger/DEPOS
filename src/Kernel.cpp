@@ -26,7 +26,4 @@ namespace Kernel {
     }
 }
 
-__attribute__((naked, section(".boot"))) void kboot() {
-    Machine::CPU::init();
-    Kernel::init();
-}
+__attribute__((naked, section(".boot"))) void kboot() { Machine::CPU::init(); }

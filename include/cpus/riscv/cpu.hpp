@@ -17,18 +17,18 @@ class RISCV {
     typedef uintmax_t Register;
     struct Machine {
         enum : Register {
-            PMPADDR0      = 0x3B0,
-            PMPCFG0       = 0x3A0,
-            MHARTID       = 0xF14,       // Core Number/ID
-            MEDELEG       = 0x302,       // Machine Exception Delegation
-            MIDELEG       = 0x303,       // Machine Interrupt Delegation
-            PP            = 3 << 11,     // Previous Previlege
-            ME2ME         = 3ULL << 11,  // Machine to Machine
-            ME2USER       = ME2ME,       // Machine to User
+            PMPADDR0 = 0x3B0,
+            PMPCFG0  = 0x3A0,
+            MHARTID  = 0xF14,  // Core Number/ID
+            MEDELEG  = 0x302,  // Machine Exception Delegation
+            MIDELEG  = 0x303,  // Machine Interrupt Delegation
+            // PP       = 3 << 11,     // Previous Previlege
+            ME2ME = 3ULL << 11,  // Machine to Machine
+            // ME2USER       = ME2ME,       // Machine to User
             ME2SUPERVISOR = 1ULL << 11,  // Machine to Supervisor
             IRQE          = 1ULL << 3,   // Interrupt Enable
             TI            = 1ULL << 7,   // Timer Interrupt Enable
-            PIE           = 1ULL << 7,   // Previous Interrupt Enable
+            PIRQE         = 1ULL << 7,   // Previous Interrupt Enable
         };
         static constexpr const int STATUS = 0x300;
         static constexpr const int IE     = 0x304;
@@ -37,16 +37,17 @@ class RISCV {
         static constexpr const int CAUSE  = 0x342;
         static constexpr const int IP     = 0x344;
         __attribute__((always_inline)) static inline void ret() { asm volatile("mret"); }
+        __attribute__((always_inline)) static inline void ecall() { asm volatile("ecall"); }
     };
 
     struct Supervisor {
         enum : Register {
-            PP      = 1ULL << 8,  // Previous Previlege
-            ME2ME   = 1ULL << 8,  // Supervisor to Supervisor
-            ME2USER = ME2ME,      // Supervisor to User
-            IRQE    = 1ULL << 1,  // Interrupt Enable
-            TI      = 1ULL << 5,  // Timer Interrupt Enable
-            PIE     = 1ULL << 5,  // Previous Interrupt Enable
+            // PP    = 1ULL << 8,  // Previous Previlege
+            ME2ME = 1ULL << 8,  // Supervisor to Supervisor
+            // ME2USER = ME2ME,      // Supervisor to User
+            IRQE  = 1ULL << 1,  // Interrupt Enable
+            TI    = 1ULL << 5,  // Timer Interrupt Enable
+            PIRQE = 1ULL << 5,  // Previous Interrupt Enable
         };
         static constexpr const int STATUS = 0x100;
         static constexpr const int IE     = 0x104;
@@ -106,18 +107,18 @@ class RISCV {
         }
 
         if constexpr (Traits::Timer::Enable) {
-            csrs<Machine::IE>(static_cast<Register>(Machine::TI) | static_cast<Register>(Supervisor::TI));
+            csrs<Machine::IE>(Machine::TI);
+            csrs<Machine::IE>(Supervisor::TI);
         }
 
         if constexpr (Meta::SAME<Mode, Supervisor>::Result) {
             csrw<Supervisor::TVEC>(SIC::entry);
             csrw<Machine::TVEC>(MIC::entry);
-            csrw<Machine::MEDELEG>(0xF87F);
-            csrw<Machine::MIDELEG>(0xFFFF);
+            csrw<Machine::MIDELEG>(0x222);
             csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
             csrw<Machine::PMPCFG0>(0b11111);
-            csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIE);
-            csrc<Machine::STATUS>(Supervisor::PIE | Supervisor::IRQE);
+            csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIRQE);
+            csrc<Machine::STATUS>(Supervisor::PIRQE | Supervisor::IRQE);
         } else {
             csrs<Machine::STATUS>(Machine::ME2ME);
             csrw<Machine::TVEC>(MIC::entry);
@@ -141,7 +142,7 @@ class RISCV {
             this->ra     = reinterpret_cast<uintptr_t>(exit);
             this->gp     = reinterpret_cast<uintptr_t>(gp);
             this->pc     = reinterpret_cast<uintptr_t>(entry);
-            this->status = static_cast<Register>(Mode::ME2USER | Mode::PIE);
+            this->status = static_cast<Register>(Mode::ME2ME | Mode::PIRQE);
             this->a0     = reinterpret_cast<uintptr_t>(a0);
         }
 
@@ -214,7 +215,7 @@ class RISCV {
                 "sd   sp, (%[prev])\n"
                 "mv   sp, %[next]\n"
                 :
-                : "i"(T::STATUS), "r"(~(T::PIE | T::PP)), "r"(T::ME2ME), [status] "i"(OFFSET_OF(Context, status)),
+                : "i"(T::STATUS), "r"(~T::PIRQE), "r"(T::ME2ME), [status] "i"(OFFSET_OF(Context, status)),
                   [pc] "i"(OFFSET_OF(Context, pc)), [prev] "r"(previous), [next] "r"(next)
                 : "memory");
             lock->release();
