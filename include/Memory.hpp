@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Lists.hpp>
 #include <Spin.hpp>
 #include <Traits.hpp>
 
@@ -10,9 +11,9 @@ struct Memory {
         COUNT,
     };
 
-    typedef struct Page {
-        struct Page *next;
-    } Page;
+    // typedef struct Page {
+    //     struct Page *next;
+    // } Page;
 
     typedef struct Block {
         struct Block *next;
@@ -25,6 +26,9 @@ struct Memory {
     static void init();
     static void *kmalloc();
     static void kfree(void *);
+
+    using PageList = LIFO<void>;
+    using Page     = PageList::NodeType;
 };
 
 void *operator new(unsigned long, void *);

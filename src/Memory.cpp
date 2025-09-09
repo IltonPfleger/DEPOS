@@ -3,7 +3,9 @@
 
 extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
-static Memory::Page *pages                     = nullptr;
+static Memory::PageList page_list;
+
+// static Memory::Page *page_list                     = nullptr;
 static Memory::Heap heaps[Memory::Role::COUNT] = {{}};
 static Spin _lock;
 static Spin _plock;
@@ -35,38 +37,28 @@ void Memory::init() {
     TRACE("HeapSize=%d\n", HEAP_SIZE / (1024 * 1024));
     TRACE("HeapEnd=%p\n", HEAP_END);
 
-    int n_pages       = 0;
-    uintptr_t current = HEAP_START;
-    while (current + PSIZE < HEAP_END) {
-        Page *page = reinterpret_cast<Page *>(current);
-        page->next = pages;
-        pages      = page;
-        n_pages++;
-        current += Traits::Memory::Page::SIZE;
+    for (uintptr_t c = HEAP_START; c + PSIZE < HEAP_END; c += PSIZE) {
+        page_list.insert(reinterpret_cast<Page *>(c));
     };
 
-    TRACE("NumberOfPages=%d\n", n_pages);
     TRACE("}\n");
 }
 
 void *Memory::kmalloc() {
     _plock.lock();
-    Page *page = pages;
-    ERROR(page == nullptr, "[Memory::kmalloc] Out of Memory.");
-    pages = page->next;
+    Page *page = page_list.remove();
     _plock.unlock();
+    ERROR(page == nullptr, "[Memory::kmalloc] Out of Memory.");
     TRACE("[Memory::kmalloc] {return=%p}\n", page);
-    return reinterpret_cast<void *>(page);
+    return page;
 }
 
 void Memory::kfree(void *addr) {
-    Page *page = reinterpret_cast<Page *>(addr);
-    ERROR(page == nullptr, "[Memory::free] Free nullptr.");
+    ERROR(addr == nullptr, "[Memory::free] Free nullptr.");
     _plock.lock();
-    page->next = pages;
-    pages      = page;
+    page_list.insert(reinterpret_cast<Page *>(addr));
     _plock.unlock();
-    TRACE("[Memory::kfree] %p\n", page);
+    TRACE("[Memory::kfree] %p\n", addr);
 }
 
 void *operator new(unsigned long, void *ptr) { return ptr; }

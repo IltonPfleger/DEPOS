@@ -1,6 +1,50 @@
 #pragma once
 
 template <typename T>
+struct Node {
+    const T& data;
+    Node* next;
+};
+
+template <>
+struct Node<void> {
+    Node* next;
+};
+
+template <typename T>
+class LinkedListBase {
+   public:
+    using DataType = T;
+    using NodeType = Node<T>;
+    bool empty() const { return _head == nullptr; }
+
+   protected:
+    NodeType* _head = nullptr;
+};
+
+template <typename T>
+class LIFO : LinkedListBase<T> {
+    using Base = LinkedListBase<T>;
+
+   public:
+    using DataType = Base::DataType;
+    using NodeType = Base::NodeType;
+
+    void insert(NodeType* node) {
+        node->next = this->_head;
+        this->_head = node;
+    };
+
+    NodeType* remove() {
+        NodeType* node = this->_head;
+        this->_head    = this->_head->next;
+        return node;
+    }
+};
+
+/* ----------------------------------- O L D -----------------------------------*/
+
+template <typename T>
 struct Element {
     T value;
     unsigned long long rank;
@@ -95,15 +139,15 @@ struct LinkedList {
     }
 };
 
-template <typename T>
-struct LIFO : private LinkedList<T> {
-    using LinkedList<T>::empty;
-    using LinkedList<T>::remove;
-    using Node = typename LinkedList<T>::Node;
-
-    void insert(Node* value) { LinkedList<T>::push_front(value); }
-    Node* next() { return LinkedList<T>::remove_front(); }
-};
+// template <typename T>
+// struct LIFO : private LinkedList<T> {
+//     using LinkedList<T>::empty;
+//     using LinkedList<T>::remove;
+//     using Node = typename LinkedList<T>::Node;
+//
+//     void insert(Node* value) { LinkedList<T>::push_front(value); }
+//     Node* next() { return LinkedList<T>::remove_front(); }
+// };
 
 template <typename T>
 struct FIFO : private LinkedList<T> {
