@@ -19,13 +19,12 @@ void *Heap::alloc(unsigned long bytes) {
     auto i     = order;
 
     while (i < Traits::Memory::Page::ORDER && !_chunks[i]) i++;
-    if (i == Traits::Memory::Page::ORDER) {
-        auto page = reinterpret_cast<Chunk *>(Memory::kmalloc());
-        ERROR(!page, "[operator new] Out of memory.");
-        i          = Traits::Memory::Page::ORDER;
-        page->next = _chunks[i];
-        _chunks[i] = reinterpret_cast<Chunk *>(page);
-    }
+    if (i == Traits::Memory::Page::ORDER && !_chunks[i]) return nullptr;
+    // auto page = reinterpret_cast<Chunk *>(Memory::kmalloc());
+    // ERROR(!page, "[operator new] Out of memory.");
+    // i          = Traits::Memory::Page::ORDER;
+    // page->next = _chunks[i];
+    //_chunks[i] = reinterpret_cast<Chunk *>(page);
 
     while (i != order) {
         Chunk *block = _chunks[i];
@@ -39,6 +38,13 @@ void *Heap::alloc(unsigned long bytes) {
     Chunk *block   = _chunks[order];
     _chunks[order] = block->next;
     return reinterpret_cast<void *>(block);
+}
+
+void Heap::grow(void *ptr, unsigned long bytes) {
+    auto order       = index_of(bytes);
+    Chunk *new_block = reinterpret_cast<Chunk *>(ptr);
+    new_block->next  = _chunks[order];
+    _chunks[order]   = new_block;
 }
 
 void *Heap::free(void *ptr, unsigned long bytes) {
@@ -68,10 +74,10 @@ void *Heap::free(void *ptr, unsigned long bytes) {
     new_block->next  = _chunks[order];
     _chunks[order]   = new_block;
 
-    if (order == Traits::Memory::Page::ORDER) {
-        Memory::kfree(_chunks[order]);
-        _chunks[order] = _chunks[order]->next;
-    }
+    // if (order == Traits::Memory::Page::ORDER) {
+    //     Memory::kfree(_chunks[order]);
+    //     _chunks[order] = _chunks[order]->next;
+    // }
     return nullptr;
 }
 
@@ -81,8 +87,9 @@ void *operator new[](unsigned long bytes, Heap &heap) {
     _lock.lock();
     void *addr = heap.alloc(bytes);
     if (!addr) {
-        heap.free(Memory::kmalloc(), Traits::Memory::Page::SIZE);
+        heap.grow(Memory::kmalloc(), Traits::Memory::Page::SIZE);
         addr = heap.alloc(bytes);
+        ERROR(!addr, "[operator new] Out of memory.");
     }
     _lock.unlock();
     return addr;

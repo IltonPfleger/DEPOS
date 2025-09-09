@@ -9,6 +9,7 @@ class Heap {
    public:
     void *alloc(unsigned long);
     void *free(void *, unsigned long);
+    void grow(void *, unsigned long);
     unsigned long index_of(unsigned long);
 
    private:
