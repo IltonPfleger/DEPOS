@@ -31,7 +31,7 @@ class LIFO : LinkedListBase<T> {
     using NodeType = Base::NodeType;
 
     void insert(NodeType* node) {
-        node->next = this->_head;
+        node->next  = this->_head;
         this->_head = node;
     };
 
@@ -138,16 +138,6 @@ struct LinkedList {
         if (!_head) _tail = nullptr;
     }
 };
-
-// template <typename T>
-// struct LIFO : private LinkedList<T> {
-//     using LinkedList<T>::empty;
-//     using LinkedList<T>::remove;
-//     using Node = typename LinkedList<T>::Node;
-//
-//     void insert(Node* value) { LinkedList<T>::push_front(value); }
-//     Node* next() { return LinkedList<T>::remove_front(); }
-// };
 
 template <typename T>
 struct FIFO : private LinkedList<T> {
