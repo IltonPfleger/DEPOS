@@ -29,7 +29,7 @@ int main(void *) {
 
     mutex.p();
     for (int i = 0; i < N; i++) {
-        threads[i] = new (Memory::APPLICATION) Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);
+        threads[i] = new Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);
     }
     mutex.v();
 

@@ -31,6 +31,6 @@ struct Memory {
     using Page     = PageList::NodeType;
 };
 
-void *operator new(unsigned long, void *);
-void *operator new(unsigned long, Memory::Role);
-void operator delete(void *, unsigned long);
+// void *operator new(unsigned long, void *);
+// void *operator new(unsigned long, Memory::Role);
+// void operator delete(void *, unsigned long);

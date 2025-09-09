@@ -1,18 +1,27 @@
 #pragma once
 
 #include <Lists.hpp>
-#include <Spin.hpp>
 #include <Traits.hpp>
 
 class Heap {
+    friend void *operator new[](unsigned long);
+
    public:
     void *alloc(unsigned long);
     void *free(void *, unsigned long);
     unsigned long index_of(unsigned long);
 
    private:
-    using Chunk                   = Node<void>;
     static constexpr int CAPSTONE = Traits::Memory::Page::ORDER;
-    Chunk *_chunks[CAPSTONE + 1];
-    Spin _lock;
+    using Chunk                   = Node<void>;
+    Chunk *_chunks[CAPSTONE + 1]  = {{}};
+
+   public:
+    static Heap SYSTEM;
 };
+
+void *operator new(unsigned long, void *);
+void *operator new(unsigned long);
+void *operator new(unsigned long, Heap &);
+void *operator new[](unsigned long, Heap &);
+void operator delete(void *, unsigned long);

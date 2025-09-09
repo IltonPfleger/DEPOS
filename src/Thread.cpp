@@ -1,4 +1,5 @@
 #include <Alarm.hpp>
+#include <Heap.hpp>
 #include <IO/Debug.hpp>
 #include <Memory.hpp>
 #include <Spin.hpp>
@@ -105,8 +106,8 @@ void Thread::exit() {
 }
 
 void Thread::init() {
-    for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Memory::SYSTEM) Thread(idle, 0, Criterion::IDLE);
-    new (Memory::SYSTEM) Thread(main, 0, Criterion::NORMAL);
+    for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+    new (Heap::SYSTEM) Thread(main, 0, Criterion::NORMAL);
 }
 
 void Thread::run() {
