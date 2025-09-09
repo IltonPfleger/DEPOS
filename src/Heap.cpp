@@ -25,7 +25,7 @@ void *Heap::alloc(unsigned long bytes) {
         Chunk *block = _chunks[i];
         _chunks[i--] = block->next;
 
-        block->next       = reinterpret_cast<Chunk *>(reinterpret_cast<uintptr_t>(block) ^ (1 << i));
+        block->next       = reinterpret_cast<Chunk *>(reinterpret_cast<uintptr_t>(block) ^ (1UL << i));
         block->next->next = _chunks[i];
         _chunks[i]        = block;
     }
@@ -43,7 +43,7 @@ void Heap::grow(void *ptr, unsigned long bytes) {
 }
 
 void *Heap::free(void *ptr, unsigned long bytes) {
-    if (!ptr) return nullptr;
+    ERROR(!ptr, "[Heap::free] Invalid pointer.");
 
     auto addr  = reinterpret_cast<uintptr_t>(ptr);
     auto order = index_of(bytes);
