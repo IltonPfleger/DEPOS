@@ -1,6 +1,10 @@
 #include <Heap.hpp>
 #include <IO/Debug.hpp>
 #include <Memory.hpp>
+#include <Spin.hpp>
+
+static Spin _lock;
+Heap Heap::SYSTEM;
 
 unsigned long Heap::index_of(unsigned long bytes) {
     unsigned long order = 1;
@@ -14,7 +18,6 @@ void *Heap::alloc(unsigned long bytes) {
     auto order = index_of(bytes);
     auto i     = order;
 
-    _lock.lock();
     while (i < Traits::Memory::Page::ORDER && !_chunks[i]) i++;
     if (i == Traits::Memory::Page::ORDER) {
         auto page = reinterpret_cast<Chunk *>(Memory::kmalloc());
@@ -35,7 +38,6 @@ void *Heap::alloc(unsigned long bytes) {
 
     Chunk *block   = _chunks[order];
     _chunks[order] = block->next;
-    _lock.unlock();
     return reinterpret_cast<void *>(block);
 }
 
@@ -45,7 +47,6 @@ void *Heap::free(void *ptr, unsigned long bytes) {
     auto addr  = reinterpret_cast<uintptr_t>(ptr);
     auto order = index_of(bytes);
 
-    _lock.lock();
     while (order < Traits::Memory::Page::ORDER) {
         auto buddy = addr ^ (1UL << order);
 
@@ -71,7 +72,29 @@ void *Heap::free(void *ptr, unsigned long bytes) {
         Memory::kfree(_chunks[order]);
         _chunks[order] = _chunks[order]->next;
     }
-
-    _lock.unlock();
     return nullptr;
+}
+
+void *operator new(unsigned long, void *ptr) { return ptr; }
+
+void *operator new[](unsigned long bytes, Heap &heap) {
+    _lock.lock();
+    void *addr = heap.alloc(bytes);
+    if (!addr) {
+        heap.free(Memory::kmalloc(), Traits::Memory::Page::SIZE);
+        addr = heap.alloc(bytes);
+    }
+    _lock.unlock();
+    return addr;
+}
+
+void *operator new(unsigned long bytes, Heap &heap) { return operator new[](bytes, heap); }
+
+void *operator new(unsigned long bytes) {
+    if constexpr (Traits::System::MULTITASK) {
+        // return operator new[](bytes, Thread::running()->task->heap);
+        return operator new[](bytes, Heap::SYSTEM);
+    } else {
+        return operator new[](bytes, Heap::SYSTEM);
+    }
 }

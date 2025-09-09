@@ -4,21 +4,7 @@
 extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
 static Memory::PageList page_list;
-
-// static Memory::Page *page_list                     = nullptr;
-static Memory::Heap heaps[Memory::Role::COUNT] = {{}};
 static Spin _lock;
-static Spin _plock;
-
-static constexpr unsigned long calculateOrder(unsigned long bytes) {
-    unsigned long order = 1;
-    while ((1UL << order) < bytes) order++;
-    return order;
-}
-
-static unsigned char &getRole(void *page) {
-    return *(reinterpret_cast<unsigned char *>(page) + Traits::Memory::Page::SIZE - 1);
-}
 
 void Memory::init() {
     const uintptr_t PSIZE        = Traits::Memory::Page::SIZE;
@@ -36,18 +22,15 @@ void Memory::init() {
     TRACE("HeapStart=%p\n", HEAP_START);
     TRACE("HeapSize=%d\n", HEAP_SIZE / (1024 * 1024));
     TRACE("HeapEnd=%p\n", HEAP_END);
-
-    for (uintptr_t c = HEAP_START; c + PSIZE < HEAP_END; c += PSIZE) {
-        page_list.insert(reinterpret_cast<Page *>(c));
-    };
-
     TRACE("}\n");
+
+    for (uintptr_t c = HEAP_START; c + PSIZE < HEAP_END; c += PSIZE) page_list.insert(reinterpret_cast<Page *>(c));
 }
 
 void *Memory::kmalloc() {
-    _plock.lock();
+    _lock.lock();
     Page *page = page_list.remove();
-    _plock.unlock();
+    _lock.unlock();
     ERROR(page == nullptr, "[Memory::kmalloc] Out of Memory.");
     TRACE("[Memory::kmalloc] {return=%p}\n", page);
     return page;
@@ -55,82 +38,8 @@ void *Memory::kmalloc() {
 
 void Memory::kfree(void *addr) {
     ERROR(addr == nullptr, "[Memory::free] Free nullptr.");
-    _plock.lock();
+    _lock.lock();
     page_list.insert(reinterpret_cast<Page *>(addr));
-    _plock.unlock();
+    _lock.unlock();
     TRACE("[Memory::kfree] %p\n", addr);
-}
-
-void *operator new(unsigned long, void *ptr) { return ptr; }
-
-void *operator new(unsigned long bytes, Memory::Role role) {
-    if (bytes == 0 || bytes >= Traits::Memory::Page::SIZE) return 0;
-
-    auto order = calculateOrder(bytes);
-    auto i     = order;
-
-    _lock.lock();
-    while (i < Traits::Memory::Page::ORDER && !heaps[role].blocks[i]) i++;
-    if (i == Traits::Memory::Page::ORDER) {
-        auto page = reinterpret_cast<Memory::Block *>(Memory::kmalloc());
-        ERROR(!page, "[operator new] Out of memory.");
-        getRole(page)         = role;
-        i                     = Traits::Memory::Page::ORDER;
-        page->next            = heaps[role].blocks[i];
-        heaps[role].blocks[i] = reinterpret_cast<Memory::Block *>(page);
-    }
-
-    while (i != order) {
-        Memory::Block *block    = heaps[role].blocks[i];
-        heaps[role].blocks[i--] = block->next;
-
-        block->next           = reinterpret_cast<Memory::Block *>(reinterpret_cast<uintptr_t>(block) ^ (1 << i));
-        block->next->next     = heaps[role].blocks[i];
-        heaps[role].blocks[i] = block;
-    }
-
-    Memory::Block *block      = heaps[role].blocks[order];
-    heaps[role].blocks[order] = block->next;
-    _lock.unlock();
-    return reinterpret_cast<void *>(block);
-}
-
-void operator delete(void *ptr, unsigned long bytes) {
-    if (!ptr) return;
-
-    auto addr  = reinterpret_cast<uintptr_t>(ptr);
-    auto mask  = ~0ULL << Traits::Memory::Page::ORDER;
-    auto role  = getRole(reinterpret_cast<void *>(addr & mask));
-    auto order = calculateOrder(bytes);
-
-    _lock.lock();
-    while (order < Traits::Memory::Page::ORDER) {
-        auto buddy = addr ^ (1UL << order);
-
-        Memory::Block **current = &heaps[role].blocks[order];
-
-        while (*current && reinterpret_cast<uintptr_t>(*current) != buddy) {
-            current = &(*current)->next;
-        }
-
-        if (!*current) break;
-
-        (*current) = (*current)->next;
-
-        if (buddy < addr) addr = buddy;
-        order++;
-    }
-
-    Memory::Block *new_block  = reinterpret_cast<Memory::Block *>(addr);
-    new_block->next           = heaps[role].blocks[order];
-    heaps[role].blocks[order] = new_block;
-
-    void *free = nullptr;
-    if (order == Traits::Memory::Page::ORDER) {
-        free                      = heaps[role].blocks[order];
-        heaps[role].blocks[order] = heaps[role].blocks[order]->next;
-    }
-
-    _lock.unlock();
-    if (free) Memory::kfree(free);
 }

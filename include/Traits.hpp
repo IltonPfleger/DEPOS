@@ -14,6 +14,10 @@ struct Traits {
         static constexpr const int BSP    = 1;
     };
 
+    struct System {
+        static constexpr const int MULTITASK = true;
+    };
+
     struct Timer {
         static constexpr bool Enable             = true;
         static constexpr unsigned long MHz       = 1'000'000;
