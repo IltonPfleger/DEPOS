@@ -13,18 +13,13 @@ unsigned long Heap::index_of(unsigned long bytes) {
 }
 
 void *Heap::alloc(unsigned long bytes) {
-    if (bytes == 0 || bytes >= Traits::Memory::Page::SIZE) return 0;
+    ERROR(bytes == 0 || bytes == CAPSTONE, "[Heap::alloc] Invalid size.");
 
-    auto order = index_of(bytes);
-    auto i     = order;
+    unsigned long order = index_of(bytes);
+    unsigned long i     = order;
 
-    while (i < Traits::Memory::Page::ORDER && !_chunks[i]) i++;
-    if (i == Traits::Memory::Page::ORDER && !_chunks[i]) return nullptr;
-    // auto page = reinterpret_cast<Chunk *>(Memory::kmalloc());
-    // ERROR(!page, "[operator new] Out of memory.");
-    // i          = Traits::Memory::Page::ORDER;
-    // page->next = _chunks[i];
-    //_chunks[i] = reinterpret_cast<Chunk *>(page);
+    while (i < CAPSTONE && !_chunks[i]) i++;
+    if (i == CAPSTONE && !_chunks[i]) return nullptr;
 
     while (i != order) {
         Chunk *block = _chunks[i];
@@ -37,7 +32,7 @@ void *Heap::alloc(unsigned long bytes) {
 
     Chunk *block   = _chunks[order];
     _chunks[order] = block->next;
-    return reinterpret_cast<void *>(block);
+    return block;
 }
 
 void Heap::grow(void *ptr, unsigned long bytes) {
@@ -53,7 +48,7 @@ void *Heap::free(void *ptr, unsigned long bytes) {
     auto addr  = reinterpret_cast<uintptr_t>(ptr);
     auto order = index_of(bytes);
 
-    while (order < Traits::Memory::Page::ORDER) {
+    while (order < CAPSTONE) {
         auto buddy = addr ^ (1UL << order);
 
         Chunk **current = &_chunks[order];
