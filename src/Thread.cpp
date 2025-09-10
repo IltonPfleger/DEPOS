@@ -41,6 +41,9 @@ Thread::Thread(Function f, Argument a, Criterion c)
       criterion(c),
       link(Element(this, c.priority())),
       waiting(0) {
+    if constexpr (Traits::System::MULTITASK) {
+        task = new (Heap::SYSTEM) Task();
+    }
     _lock.lock();
     _scheduler.push(&link);
     _count = _count + 1;
