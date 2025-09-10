@@ -2,9 +2,12 @@
 
 #include <Machine.hpp>
 #include <Scheduler.hpp>
+#include <Task.hpp>
 #include <Traits.hpp>
 
 class Thread {
+    friend void *operator new(unsigned long);
+
    public:
     enum class State { RUNNING, READY, WAITING, FINISHED };
     using Criterion = typename Traits::Scheduler<Thread>::Criterion;
@@ -30,6 +33,7 @@ class Thread {
     static int idle(void *);
 
    private:
+    Task *task;
     char *stack;
     CPU::Context *context;
     volatile State state;

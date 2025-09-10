@@ -2,6 +2,7 @@
 #include <IO/Debug.hpp>
 #include <Memory.hpp>
 #include <Spin.hpp>
+#include <Thread.hpp>
 
 static Spin _lock;
 Heap Heap::SYSTEM;
@@ -78,7 +79,7 @@ void *Heap::free(void *ptr, unsigned long bytes) {
 
 void *operator new(unsigned long, void *ptr) { return ptr; }
 
-void *operator new[](unsigned long bytes, Heap &heap) {
+void *operator new(unsigned long bytes, Heap &heap) {
     _lock.lock();
     void *addr = heap.alloc(bytes);
     if (!addr) {
@@ -90,13 +91,13 @@ void *operator new[](unsigned long bytes, Heap &heap) {
     return addr;
 }
 
-void *operator new(unsigned long bytes, Heap &heap) { return operator new[](bytes, heap); }
-
 void *operator new(unsigned long bytes) {
     if constexpr (Traits::System::MULTITASK) {
-        // return operator new[](bytes, Thread::running()->task->heap);
-        return operator new[](bytes, Heap::SYSTEM);
+        return operator new[](bytes, Thread::running()->task->heap);
     } else {
         return operator new[](bytes, Heap::SYSTEM);
     }
 }
+
+void *operator new[](unsigned long bytes, Heap &heap) { return operator new(bytes, heap); }
+void *operator new[](unsigned long bytes) { return operator new(bytes); }
