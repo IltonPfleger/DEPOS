@@ -1,0 +1,27 @@
+#!/bin/sh
+
+TOOL=$1
+TARGET=$2
+shift 2
+
+echo "TOOLCHAIN: " ${TOOL}
+echo "TARGET: " ${TARGET}
+
+BOOT_ADDR=$(cat include/Traits.hpp | sed -n 's/.*BOOT_ADDR *= *\(0x[0-9A-Fa-f]\+\).*/\1/p')
+echo $BOOT_ADDR
+LINKER_SCRIPT=$(mktemp)
+cat > $LINKER_SCRIPT <<EOL
+SECTIONS
+{
+	. = $BOOT_ADDR;
+	PROVIDE(__KERNEL_START__ = .);
+	.boot  : { KEEP(*(.boot)) }
+    .text  : { *(.text) }
+    .data  : { *(.data) }
+    .bss   : { *(.bss) }
+	PROVIDE(__KERNEL_END__ = .);
+}
+EOL
+
+${TOOL}-ld -T $LINKER_SCRIPT $@ -o ${TARGET}.elf
+${TOOL}-objcopy -O binary -S ${TARGET}.elf ${TARGET}

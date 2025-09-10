@@ -9,13 +9,14 @@ struct RateMonotonic;
 struct Traits {
     struct Machine {
         static constexpr const char *NAME = "sifive_u";
-        static constexpr const int XLEN   = 64;
-        static constexpr const int CPUS   = 5;
-        static constexpr const int BSP    = 1;
+        static constexpr int XLEN         = 64;
+        static constexpr int CPUS         = 5;
+        static constexpr int BSP          = 1;
     };
 
     struct System {
-        static constexpr const int MULTITASK = true;
+        static constexpr unsigned long BOOT_ADDR = 0x80000000;
+        static constexpr int MULTITASK           = true;
     };
 
     struct Timer {
@@ -25,22 +26,22 @@ struct Traits {
     };
 
     struct Alarm {
-        static constexpr const bool Enable             = true;
-        static constexpr const unsigned long Frequency = Timer::MHz;
+        static constexpr bool Enable             = true;
+        static constexpr unsigned long Frequency = Timer::MHz;
     };
 
     struct Memory {
-        static constexpr const unsigned int ORDER = 30;
-        static constexpr const unsigned int SIZE  = (1 << ORDER);
+        static constexpr unsigned int ORDER = 30;
+        static constexpr unsigned int SIZE  = (1 << ORDER);
         struct Page {
-            static constexpr const unsigned int ORDER = 12;
-            static constexpr const unsigned int SIZE  = (1 << ORDER);
+            static constexpr unsigned int ORDER = 12;
+            static constexpr unsigned int SIZE  = (1 << ORDER);
         };
     };
 
     struct Debug {
-        static constexpr const bool ERROR = true;
-        static constexpr const bool TRACE = true;
+        static constexpr bool ERROR = true;
+        static constexpr bool TRACE = true;
     };
 
     template <typename U>
