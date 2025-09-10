@@ -1,8 +1,5 @@
 TOOL := riscv64-elf
 CC := $(TOOL)-g++
-AS := $(TOOL)-as
-LD := $(TOOL)-ld
-OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 
 CFLAGS := -Wall -Wextra -Werror -pedantic -mcmodel=medany -Iinclude
@@ -31,11 +28,8 @@ debug: $(TARGET)
 gdb:
 	 gdb -ex "target remote tcp::1234" -ex "file build/quark.elf"
 
-$(TARGET): $(TARGET).elf
-	$(OBJCOPY) -O binary -S $< $@
-
-$(TARGET).elf: $(OBJS)
-	$(LD) -T linker.ld $^ -o $@
+$(TARGET): $(OBJS)
+	@./mkimage $(TOOL) $@ $^
 
 $(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)
