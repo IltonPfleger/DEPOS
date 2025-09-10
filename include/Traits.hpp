@@ -15,7 +15,9 @@ struct Traits {
     };
 
     struct System {
-        static constexpr unsigned long BOOT_ADDR = 0x80000000;
+        static constexpr unsigned long RAM_BASE  = 0x80000000;
+        static constexpr unsigned long BASE_PHYS = 0x80000000;
+        static constexpr unsigned long BASE_VIRT = 0xFFFFFFFFC0000000;
         static constexpr int MULTITASK           = true;
     };
 
