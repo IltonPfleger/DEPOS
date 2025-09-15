@@ -14,13 +14,6 @@ struct Traits {
         static constexpr int BSP          = 1;
     };
 
-    struct System {
-        static constexpr unsigned long RAM_BASE  = 0x80000000;
-        static constexpr unsigned long BASE_PHYS = 0x80000000;
-        static constexpr unsigned long BASE_VIRT = 0xFFFFFFFFC0000000;
-        static constexpr int MULTITASK           = true;
-    };
-
     struct Timer {
         static constexpr bool Enable             = true;
         static constexpr unsigned long MHz       = 1'000'000;
@@ -39,6 +32,15 @@ struct Traits {
             static constexpr unsigned int ORDER = 12;
             static constexpr unsigned int SIZE  = (1 << ORDER);
         };
+    };
+
+    struct System {
+        static constexpr unsigned long RAM_BASE  = 0x80000000;
+        static constexpr unsigned long RAM_END  = RAM_BASE + Memory::SIZE;
+        static constexpr unsigned long BOOT_ADDR = 0x80000000;
+        static constexpr unsigned long BASE_PHYS = 0x80000000;
+        static constexpr unsigned long BASE_VIRT = 0xFFFFFFFFC0000000;
+        static constexpr int MULTITASK           = true;
     };
 
     struct Debug {
