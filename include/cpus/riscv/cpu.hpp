@@ -58,7 +58,7 @@ class RISCV {
         __attribute__((always_inline)) static inline void ret() { asm volatile("sret"); }
     };
 
-    using CLINT = SiFiveCLINT;
+    using CLINT = SiFive_CLINT;
     using Mode  = Supervisor;
 
     template <const int R>

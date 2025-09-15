@@ -7,7 +7,7 @@ shift 2
 echo "TOOLCHAIN: " ${TOOL}
 echo "TARGET: " ${TARGET}
 
-BOOT_ADDR=$(cat include/Traits.hpp | sed -n 's/.*BASE_PHYS *= *\(0x[0-9A-Fa-f]\+\).*/\1/p')
+BOOT_ADDR=$(cat include/Traits.hpp | sed -n 's/.*BOOT_ADDR *= *\(0x[0-9A-Fa-f]\+\).*/\1/p')
 echo $BOOT_ADDR
 LINKER_SCRIPT=$(mktemp)
 cat > $LINKER_SCRIPT <<EOL
