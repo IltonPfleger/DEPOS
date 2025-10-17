@@ -15,14 +15,14 @@ class Heap {
    private:
     static constexpr int CAPSTONE = Traits::Memory::Page::ORDER;
     using Chunk                   = Node<void>;
-    Chunk *_chunks[CAPSTONE + 1]  = {{}};
+    Chunk *_chunks[CAPSTONE + 1]  = {nullptr};
 
    public:
-    static Heap SYSTEM;
+    static Heap *SYSTEM;
 };
 
 void *operator new(unsigned long, void *);
 void *operator new(unsigned long);
-void *operator new(unsigned long, Heap &);
-void *operator new[](unsigned long, Heap &);
+void *operator new(unsigned long, Heap *);
+void *operator new[](unsigned long, Heap *);
 void operator delete(void *, unsigned long);

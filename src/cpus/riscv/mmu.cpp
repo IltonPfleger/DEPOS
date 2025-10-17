@@ -1,48 +1,80 @@
 #include <Heap.hpp>
+#include <IO/Debug.hpp>
+#include <Machine.hpp>
 #include <Memory.hpp>
 #include <cpus/riscv/mmu.hpp>
 
-// void SV39_MMU::map(PageTable* l2, uintptr_t va, uintptr_t pa, Register flags) {
-//     uintptr_t vpn2 = (va >> 30) & 0x1FF;
-//     uintptr_t vpn1 = (va >> 21) & 0x1FF;
-//     uintptr_t vpn0 = (va >> 12) & 0x1FF;
-//
-//     PageTable* l1;
-//     if (!l2->entries[vpn2].value) {
-//         l1 = new (Memory::kmalloc()) PageTable();
-//         l2->entries[vpn2].next(reinterpret_cast<uintptr_t>(l1), V);
-//     } else {
-//         l1 = l2->entries[vpn2].next();
-//     }
-//
-//     PageTable* l0;
-//     if (!l1->entries[vpn1].value) {
-//         l0 = new (Memory::kmalloc()) PageTable();
-//         l1->entries[vpn1].next(reinterpret_cast<uintptr_t>(l0), V);
-//     } else {
-//         l0 = l1->entries[vpn1].next();
-//     }
-//
-//     l0->entries[vpn0].next(pa, flags);
-// }
+extern "C" const char __KERNEL_START__[];
+extern "C" const char __KERNEL_END__[];
+
+bool SV39_MMU::map(PageTable* root, uintptr_t va, uintptr_t pa, Flags flags) {
+    uintptr_t vpn2 = (va >> 30) & 0x1FF;
+    uintptr_t vpn1 = (va >> 21) & 0x1FF;
+    uintptr_t vpn0 = (va >> 12) & 0x1FF;
+
+    PageTable* l1;
+    PageTable* l0;
+
+    if (!root->entries[vpn2]) {
+        l1 = new (Memory::kmalloc()) PageTable();
+        root->attach(vpn2, reinterpret_cast<uintptr_t>(l1), V);
+    } else {
+        l1 = root->walk(vpn2);
+    }
+
+    if (!l1->entries[vpn1]) {
+        l0 = new (Memory::kmalloc()) PageTable();
+        l1->attach(vpn1, reinterpret_cast<uintptr_t>(l0), V);
+    } else {
+        l0 = l1->walk(vpn1);
+    }
+
+    return l0->attach(vpn0, reinterpret_cast<uintptr_t>(pa), flags);
+}
+
+SV39_MMU::PageTable* SV39_MMU::base() {
+    PageTable* root = new (Memory::kmalloc()) PageTable();
+
+    uintptr_t PAGE_SIZE    = Traits::Memory::Page::SIZE;
+    uintptr_t KERNEL_START = reinterpret_cast<uintptr_t>(__KERNEL_START__);
+    uintptr_t KERNEL_END   = reinterpret_cast<uintptr_t>(__KERNEL_END__);
+    uintptr_t KERNEL_SIZE;
+    int NUMBER_OF_KERNEL_PAGES;
+
+    KERNEL_END             = (KERNEL_END + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+    KERNEL_SIZE            = KERNEL_END - KERNEL_START;
+    NUMBER_OF_KERNEL_PAGES = KERNEL_SIZE / PAGE_SIZE;
+
+    Flags flags = static_cast<Flags>(D | A | R | W | X | V);
+    for (int i = 0; i < NUMBER_OF_KERNEL_PAGES; i++) {
+        uintptr_t pa = KERNEL_START + i * PAGE_SIZE;
+        map(root, pa, pa, flags);
+    }
+
+    map(root, Machine::IO::Addr, Machine::IO::Addr, flags);
+
+    return root;
+}
+
+void SV39_MMU::set(uintptr_t root) {
+    Machine::CPU::csrw<Machine::CPU::Supervisor::SATP>(MODE | root >> 12);
+    asm volatile("sfence.vma zero, zero");
+}
+
+uintptr_t SV39_MMU::attach(uintptr_t addr) {
+    uintptr_t satp  = Machine::CPU::csrr<Machine::CPU::Supervisor::SATP>();
+    PageTable* root = reinterpret_cast<PageTable*>(satp << 12);
+    Flags flags     = static_cast<Flags>(D | A | R | W | X | V);
+    if (map(root, addr, addr, flags)) return addr;
+    return 0;
+};
 
 void SV39_MMU::init() {
-    //_kernel_page_table = new (Memory::kmalloc()) PageTable();
+    TRACE("[MMU::init]{\n")
 
-    // uintptr_t page_size              = Traits::System::PAGE_SIZE;
-    // uintptr_t kernel_end_aligned     = (Memory::Map::kernel_end + page_size - 1) & ~(page_size - 1);
-    // uintptr_t kernel_size            = kernel_end_aligned - Memory::Map::kernel_start;
-    // uintptr_t number_of_kernel_pages = kernel_size / page_size;
-
-    // for (uintptr_t addr = Memory::Map::kernel_start; addr < kernel_end_aligned; addr += page_size) {
-    //     uintptr_t va = kernel_virt_base + (addr - Memory::Map::kernel_start);
-    //     map(_kernel_page_table, va, addr, R | W | X);
-    // }
-
-    // TRACE("[MMU::init]{\n")
-    // TRACE("KernelPageTable=(%p,%p)\n", Memory::Map::kernel_start, kernel_end_aligned);
-    // TRACE("NumberOfKernelPages=%d\n", number_of_kernel_pages);
-    // TRACE("}\n")
-
-    // RISCV::csrw<RISCV::Supervisor::SATP>(SV39 | (reinterpret_cast<uintptr_t>(_kernel_page_table) >> 12));
+    set(reinterpret_cast<uintptr_t>(base()->entries));
+    //  while (1);
+    //  const char* teste = "}\n";
+    //  TRACE(teste);
+    //  TRACE("}\n")
 }

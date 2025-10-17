@@ -17,6 +17,5 @@
 
 #define TRACE(...)                        \
     if constexpr (Traits::Debug::TRACE) { \
-        Logger::println("TRACE: ");       \
         Logger::println(__VA_ARGS__);     \
     }

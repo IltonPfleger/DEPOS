@@ -7,9 +7,9 @@ void MIC::entry() {
 }
 
 void MIC::handler(void* args) {
-    auto cause        = RISCV::csrr<RISCV::Machine::CAUSE>();
-    bool is_interrupt = cause >> (Traits::Machine::XLEN - 1);
-    auto code         = (cause << 1) >> 1;
+    uintmax_t mcause  = RISCV::csrr<RISCV::Machine::CAUSE>();
+    bool is_interrupt = mcause >> (Traits::Machine::XLEN - 1);
+    int code          = (mcause << 1) >> 1;
 
     if (is_interrupt) {
         switch (code) {
@@ -24,27 +24,25 @@ void MIC::handler(void* args) {
                 }
         }
     } else {
-        RISCV::Context* context = reinterpret_cast<RISCV::Context*>(args);
-        switch (cause) {
-            case Exception::SYSCALL:
-                context->pc += 4;
-                Syscall::handler(static_cast<Syscall::Code>(context->a0));
-                break;
-            default:
-                error();
-                break;
+        if (mcause == Exception::SYSCALL) {
+            RISCV::Context* context = reinterpret_cast<RISCV::Context*>(args);
+            context->pc += 4;
+            Syscall::handler(static_cast<Syscall::Code>(context->a0));
+        } else {
+            error(mcause);
         }
     }
 }
 
-void MIC::error() {
-    uintmax_t mcause = RISCV::csrr<RISCV::Machine::STATUS>();
-    uintmax_t mepc   = RISCV::csrr<RISCV::Machine::EPC>();
+void MIC::error(intmax_t mcause) {
+    uintmax_t mepc  = RISCV::csrr<RISCV::Machine::EPC>();
+    uintmax_t mtval = RISCV::csrr<RISCV::Machine::TVAL>();
     ERROR(true,
           "Ohh it's a Trap!\n"
-          "mcause: %p\n"
-          "mepc: %p\n",
-          mcause, mepc);
+          "mcause: %d\n"
+          "mepc: %p\n"
+          "mtval: %p\n",
+          mcause, mepc, mtval);
 }
 
 void SIC::entry() {
@@ -54,9 +52,9 @@ void SIC::entry() {
 }
 
 void SIC::handler() {
-    auto cause        = RISCV::csrr<RISCV::Supervisor::CAUSE>();
-    bool is_interrupt = cause >> (Traits::Machine::XLEN - 1);
-    auto code         = (cause << 1) >> 1;
+    uintmax_t scause  = RISCV::csrr<RISCV::Supervisor::CAUSE>();
+    bool is_interrupt = scause >> (Traits::Machine::XLEN - 1);
+    int code          = (scause << 1) >> 1;
     auto core         = RISCV::core();
     if (is_interrupt) {
         switch (code) {
@@ -66,13 +64,12 @@ void SIC::handler() {
                 break;
         }
     } else {
-        error();
+        error(scause);
     }
 }
 
-void SIC::error() {
-    uintmax_t scause = RISCV::csrr<RISCV::Supervisor::STATUS>();
-    uintmax_t sepc   = RISCV::csrr<RISCV::Supervisor::EPC>();
+void SIC::error(intmax_t scause) {
+    uintmax_t sepc = RISCV::csrr<RISCV::Supervisor::EPC>();
     ERROR(true,
           "Ohh it's a Trap!\n"
           "scause: %p\n"

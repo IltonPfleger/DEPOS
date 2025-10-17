@@ -6,6 +6,7 @@
 #include <Traits.hpp>
 
 class Thread {
+    friend void *operator new(unsigned long bytes, Heap &heap);
     friend void *operator new(unsigned long);
 
    public:
