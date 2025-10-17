@@ -109,8 +109,10 @@ void Thread::exit() {
 }
 
 void Thread::init() {
+	TRACE("[Thread::init]{\n");
     for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     new (Heap::SYSTEM) Thread(main, 0, Criterion::NORMAL);
+	TRACE("}\n");
 }
 
 void Thread::run() {

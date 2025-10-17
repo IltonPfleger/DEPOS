@@ -3,7 +3,7 @@ namespace Timer {
 }
 
 class MIC {
-    static void error();
+    static void error(intmax_t);
     static void handler(void*);
 
     enum Interrupt { TIMER = 7 };
@@ -14,7 +14,7 @@ class MIC {
 };
 
 class SIC {
-    static void error();
+    static void error(intmax_t);
     static void handler();
     enum Interrupt { TIMER = 5 };
 

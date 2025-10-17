@@ -10,7 +10,7 @@ struct Traits {
     struct Machine {
         static constexpr const char *NAME = "sifive_u";
         static constexpr int XLEN         = 64;
-        static constexpr int CPUS         = 5;
+        static constexpr int CPUS         = 2;
         static constexpr int BSP          = 1;
     };
 
@@ -26,8 +26,10 @@ struct Traits {
     };
 
     struct Memory {
-        static constexpr unsigned int ORDER = 30;
-        static constexpr unsigned int SIZE  = (1 << ORDER);
+        static constexpr unsigned long RAM_BASE = 0x80000000;
+        static constexpr unsigned int ORDER     = 30;
+        static constexpr unsigned int SIZE      = (1 << ORDER);
+        static constexpr unsigned long RAM_END  = RAM_BASE + SIZE;
         struct Page {
             static constexpr unsigned int ORDER = 12;
             static constexpr unsigned int SIZE  = (1 << ORDER);
@@ -35,8 +37,6 @@ struct Traits {
     };
 
     struct System {
-        static constexpr unsigned long RAM_BASE  = 0x80000000;
-        static constexpr unsigned long RAM_END  = RAM_BASE + Memory::SIZE;
         static constexpr unsigned long BOOT_ADDR = 0x80000000;
         static constexpr unsigned long BASE_PHYS = 0x80000000;
         static constexpr unsigned long BASE_VIRT = 0xFFFFFFFFC0000000;

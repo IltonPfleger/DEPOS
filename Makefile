@@ -4,7 +4,9 @@ QEMU := qemu-system-riscv64
 
 CFLAGS := -Wall -Wextra -Werror -pedantic -mcmodel=medany -Iinclude
 CFLAGS +=  -ffunction-sections -fdata-sections -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles -fcheck-new -Wno-dangling-pointer -Wno-sized-deallocation
-CFLAGS += -g -std=c++20 -march=rv64gc
+CFLAGS += -g -std=c++20 -march=rv64imac_zicsr -mabi=lp64
+
+
 
 BUILD := build
 TARGET := $(BUILD)/quark
@@ -26,7 +28,7 @@ debug: $(TARGET)
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
 
 gdb:
-	 gdb -ex "target remote tcp::1234" -ex "file build/quark.elf"
+	$(TOOL)-gdb -ex "target remote tcp::1234" -ex "file build/quark.elf"
 
 $(TARGET): $(OBJS)
 	@./mkimage $(TOOL) $@ $^

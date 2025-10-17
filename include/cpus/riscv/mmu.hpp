@@ -1,7 +1,10 @@
 #pragma once
 
+#include <Types.hpp>
+
 class SV39_MMU {
-    enum {
+   public:
+    enum Flags {
         V = 1 << 0,  // Valid
         R = 1 << 1,  // Readable
         W = 1 << 2,  // Writable
@@ -11,28 +14,33 @@ class SV39_MMU {
         D = 1 << 7,  // Dirty
     };
 
-   public:
     struct PageTable {
-        // struct Entry {
-        //     Entry() = default;
+        PageTable() {
+            for (auto& e : entries) e = 0;
+        }
+        void* attach(uintptr_t addr) { return reinterpret_cast<void*>(addr); }
 
-        //    void next(uintptr_t addr, Register flags) {
-        //        uintptr_t ppn = addr >> 12;
-        //        value         = (ppn << 10) | flags;
-        //    }
+        bool attach(int vpn, uintptr_t addr, Flags flags) {
+            if (entries[vpn]) return false;
+            entries[vpn] = (addr >> 2) | flags;
+            return true;
+        }
 
-        //    PageTable* next() const { return reinterpret_cast<PageTable*>(value); }
+        PageTable* walk(int vpn) {
+            uintptr_t pte  = entries[vpn];
+            uintptr_t addr = (pte >> 10) << 12;
+            return reinterpret_cast<PageTable*>(addr);
+        }
 
-        //    uintptr_t value = 0;
-        //};
-
-        // PageTable() = default;
-        // alignas(4096) Entry entries[512];
+        alignas(4096) uintptr_t entries[512];
     };
 
-    // wstatic void map(PageTable* root, uintptr_t, uintptr_t, Register);
+    static PageTable* base();
+    static bool map(PageTable*, uintptr_t, uintptr_t, Flags);
     static void init();
+    static void set(uintptr_t);
+    static uintptr_t attach(uintptr_t);
 
    private:
-    static inline PageTable* _kernel_page_table;
+    static constexpr const uintptr_t MODE = 8UL << 60;
 };

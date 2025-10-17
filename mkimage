@@ -4,22 +4,54 @@ TOOL=$1
 TARGET=$2
 shift 2
 
+TRAITS=include/Traits.hpp
+
+MULTITASK=false
+if grep -q 'MULTITASK *= *true;' "$TRAITS"; then
+    MULTITASK=true
+fi
+
+echo -e "\n*****"
 echo "TOOLCHAIN: " ${TOOL}
 echo "TARGET: " ${TARGET}
+echo "MULTITASK: " ${MULTITASK}
+echo -e "*****\n"
 
-BOOT_ADDR=$(cat include/Traits.hpp | sed -n 's/.*BOOT_ADDR *= *\(0x[0-9A-Fa-f]\+\).*/\1/p')
-echo $BOOT_ADDR
+BOOT_ADDR=$(cat $TRAITS | sed -n 's/.*BOOT_ADDR *= *\(0x[0-9A-Fa-f]\+\).*/\1/p')
 LINKER_SCRIPT=$(mktemp)
+
 cat > $LINKER_SCRIPT <<EOL
 SECTIONS
 {
-	. = $BOOT_ADDR;
-	PROVIDE(__KERNEL_START__ = .);
-	.boot  : { KEEP(*(.boot)) }
-    .text  : { *(.text) }
-    .data  : { *(.data) }
-    .bss   : { *(.bss) }
-	PROVIDE(__KERNEL_END__ = .);
+    . = $BOOT_ADDR;
+
+    __boot_start__ = .;
+    .boot : { KEEP(*(.boot)) }
+    __boot_end__ = .;
+    __boot_size__ = __boot_end__ - __boot_start__;
+
+    __text_start__ = .;
+    .text : { *(.text .text.*) }
+    __text_end__ = .;
+    __text_size__ = __text_end__ - __text_start__;
+
+    __rodata_start__ = .;
+    .rodata : { *(.rodata .rodata.*) }
+    __rodata_end__ = .;
+    __rodata_size__ = __rodata_end__ - __rodata_start__;
+
+    __data_start__ = .;
+    .data : { *(.data .data.* .sdata .sdata.*) }
+    __data_end__ = .;
+    __data_size__ = __data_end__ - __data_start__;
+
+    __bss_start__ = .;
+    .bss : { *(.bss .bss.* .sbss .sbss.* COMMON) }
+    __bss_end__ = .;
+    __bss_size__ = __bss_end__ - __bss_start__;
+
+    PROVIDE(__KERNEL_START__ = __boot_start__);
+    PROVIDE(__KERNEL_END__   = __bss_end__);
 }
 EOL
 

@@ -5,19 +5,28 @@
 #include <Thread.hpp>
 #include <Timer.hpp>
 
-static volatile bool boot = true;
+static volatile bool booting  = true;
+static volatile bool starting = true;
 
 namespace Kernel {
     void init() {
-        if (Machine::CPU::core() == Traits::Machine::BSP) {
+        bool BSP = Machine::CPU::core() == Traits::Machine::BSP;
+        if (BSP) {
             Logger::init();
-            Logger::println("\n[Kernel]\n");
+            TRACE("\n[Boot]{\n");
             Memory::init();
-            Thread::init();
-            Logger::println("Done!\n");
-            boot = false;
+            booting = false;
         }
-        while (boot);
+        while (booting);
+        if (Machine::CPU::core() < Traits::Machine::CPUS) {
+            Machine::CPU::MMU::init();
+        }
+        if (BSP) {
+            Thread::init();
+            TRACE("Done!\n");
+            starting = false;
+        }
+        while (starting);
         if (Machine::CPU::core() < Traits::Machine::CPUS) {
             Timer::init();
             Thread::run();
@@ -26,4 +35,33 @@ namespace Kernel {
     }
 }
 
-__attribute__((naked, section(".boot"))) void kboot() { Machine::CPU::init(); }
+// namespace Kernel {
+//     void init() {
+//         bool BSP = Machine::CPU::core() == Traits::Machine::BSP;
+//         if (BSP) {
+//             Logger::init();
+//             TRACE("\n[Boot]{\n");
+//             Memory::init();
+//             Thread::init();
+//             TRACE("Done!\n");
+//             boot = false;
+//         }
+//         while (boot);
+//         if (Machine::CPU::core() < Traits::Machine::CPUS) {
+//             Timer::init();
+//             Machine::CPU::MMU::init();
+//             Thread::run();
+//         }
+//         for (;;);
+//     }
+// }
+
+extern "C" __attribute__((naked, section(".boot"))) void kboot() { Machine::CPU::init(); }
+
+extern "C" void *memset(void *s, int c, unsigned long n) {
+    unsigned char *p = static_cast<unsigned char *>(s);
+    while (n-- > 0) {
+        *p++ = static_cast<unsigned char>(c);
+    }
+    return s;
+}
