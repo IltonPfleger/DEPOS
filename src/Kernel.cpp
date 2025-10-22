@@ -37,28 +37,11 @@ namespace Kernel {
     }
 }
 
-// namespace Kernel {
-//     void init() {
-//         bool BSP = Machine::CPU::core() == Traits::Machine::BSP;
-//         if (BSP) {
-//             Console::init();
-//             TRACE("\n[Boot]{\n");
-//             Memory::init();
-//             Thread::init();
-//             TRACE("Done!\n");
-//             boot = false;
-//         }
-//         while (boot);
-//         if (Machine::CPU::core() < Traits::Machine::CPUS) {
-//             Timer::init();
-//             Machine::CPU::MMU::init();
-//             Thread::run();
-//         }
-//         for (;;);
-//     }
-// }
-
-extern "C" __attribute__((naked, section(".boot"))) void kboot() { Machine::CPU::init(); }
+extern "C" __attribute__((naked, section(".boot"))) void kboot() {
+    Machine::CPU::setup();
+	Machine::IO::put('c');
+    Machine::CPU::init();
+}
 
 extern "C" void *memset(void *s, int c, unsigned long n) {
     unsigned char *p = static_cast<unsigned char *>(s);
