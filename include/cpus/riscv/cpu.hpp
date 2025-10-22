@@ -46,7 +46,6 @@ class RISCV {
             ME2ME = 1ULL << 8,  // Supervisor to Supervisor
             IRQE  = 1ULL << 1,  // Interrupt Enable
             TI    = 1ULL << 5,  // Timer Interrupt Enable
-            IRQE  = 1ULL << 1,  // Interrupt Enable
             PIRQE = 1ULL << 5,  // Previous Interrupt Enable
         };
         static constexpr const int SATP   = 0x180;
@@ -86,14 +85,17 @@ class RISCV {
     }
 
     static void *thread() {
-        register void *gp asm("gp");
+        void *gp;
+        asm volatile("mv %0, gp" : "=r"(gp));
         return gp;
     }
 
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
     __attribute__((always_inline)) static inline void sp(void *s) { asm volatile("mv sp, %0" ::"r"(s)); }
+
     __attribute__((always_inline)) inline static auto core() {
-        register unsigned int tp asm("tp");
+		unsigned int tp;
+        asm volatile("mv %0, tp" : "=r"(tp));
         return tp;
     }
 

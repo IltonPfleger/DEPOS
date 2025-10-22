@@ -12,8 +12,10 @@ namespace Kernel {
     void init() {
         bool BSP = Machine::CPU::core() == Traits::Machine::BSP;
         if (BSP) {
-            Logger::init();
-            TRACE("\n[Boot]{\n");
+            Console::init();
+            TRACE("\n");
+            TRACE(__PRETTY_FUNCTION__, "{");
+            TRACE("\n");
             Memory::init();
             booting = false;
         }
@@ -23,7 +25,7 @@ namespace Kernel {
         }
         if (BSP) {
             Thread::init();
-            TRACE("Done!\n");
+            TRACE("}\n");
             starting = false;
         }
         while (starting);
@@ -39,7 +41,7 @@ namespace Kernel {
 //     void init() {
 //         bool BSP = Machine::CPU::core() == Traits::Machine::BSP;
 //         if (BSP) {
-//             Logger::init();
+//             Console::init();
 //             TRACE("\n[Boot]{\n");
 //             Memory::init();
 //             Thread::init();

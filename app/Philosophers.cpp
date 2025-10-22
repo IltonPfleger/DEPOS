@@ -1,5 +1,5 @@
 #include <Alarm.hpp>
-#include <IO/Logger.hpp>
+#include <IO/Console.hpp>
 #include <Memory.hpp>
 #include <Semaphore.hpp>
 #include <Thread.hpp>
@@ -18,7 +18,7 @@ int filosofo(void *arg) {
     int i  = ITERATIONS;
     while (i--) {
         lock->p();
-        Logger::println("Filósofo %d está pensando\n", id);
+        Console::println("Filósofo %d está pensando\n", id);
         lock->v();
         Alarm::usleep(10000);
 
@@ -26,7 +26,7 @@ int filosofo(void *arg) {
         garfos[p2]->p();
 
         lock->p();
-        Logger::println("Filósofo %d está comendo\n", id);
+        Console::println("Filósofo %d está comendo\n", id);
         lock->v();
         Alarm::usleep(10000);
 
@@ -37,7 +37,7 @@ int filosofo(void *arg) {
 }
 
 int main(void *) {
-    Logger::println("Application: \n");
+    Console::println("Application: \n");
 
     lock = new (Memory::APPLICATION) Semaphore(1);
 
@@ -55,6 +55,6 @@ int main(void *) {
         delete garfos[i];
     }
 
-    Logger::println("Done!\n");
+    Console::println("Done!\n");
     return 0;
 }

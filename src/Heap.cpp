@@ -99,7 +99,7 @@ void *operator new(unsigned long bytes, Heap *heap) {
     //(void)bytes;
     //(void)heap;
     void *addr = Memory::kmalloc();
-    Machine::MMU::attach(reinterpret_cast<uintptr_t>(addr));
+    // Machine::MMU::attach(reinterpret_cast<uintptr_t>(addr));
     return addr;
     // TRACE("P:%p\n", addr);
     // TRACE("T:%p\n", Thread::running());

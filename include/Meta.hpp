@@ -1,9 +1,8 @@
 #pragma once
 
 #define OFFSET_OF(type, member) ((unsigned long)&(((type*)0)->member))
-#define ASM(i) asm(#i)
 
-struct Meta {
+namespace Meta {
     template <bool B, typename True, typename False>
     struct TypeSelector {
         using Result = True;
@@ -41,6 +40,17 @@ struct Meta {
     struct SAME<T, T> {
         static constexpr bool Result = true;
     };
+
+    template <typename T>
+    struct SIGNED {
+        static constexpr bool Result = T(-1) < T(0);
+    };
+
+    template <typename T>
+    concept INTEGRAL = requires(T a) { a % 2; };
+
+    template <typename T>
+    concept POINTER = requires(T a) { *a; };
 
     // template <typename T>
     // struct REMOVE_POINTER {

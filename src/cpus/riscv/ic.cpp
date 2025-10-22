@@ -35,14 +35,12 @@ void MIC::handler(void* args) {
 }
 
 void MIC::error(intmax_t mcause) {
-    uintmax_t mepc  = RISCV::csrr<RISCV::Machine::EPC>();
+    auto mepc       = reinterpret_cast<void*>(RISCV::csrr<RISCV::Machine::EPC>());
     uintmax_t mtval = RISCV::csrr<RISCV::Machine::TVAL>();
     ERROR(true,
           "Ohh it's a Trap!\n"
-          "mcause: %d\n"
-          "mepc: %p\n"
-          "mtval: %p\n",
-          mcause, mepc, mtval);
+          "mcause: ",
+          mcause, "\nmepc: ", mepc, "\nmtval: ", mtval, "\n");
 }
 
 void SIC::entry() {
@@ -69,12 +67,11 @@ void SIC::handler() {
 }
 
 void SIC::error(intmax_t scause) {
-    uintmax_t sepc = RISCV::csrr<RISCV::Supervisor::EPC>();
+    auto sepc = reinterpret_cast<void*>(RISCV::csrr<RISCV::Supervisor::EPC>());
     ERROR(true,
           "Ohh it's a Trap!\n"
-          "scause: %p\n"
-          "sepc: %p\n",
-          scause, sepc);
+          "scause: ",
+          scause, "\nsepc: ", sepc, "\n");
 }
 
 void Syscall::call(Code code) {

@@ -1,21 +1,24 @@
 #pragma once
 
-#include <IO/Logger.hpp>
+#include <IO/Console.hpp>
 #include <Machine.hpp>
 #include <Spin.hpp>
 #include <Traits.hpp>
 
-#define ERROR(expr, ...)                                            \
-    if constexpr (Traits::Debug::ERROR) {                           \
-        if (expr) {                                                 \
-            Machine::CPU::Interrupt::disable();                     \
-            Logger::println("\nERROR(%d): ", Machine::CPU::core()); \
-            Logger::println(__VA_ARGS__);                           \
-            for (;;);                                               \
-        }                                                           \
+template <typename... Args>
+inline void __m2fold(Args&&... args) {
+    (Console::out << ... << args);
+}
+
+#define ERROR(expr, ...)                                                 \
+    if constexpr (Traits::Debug::ERROR) {                                \
+        if (expr) {                                                      \
+            Machine::CPU::Interrupt::disable();                          \
+            Console::out << "\nERROR(" << Machine::CPU::core() << ")\n"; \
+            __m2fold(__VA_ARGS__);                                       \
+            for (;;);                                                    \
+        }                                                                \
     }
 
-#define TRACE(...)                        \
-    if constexpr (Traits::Debug::TRACE) { \
-        Logger::println(__VA_ARGS__);     \
-    }
+#define TRACE(...) \
+    if constexpr (Traits::Debug::TRACE) __m2fold(__VA_ARGS__);

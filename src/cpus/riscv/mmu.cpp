@@ -70,11 +70,11 @@ uintptr_t SV39_MMU::attach(uintptr_t addr) {
 };
 
 void SV39_MMU::init() {
-    TRACE("[MMU::init]{\n")
+    TRACE(__PRETTY_FUNCTION__, "{\n")
 
-    set(reinterpret_cast<uintptr_t>(base()->entries));
-    //  while (1);
-    //  const char* teste = "}\n";
-    //  TRACE(teste);
-    //  TRACE("}\n")
+    // set(reinterpret_cast<uintptr_t>(base()->entries));
+    //   while (1);
+    //   const char* teste = "}\n";
+    //   TRACE(teste);
+    TRACE("}\n")
 }
