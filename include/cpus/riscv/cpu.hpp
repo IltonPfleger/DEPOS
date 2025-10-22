@@ -219,7 +219,6 @@ class RISCV {
                 : "memory");
             asm volatile(
                 "csrr t0, %0\n"
-                "and  t0, t0, %1\n"
                 "or   t0, t0, %2\n"
                 "sd   t0, %c[status](sp)\n"
                 "sd   ra, %c[pc](sp)\n"

@@ -39,7 +39,6 @@ namespace Kernel {
 
 extern "C" __attribute__((naked, section(".boot"))) void kboot() {
     Machine::CPU::setup();
-	Machine::IO::put('c');
     Machine::CPU::init();
 }
 
