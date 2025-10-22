@@ -11,7 +11,7 @@ namespace Kernel {
     void init();
 }
 
-__attribute__((aligned(16))) static inline char stack[Traits::Machine::CPUS][Traits::Memory::Page::SIZE];
+__attribute__((aligned(16))) static inline char stack[Traits::Machine::CPUS * Traits::Memory::Page::SIZE];
 
 class RISCV {
    public:
@@ -91,18 +91,26 @@ class RISCV {
     }
 
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
-    __attribute__((always_inline)) static inline void sp(void *s) { asm volatile("mv sp, %0" ::"r"(s)); }
 
-    __attribute__((always_inline)) inline static auto core() {
-		unsigned int tp;
+    inline static auto core() {
+        unsigned int tp;
         asm volatile("mv %0, tp" : "=r"(tp));
         return tp;
     }
 
-    __attribute__((naked)) static void init() {
-        asm volatile("csrr tp, mhartid");
-        sp(stack[core()] + Traits::Memory::Page::SIZE);
+    __attribute__((naked)) static void setup() {
+        __asm__ volatile(
+            "csrr tp, mhartid\n"
+            "csrr t0, mhartid\n"
+            "mul t0, t0, %1\n"
+            "add t0, t0, %0\n"
+            "add sp, t0, %1\n"
+            "ret"
+            :
+            : "r"(stack), "r"(Traits::Memory::Page::SIZE));
+    }
 
+    static void init() {
         if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && Meta::SAME<Mode, Supervisor>::Result) {
             if (core() == 0) {
                 for (;;) idle();

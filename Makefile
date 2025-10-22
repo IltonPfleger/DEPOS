@@ -1,17 +1,19 @@
 #TOOL := /opt/clang-riscv/bin/clang
 #CC := $(TOOL)++
-#TARGET := riscv64-unknown-elf
-#CFLAGS := -target $(TARGET) -march=rv64imac_zicsr -mabi=lp64
+#CROSS := riscv64-unknown-elf
 
 TOOL := riscv64-elf
 CC := $(TOOL)-g++
 QEMU := qemu-system-riscv64
 
-CFLAGS = -Iinclude
+CFLAGS = -march=rv64imac_zicsr -mabi=lp64
+#CFLAGS = -target $(CROSS) -march=rv64imac_zicsr -mabi=lp64
+CFLAGS += -Iinclude
 CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
-CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles
-CFLAGS += -g -std=c++20 -march=rv64imac_zicsr -mabi=lp64
+CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib
+CFLAGS += -march=rv64imac_zicsr -mabi=lp64
+CFLAGS += -g -std=c++20
 
 
 
