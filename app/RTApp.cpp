@@ -1,5 +1,5 @@
 #include <Alarm.hpp>
-#include <IO/Logger.hpp>
+#include <IO/Console.hpp>
 #include <Memory.hpp>
 #include <Semaphore.hpp>
 #include <Thread.hpp>
@@ -8,12 +8,12 @@ static constexpr int N = 4;
 RT_Thread* thread[N];
 
 int teste(void* id) {
-    Logger::println("THREAD %d\n", (long long)id);
+    Console::println("THREAD %d\n", (long long)id);
     return 0;
 }
 
 int main() {
-    Logger::println("Real Time Application: \n");
+    Console::println("Real Time Application: \n");
 
     auto now  = Alarm::utime() + 10'000;
     thread[0] = new (Memory::APPLICATION) RT_Thread(teste, (void*)(long long)1, 2'500, 2'500, 0, now);
@@ -26,6 +26,6 @@ int main() {
         delete thread[i];
     }
 
-    Logger::println("Application Done!\n");
+    Console::println("Application Done!\n");
     return 0;
 }

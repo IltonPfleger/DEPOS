@@ -1,5 +1,5 @@
 #include <Alarm.hpp>
-#include <IO/Logger.hpp>
+#include <IO/Console.hpp>
 #include <Machine.hpp>
 #include <Memory.hpp>
 #include <Semaphore.hpp>
@@ -16,7 +16,8 @@ int thread_function(void *arg) {
     int i  = ITERATIONS;
     while (i--) {
         mutex.p();
-        Logger::println("THREAD: %d | Core: %d\n", id, Machine::CPU::core());
+        Console::out << id << " ";
+        // Console::println("THREAD: %d | Core: %d\n", id, Machine::CPU::core());
         mutex.v();
         Thread::yield();
         //    Alarm::usleep(10000);
@@ -25,7 +26,7 @@ int thread_function(void *arg) {
 }
 
 int main(void *) {
-    Logger::println("Application: \n");
+    Console::out << "Application: \n";
 
     mutex.p();
     for (int i = 0; i < N; i++) {
@@ -37,6 +38,6 @@ int main(void *) {
 
     // for (int i = 0; i < N; i++) delete threads[i];
 
-    Logger::println("Application Done!\n");
+    Console::out << "\nApplication Done!\n";
     return 0;
 }

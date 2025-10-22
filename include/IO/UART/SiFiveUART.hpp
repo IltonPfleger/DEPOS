@@ -6,7 +6,7 @@ struct SiFiveUART {
     static constexpr int Baudrate   = 115200;
     static constexpr int Divisor    = Clock / Baudrate;
 
-    static constexpr volatile unsigned int *base() { return reinterpret_cast<volatile unsigned int *>(Addr); }
+    static volatile unsigned int *base() { return reinterpret_cast<volatile unsigned int *>(Addr); }
 
     static volatile unsigned int &TXDATA() { return *(base() + 0); }
     static volatile unsigned int &RXDATA() { return *(base() + 1); }
