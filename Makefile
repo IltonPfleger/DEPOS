@@ -2,17 +2,15 @@
 #CC := $(TOOL)++
 #TARGET := riscv64-unknown-elf
 #CFLAGS := -target $(TARGET) -march=rv64imac_zicsr -mabi=lp64
-#CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib 
-#CFLAGS += -Wall -Wextra -Werror -pedantic -g -std=c++20
-#CFLAGS += -ffunction-sections -fdata-sections
-#CFLAGS += -Iinclude
-#CFLAGS += -fcheck-new 
-QEMU := qemu-system-riscv64
 
 TOOL := riscv64-elf
 CC := $(TOOL)-g++
-CFLAGS := -Wall -Wextra -Werror -pedantic -mcmodel=medany -Iinclude
-CFLAGS +=  -ffunction-sections -fdata-sections -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles -fcheck-new -Wno-dangling-pointer -Wno-sized-deallocation
+QEMU := qemu-system-riscv64
+
+CFLAGS = -Iinclude
+CFLAGS += -Wall -Wextra -Werror -pedantic
+CFLAGS += -mcmodel=medany
+CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib  -nostartfiles
 CFLAGS += -g -std=c++20 -march=rv64imac_zicsr -mabi=lp64
 
 
