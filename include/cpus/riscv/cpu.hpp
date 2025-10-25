@@ -158,7 +158,8 @@ class RISCV {
         }
 
         template <typename T = Mode>
-        __attribute__((naked)) static void load() {
+        __attribute__((naked)) void load() {
+            asm volatile("mv sp, %0" ::"r"(this));
             asm volatile(
                 "ld t0, %c[status](sp)\n"
                 "csrw %0, t0\n"
@@ -229,7 +230,7 @@ class RISCV {
                   [pc] "i"(OFFSET_OF(Context, pc)), [prev] "r"(previous), [next] "r"(next)
                 : "memory");
             lock->release();
-            load();
+            next->load();
         }
 
         template <typename T = Mode>

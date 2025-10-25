@@ -118,8 +118,10 @@ void Thread::init() {
 void Thread::run() {
     _lock.acquire();
     Thread *first = _scheduler.pop();
-    first->state  = State::RUNNING;
-    CPU::Context::swtch(&first->context, first->context, &_lock);
+    _lock.release();
+    first->state = State::RUNNING;
+    first->context->load();
+    // CPU::Context::swtch(&first->context, first->context, &_lock);
 }
 
 void Thread::reschedule() {
