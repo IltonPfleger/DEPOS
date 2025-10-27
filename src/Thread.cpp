@@ -18,8 +18,9 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
         lock->release();
         return;
     }
-
-    CPU::Context::swtch(&previous->context, next->context, lock);
+    lock->release();
+    while (!next->context);
+    CPU::Context::swtch(&previous->context, &next->context);
 }
 
 int Thread::idle(void *) {
@@ -119,7 +120,8 @@ void Thread::run() {
     _lock.acquire();
     Thread *first = _scheduler.pop();
     first->state  = State::RUNNING;
-    CPU::Context::load(first->context, &_lock);
+    _lock.release();
+    CPU::Context::load(&first->context);
 }
 
 void Thread::reschedule() {

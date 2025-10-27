@@ -36,7 +36,7 @@ class Thread {
    private:
     Task *task;
     char *stack;
-    CPU::Context *context;
+    volatile CPU::Context *context;
     volatile State state;
     Thread *volatile joining;
     Criterion criterion;

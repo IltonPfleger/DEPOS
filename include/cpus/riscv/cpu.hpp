@@ -158,9 +158,9 @@ class RISCV {
         }
 
         template <typename T = Mode>
-        __attribute__((naked)) static void load(Context *c, Spin *lock) {
-            asm volatile("mv sp, %0" ::"r"(c));
-            lock->release();
+        __attribute__((naked)) static void load(volatile Context **c) {
+            asm volatile("ld sp, (%0)" ::"r"(c));
+            asm volatile("sd zero, (%0)" ::"r"(c));
             asm volatile(
                 "ld ra,	 %[ra](sp)\n"
                 "ld gp,  %[gp](sp)\n"
@@ -194,7 +194,7 @@ class RISCV {
         }
 
         template <typename T = Mode>
-        __attribute__((naked)) static void swtch(Context **previous, Context *next, Spin *lock) {
+        __attribute__((naked)) static void swtch(volatile Context **previous, volatile Context **next) {
             asm volatile(
                 "addi sp, sp, %[size]\n"
                 "sd   ra,     %[ra](sp)\n"
@@ -225,7 +225,7 @@ class RISCV {
                   [estatus] "i"(T::STATUS), [me2me] "r"(T::ME2ME), [status] "i"(offsetof(Context, status)),
                   [pc] "i"(offsetof(Context, pc)), [previous] "r"(previous)
                 : "memory");
-            load(next, lock);
+            load(next);
         }
 
         template <typename T = Mode>
