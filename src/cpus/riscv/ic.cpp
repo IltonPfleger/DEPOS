@@ -75,7 +75,7 @@ void SIC::error(intmax_t scause) {
 }
 
 void Syscall::call(Code code) {
-    (void)code;
+    asm volatile("mv a0, %0" ::"r"(code) : "memory");
     RISCV::Machine::ecall();
 }
 

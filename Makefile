@@ -1,19 +1,14 @@
-#TOOL := /opt/clang-riscv/bin/clang
-#CC := $(TOOL)++
-#CROSS := riscv64-unknown-elf
-
 TOOL := riscv64-elf
 CC := $(TOOL)-g++
 QEMU := qemu-system-riscv64
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
-#CFLAGS = -target $(CROSS) -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -Iinclude
 CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib
 CFLAGS += -march=rv64imac_zicsr -mabi=lp64
-CFLAGS += -g -std=c++20
+CFLAGS += -g -std=c++20 -O -g
 
 
 
@@ -31,13 +26,20 @@ default:
 	make run
 
 run: $(TARGET)
-	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios $(TARGET) -nographic -m 1024
+	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024
 
 debug: $(TARGET)
-	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios $(TARGET) -nographic -m 1024 -gdb tcp::1234 -S
+	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -S -gdb tcp::1235
 
 gdb:
-	$(TOOL)-gdb -ex "target remote tcp::1234" -ex "file build/quark.elf"
+	riscv64-linux-gnu-gdb\
+		-ex "target extended-remote:1235"\
+		-ex "set confirm off"\
+		-ex "add-inferior"\
+		-ex "inferior 2"\
+		-ex "attach 2"\
+		-ex "set confirm off"\
+		-ex "file $(TARGET).elf"
 
 $(TARGET): $(OBJS)
 	@./mkimage $(TOOL) $@ $^
