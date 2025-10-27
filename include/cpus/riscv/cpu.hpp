@@ -60,7 +60,7 @@ class RISCV {
 
     using CLINT = SiFiveCLINT;
     using MMU   = SV39_MMU;
-    using Mode  = Supervisor;
+    using Mode  = Machine;
 
     template <const int R>
     static void csrw(auto r) {
@@ -212,7 +212,7 @@ class RISCV {
                 "sd   s10,    %[s10](sp)\n"
                 "sd   s11,    %[s11](sp)\n"
                 "csrr t0,     %[estatus]\n"
-                "ori  t0, t0, %[me2me]\n"
+                "or  t0, t0, %[me2me]\n"
                 "sd   t0,     %[status](sp)\n"
                 "sd   ra,     %[pc](sp)\n"
                 "sd   sp,    (%[previous])\n"
@@ -222,7 +222,7 @@ class RISCV {
                   [s4] "i"(offsetof(Context, s4)), [s5] "i"(offsetof(Context, s5)), [s6] "i"(offsetof(Context, s6)),
                   [s7] "i"(offsetof(Context, s7)), [s8] "i"(offsetof(Context, s8)), [s9] "i"(offsetof(Context, s9)),
                   [s10] "i"(offsetof(Context, s10)), [s11] "i"(offsetof(Context, s11)), [size] "i"(-sizeof(Context)),
-                  [estatus] "i"(T::STATUS), [me2me] "i"(T::ME2ME), [status] "i"(offsetof(Context, status)),
+                  [estatus] "i"(T::STATUS), [me2me] "r"(T::ME2ME), [status] "i"(offsetof(Context, status)),
                   [pc] "i"(offsetof(Context, pc)), [previous] "r"(previous)
                 : "memory");
             load(next, lock);
