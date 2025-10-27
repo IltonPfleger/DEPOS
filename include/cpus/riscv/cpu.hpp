@@ -143,7 +143,6 @@ class RISCV {
        public:
         uintptr_t ra;
         uintptr_t gp;
-        uintptr_t sp;
         uintptr_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
         uintptr_t a0, a1, a2, a3, a4, a5, a6, a7;
         uintptr_t t0, t1, t2, t3, t4, t5, t6;
@@ -156,44 +155,42 @@ class RISCV {
             this->pc     = reinterpret_cast<uintptr_t>(entry);
             this->status = static_cast<Register>(Mode::ME2ME | Mode::PIRQE);
             this->a0     = reinterpret_cast<uintptr_t>(a0);
-            this->sp     = reinterpret_cast<uintptr_t>(this);
         }
 
         template <typename T = Mode>
-        __attribute__((naked)) void load() {
-            asm volatile("mv a0, %0" ::"r"(this));
-            // asm volatile("mv sp, a0");
+        __attribute__((naked)) static void load(Context *c, Spin *lock) {
+            asm volatile("mv sp, %0" ::"r"(c));
+            lock->release();
             asm volatile(
-                "ld t0, %c[status](a0)\n"
+                "ld t0, %c[status](sp)\n"
                 "csrw %0, t0\n"
-                "ld t0, %c[pc](a0)\n"
-                "csrw %c[epc], t0" ::"i"(T::STATUS),
-                [epc] "i"(T::EPC), [pc] "i"(OFFSET_OF(Context, pc)), [status] "i"(OFFSET_OF(Context, status)));
+                "ld t0, %c[pc](sp)\n"
+                "csrw %1, t0" ::"i"(T::STATUS),
+                "i"(T::EPC), [pc] "i"(OFFSET_OF(Context, pc)), [status] "i"(OFFSET_OF(Context, status)));
             asm volatile(
-                "ld ra, %c[ra](a0)\n"
-                "ld gp, %c[gp](a0)\n"
-                "ld sp, %c[sp](a0)\n"
-                "ld s0, %c[s0](a0)\n"
-                "ld s1, %c[s1](a0)\n"
-                "ld s2, %c[s2](a0)\n"
-                "ld s3, %c[s3](a0)\n"
-                "ld s4, %c[s4](a0)\n"
-                "ld s5, %c[s5](a0)\n"
-                "ld s6, %c[s6](a0)\n"
-                "ld s7, %c[s7](a0)\n"
-                "ld s8, %c[s8](a0)\n"
-                "ld s9, %c[s9](a0)\n"
-                "ld s10, %c[s10](a0)\n"
-                "ld s11, %c[s11](a0)\n"
-                "ld a0, %c[a0](a0)\n"
+                "ld ra, %c[ra](sp)\n"
+                "ld gp, %c[gp](sp)\n"
+                "ld s0, %c[s0](sp)\n"
+                "ld a0, %c[a0](sp)\n"
+                "ld s1, %c[s1](sp)\n"
+                "ld s2, %c[s2](sp)\n"
+                "ld s3, %c[s3](sp)\n"
+                "ld s4, %c[s4](sp)\n"
+                "ld s5, %c[s5](sp)\n"
+                "ld s6, %c[s6](sp)\n"
+                "ld s7, %c[s7](sp)\n"
+                "ld s8, %c[s8](sp)\n"
+                "ld s9, %c[s9](sp)\n"
+                "ld s10, %c[s10](sp)\n"
+                "ld s11, %c[s11](sp)\n"
                 "addi sp, sp, %[size]\n"
                 :
-                : [ra] "i"(OFFSET_OF(Context, ra)), [gp] "i"(OFFSET_OF(Context, gp)), [sp] "i"(OFFSET_OF(Context, sp)),
-                  [s0] "i"(OFFSET_OF(Context, s0)), [s1] "i"(OFFSET_OF(Context, s1)), [a0] "i"(OFFSET_OF(Context, a0)),
-                  [s2] "i"(OFFSET_OF(Context, s2)), [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)),
-                  [s5] "i"(OFFSET_OF(Context, s5)), [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)),
-                  [s8] "i"(OFFSET_OF(Context, s8)), [s9] "i"(OFFSET_OF(Context, s9)),
-                  [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11)), [size] "i"(sizeof(Context)));
+                : [ra] "i"(OFFSET_OF(Context, ra)), [gp] "i"(OFFSET_OF(Context, gp)), [s0] "i"(OFFSET_OF(Context, s0)),
+                  [s1] "i"(OFFSET_OF(Context, s1)), [a0] "i"(OFFSET_OF(Context, a0)), [s2] "i"(OFFSET_OF(Context, s2)),
+                  [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)),
+                  [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)),
+                  [s9] "i"(OFFSET_OF(Context, s9)), [s10] "i"(OFFSET_OF(Context, s10)),
+                  [s11] "i"(OFFSET_OF(Context, s11)), [size] "i"(sizeof(Context)));
             T::ret();
         }
 
@@ -203,7 +200,6 @@ class RISCV {
                 "addi sp, sp, %[size]\n"
                 "sd ra, %c[ra](sp)\n"
                 "sd gp, %c[gp](sp)\n"
-                "sd sp, %c[sp](sp)\n"
                 "sd s0, %c[s0](sp)\n"
                 "sd s1, %c[s1](sp)\n"
                 "sd s2, %c[s2](sp)\n"
@@ -217,12 +213,11 @@ class RISCV {
                 "sd s10, %c[s10](sp)\n"
                 "sd s11, %c[s11](sp)\n"
                 :
-                : [ra] "i"(OFFSET_OF(Context, ra)), [gp] "i"(OFFSET_OF(Context, gp)), [sp] "i"(OFFSET_OF(Context, sp)),
-                  [s0] "i"(OFFSET_OF(Context, s0)), [s1] "i"(OFFSET_OF(Context, s1)), [s2] "i"(OFFSET_OF(Context, s2)),
-                  [s3] "i"(OFFSET_OF(Context, s3)), [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)),
-                  [s6] "i"(OFFSET_OF(Context, s6)), [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)),
-                  [s9] "i"(OFFSET_OF(Context, s9)), [s10] "i"(OFFSET_OF(Context, s10)),
-                  [s11] "i"(OFFSET_OF(Context, s11)), [size] "i"(-sizeof(Context))
+                : [ra] "i"(OFFSET_OF(Context, ra)), [gp] "i"(OFFSET_OF(Context, gp)), [s0] "i"(OFFSET_OF(Context, s0)),
+                  [s1] "i"(OFFSET_OF(Context, s1)), [s2] "i"(OFFSET_OF(Context, s2)), [s3] "i"(OFFSET_OF(Context, s3)),
+                  [s4] "i"(OFFSET_OF(Context, s4)), [s5] "i"(OFFSET_OF(Context, s5)), [s6] "i"(OFFSET_OF(Context, s6)),
+                  [s7] "i"(OFFSET_OF(Context, s7)), [s8] "i"(OFFSET_OF(Context, s8)), [s9] "i"(OFFSET_OF(Context, s9)),
+                  [s10] "i"(OFFSET_OF(Context, s10)), [s11] "i"(OFFSET_OF(Context, s11)), [size] "i"(-sizeof(Context))
                 : "memory");
             asm volatile(
                 "csrr t0, %0\n"
@@ -230,13 +225,11 @@ class RISCV {
                 "sd   t0, %c[status](sp)\n"
                 "sd   ra, %c[pc](sp)\n"
                 "sd   sp, (%[prev])\n"
-                "mv   sp, %[next]\n"
                 :
                 : "i"(T::STATUS), "r"(~T::PIRQE), "r"(T::ME2ME), [status] "i"(OFFSET_OF(Context, status)),
-                  [pc] "i"(OFFSET_OF(Context, pc)), [prev] "r"(previous), [next] "r"(next)
+                  [pc] "i"(OFFSET_OF(Context, pc)), [prev] "r"(previous)
                 : "memory");
-            lock->release();
-            next->load();
+            load(next, lock);
         }
 
         template <typename T = Mode>
