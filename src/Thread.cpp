@@ -24,6 +24,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
 
 int Thread::idle(void *) {
     while (_count > Traits::Machine::CPUS) {
+        TRACE("IDLE");
         if (!_scheduler.empty()) yield();
     }
 

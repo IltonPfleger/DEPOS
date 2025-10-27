@@ -10,7 +10,6 @@ class SiFiveCLINT {
    public:
     static void reset(auto core) {
         static constexpr uintmax_t ticks = Clock / Traits::Timer::Frequency;
-        // auto counter                     = reinterpret_cast<volatile uintmax_t *>(MTIMECMP);
         MTIMECMP[core] = *MTIME + ticks;
     }
 };
