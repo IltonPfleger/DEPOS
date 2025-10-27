@@ -24,7 +24,6 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
 
 int Thread::idle(void *) {
     while (_count > Traits::Machine::CPUS) {
-        TRACE("IDLE");
         if (!_scheduler.empty()) yield();
     }
 
@@ -119,10 +118,8 @@ void Thread::init() {
 void Thread::run() {
     _lock.acquire();
     Thread *first = _scheduler.pop();
-    _lock.release();
-    first->state = State::RUNNING;
-    first->context->load();
-    // CPU::Context::swtch(&first->context, first->context, &_lock);
+    first->state  = State::RUNNING;
+    CPU::Context::load(first->context, &_lock);
 }
 
 void Thread::reschedule() {
