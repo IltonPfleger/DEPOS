@@ -1,6 +1,6 @@
 #pragma once
 
-#define OFFSET_OF(type, member) ((unsigned long)&(((type*)0)->member))
+#define offsetof(type, member) ((unsigned long)&(((type*)0)->member))
 
 namespace Meta {
     template <bool B, typename True, typename False>
