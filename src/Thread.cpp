@@ -14,13 +14,11 @@ inline Thread *Thread::running() { return reinterpret_cast<Thread *>(CPU::thread
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->state = State::RUNNING;
-    if (next == previous) {
-        lock->release();
-        return;
-    }
     lock->release();
-    while (!next->context);
-    CPU::Context::swtch(&previous->context, &next->context);
+    if (next != previous) {
+        while (!next->context);
+        CPU::Context::swtch(&previous->context, &next->context);
+    }
 }
 
 int Thread::idle(void *) {
