@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Spin.hpp>
 #include <Traits.hpp>
 #include <Types.hpp>
 #include <cpus/riscv/clint.hpp>
