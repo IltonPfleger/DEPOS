@@ -17,7 +17,8 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     lock->release();
     if (next != previous) {
         while (!next->context);
-        CPU::Context::swtch(&previous->context, &next->context);
+        CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context),
+                            const_cast<CPU::Context **>(&next->context));
     }
 }
 
@@ -119,7 +120,7 @@ void Thread::run() {
     Thread *first = _scheduler.pop();
     first->state  = State::RUNNING;
     _lock.release();
-    CPU::Context::load(&first->context);
+    CPU::Context::load(const_cast<CPU::Context **>(&first->context));
 }
 
 void Thread::reschedule() {
