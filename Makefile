@@ -1,4 +1,4 @@
-TOOL := riscv64-elf
+TOOL := riscv64-linux-gnu
 CC := $(TOOL)-g++
 QEMU := qemu-system-riscv64
 

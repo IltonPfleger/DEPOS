@@ -59,7 +59,7 @@ class RISCV {
 
     using CLINT = SiFiveCLINT;
     using MMU   = SV39_MMU;
-    using Mode  = Machine;
+    using Mode  = Supervisor;
 
     template <const int R>
     static void csrw(auto r) {
@@ -92,8 +92,7 @@ class RISCV {
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
 
     inline static auto core() {
-        unsigned int tp;
-        asm volatile("mv %0, tp" : "=r"(tp));
+        register unsigned int tp asm("tp");
         return tp;
     }
 
@@ -157,10 +156,10 @@ class RISCV {
         }
 
         template <typename T = Mode>
-        __attribute__((naked)) static void load(volatile Context **c) {
-            asm volatile("ld sp, (%0)" ::"r"(c));
-            asm volatile("sd zero, (%0)" ::"r"(c));
+        static void load(Context **c) {
             asm volatile(
+                "ld sp, (%[c])\n"
+                "sd zero, (%[c])\n"
                 "ld ra,	 %[ra](sp)\n"
                 "ld gp,  %[gp](sp)\n"
                 "ld s0,  %[s0](sp)\n"
@@ -182,18 +181,19 @@ class RISCV {
                 "csrw    %[epc], t1\n"
                 "addi sp, sp, %[size]\n"
                 :
-                : [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)), [s0] "i"(offsetof(Context, s0)),
-                  [s1] "i"(offsetof(Context, s1)), [a0] "i"(offsetof(Context, a0)), [s2] "i"(offsetof(Context, s2)),
-                  [s3] "i"(offsetof(Context, s3)), [s4] "i"(offsetof(Context, s4)), [s5] "i"(offsetof(Context, s5)),
-                  [s6] "i"(offsetof(Context, s6)), [s7] "i"(offsetof(Context, s7)), [s8] "i"(offsetof(Context, s8)),
-                  [s9] "i"(offsetof(Context, s9)), [s10] "i"(offsetof(Context, s10)), [s11] "i"(offsetof(Context, s11)),
-                  [size] "i"(sizeof(Context)), [estatus] "i"(T::STATUS), [epc] "i"(T::EPC),
-                  [pc] "i"(offsetof(Context, pc)), [status] "i"(offsetof(Context, status)));
+                : [c] "r"(c), [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)),
+                  [s0] "i"(offsetof(Context, s0)), [s1] "i"(offsetof(Context, s1)), [a0] "i"(offsetof(Context, a0)),
+                  [s2] "i"(offsetof(Context, s2)), [s3] "i"(offsetof(Context, s3)), [s4] "i"(offsetof(Context, s4)),
+                  [s5] "i"(offsetof(Context, s5)), [s6] "i"(offsetof(Context, s6)), [s7] "i"(offsetof(Context, s7)),
+                  [s8] "i"(offsetof(Context, s8)), [s9] "i"(offsetof(Context, s9)), [s10] "i"(offsetof(Context, s10)),
+                  [s11] "i"(offsetof(Context, s11)), [size] "i"(sizeof(Context)), [estatus] "i"(T::STATUS),
+                  [epc] "i"(T::EPC), [pc] "i"(offsetof(Context, pc)), [status] "i"(offsetof(Context, status)));
             T::ret();
+            __builtin_unreachable();
         }
 
         template <typename T = Mode>
-        __attribute__((naked)) static void swtch(volatile Context **previous, volatile Context **next) {
+        __attribute__((naked)) static void swtch(Context **previous, Context **next) {
             asm volatile(
                 "addi sp, sp, %[size]\n"
                 "sd   ra,     %[ra](sp)\n"
@@ -303,6 +303,7 @@ class RISCV {
                   [a6] "i"(offsetof(Context, a6)), [a7] "i"(offsetof(Context, a7)), [size] "i"(sizeof(Context))
                 : "memory");
             T::ret();
+            __builtin_unreachable();
         }
     };
 
