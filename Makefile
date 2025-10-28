@@ -8,7 +8,7 @@ CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib
 CFLAGS += -march=rv64imac_zicsr -mabi=lp64
-CFLAGS += -g -std=c++20 -g
+CFLAGS += -g -std=c++20 -O3 -g
 
 
 
