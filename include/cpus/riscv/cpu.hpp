@@ -58,7 +58,6 @@ class RISCV {
     };
 
     using CLINT = SiFiveCLINT;
-    using MMU   = SV39_MMU;
     using Mode  = Supervisor;
 
     template <const int R>

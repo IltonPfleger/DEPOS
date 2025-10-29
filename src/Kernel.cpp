@@ -20,7 +20,7 @@ namespace Kernel {
         }
         while (booting);
         if (Machine::CPU::core() < Traits::Machine::CPUS) {
-            Machine::CPU::MMU::init();
+            Machine::MMU::init();
         }
         if (BSP) {
             Thread::init();
