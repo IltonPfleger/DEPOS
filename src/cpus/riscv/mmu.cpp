@@ -38,18 +38,10 @@ SV39_MMU::PageTable* SV39_MMU::base() {
     uintptr_t PAGE_SIZE    = Traits::Memory::Page::SIZE;
     uintptr_t KERNEL_START = reinterpret_cast<uintptr_t>(__KERNEL_START__);
     uintptr_t KERNEL_END   = reinterpret_cast<uintptr_t>(__KERNEL_END__);
-    uintptr_t KERNEL_SIZE;
-    int NUMBER_OF_KERNEL_PAGES;
-
     KERNEL_END             = (KERNEL_END + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-    KERNEL_SIZE            = KERNEL_END - KERNEL_START;
-    NUMBER_OF_KERNEL_PAGES = KERNEL_SIZE / PAGE_SIZE;
 
     Flags flags = static_cast<Flags>(D | A | R | W | X | V);
-    for (int i = 0; i < NUMBER_OF_KERNEL_PAGES; i++) {
-        uintptr_t pa = KERNEL_START + i * PAGE_SIZE;
-        map(root, pa, pa, flags);
-    }
+    for (uintptr_t pa = KERNEL_START; pa < KERNEL_END; pa += PAGE_SIZE) map(root, pa, pa, flags);
 
     map(root, Machine::IO::Addr, Machine::IO::Addr, flags);
 
@@ -73,7 +65,6 @@ void SV39_MMU::init() {
     TRACE("[MMU::init]{\n")
 
     set(reinterpret_cast<uintptr_t>(base()->entries));
-    while (1);
     //  const char* teste = "}\n";
     //  TRACE(teste);
     //  TRACE("}\n")
