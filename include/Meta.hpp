@@ -21,15 +21,15 @@ namespace Meta {
         }
     }
 
-    // template <bool Cond, typename T = void, typename F = void>
-    // struct IF {
-    //     using Result = F;
-    // };
+    template <bool Cond, typename T, typename F>
+    struct IF {
+        using Result = F;
+    };
 
-    // template <typename T, typename F>
-    // struct IF<true, T, F> {
-    //     using Result = T;
-    // };
+    template <typename T, typename F>
+    struct IF<true, T, F> {
+        using Result = T;
+    };
 
     template <typename T, typename U>
     struct SAME {

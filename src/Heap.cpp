@@ -119,11 +119,11 @@ void *operator new(unsigned long bytes, Heap *heap) {
 }
 
 void *operator new(unsigned long bytes) {
-    if constexpr (Traits::System::MULTITASK) {
-        return operator new[](bytes, Thread::running()->task->_heap);
-    } else {
-        return operator new[](bytes, Heap::SYSTEM);
-    }
+    /// if constexpr (Traits::System::MULTITASK) {
+    ///     return operator new[](bytes, Thread::running()->task->_heap);
+    /// } else {
+    return operator new[](bytes, Heap::SYSTEM);
+    ///}
 }
 
 void *operator new[](unsigned long bytes, Heap *heap) { return operator new(bytes, heap); }

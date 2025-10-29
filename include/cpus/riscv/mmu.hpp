@@ -18,7 +18,6 @@ class SV39_MMU {
         PageTable() {
             for (auto& e : entries) e = 0;
         }
-        void* attach(uintptr_t addr) { return reinterpret_cast<void*>(addr); }
 
         bool attach(int vpn, uintptr_t addr, Flags flags) {
             if (entries[vpn]) return false;
