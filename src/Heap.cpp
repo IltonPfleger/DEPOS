@@ -4,10 +4,10 @@
 #include <Spin.hpp>
 #include <Thread.hpp>
 
-static Spin _lock;
+// static Spin _lock;
 
-static Heap _SYSTEM;
-Heap *Heap::SYSTEM = &_SYSTEM;
+// static Heap _SYSTEM;
+// Heap *Heap::SYSTEM = &_SYSTEM;
 
 // unsigned long Heap::index_of(unsigned long bytes) {
 //     if (bytes == 0) return 1;
@@ -84,8 +84,6 @@ Heap *Heap::SYSTEM = &_SYSTEM;
 //     return nullptr;
 // }
 
-void *operator new(unsigned long, void *ptr) { return ptr; }
-
 void *operator new(unsigned long bytes, Heap *heap) {
     (void)bytes;
     (void)heap;
@@ -122,9 +120,10 @@ void *operator new(unsigned long bytes) {
     /// if constexpr (Traits::System::MULTITASK) {
     ///     return operator new[](bytes, Thread::running()->task->_heap);
     /// } else {
-    return operator new[](bytes, Heap::SYSTEM);
+    return operator new[](bytes, Heap::SYSTEM());
     ///}
 }
 
+void *operator new(unsigned long, void *ptr) { return ptr; }
 void *operator new[](unsigned long bytes, Heap *heap) { return operator new(bytes, heap); }
 void *operator new[](unsigned long bytes) { return operator new(bytes); }

@@ -4,7 +4,8 @@
 
 class SV39_MMU {
    public:
-    enum Flags {
+    typedef uintptr_t Flags;
+    enum {
         V = 1 << 0,  // Valid
         R = 1 << 1,  // Readable
         W = 1 << 2,  // Writable
@@ -14,12 +15,8 @@ class SV39_MMU {
         D = 1 << 7,  // Dirty
     };
 
-    struct PageTable {
-        PageTable() {
-            for (auto& e : entries) e = 0;
-        }
-
-        bool attach(int vpn, uintptr_t addr, Flags flags) {
+    class PageTable {
+        bool set(int vpn, uintptr_t addr, Flags flags) {
             if (entries[vpn]) return false;
             entries[vpn] = (addr >> 2) | flags;
             return true;
@@ -31,11 +28,15 @@ class SV39_MMU {
             return reinterpret_cast<PageTable*>(addr);
         }
 
+       public:
+        bool map(uintptr_t, uintptr_t, Flags = (D | A | R | W | X | V));
+        PageTable() : entries({0}) {}
+
+       private:
         alignas(4096) uintptr_t entries[512];
     };
 
     static PageTable* base();
-    static bool map(PageTable*, uintptr_t, uintptr_t, Flags);
     static void init();
     static void set(uintptr_t);
     static uintptr_t attach(uintptr_t);

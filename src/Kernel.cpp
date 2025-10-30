@@ -16,6 +16,7 @@ namespace Kernel {
             TRACE(__PRETTY_FUNCTION__, "{");
             TRACE("\n");
             Memory::init();
+            Heap::init();
             booting = false;
         }
         while (booting);
