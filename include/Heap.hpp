@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Initializer.hpp>
 #include <Lists.hpp>
+#include <Resource.hpp>
 #include <Traits.hpp>
 
-class Heap : public Initializer<Heap> {
+class Heap : public SystemResource<Heap, true> {
     // friend void *operator new[](unsigned long);
 
     // void *alloc(unsigned long);
@@ -21,6 +21,7 @@ class Heap : public Initializer<Heap> {
 };
 
 void *operator new(unsigned long);
+void *operator new(unsigned long, void *);
 void *operator new(unsigned long, Heap *);
 void *operator new[](unsigned long, Heap *);
 void operator delete(void *, unsigned long);

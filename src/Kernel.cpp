@@ -17,6 +17,8 @@ namespace Kernel {
             TRACE("\n");
             Memory::init();
             Heap::init();
+            AddressSpace::init();
+            Task::init();
             booting = false;
         }
         while (booting);

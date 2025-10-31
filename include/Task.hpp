@@ -2,13 +2,13 @@
 
 #include <AddressSpace.hpp>
 #include <Heap.hpp>
-#include <Initializer.hpp>
+#include <Resource.hpp>
 
-class Task : Initializer<Task> {
+class Task : public SystemResource<Task, Traits::System::MULTITASK> {
     // friend void* operator new(unsigned long);
 
-   private:
-    Task(Heap* h, AddressSpace* a) : heap(h), as(a) {}
+   public:
+    Task() : heap(Heap::SYSTEM()), as(AddressSpace::SYSTEM()) {}
     //  Task() {
     //      _heap = new (Heap::SYSTEM) Heap();
     //      _as   = new (Heap::SYSTEM) AddressSpace();
