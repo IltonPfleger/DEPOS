@@ -10,7 +10,7 @@ void Memory::init() {
     TRACE(__PRETTY_FUNCTION__, "{");
 
     constexpr unsigned int PAGE_SIZE = Traits::Memory::Page::SIZE;
-    char* RAM_BASE = reinterpret_cast<char*>(Traits::Memory::RAM_BASE);
+    char* RAM_BASE                   = reinterpret_cast<char*>(Traits::Memory::RAM_BASE);
     char* RAM_END                    = reinterpret_cast<char*>(Traits::Memory::RAM_END);
     char* KERNEL_START               = const_cast<char*>(__KERNEL_START__);
     char* KERNEL_END                 = const_cast<char*>(__KERNEL_END__);

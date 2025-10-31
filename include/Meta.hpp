@@ -52,6 +52,9 @@ namespace Meta {
     template <typename T>
     concept POINTER = requires(T a) { *a; };
 
+    template <typename T>
+    concept ARRAY = __is_array(T);
+
     // template <typename T>
     // struct REMOVE_POINTER {
     //     using Result = T;

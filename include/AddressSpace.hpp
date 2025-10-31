@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Initializer.hpp>
 #include <Machine.hpp>
+#include <Resource.hpp>
 
-class AddressSpace : Initializer<AddressSpace> {
-   private:
+class AddressSpace : public SystemResource<AddressSpace, Traits::System::MULTITASK> {
+   public:
     AddressSpace() {}  // Receive Kernel Page Table Or Mount I Dont Know
 
    public:
