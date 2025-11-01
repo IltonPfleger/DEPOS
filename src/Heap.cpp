@@ -117,12 +117,15 @@ void *operator new(unsigned long bytes, Heap &heap) {
 }
 
 void *operator new(unsigned long bytes) {
-    // if constexpr (Traits::System::MULTITASK) {
-    //     void *addr = operator new(bytes, Task::running()->heap);
-    //     return addr;  // Task::running()->attach(addr);
-    // } else {
-    return operator new(bytes, Heap::SYSTEM);
-    //}
+    if constexpr (Traits::System::MULTITASK) {
+        if (!Thread::running())
+            return operator new(bytes, Heap::SYSTEM);
+        else {
+            return operator new(bytes, *Thread::running()->task->heap);
+        }
+    } else {
+        return operator new(bytes, Heap::SYSTEM);
+    }
 }
 
 void *operator new(unsigned long, void *ptr) { return ptr; }

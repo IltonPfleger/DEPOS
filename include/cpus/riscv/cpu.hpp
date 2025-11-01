@@ -102,6 +102,7 @@ class RISCV {
             "mul t0, t0, %1\n"
             "add t0, t0, %0\n"
             "add sp, t0, %1\n"
+            "mv gp, zero\n"
             "ret"
             :
             : "r"(stack), "r"(Traits::Memory::Page::SIZE));
