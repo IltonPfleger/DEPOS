@@ -10,7 +10,7 @@ static volatile int _count = 0;
 static Scheduler<Thread> _scheduler;
 static Spin _lock;
 
-inline Thread *Thread::running() { return reinterpret_cast<Thread *>(CPU::thread()); }
+Thread *Thread::running() { return reinterpret_cast<Thread *>(CPU::thread()); }
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->state = State::RUNNING;
@@ -34,14 +34,16 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : task(new Task()),
-      stack(reinterpret_cast<char *>(Memory::kmalloc())),
+    : stack(reinterpret_cast<char *>(Memory::kmalloc())),
       context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context)) CPU::Context(f, a, exit, this)),
       state(State::READY),
       joining(0),
       criterion(c),
       link(Element(this, c.priority())),
       waiting(0) {
+    if constexpr (Traits::System::MULTITASK) {
+        task = new Task();
+    }
     _lock.lock();
     _scheduler.push(&link);
     _count = _count + 1;

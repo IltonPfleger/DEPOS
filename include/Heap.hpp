@@ -11,15 +11,15 @@ class Heap {
     // void grow(void *, unsigned long);
     // unsigned long index_of(unsigned long);
 
-   private:
-    using Chunk                            = Node<void>;
-    static constexpr unsigned int CAPSTONE = Traits::Memory::Page::ORDER;
+    // private:
+    //  using Chunk                            = Node<void>;
+    //  static constexpr unsigned int CAPSTONE = Traits::Memory::Page::ORDER;
 
    public:
     static Heap SYSTEM;
 
-   private:
-    Chunk *chunks[CAPSTONE + 1] = {nullptr};
+    // private:
+    //  Chunk *chunks[CAPSTONE + 1] = {nullptr};
 };
 
 void *operator new(unsigned long);
