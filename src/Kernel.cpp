@@ -16,14 +16,12 @@ namespace Kernel {
             TRACE(__PRETTY_FUNCTION__, "{");
             TRACE("\n");
             Memory::init();
-            Heap::init();
-            AddressSpace::init();
             Task::init();
             booting = false;
         }
         while (booting);
         if (Machine::CPU::core() < Traits::Machine::CPUS) {
-            Machine::MMU::init();
+            // Machine::MMU::init();
         }
         if (BSP) {
             Thread::init();

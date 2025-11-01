@@ -31,20 +31,20 @@ bool SV39_MMU::PageTable::map(uintptr_t va, uintptr_t pa, Flags flags) {
     return l0->set(vpn0, reinterpret_cast<uintptr_t>(pa), flags);
 }
 
-SV39_MMU::PageTable* SV39_MMU::base() {
-    PageTable* root = new (Memory::kmalloc()) PageTable();
-
-    uintptr_t PAGE_SIZE    = Traits::Memory::Page::SIZE;
-    uintptr_t KERNEL_START = reinterpret_cast<uintptr_t>(__KERNEL_START__);
-    uintptr_t KERNEL_END   = reinterpret_cast<uintptr_t>(__KERNEL_END__);
-    KERNEL_END             = (KERNEL_END + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-
-    for (uintptr_t pa = KERNEL_START; pa < KERNEL_END; pa += PAGE_SIZE) root->map(pa, pa);
-
-    root->map(Machine::IO::Addr, Machine::IO::Addr);
-
-    return root;
-}
+// SV39_MMU::PageTable* SV39_MMU::base() {
+//     PageTable* root = new (Memory::kmalloc()) PageTable();
+//
+//     uintptr_t PAGE_SIZE    = Traits::Memory::Page::SIZE;
+//     uintptr_t KERNEL_START = reinterpret_cast<uintptr_t>(__KERNEL_START__);
+//     uintptr_t KERNEL_END   = reinterpret_cast<uintptr_t>(__KERNEL_END__);
+//     KERNEL_END             = (KERNEL_END + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+//
+//     for (uintptr_t pa = KERNEL_START; pa < KERNEL_END; pa += PAGE_SIZE) root->map(pa, pa);
+//
+//     root->map(Machine::IO::Addr, Machine::IO::Addr);
+//
+//     return root;
+// }
 
 void SV39_MMU::set(uintptr_t root) {
     Machine::CPU::csrw<Machine::CPU::Supervisor::SATP>(MODE | root >> 12);
@@ -59,10 +59,10 @@ void SV39_MMU::set(uintptr_t root) {
 //     return 0;
 // };
 
-void SV39_MMU::init() {
-    TRACE("[MMU::init]{\n")
-    set(reinterpret_cast<uintptr_t>(base()));
-    //  const char* teste = "}\n";
-    //  TRACE(teste);
-    //  TRACE("}\n")
-}
+// void SV39_MMU::init() {
+//     TRACE("[MMU::init]{\n")
+//     // set(reinterpret_cast<uintptr_t>(base()));
+//     //   const char* teste = "}\n";
+//     //   TRACE(teste);
+//     //   TRACE("}\n")
+// }

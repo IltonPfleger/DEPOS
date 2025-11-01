@@ -108,6 +108,8 @@ class RISCV {
     }
 
     static void init() {
+        static_assert(!Traits::System::MULTITASK || Meta::SAME<Mode, Supervisor>::Result);
+
         if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && Meta::SAME<Mode, Supervisor>::Result) {
             if (core() == 0) {
                 for (;;) idle();

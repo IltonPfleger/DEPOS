@@ -37,7 +37,7 @@ class SV39_MMU {
     };
 
     static PageTable* base();
-    static void init();
+    // static void init();
     static void set(uintptr_t);
     static uintptr_t attach(uintptr_t);
 
