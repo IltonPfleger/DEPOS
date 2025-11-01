@@ -34,7 +34,8 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : stack(reinterpret_cast<char *>(Memory::kmalloc())),
+    : task(new Task()),
+      stack(reinterpret_cast<char *>(Memory::kmalloc())),
       context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context)) CPU::Context(f, a, exit, this)),
       state(State::READY),
       joining(0),
@@ -46,6 +47,10 @@ Thread::Thread(Function f, Argument a, Criterion c)
     _count = _count + 1;
     _lock.unlock();
 }
+
+Thread::Thread(int i)
+    : Thread(i < Traits::Machine::CPUS ? idle : main, 0,
+             i < Traits::Machine::CPUS ? Criterion::IDLE : Criterion::NORMAL) {}
 
 // Thread::~Thread() {
 //     _lock.lock();
@@ -107,8 +112,8 @@ void Thread::exit() {
 
 void Thread::init() {
     TRACE(__PRETTY_FUNCTION__, "{\n");
-    for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM()) Thread(idle, 0, Criterion::IDLE);
-    new (Heap::SYSTEM()) Thread(main, 0, Criterion::NORMAL);
+    for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+    new (Heap::SYSTEM) Thread(main, 0, Criterion::NORMAL);
     TRACE("}\n");
 }
 

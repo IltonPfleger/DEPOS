@@ -47,13 +47,23 @@ namespace Meta {
     };
 
     template <typename T>
+    struct ArrayType {
+        using Result = void;
+    };
+
+    template <typename T, long unsigned int N>
+    struct ArrayType<T[N]> {
+        using Result = T;
+    };
+
+    template <typename T>
     concept INTEGRAL = requires(T a) { a % 2; };
 
     template <typename T>
     concept POINTER = requires(T a) { *a; };
 
     template <typename T>
-    concept ARRAY = __is_array(T);
+    concept IsArray = __is_array(T);
 
     // template <typename T>
     // struct REMOVE_POINTER {

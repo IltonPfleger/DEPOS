@@ -19,6 +19,7 @@ class Thread {
     using CPU       = Machine::CPU;
 
     ~Thread();
+    Thread(int i);
     Thread(Function, Argument, Criterion);
 
     static Thread *running();

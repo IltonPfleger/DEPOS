@@ -84,7 +84,7 @@
 //     return nullptr;
 // }
 
-void *operator new(unsigned long bytes, Heap *heap) {
+void *operator new(unsigned long bytes, Heap &heap) {
     (void)bytes;
     (void)heap;
     // void *addr = Memory::kmalloc();
@@ -117,13 +117,15 @@ void *operator new(unsigned long bytes, Heap *heap) {
 }
 
 void *operator new(unsigned long bytes) {
-    /// if constexpr (Traits::System::MULTITASK) {
-    ///     return operator new[](bytes, Thread::running()->task->_heap);
-    /// } else {
-    return operator new[](bytes, Heap::SYSTEM());
-    ///}
+    // if constexpr (Traits::System::MULTITASK) {
+    //     void *addr = operator new(bytes, Task::running()->heap);
+    //     return addr;  // Task::running()->attach(addr);
+    // } else {
+    return operator new(bytes, Heap::SYSTEM);
+    //}
 }
 
 void *operator new(unsigned long, void *ptr) { return ptr; }
-void *operator new[](unsigned long bytes, Heap *heap) { return operator new(bytes, heap); }
-void *operator new[](unsigned long bytes) { return operator new(bytes); }
+
+// Static Allocation For System Heap
+Heap Heap::SYSTEM;
