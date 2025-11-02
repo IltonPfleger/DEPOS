@@ -1,5 +1,6 @@
 TOOL := riscv64-linux-gnu
 CC := $(TOOL)-g++
+LD := $(TOOL)-ld
 QEMU := qemu-system-riscv64
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
@@ -8,15 +9,15 @@ CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib
 CFLAGS += -march=rv64imac_zicsr -mabi=lp64
-CFLAGS += -g -std=c++20 -g -O3
-
-
+CFLAGS += -g -std=c++2c -g -O3
 
 BUILD := build
-TARGET := $(BUILD)/quark
-OBJS := $(shell find src/ -type f -name "*.cpp" | sed 's|src/|\./build/|g' | sed 's|\.cpp|.o|')
-OBJS += $(BUILD)/$(APPLICATION).o
-DEPS = $(OBJS:.o=.d)
+TARGET := $(BUILD)/DEPOS
+SRCS := $(shell find src -type f -name "*.cpp")
+OBJS := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SRCS))
+APPSRCS := $(shell find app/$(APPLICATION) -type f -name "*.cpp")
+APPOBJS := $(patsubst app/$(APPLICATION)/%.cpp,$(BUILD)/app/$(APPLICATION)/%.o,$(APPSRCS))
+DEPS := $(OBJS:.o=.d) $(APPOBJS:.o=.d)
 
 
 CPUS=$(shell sed -n 's|.*CPUS *= *\([0-9]*\).*|\1|p' include/Traits.hpp)
@@ -41,14 +42,19 @@ gdb:
 		-ex "set confirm off"\
 		-ex "file $(TARGET).elf"
 
-$(TARGET): $(OBJS)
-	@./mkimage $(TOOL) $@ $^
+$(TARGET): $(OBJS) $(BUILD)/$(APPLICATION).o
+	@./mkimage $(TOOL) $(BUILD)/$(APPLICATION).o $(TARGET) $(OBJS)
 
 $(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
-$(BUILD)/$(APPLICATION).o: app/$(APPLICATION).cpp
+$(BUILD)/$(APPLICATION).o: $(APPOBJS)
+	@mkdir -p $(dir $@)
+	$(LD) -r -o $@ $^
+
+$(BUILD)/app/$(APPLICATION)/%.o: app/$(APPLICATION)/%.cpp
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 -include $(DEPS)
