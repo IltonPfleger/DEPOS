@@ -158,10 +158,9 @@ class RISCV {
         }
 
         template <typename T = Mode>
-        static void load(Context **c) {
+        static void load(Context *c) {
             asm volatile(
-                "ld sp, (%[c])\n"
-                "sd zero, (%[c])\n"
+                "mv sp, %[c]\n"
                 "ld ra,	 %[ra](sp)\n"
                 "ld gp,  %[gp](sp)\n"
                 "ld s0,  %[s0](sp)\n"
@@ -195,7 +194,7 @@ class RISCV {
         }
 
         template <typename T = Mode>
-        __attribute__((naked)) static void swtch(Context **previous, Context **next) {
+        __attribute__((naked)) static void swtch(Context **previous, Context *next) {
             asm volatile(
                 "addi sp, sp, %[size]\n"
                 "sd   ra,     %[ra](sp)\n"
@@ -306,6 +305,19 @@ class RISCV {
                 : "memory");
             T::ret();
             __builtin_unreachable();
+        }
+    };
+
+    class Atomic {
+       public:
+        template <typename T>
+        static void wait(T &value) {
+            while (!__atomic_load_n(&value, __ATOMIC_SEQ_CST));
+        }
+
+        template <typename T>
+        static T clear(T &value) {
+            return __atomic_exchange_n(&value, 0, __ATOMIC_SEQ_CST);
         }
     };
 

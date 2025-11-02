@@ -10,14 +10,14 @@ inline void __m2fold(Args&&... args) {
     (Console::out << ... << args);
 }
 
-#define ERROR(expr, ...)                                                 \
-    if constexpr (Traits::Debug::ERROR) {                                \
-        if (expr) {                                                      \
-            Machine::CPU::Interrupt::disable();                          \
-            Console::out << "\nERROR(" << Machine::CPU::core() << ")\n"; \
-            __m2fold(__VA_ARGS__);                                       \
-            for (;;);                                                    \
-        }                                                                \
+#define ERROR(expr, ...)                                                                       \
+    if constexpr (Traits::Debug::ERROR) {                                                      \
+        if (expr) {                                                                            \
+            Machine::CPU::Interrupt::disable();                                                \
+            Console::out << "<" << Machine::CPU::core() << ">" << __PRETTY_FUNCTION__ << "\n"; \
+            __m2fold(__VA_ARGS__);                                                             \
+            for (;;);                                                                          \
+        }                                                                                      \
     }
 
 #define TRACE(...) \

@@ -16,9 +16,10 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->state = State::RUNNING;
     lock->release();
     if (next != previous) {
-        while (!next->context);
-        CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context),
-                            const_cast<CPU::Context **>(&next->context));
+        CPU::Atomic::wait(next->context);
+        CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context), CPU::Atomic::clear(next->context));
+        // CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context),
+        //                     const_cast<CPU::Context **>(&next->context));
     }
 }
 
@@ -34,7 +35,7 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : stack(reinterpret_cast<char *>(Memory::kmalloc())),
+    : stack(static_cast<char *>(Memory::kmalloc())),
       context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context)) CPU::Context(f, a, exit, this)),
       state(State::READY),
       joining(0),
@@ -43,16 +44,13 @@ Thread::Thread(Function f, Argument a, Criterion c)
       waiting(0) {
     if constexpr (Traits::System::MULTITASK) {
         task = new Task();
+        task->attach(stack);
     }
     _lock.lock();
     _scheduler.push(&link);
     _count = _count + 1;
     _lock.unlock();
 }
-
-Thread::Thread(int i)
-    : Thread(i < Traits::Machine::CPUS ? idle : main, 0,
-             i < Traits::Machine::CPUS ? Criterion::IDLE : Criterion::NORMAL) {}
 
 // Thread::~Thread() {
 //     _lock.lock();
@@ -124,7 +122,7 @@ void Thread::run() {
     Thread *first = _scheduler.pop();
     first->state  = State::RUNNING;
     _lock.release();
-    CPU::Context::load(const_cast<CPU::Context **>(&first->context));
+    CPU::Context::load(first->context);
 }
 
 void Thread::reschedule() {
