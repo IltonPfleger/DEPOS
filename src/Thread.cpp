@@ -18,8 +18,6 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     if (next != previous) {
         CPU::Atomic::wait(next->context);
         CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context), CPU::Atomic::clear(next->context));
-        // CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context),
-        //                     const_cast<CPU::Context **>(&next->context));
     }
 }
 

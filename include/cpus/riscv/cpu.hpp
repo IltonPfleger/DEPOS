@@ -91,7 +91,8 @@ class RISCV {
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
 
     inline static auto core() {
-        register unsigned int tp asm("tp");
+        unsigned int tp;
+        asm volatile("mv %0, tp" : "=r"(tp));
         return tp;
     }
 

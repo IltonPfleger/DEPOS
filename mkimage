@@ -1,8 +1,9 @@
 #!/bin/sh
 
 TOOL=$1
-TARGET=$2
-shift 2
+APPLICATION=$2
+TARGET=$3
+shift 3
 
 TRAITS=include/Traits.hpp
 
@@ -55,5 +56,5 @@ SECTIONS
 }
 EOL
 
-${TOOL}-ld -T $LINKER_SCRIPT $@ -o ${TARGET}.elf
+${TOOL}-ld -T $LINKER_SCRIPT $@ $APPLICATION -o ${TARGET}.elf
 ${TOOL}-objcopy -O binary -S ${TARGET}.elf ${TARGET}
