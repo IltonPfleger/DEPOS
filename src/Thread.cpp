@@ -111,7 +111,7 @@ void Thread::exit() {
 void Thread::init() {
     TRACE(__PRETTY_FUNCTION__, "{\n");
     for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
-    new (Heap::SYSTEM) Thread(main, 0, Criterion::NORMAL);
+    // new (Heap::SYSTEM) Thread(main, 0, Criterion::NORMAL);
     TRACE("}\n");
 }
 
