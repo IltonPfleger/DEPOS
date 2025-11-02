@@ -122,7 +122,7 @@ void Thread::run() {
     Thread *first = _scheduler.pop();
     first->state  = State::RUNNING;
     _lock.release();
-    CPU::Context::load(first->context);
+    first->context->load();
 }
 
 void Thread::reschedule() {
