@@ -18,9 +18,8 @@ class Thread {
     using Element   = Queue::Node;
     using CPU       = Machine::CPU;
 
-    ~Thread();
-    Thread(int i);
     Thread(Function, Argument, Criterion);
+    ~Thread();
 
     static Thread *running();
     static void join(Thread &);
