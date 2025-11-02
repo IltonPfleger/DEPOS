@@ -158,9 +158,9 @@ class RISCV {
         }
 
         template <typename T = Mode>
-        static void load(Context *c) {
+        void load() {
             asm volatile(
-                "mv sp, %[c]\n"
+                "mv sp, %[sp]\n"
                 "ld ra,	 %[ra](sp)\n"
                 "ld gp,  %[gp](sp)\n"
                 "ld s0,  %[s0](sp)\n"
@@ -182,7 +182,7 @@ class RISCV {
                 "csrw    %[epc], t1\n"
                 "addi sp, sp, %[size]\n"
                 :
-                : [c] "r"(c), [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)),
+                : [sp] "r"(this), [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)),
                   [s0] "i"(offsetof(Context, s0)), [s1] "i"(offsetof(Context, s1)), [a0] "i"(offsetof(Context, a0)),
                   [s2] "i"(offsetof(Context, s2)), [s3] "i"(offsetof(Context, s3)), [s4] "i"(offsetof(Context, s4)),
                   [s5] "i"(offsetof(Context, s5)), [s6] "i"(offsetof(Context, s6)), [s7] "i"(offsetof(Context, s7)),
@@ -225,7 +225,7 @@ class RISCV {
                   [estatus] "i"(T::STATUS), [me2me] "r"(T::ME2ME), [status] "i"(offsetof(Context, status)),
                   [pc] "i"(offsetof(Context, pc)), [previous] "r"(previous)
                 : "memory");
-            load(next);
+            next->load();
         }
 
         template <typename T = Mode>
