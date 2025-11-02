@@ -26,7 +26,7 @@
 // }
 
 int main(void *) {
-    // Console::out << "Application: \n";
+    Console::out << "Application: \n";
 
     // mutex.p();
     // for (int i = 0; i < N; i++) {
@@ -38,6 +38,6 @@ int main(void *) {
 
     //// for (int i = 0; i < N; i++) delete threads[i];
 
-    // Console::out << "\nApplication Done!\n";
+    Console::out << "\nApplication Done!\n";
     return 0;
 }
