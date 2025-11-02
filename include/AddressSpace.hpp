@@ -3,6 +3,15 @@
 #include <Heap.hpp>
 #include <Machine.hpp>
 
+class Segment {
+   public:
+    constexpr Segment(void* addr = nullptr) noexcept : addr(addr) {}
+    constexpr explicit operator void*() const noexcept { return addr; }
+
+   private:
+    void* addr;
+};
+
 class AddressSpace : Machine::MMU::PageTable {
    public:
     AddressSpace() {}

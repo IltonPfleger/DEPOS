@@ -33,6 +33,11 @@ class Task {
         TRACE("}\n");
     }
 
+    // static void* attach(void* addr)
+    //{
+
+    //}
+
    public:
     Heap* const heap;
     AddressSpace* const as;
