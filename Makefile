@@ -10,10 +10,16 @@ DEPS := $(OBJS:.o=.d)
 CPUS=$(shell ./Meta get $(TRAITS) Traits::Machine::CPUS)
 MACHINE=$(shell ./Meta get $(TRAITS) Traits::Machine::NAME)
 BOOT_ADDR=$(shell ./Meta get $(TRAITS) Traits::System::ADDR)
+APP_ADDR=$(shell ./Meta get $(TRAITS) Traits::Application::ADDR)
 
 run: $(TARGET)
 	(cd app && make APPLICATION=$(APPLICATION))
-	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 #-device loader,file=app.bin,addr=0x80400000
+	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -device loader,file=app/build/$(APPLICATION).elf,addr=$(APP_ADDR)
+	#( \
+	#	TMP=$$(mktemp); \
+	#	cat $(TARGET) app/build/$(APPLICATION).elf > $$TMP; \
+	#	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $$TMP -nographic -m 1024 \
+	#)
 
 debug: $(TARGET)
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -S -gdb tcp::1234
