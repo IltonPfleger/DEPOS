@@ -12,6 +12,7 @@ MACHINE=$(shell ./Meta get $(TRAITS) Traits::Machine::NAME)
 BOOT_ADDR=$(shell ./Meta get $(TRAITS) Traits::System::ADDR)
 
 run: $(TARGET)
+	(cd app && make APPLICATION=$(APPLICATION))
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 #-device loader,file=app.bin,addr=0x80400000
 
 debug: $(TARGET)

@@ -10,7 +10,7 @@ DEPS := $(OBJS:.o=.d)
 
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $@
+	$(CC) $(CFLAGS) $(OBJS) -o $@ -e main
 
 $(BUILD)/$(APPLICATION)/%.o: ./$(APPLICATION)/%.cpp
 	@mkdir -p $(dir $@)

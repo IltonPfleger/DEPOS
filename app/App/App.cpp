@@ -1,9 +1,9 @@
-#include <Alarm.hpp>
-#include <IO/Console.hpp>
-#include <Machine.hpp>
-#include <Memory.hpp>
-#include <Semaphore.hpp>
-#include <Thread.hpp>
+// #include <Alarm.hpp>
+// #include <IO/Console.hpp>
+// #include <Machine.hpp>
+// #include <Memory.hpp>
+// #include <Semaphore.hpp>
+// #include <Thread.hpp>
 
 // static constexpr int N          = 5;
 // static constexpr int ITERATIONS = 5;
@@ -25,8 +25,8 @@
 //     return 0;
 // }
 
-int main(void *) {
-    Console::out << "Application: \n";
+int main() {
+    // Console::out << "Application: \n";
 
     // mutex.p();
     // for (int i = 0; i < N; i++) {
@@ -38,6 +38,6 @@ int main(void *) {
 
     //// for (int i = 0; i < N; i++) delete threads[i];
 
-    Console::out << "\nApplication Done!\n";
+    // Console::out << "\nApplication Done!\n";
     return 0;
 }
