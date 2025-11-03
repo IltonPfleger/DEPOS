@@ -17,6 +17,11 @@ void Memory::init() {
     const unsigned int KERNEL_SIZE   = KERNEL_END - KERNEL_START;
     const unsigned int HEAP_SIZE     = Traits::Memory::SIZE - KERNEL_SIZE;
 
+    TRACE(*reinterpret_cast<char*>(2147524608 + 1));
+    //for (int i = -10000; i < 10000; i++) TRACE((int)*reinterpret_cast<char*>(Traits::Application::ADDR + i));
+    //for (int i = -1000; i < 1000; i++) TRACE(reinterpret_cast<void*>(Traits::Application::ADDR + i), "\n");
+
+    while (1);
     char* c;
     for (c = RAM_BASE; c + PAGE_SIZE < RAM_END; c += PAGE_SIZE) {
         if (c >= KERNEL_START && c < KERNEL_END) continue;

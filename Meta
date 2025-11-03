@@ -3,15 +3,15 @@
 get() {
     FILE="$1"
     VAR="$2"
-    INPUT=$(mktemp /tmp/input.XXXXXX.cpp)
-    OUT=$(mktemp /tmp/out.XXXXXX.o)
+    INPUT=$(mktemp)
+    OUT=$(mktemp)
 
     cat > "$INPUT" <<EOL
 #include <iostream>
 #include "$FILE"
 
-//extern "C" const char __KERNEL_START__[];
-//extern "C" const char __KERNEL_END__[];
+//unsigned long __KERNEL_END__ = 0x$(nm build/DEPOS.elf | grep " __KERNEL_END__$" | awk '{print $1}');
+//unsigned long __KERNEL_START__ = 0x$(nm build/DEPOS.elf | grep " __KERNEL_START__$" | awk '{print $1}');
 
 int main() {
     std::cout << $VAR;
@@ -19,7 +19,7 @@ int main() {
 }
 EOL
 
-    g++ -I"$(pwd)" "$INPUT" -o "$OUT"
+    g++ -x c++ -I"$(pwd)" "$INPUT" -o "$OUT"
 
     "$OUT"
 
