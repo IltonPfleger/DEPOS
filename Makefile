@@ -14,12 +14,11 @@ APP_ADDR=$(shell ./Meta get $(TRAITS) Traits::Application::ADDR)
 
 run: $(TARGET)
 	(cd app && make APPLICATION=$(APPLICATION))
-	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -device loader,file=app/build/$(APPLICATION).elf,addr=$(APP_ADDR)
-	#( \
-	#	TMP=$$(mktemp); \
-	#	cat $(TARGET) app/build/$(APPLICATION).elf > $$TMP; \
-	#	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $$TMP -nographic -m 1024 \
-	#)
+	( \
+		TMP=$$(mktemp); \
+		cat $(TARGET) app/build/$(APPLICATION).elf > $$TMP; \
+		$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m 1024 -device loader,file=$$TMP,addr=$(BOOT_ADDR),force-raw=on\
+	)
 
 debug: $(TARGET)
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -S -gdb tcp::1234
@@ -39,7 +38,7 @@ $(TARGET): $(OBJS)
 	@./Meta linker $LINKER $(BOOT_ADDR)
 	@$(LD) -T $LINKER -o $@.elf $(OBJS)
 	@rm -f $LINKER
-	@$(OBJCOPY) -O binary -S $@.elf $(TARGET)
+	@$(OBJCOPY) -O binary --set-section-flags .bss=alloc,load,contents $@.elf $(TARGET)
 
 $(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)

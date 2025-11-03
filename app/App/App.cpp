@@ -1,5 +1,5 @@
 // #include <Alarm.hpp>
-// #include <IO/Console.hpp>
+#include <IO/Console.hpp>
 // #include <Machine.hpp>
 // #include <Memory.hpp>
 // #include <Semaphore.hpp>
@@ -26,7 +26,7 @@
 // }
 
 int main() {
-    // Console::out << "Application: \n";
+    Console::out << "Application: \n";
 
     // mutex.p();
     // for (int i = 0; i < N; i++) {

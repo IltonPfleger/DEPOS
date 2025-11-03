@@ -1,3 +1,4 @@
+#include <ELF.hpp>
 #include <IO/Debug.hpp>
 #include <Memory.hpp>
 #include <Spin.hpp>
@@ -10,28 +11,29 @@ void Memory::init() {
     TRACE(__PRETTY_FUNCTION__, "{");
 
     constexpr unsigned int PAGE_SIZE = Traits::Memory::Page::SIZE;
-    char* RAM_BASE                   = reinterpret_cast<char*>(Traits::Memory::RAM_BASE);
-    char* RAM_END                    = reinterpret_cast<char*>(Traits::Memory::RAM_END);
-    char* KERNEL_START               = const_cast<char*>(__KERNEL_START__);
-    char* KERNEL_END                 = const_cast<char*>(__KERNEL_END__);
-    const unsigned int KERNEL_SIZE   = KERNEL_END - KERNEL_START;
-    const unsigned int HEAP_SIZE     = Traits::Memory::SIZE - KERNEL_SIZE;
+    constexpr uintptr_t RAM_BASE     = Traits::Memory::RAM_BASE;
+    constexpr uintptr_t RAM_END      = Traits::Memory::RAM_END;
+    uintptr_t KERNEL_START           = reinterpret_cast<uintptr_t>(const_cast<char*>(__KERNEL_START__));
+    uintptr_t KERNEL_END             = reinterpret_cast<uintptr_t>(const_cast<char*>(__KERNEL_END__));
 
-    TRACE(*reinterpret_cast<char*>(2147524608 + 1));
-    //for (int i = -10000; i < 10000; i++) TRACE((int)*reinterpret_cast<char*>(Traits::Application::ADDR + i));
-    //for (int i = -1000; i < 1000; i++) TRACE(reinterpret_cast<void*>(Traits::Application::ADDR + i), "\n");
+    //TODO: Move this math to another function
+    ELF* elf             = reinterpret_cast<ELF*>(KERNEL_END);
+    uintptr_t HEAP_START = KERNEL_END;
+    while (elf->valid()) {
+        size_t size = elf->size();
+        HEAP_START += size;
+        elf = reinterpret_cast<ELF*>(reinterpret_cast<uintptr_t>(elf) + size);
+    }
 
-    while (1);
-    char* c;
+    uintptr_t c;
     for (c = RAM_BASE; c + PAGE_SIZE < RAM_END; c += PAGE_SIZE) {
-        if (c >= KERNEL_START && c < KERNEL_END) continue;
+        if (c >= KERNEL_START && c < HEAP_START) continue;
         pages.insert(reinterpret_cast<Page*>(c));
     }
 
-    TRACE("KernelStart=", static_cast<void*>(KERNEL_START), ", ");
-    TRACE("KernelEnd=", static_cast<void*>(KERNEL_END), ", ");
-    TRACE("KernelSize=", KERNEL_SIZE, ", ");
-    TRACE("HeapSize=", HEAP_SIZE);
+    TRACE("KernelStart=", reinterpret_cast<void*>(KERNEL_START), ", ");
+    TRACE("KernelEnd=", reinterpret_cast<void*>(KERNEL_END), ", ");
+    TRACE("KernelSize=", KERNEL_END - KERNEL_START);
     TRACE("}\n");
 }
 
