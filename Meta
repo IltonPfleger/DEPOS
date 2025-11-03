@@ -1,5 +1,8 @@
 #!/bin/sh
 
+#unsigned long __KERNEL_END__ = 0x$(nm build/DEPOS.elf | grep " __KERNEL_END__$" | awk '{print $1}');
+#unsigned long __KERNEL_START__ = 0x$(nm build/DEPOS.elf | grep " __KERNEL_START__$" | awk '{print $1}');
+
 get() {
     FILE="$1"
     VAR="$2"
@@ -10,8 +13,6 @@ get() {
 #include <iostream>
 #include "$FILE"
 
-//unsigned long __KERNEL_END__ = 0x$(nm build/DEPOS.elf | grep " __KERNEL_END__$" | awk '{print $1}');
-//unsigned long __KERNEL_START__ = 0x$(nm build/DEPOS.elf | grep " __KERNEL_START__$" | awk '{print $1}');
 
 int main() {
     std::cout << $VAR;
