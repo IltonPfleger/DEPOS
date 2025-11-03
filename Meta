@@ -3,22 +3,29 @@
 get() {
     FILE="$1"
     VAR="$2"
-    INPUT=$(mktemp)
-    OUT=$(mktemp)
+    INPUT=$(mktemp /tmp/input.XXXXXX.cpp)
+    OUT=$(mktemp /tmp/out.XXXXXX.o)
 
-    cat > $INPUT <<EOL
+    cat > "$INPUT" <<EOL
 #include <iostream>
 #include "$FILE"
+
+//extern "C" const char __KERNEL_START__[];
+//extern "C" const char __KERNEL_END__[];
+
 int main() {
-std::cout << $VAR;
+    std::cout << $VAR;
+    return 0;
 }
 EOL
-    g++ -I$(pwd) -x c++ $INPUT -o $OUT
-    
-    $OUT
-    rm -f $INPUT
-    rm -f $OUT
+
+    g++ -I"$(pwd)" "$INPUT" -o "$OUT"
+
+    "$OUT"
+
+    rm -f "$INPUT" "$OUT"
 }
+
 
 linker() {
     OUT="$1"
