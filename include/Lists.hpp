@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Types.hpp>
+
 template <typename T>
 struct Node {
     const T& data;
@@ -16,30 +18,96 @@ class LinkedListBase {
    public:
     using DataType = T;
     using NodeType = Node<T>;
-    bool empty() const { return _head == nullptr; }
+    bool empty() const { return mhead == nullptr; }
+    const NodeType* head() const { return mhead; }
 
    protected:
-    NodeType* _head = nullptr;
+    NodeType* mhead = nullptr;
 };
 
 template <typename T>
-class LIFO : LinkedListBase<T> {
-    using Base = LinkedListBase<T>;
-
+class LIFO : public LinkedListBase<T> {
    public:
-    using DataType = Base::DataType;
-    using NodeType = Base::NodeType;
+    using Base     = LinkedListBase<T>;
+    using NodeType = typename Base::NodeType;
 
     void insert(NodeType* node) {
-        node->next  = this->_head;
-        this->_head = node;
-    };
+        node->next  = this->mhead;
+        this->mhead = node;
+    }
 
     NodeType* remove() {
-        NodeType* node = this->_head;
-        this->_head    = this->_head->next;
+        if (!this->mhead) return nullptr;
+        NodeType* node = this->mhead;
+        this->mhead    = node->next;
         return node;
     }
+};
+
+template <uintptr_t BASE, size_t MAX>
+class BuddyAllocator {
+    using Base     = LIFO<void>;
+    using NodeType = typename Base::NodeType;
+
+    static size_t level(size_t size) {
+        size_t level = 0;
+        while ((1U << level) < size && level <= MAX) {
+            ++level;
+        }
+        return level;
+    }
+
+   public:
+    void* remove(size_t size) {
+        size_t n = level(size);
+        for (size_t i = n; i <= MAX; ++i) {
+            if (mfree[i].empty()) continue;
+            NodeType* node = mfree[i].remove();
+            while (i > n) {
+                i--;
+                size_t half     = 1 << i;
+                uintptr_t buddy = reinterpret_cast<uintptr_t>(node) + half;
+                mfree[i].insert(reinterpret_cast<NodeType*>(buddy));
+            }
+            return reinterpret_cast<void*>(node);
+        }
+        return nullptr;
+    }
+
+    void insert(void* ptr, size_t size) {
+        size_t n       = level(size);
+        uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
+
+        while (n < MAX) {
+            size_t bsize    = (1 << n);
+            size_t offset   = addr - BASE;
+            uintptr_t buddy = BASE + (offset ^ bsize);
+
+            NodeType* previous = nullptr;
+            NodeType* node     = const_cast<NodeType*>(mfree[n].head());
+
+            while (node) {
+                if (reinterpret_cast<uintptr_t>(node) == buddy) break;
+                previous = node;
+                node     = node->next;
+            }
+
+            if (!node) break;
+
+            if (previous) {
+                previous->next = node->next;
+            } else {
+                mfree[n].remove();
+            }
+
+            if (buddy < addr) addr = buddy;
+            ++n;
+        }
+        mfree[n].insert(reinterpret_cast<NodeType*>(addr));
+    };
+
+   private:
+    Base mfree[MAX + 1];
 };
 
 /* ----------------------------------- O L D -----------------------------------*/
@@ -55,21 +123,21 @@ template <typename T>
 struct LinkedList {
     using Node = Element<T>;
 
-    Node* _head = nullptr;
+    Node* mhead = nullptr;
     Node* _tail = nullptr;
 
-    bool empty() const { return _head == nullptr; }
+    bool empty() const { return mhead == nullptr; }
 
     void push_front(Node* e) {
-        e->next = _head;
-        _head   = e;
+        e->next = mhead;
+        mhead   = e;
         if (!_tail) _tail = e;
     }
 
     void push_back(Node* e) {
         e->next = nullptr;
-        if (!_head) {
-            _head = _tail = e;
+        if (!mhead) {
+            mhead = _tail = e;
         } else {
             _tail->next = e;
             _tail       = e;
@@ -78,10 +146,10 @@ struct LinkedList {
 
     void push_sorted(Node* e) {
         e->next = nullptr;
-        if (!_head || e->rank < _head->rank) {
+        if (!mhead || e->rank < mhead->rank) {
             push_front(e);
         } else {
-            Node* current = _head;
+            Node* current = mhead;
             while (current->next && e->rank >= current->next->rank) {
                 current = current->next;
             }
@@ -92,22 +160,22 @@ struct LinkedList {
     }
 
     Node* remove_front() {
-        if (!_head) return nullptr;
-        Node* e = _head;
-        _head   = e->next;
-        if (!_head) _tail = nullptr;
+        if (!mhead) return nullptr;
+        Node* e = mhead;
+        mhead   = e->next;
+        if (!mhead) _tail = nullptr;
         e->next = nullptr;
         return e;
     }
 
     Node* remove_back() {
-        if (!_head) return nullptr;
-        if (_head == _tail) {
-            Node* e = _head;
-            _head = _tail = nullptr;
+        if (!mhead) return nullptr;
+        if (mhead == _tail) {
+            Node* e = mhead;
+            mhead = _tail = nullptr;
             return e;
         }
-        Node* current = _head;
+        Node* current = mhead;
         while (current->next != _tail) {
             current = current->next;
         }
@@ -118,16 +186,16 @@ struct LinkedList {
     }
 
     void remove(Node* e) {
-        if (!_head) return;
-        Node* current  = _head;
+        if (!mhead) return;
+        Node* current  = mhead;
         Node* previous = nullptr;
         while (current && current != e) {
             previous = current;
             current  = current->next;
         }
         if (!current) return;
-        if (current == _head) {
-            _head = current->next;
+        if (current == mhead) {
+            mhead = current->next;
         } else {
             previous->next = current->next;
         }
@@ -135,7 +203,7 @@ struct LinkedList {
             _tail = previous;
         }
         e->next = nullptr;
-        if (!_head) _tail = nullptr;
+        if (!mhead) _tail = nullptr;
     }
 };
 

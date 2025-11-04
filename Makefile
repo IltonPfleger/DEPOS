@@ -14,7 +14,7 @@ APP_ADDR=$(shell ./Meta get $(TRAITS) Traits::Application::ADDR)
 
 run: $(TARGET)
 	(cd app && make APPLICATION=$(APPLICATION))
-	( \
+	@( \
 		TMP=$$(mktemp); \
 		cat $(TARGET) app/build/$(APPLICATION).elf > $$TMP; \
 		$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m 1024 -device loader,file=$$TMP,addr=$(BOOT_ADDR),force-raw=on\
