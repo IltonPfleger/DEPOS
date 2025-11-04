@@ -121,7 +121,8 @@ void *operator new(unsigned long bytes) {
         if (!Thread::running())
             return operator new(bytes, Heap::SYSTEM);
         else {
-            return operator new(bytes, *Thread::running()->task->heap);
+            return operator new(bytes, Heap::SYSTEM);
+            // return operator new(bytes, *Thread::running()->task->heap);
         }
     } else {
         return operator new(bytes, Heap::SYSTEM);

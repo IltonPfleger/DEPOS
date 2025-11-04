@@ -7,8 +7,8 @@ QEMU := qemu-system-riscv64
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
-CFLAGS += -ffreestanding -fno-exceptions -fno-rtti -nostdlib
+CFLAGS += -fno-exceptions -fno-rtti -ffreestanding -nostdlib -nostartfiles
 CFLAGS += -march=rv64imac_zicsr -mabi=lp64
-CFLAGS += -g -std=c++2c -g -O3
+CFLAGS += -g -std=c++2c -g -Os
 
 TRAITS := include/Traits.hpp

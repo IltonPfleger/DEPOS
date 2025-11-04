@@ -8,7 +8,7 @@ extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
 
 bool SV39_MMU::PageTable::map(uintptr_t va, uintptr_t pa, Flags flags) {
-    // if (va % 0x1000 != 0 || pa % 0x1000 != 0) return false;
+    if (va % 0x1000 != 0 || pa % 0x1000 != 0) return false;
     uintptr_t vpn2 = (va >> 30) & 0x1FF;
     uintptr_t vpn1 = (va >> 21) & 0x1FF;
     uintptr_t vpn0 = (va >> 12) & 0x1FF;

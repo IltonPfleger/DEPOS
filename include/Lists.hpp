@@ -3,51 +3,53 @@
 #include <Types.hpp>
 
 template <typename T>
-struct Node {
+struct Element {
     const T& data;
-    Node* next;
+    Element* next;
 };
 
 template <>
-struct Node<void> {
-    Node* next;
+struct Element<void> {
+    Element* next;
 };
 
 template <typename T>
 class LinkedListBase {
    public:
     using DataType = T;
-    using NodeType = Node<T>;
-    bool empty() const { return mhead == nullptr; }
-    const NodeType* head() const { return mhead; }
+    using Node     = Element<T>;
+    bool empty() const { return m_head == nullptr; }
+    Node* head() { return m_head; }
 
    protected:
-    NodeType* mhead = nullptr;
+    Node* m_head = nullptr;
 };
 
 template <typename T>
 class LIFO : public LinkedListBase<T> {
    public:
-    using Base     = LinkedListBase<T>;
-    using NodeType = typename Base::NodeType;
+    using Base = LinkedListBase<T>;
+    using Node = typename Base::Node;
 
-    void insert(NodeType* node) {
-        node->next  = this->mhead;
-        this->mhead = node;
+    void insert(Node* node) {
+        node->next   = this->m_head;
+        this->m_head = node;
     }
 
-    NodeType* remove() {
-        if (!this->mhead) return nullptr;
-        NodeType* node = this->mhead;
-        this->mhead    = node->next;
+    Node* remove() {
+        if (!this->m_head) return nullptr;
+        Node* node   = this->m_head;
+        this->m_head = node->next;
         return node;
     }
 };
 
 template <uintptr_t BASE, size_t MAX>
 class BuddyAllocator {
-    using Base     = LIFO<void>;
-    using NodeType = typename Base::NodeType;
+    static_assert((BASE != 0) && ((BASE & (BASE - 1)) == 0));
+
+    using Base = LIFO<void>;
+    using Node = typename Base::Node;
 
     static size_t level(size_t size) {
         size_t level = 0;
@@ -59,19 +61,20 @@ class BuddyAllocator {
 
    public:
     void* remove(size_t size) {
-        size_t n = level(size);
-        for (size_t i = n; i <= MAX; ++i) {
-            if (mfree[i].empty()) continue;
-            NodeType* node = mfree[i].remove();
-            while (i > n) {
-                i--;
-                size_t half     = 1 << i;
-                uintptr_t buddy = reinterpret_cast<uintptr_t>(node) + half;
-                mfree[i].insert(reinterpret_cast<NodeType*>(buddy));
-            }
-            return reinterpret_cast<void*>(node);
+        Node* node = nullptr;
+        size_t n   = level(size);
+        size_t i   = n;
+        for (; i <= MAX; ++i) {
+            node = m_free[i].remove();
+            if (node) break;
         }
-        return nullptr;
+        while (i > n) {
+            i--;
+            size_t half     = 1 << i;
+            uintptr_t buddy = reinterpret_cast<uintptr_t>(node) + half;
+            m_free[i].insert(reinterpret_cast<Node*>(buddy));
+        }
+        return node;
     }
 
     void insert(void* ptr, size_t size) {
@@ -79,12 +82,10 @@ class BuddyAllocator {
         uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
 
         while (n < MAX) {
-            size_t bsize    = (1 << n);
-            size_t offset   = addr - BASE;
-            uintptr_t buddy = BASE + (offset ^ bsize);
+            uintptr_t buddy = addr ^ (1U << n);
 
-            NodeType* previous = nullptr;
-            NodeType* node     = const_cast<NodeType*>(mfree[n].head());
+            Node* previous = nullptr;
+            Node* node     = m_free[n].head();
 
             while (node) {
                 if (reinterpret_cast<uintptr_t>(node) == buddy) break;
@@ -94,62 +95,61 @@ class BuddyAllocator {
 
             if (!node) break;
 
-            if (previous) {
+            if (previous)
                 previous->next = node->next;
-            } else {
-                mfree[n].remove();
-            }
+            else
+                m_free[n].remove();
 
             if (buddy < addr) addr = buddy;
             ++n;
         }
-        mfree[n].insert(reinterpret_cast<NodeType*>(addr));
+        m_free[n].insert(reinterpret_cast<Node*>(addr));
     };
 
    private:
-    Base mfree[MAX + 1];
+    Base m_free[MAX + 1];
 };
 
 /* ----------------------------------- O L D -----------------------------------*/
 
 template <typename T>
-struct Element {
+struct _Element {
     T value;
     unsigned long long rank;
-    Element* next = nullptr;
+    _Element* next = nullptr;
 };
 
 template <typename T>
 struct LinkedList {
-    using Node = Element<T>;
+    using Element = _Element<T>;
 
-    Node* mhead = nullptr;
-    Node* _tail = nullptr;
+    Element* m_head = nullptr;
+    Element* _tail  = nullptr;
 
-    bool empty() const { return mhead == nullptr; }
+    bool empty() const { return m_head == nullptr; }
 
-    void push_front(Node* e) {
-        e->next = mhead;
-        mhead   = e;
+    void push_front(Element* e) {
+        e->next = m_head;
+        m_head  = e;
         if (!_tail) _tail = e;
     }
 
-    void push_back(Node* e) {
+    void push_back(Element* e) {
         e->next = nullptr;
-        if (!mhead) {
-            mhead = _tail = e;
+        if (!m_head) {
+            m_head = _tail = e;
         } else {
             _tail->next = e;
             _tail       = e;
         }
     }
 
-    void push_sorted(Node* e) {
+    void push_sorted(Element* e) {
         e->next = nullptr;
-        if (!mhead || e->rank < mhead->rank) {
+        if (!m_head || e->rank < m_head->rank) {
             push_front(e);
         } else {
-            Node* current = mhead;
+            Element* current = m_head;
             while (current->next && e->rank >= current->next->rank) {
                 current = current->next;
             }
@@ -159,43 +159,43 @@ struct LinkedList {
         }
     }
 
-    Node* remove_front() {
-        if (!mhead) return nullptr;
-        Node* e = mhead;
-        mhead   = e->next;
-        if (!mhead) _tail = nullptr;
+    Element* remove_front() {
+        if (!m_head) return nullptr;
+        Element* e = m_head;
+        m_head     = e->next;
+        if (!m_head) _tail = nullptr;
         e->next = nullptr;
         return e;
     }
 
-    Node* remove_back() {
-        if (!mhead) return nullptr;
-        if (mhead == _tail) {
-            Node* e = mhead;
-            mhead = _tail = nullptr;
+    Element* remove_back() {
+        if (!m_head) return nullptr;
+        if (m_head == _tail) {
+            Element* e = m_head;
+            m_head = _tail = nullptr;
             return e;
         }
-        Node* current = mhead;
+        Element* current = m_head;
         while (current->next != _tail) {
             current = current->next;
         }
-        Node* e     = _tail;
+        Element* e  = _tail;
         _tail       = current;
         _tail->next = nullptr;
         return e;
     }
 
-    void remove(Node* e) {
-        if (!mhead) return;
-        Node* current  = mhead;
-        Node* previous = nullptr;
+    void remove(Element* e) {
+        if (!m_head) return;
+        Element* current  = m_head;
+        Element* previous = nullptr;
         while (current && current != e) {
             previous = current;
             current  = current->next;
         }
         if (!current) return;
-        if (current == mhead) {
-            mhead = current->next;
+        if (current == m_head) {
+            m_head = current->next;
         } else {
             previous->next = current->next;
         }
@@ -203,7 +203,7 @@ struct LinkedList {
             _tail = previous;
         }
         e->next = nullptr;
-        if (!mhead) _tail = nullptr;
+        if (!m_head) _tail = nullptr;
     }
 };
 
@@ -211,7 +211,7 @@ template <typename T>
 struct FIFO : private LinkedList<T> {
     using LinkedList<T>::empty;
     using LinkedList<T>::remove;
-    using Node = typename LinkedList<T>::Node;
+    using Node = typename LinkedList<T>::Element;
 
     void insert(Node* value) { LinkedList<T>::push_back(value); }
     Node* next() { return LinkedList<T>::remove_front(); }
@@ -221,7 +221,7 @@ template <typename T>
 struct POFO : private LinkedList<T> {
     using LinkedList<T>::empty;
     using LinkedList<T>::remove;
-    using Node = typename LinkedList<T>::Node;
+    using Node = typename LinkedList<T>::Element;
 
     void insert(Node* value) { LinkedList<T>::push_sorted(value); }
     Node* next() { return LinkedList<T>::remove_front(); }

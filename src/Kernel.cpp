@@ -16,7 +16,7 @@ namespace Kernel {
             TRACE(__PRETTY_FUNCTION__, "{");
             TRACE("\n");
             Memory::init();
-            Task::init();
+            // Task::init();
             booting = false;
         }
         while (booting);
@@ -40,12 +40,4 @@ namespace Kernel {
 extern "C" __attribute__((naked, section(".boot"))) void kboot() {
     Machine::CPU::setup();
     Machine::CPU::init();
-}
-
-extern "C" void *memset(void *s, int c, unsigned long n) {
-    unsigned char *p = static_cast<unsigned char *>(s);
-    while (n-- > 0) {
-        *p++ = static_cast<unsigned char>(c);
-    }
-    return s;
 }

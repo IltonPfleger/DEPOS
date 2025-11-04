@@ -40,8 +40,8 @@ class Thread {
     volatile State state;
     Thread *volatile joining;
     Criterion criterion;
-    Element link;
     Queue *waiting;
+    Queue::Node link;
 };
 
 // struct RT_Thread : Thread {
