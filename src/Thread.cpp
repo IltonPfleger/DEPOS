@@ -38,11 +38,11 @@ Thread::Thread(Function f, Argument a, Criterion c)
       state(State::READY),
       joining(0),
       criterion(c),
-      link(Element(this, c.priority())),
-      waiting(0) {
+      waiting(0),
+      link(Element(this, c.priority())) {
     if constexpr (Traits::System::MULTITASK) {
-        task = new Task();
-        task->attach(stack);
+        // task = new Task();
+        // task->attach(stack);
     }
     _lock.lock();
     _scheduler.push(&link);

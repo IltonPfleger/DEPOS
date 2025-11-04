@@ -12,7 +12,7 @@ class Memory {
     static void kfree(void*);
 
    private:
-    static inline Buddy* m_buddy;
+    static inline Buddy m_buddy;
 };
 
 void* operator new(unsigned long, void*);

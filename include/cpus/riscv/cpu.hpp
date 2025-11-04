@@ -10,7 +10,7 @@ namespace Kernel {
     void init();
 }
 
-__attribute__((aligned(16))) static inline char stack[Traits::Machine::CPUS * Traits::Memory::Page::SIZE];
+static inline char stack[Traits::Machine::CPUS * Traits::Memory::Page::SIZE];
 
 class RISCV {
    public:

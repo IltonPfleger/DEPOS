@@ -30,7 +30,9 @@ class SV39_MMU {
 
        public:
         bool map(uintptr_t, uintptr_t, Flags = (D | A | R | W | X | V));
-        PageTable() : entries({0}) {}
+        PageTable() {
+            for (auto& e : entries) e = 0;
+        }
 
        private:
         alignas(4096) uintptr_t entries[512];
