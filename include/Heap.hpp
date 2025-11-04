@@ -23,7 +23,6 @@ class Heap {
 };
 
 void *operator new(unsigned long);
-void *operator new(unsigned long, void *);
 void *operator new(unsigned long, Heap &);
 // void *operator new[](unsigned long, Heap *);
 //  void operator delete(void *, unsigned long);

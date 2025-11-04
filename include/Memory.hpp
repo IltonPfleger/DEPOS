@@ -4,18 +4,15 @@
 #include <Traits.hpp>
 
 class Memory {
-    using PageList = LIFO<void>;
-    using Page     = PageList::NodeType;
+    using Buddy = BuddyAllocator<Traits::Memory::RAM_BASE, Traits::Memory::Page::ORDER>;
 
    public:
     static void init();
-    static void *kmalloc();
-    static void kfree(void *);
+    static void* kmalloc();
+    static void kfree(void*);
 
    private:
-    static inline PageList pages;
+    static inline Buddy* m_buddy;
 };
 
-// void *operator new(unsigned long, void *);
-// void *operator new(unsigned long, Memory::Role);
-// void operator delete(void *, unsigned long);
+void* operator new(unsigned long, void*);
