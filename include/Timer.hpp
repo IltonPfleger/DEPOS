@@ -1,7 +1,6 @@
 #pragma once
 #include <Alarm.hpp>
 #include <Machine.hpp>
-#include <Memory.hpp>
 #include <Traits.hpp>
 
 namespace Timer {

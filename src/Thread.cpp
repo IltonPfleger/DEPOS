@@ -1,9 +1,9 @@
 #include <Alarm.hpp>
-#include <Heap.hpp>
 #include <IO/Debug.hpp>
-#include <Memory.hpp>
 #include <Spin.hpp>
 #include <Thread.hpp>
+#include <memory/Heap.hpp>
+#include <memory/Memory.hpp>
 
 extern int main(void *);
 static volatile int _count = 0;

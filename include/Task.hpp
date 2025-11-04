@@ -1,8 +1,8 @@
 #pragma once
 
 #include <AddressSpace.hpp>
-#include <Heap.hpp>
 #include <IO/Console.hpp>
+#include <memory/Heap.hpp>
 
 extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
