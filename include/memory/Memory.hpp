@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Lists.hpp>
+#include <memory/Buddy.hpp>
 #include <Traits.hpp>
 
 class Memory {
-    using Buddy = BuddyAllocator<Traits::Memory::RAM_BASE, Traits::Memory::Page::ORDER>;
+    using Buddy = BuddyAllocator<Traits::Memory::Page::ORDER>;
 
    public:
     static void init();

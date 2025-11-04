@@ -1,8 +1,8 @@
 #include <IO/Debug.hpp>
 #include <Machine.hpp>
-#include <Memory.hpp>
 #include <Thread.hpp>
 #include <Timer.hpp>
+#include <memory/Memory.hpp>
 
 static volatile bool booting  = true;
 static volatile bool starting = true;

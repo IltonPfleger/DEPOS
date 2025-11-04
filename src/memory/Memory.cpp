@@ -1,7 +1,7 @@
 #include <ELF.hpp>
 #include <IO/Debug.hpp>
-#include <Memory.hpp>
 #include <Spin.hpp>
+#include <memory/Memory.hpp>
 
 extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];

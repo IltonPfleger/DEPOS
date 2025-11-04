@@ -1,8 +1,8 @@
-#include <Heap.hpp>
 #include <IO/Debug.hpp>
-#include <Memory.hpp>
 #include <Spin.hpp>
 #include <Thread.hpp>
+#include <memory/Heap.hpp>
+#include <memory/Memory.hpp>
 
 // static Spin _lock;
 
