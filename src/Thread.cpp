@@ -4,6 +4,7 @@
 #include <Thread.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
+#include <memory/Segment.hpp>
 
 extern int main(void *);
 static volatile int _count = 0;
@@ -33,8 +34,8 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : stack(static_cast<char *>(Memory::kmalloc())),
-      context(new(stack + Traits::Memory::Page::SIZE - sizeof(CPU::Context)) CPU::Context(f, a, exit, this)),
+    : stack(Segment(Traits::Memory::Page::SIZE)),
+      context(new(stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, exit, this)),
       state(State::READY),
       joining(0),
       criterion(c),
@@ -44,6 +45,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
         // task = new Task();
         // task->attach(stack);
     }
+    // Console::println("%d\n", sizeof(Segment));
     _lock.lock();
     _scheduler.push(&link);
     _count = _count + 1;

@@ -4,6 +4,7 @@
 #include <Scheduler.hpp>
 #include <Task.hpp>
 #include <Traits.hpp>
+#include <memory/Segment.hpp>
 
 class Thread {
     friend void *operator new(unsigned long bytes, Heap &heap);
@@ -35,7 +36,7 @@ class Thread {
 
    private:
     Task *task;
-    char *stack;
+    Segment stack;
     CPU::Context *volatile context;
     volatile State state;
     Thread *volatile joining;

@@ -20,7 +20,7 @@ void Memory::init() {
     uintptr_t c;
     for (c = RamBase; c + PageSize < RamEnd; c += PageSize) {
         if (c >= KernelStart && c < KernelEnd) continue;
-        m_buddy.insert(reinterpret_cast<void *>(c), PageSize);
+        buddy_.insert(reinterpret_cast<void *>(c), PageSize);
     }
 
     TRACE("KernelStart=", KernelStart, ", ");
@@ -29,21 +29,21 @@ void Memory::init() {
     TRACE("}\n");
 }
 
-void *Memory::kmalloc() {
+void *Memory::kmalloc(size_t size) {
     TRACE(__PRETTY_FUNCTION__, "{");
     _lock.lock();
-    void *page = m_buddy.remove(Traits::Memory::Page::SIZE);
+    void *page = buddy_.remove(size);
     _lock.unlock();
     ERROR(!page, "Out of pages}");
     TRACE("return=", page, "}\n");
     return page;
 }
 
-void Memory::kfree(void *addr) {
-    TRACE(__PRETTY_FUNCTION__, "{", "a0=", addr);
+void Memory::kfree(void *addr, size_t size) {
+    TRACE(__PRETTY_FUNCTION__, "{", "a0=", addr, ",a1=", size);
     ERROR(addr == nullptr, "}\n");
     _lock.lock();
-    m_buddy.insert(addr, Traits::Memory::Page::SIZE);
+    buddy_.insert(addr, size);
     _lock.unlock();
     TRACE("}\n");
 }

@@ -3,6 +3,11 @@
 #include <Types.hpp>
 
 class SV39_MMU {
+   private:
+    static constexpr uintptr_t Mode       = 8UL << 60;
+    static constexpr size_t PageSize      = 4096;
+    static constexpr size_t EntriesNumber = 512;
+
    public:
     typedef uintptr_t Flags;
     enum {
@@ -35,14 +40,8 @@ class SV39_MMU {
         }
 
        private:
-        alignas(4096) uintptr_t entries[512];
+        alignas(PageSize) uintptr_t entries[EntriesNumber];
     };
 
-    static PageTable* base();
-    // static void init();
     static void set(uintptr_t);
-    static uintptr_t attach(uintptr_t);
-
-   private:
-    static constexpr const uintptr_t MODE = 8UL << 60;
 };

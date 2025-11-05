@@ -10,8 +10,6 @@ namespace Kernel {
     void init();
 }
 
-static inline char stack[Traits::Machine::CPUS * Traits::Memory::Page::SIZE];
-
 class RISCV {
    public:
     typedef uintmax_t Register;
@@ -82,7 +80,15 @@ class RISCV {
         asm volatile("csrc %0, %1" ::"i"(R), "r"(r));
     }
 
+    static auto core() {
+        unsigned int tp;
+        asm volatile("mv %0, tp" : "=r"(tp));
+        return tp;
+    }
+
     static void *thread() {
+        // static void *running[Traits::Machine::CPUS];
+        // return running[core()];
         void *gp;
         asm volatile("mv %0, gp" : "=r"(gp));
         return gp;
@@ -90,23 +96,18 @@ class RISCV {
 
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
 
-    inline static auto core() {
-        unsigned int tp;
-        asm volatile("mv %0, tp" : "=r"(tp));
-        return tp;
-    }
-
     __attribute__((naked)) static void setup() {
+        // Use the end of the last pages as boot stack
         __asm__ volatile(
             "csrr tp, mhartid\n"
             "csrr t0, mhartid\n"
             "mul t0, t0, %1\n"
-            "add t0, t0, %0\n"
-            "add sp, t0, %1\n"
+            "mv t1, %0\n"
+            "sub sp, t1, t0\n"
             "mv gp, zero\n"
             "ret"
             :
-            : "r"(stack), "r"(Traits::Memory::Page::SIZE));
+            : "r"(Traits::Memory::RAM_END), "r"(Traits::Memory::Page::SIZE));
     }
 
     static void init() {
@@ -120,7 +121,7 @@ class RISCV {
 
         if constexpr (Traits::Timer::Enable) {
             csrs<Machine::IE>(Machine::TI);
-            csrs<Machine::IE>(Supervisor::TI);
+            csrs<Supervisor::IE>(Supervisor::TI);
         }
 
         if constexpr (Meta::SAME<Mode, Supervisor>::Result) {
