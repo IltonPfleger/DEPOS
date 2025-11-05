@@ -1,4 +1,5 @@
 #pragma once
+#include <IO/Debug.hpp>
 #include <Lists.hpp>
 
 template <size_t MAX>
@@ -31,7 +32,6 @@ class BuddyAllocator {
         }
         return node;
     }
-
 
     void insert(void* ptr, size_t size) {
         size_t n       = level(size);

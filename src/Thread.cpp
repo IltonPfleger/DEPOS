@@ -4,6 +4,7 @@
 #include <Thread.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
+#include <memory/Segment.hpp>
 
 extern int main(void *);
 static volatile int _count = 0;
@@ -110,6 +111,7 @@ void Thread::exit() {
 
 void Thread::init() {
     TRACE(__PRETTY_FUNCTION__, "{\n");
+    Memory::kfree(nullptr);
     for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     // new (Heap::SYSTEM) Thread(main, 0, Criterion::NORMAL);
     TRACE("}\n");
