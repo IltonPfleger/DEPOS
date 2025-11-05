@@ -46,7 +46,7 @@ struct Console {
             return *this;
         }
 
-        inline Stream& operator<<(void* pointer) {
+        inline Stream& operator<<(const void* pointer) {
             auto addr = reinterpret_cast<unsigned long>(pointer);
             Console::put('0');
             Console::put('x');
@@ -62,11 +62,9 @@ struct Console {
         }
     };
 
-    static void println() { Console::out << Stream::endl; }
     static void println(const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
-
         while (*fmt) {
             if (*fmt == '%') {
                 ++fmt;

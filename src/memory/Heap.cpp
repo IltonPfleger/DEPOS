@@ -85,7 +85,6 @@
 // }
 
 void *operator new(unsigned long bytes, Heap &heap) {
-    (void)bytes;
     (void)heap;
     // void *addr = Memory::kmalloc();
     // if constexpr (Traits::System::MULTITASK) {
@@ -96,7 +95,7 @@ void *operator new(unsigned long bytes, Heap &heap) {
 
     //(void)bytes;
     //(void)heap;
-    void *addr = Memory::kmalloc();
+    void *addr = Memory::kmalloc(bytes);
     // Machine::MMU::attach(reinterpret_cast<uintptr_t>(addr));
     return addr;
     // TRACE("P:%p\n", addr);
