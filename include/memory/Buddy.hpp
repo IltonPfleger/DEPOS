@@ -32,6 +32,7 @@ class BuddyAllocator {
         return node;
     }
 
+
     void insert(void* ptr, size_t size) {
         size_t n       = level(size);
         uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);

@@ -2,7 +2,7 @@ include Makedefs.mk
 
 BUILD := build
 TARGET := $(BUILD)/DEPOS
-LINKER=linker.ld
+LINKER=$(BUILD)/linker.ld
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
