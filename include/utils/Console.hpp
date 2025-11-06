@@ -62,6 +62,12 @@ struct Console {
         }
     };
 
+    template <typename... Args>
+    static void cprintln(Args&&... args) {
+        bool first = true;
+        ((Console::out << (first ? (first = false, "") : ", ") << args), ...);
+    }
+
     static void println(const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
