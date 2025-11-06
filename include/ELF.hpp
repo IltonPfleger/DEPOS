@@ -33,17 +33,17 @@ class ELF64 {
     };
 
    public:
-    uint64_t entry() const { return mheader.main; }
+    uint64_t entry() const { return header_.main; }
 
     bool valid() const {
-        return mheader.ident[0] == 0x7F && mheader.ident[1] == 'E' && mheader.ident[2] == 'L' &&
-               mheader.ident[3] == 'F';
+        return header_.ident[0] == 0x7F && header_.ident[1] == 'E' && header_.ident[2] == 'L' &&
+               header_.ident[3] == 'F';
     }
 
     size_t size() const {
-        ProgramHeader* phdr = reinterpret_cast<ProgramHeader*>(reinterpret_cast<uintptr_t>(this) + mheader.phdroff);
+        ProgramHeader* phdr = reinterpret_cast<ProgramHeader*>(reinterpret_cast<uintptr_t>(this) + header_.phdroff);
         uint64_t max        = 0;
-        for (int i = 0; i < mheader.phdrn; i++) {
+        for (int i = 0; i < header_.phdrn; i++) {
             uint64_t end = phdr[i].offset + phdr[i].filesz;
             if (end > max) max = end;
         }
@@ -51,7 +51,7 @@ class ELF64 {
     }
 
    private:
-    Header mheader;
+    Header header_;
 };
 
 typedef Meta::TypeSelector<sizeof(void*) == 8, ELF64, void>::Result ELF;
