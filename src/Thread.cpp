@@ -28,7 +28,7 @@ int Thread::idle(void *) {
     }
 
     CPU::Interrupt::disable();
-    if (CPU::core() == Traits::Machine::BSP) TRACE("*** Shutdown! ***\n");
+    if (CPU::core() == Traits::Machine::BSP) Console::println("*** Shutdown! ***\n");
     for (;;);
     return 0;
 }
@@ -111,10 +111,9 @@ void Thread::exit() {
 }
 
 void Thread::init() {
-    TRACE(__PRETTY_FUNCTION__, "{\n");
-    for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+    TraceIn() for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     // new (Heap::SYSTEM) Thread(main, 0, Criterion::NORMAL);
-    TRACE("}\n");
+    TraceOut()
 }
 
 void Thread::run() {

@@ -15,35 +15,31 @@ void Memory::init() {
     uintptr_t KernelEnd         = reinterpret_cast<uintptr_t>(const_cast<char *>(__KERNEL_END__));
     KernelEnd                   = (KernelEnd + (PageSize - 1)) & ~(PageSize - 1);
     uintptr_t KernelSize        = KernelEnd - KernelStart;
-    TRACE(__PRETTY_FUNCTION__, "{");
+    TraceIn(KernelStart, KernelEnd, KernelSize);
 
     uintptr_t c;
     for (c = RamBase; c + PageSize < RamEnd; c += PageSize) {
         if (c >= KernelStart && c < KernelEnd) continue;
         buddy_.insert(reinterpret_cast<void *>(c), PageSize);
     }
-
-    TRACE("KernelStart=", KernelStart, ", ");
-    TRACE("KernelEnd=", KernelEnd, ", ");
-    TRACE("KernelSize=", KernelSize);
-    TRACE("}\n");
+    TraceOut();
 }
 
 void *Memory::kmalloc(size_t size) {
-    TRACE(__PRETTY_FUNCTION__, "{");
+    TraceIn(size);
     _lock.lock();
     void *page = buddy_.remove(size);
     _lock.unlock();
     ERROR(!page, "Out of pages}");
-    TRACE("return=", page, "}\n");
+    TraceOut(page);
     return page;
 }
 
 void Memory::kfree(void *addr, size_t size) {
-    TRACE(__PRETTY_FUNCTION__, "{", "a0=", addr, ",a1=", size);
+    TraceIn(addr, size);
     ERROR(addr == nullptr, "}\n");
     _lock.lock();
     buddy_.insert(addr, size);
     _lock.unlock();
-    TRACE("}\n");
+    TraceOut();
 }
