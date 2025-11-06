@@ -8,11 +8,12 @@ template <typename T>
 struct RR {
     static constexpr bool Timed = true;
     using Rank                  = uintmax_t;
-    Rank rank;
+    Rank rank_;
 
     enum : Rank { NORMAL, IDLE = ~0ULL };
-    RR(Rank priority = NORMAL, ...) : rank(priority) {}
-    Rank priority() const { return rank; }
+    RR(Rank priority = NORMAL, ...) : rank_(priority) {}
+    Rank operator()() { return rank_; }
+    // Rank priority() const { return rank_; }
 };
 
 // template <typename T>

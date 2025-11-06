@@ -40,7 +40,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
       joining(0),
       criterion(c),
       waiting(0),
-      link(Element(this, c.priority())) {
+      link(Element(this, c())) {
     if constexpr (Traits::System::MULTITASK) {
         // task = new Task();
         // task->attach(stack);
