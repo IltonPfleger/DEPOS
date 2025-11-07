@@ -110,7 +110,13 @@ void Thread::exit() {
 }
 
 void Thread::init() {
+<<<<<<< HEAD
     TraceIn() for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+=======
+    TRACE(__PRETTY_FUNCTION__, "{\n");
+    Memory::kfree(nullptr);
+    for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+>>>>>>> refs/remotes/origin/main
     // new (Heap::SYSTEM) Thread(main, 0, Criterion::NORMAL);
     TraceOut()
 }
