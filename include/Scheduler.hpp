@@ -9,43 +9,49 @@ struct Head {};
 template <>
 struct Head<Thread> {
     static constexpr unsigned long N = Traits::Machine::CPUS;
-    static auto get() { return Machine::CPU::core(); }
+    static auto id() { return Machine::CPU::core(); }
 };
 
-class RR {
+class Policy {
+   public:
     using Rank = unsigned long;
-
-   public:
-    template <typename T>
-    using Queue                 = POFO<T>;
-    static constexpr bool Timed = true;
-
-   public:
-    enum : Rank { NORMAL, IDLE = ~0ULL };
-    RR(Rank r = NORMAL, ...) : rank_(r) {}
+    Policy(Rank r, ...) : rank_(r) {}
     Rank operator()() const { return rank_; }
 
    private:
     Rank rank_;
 };
 
-template <typename T>
-class Scheduler : private Traits::Scheduler<T>::Criterion::template Queue<T *> {
+class RR : public Policy {
    public:
-    using Criterion = Traits::Scheduler<T>::Criterion;
+    static constexpr bool Timed = true;
+    template <typename T>
+    using Queue = POFO<T>;
+    enum : Rank { NORMAL, IDLE = ~0ULL };
+    RR(Rank r = NORMAL, ...) : Policy(r) {}
+};
+
+template <typename T>
+class Scheduler : private Traits::Scheduler<T>::Criterion::template Queue<T *>, public Head<T> {
+   public:
+    using Criterion = typename Traits::Scheduler<T>::Criterion;
     using Queue     = typename Criterion::template Queue<T *>;
-    using Node      = Queue::Node;
+    using Node      = typename Queue::Node;
     using Queue::empty;
     using Queue::insert;
 
     T *pop() {
         auto e = this->next();
         ERROR(!e);
+        heads_[this->id()] = e;
         return e->value;
     }
 
-    T *current() { return heads_[Head<T>::get()]; }
+    T *current() {
+        ERROR(!heads_[this->id()]);
+        return heads_[this->id()]->value;
+    }
 
    private:
-    T *heads_[Head<Thread>::N];
+    Node *heads_[Head<T>::N];
 };
