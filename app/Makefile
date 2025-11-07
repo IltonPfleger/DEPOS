@@ -1,6 +1,5 @@
 include ../Makedefs.mk
 
-BUILD := build
 TARGET := $(BUILD)/$(APPLICATION).elf
 APPLICATION ?=
 
@@ -10,11 +9,14 @@ DEPS := $(OBJS:.o=.d)
 
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $@ -e main
+	#$(CC) -o $@ $(OBJS) -e main
+	#$(LD) -r --just-symbols ../$(KERNEL).elf $(OBJS) -o $@
+	$(CC) -nostdlib -Wl,-r,--just-symbols=../$(KERNEL).elf $(OBJS) -o $@
+	#$(LD) -r ../$(KERNEL).elf $(OBJS) -o $@
 
 $(BUILD)/$(APPLICATION)/%.o: ./$(APPLICATION)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -I../include -fPIC -MMD -MP -c $< -o $@
+	$(CC) $(CFLAGS) -I../include -MMD -MP -c $< -o $@
 
 -include $(DEPS)
 

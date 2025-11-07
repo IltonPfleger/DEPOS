@@ -1,4 +1,3 @@
-#include <ELF.hpp>
 #include <IO/Debug.hpp>
 #include <Spin.hpp>
 #include <memory/Memory.hpp>
@@ -16,18 +15,9 @@ void Memory::init() {
     uintptr_t KernelSize        = KernelEnd - KernelStart;
     TraceIn(KernelStart, KernelEnd, KernelSize);
 
-    uintptr_t ApplicationStart = KernelEnd;
-    uintptr_t ApplicationEnd   = KernelEnd;
-    for (;;) {
-        ELF *elf = reinterpret_cast<ELF *>(ApplicationEnd);
-        if (!elf->valid()) break;
-        ApplicationEnd += elf->size();
-    };
-
     uintptr_t c;
     for (c = RamEnd - PageSize; c > RamBase; c -= PageSize) {
         if (c >= KernelStart && c < KernelEnd) continue;
-        if (c >= ApplicationStart && c < ApplicationEnd) continue;
         buddy_.insert(reinterpret_cast<void *>(c), PageSize);
     }
 

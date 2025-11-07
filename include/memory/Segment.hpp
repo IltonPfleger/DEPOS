@@ -1,5 +1,4 @@
 #pragma once
-#include <IO/Console.hpp>
 #include <memory/Memory.hpp>
 
 class Segment {

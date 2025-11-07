@@ -21,9 +21,7 @@ int main() {
 EOL
 
     g++ -x c++ -I"$(pwd)" "$INPUT" -o "$OUT"
-
     "$OUT"
-
     rm -f "$INPUT" "$OUT"
 }
 
@@ -31,7 +29,6 @@ EOL
 linker() {
     OUT="$1"
     BOOT_ADDR="$2"
-
     cat > "$OUT" <<EOL
 SECTIONS
 {
