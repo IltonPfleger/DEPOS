@@ -1,14 +1,14 @@
 // #include <Alarm.hpp>
-// #include <IO/Console.hpp>
+#include <utils/Console.hpp>
 // #include <Machine.hpp>
 // #include <Memory.hpp>
 // #include <Semaphore.hpp>
-// #include <Thread.hpp>
+#include <Thread.hpp>
 
-// static constexpr int N          = 5;
+static constexpr unsigned long N = 5;
+static Thread *threads[N];
 // static constexpr int ITERATIONS = 5;
 //
-// static Thread *threads[N];
 // static Semaphore mutex;
 //
 // int thread_function(void *arg) {
@@ -26,12 +26,12 @@
 // }
 
 int main() {
-    // Console::out << "Application: \n";
+    Console::out << "Application: \n";
 
     // mutex.p();
-    // for (int i = 0; i < N; i++) {
-    //     threads[i] = new Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);
-    // }
+    for (unsigned long i = 0; i < N; i++) {
+        threads[i] = new Thread(nullptr, (void *)(long long)i, Thread::Criterion::NORMAL);
+    }
     // mutex.v();
 
     // for (int i = 0; i < N; i++) Thread::join(*threads[i]);

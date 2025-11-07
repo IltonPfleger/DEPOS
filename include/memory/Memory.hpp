@@ -15,3 +15,5 @@ class Memory {
    private:
     static inline Buddy buddy_;
 };
+
+void *operator new(unsigned long, void *);

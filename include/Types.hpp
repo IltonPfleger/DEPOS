@@ -10,6 +10,7 @@ typedef Meta::TypeSelector<sizeof(void *) == 8, long long, int>::Result intptr_t
 typedef Meta::TypeSelector<sizeof(void *) == 8, unsigned long long, unsigned>::Result uintptr_t;
 typedef Meta::TypeSelector<sizeof(void *) == 8, unsigned long long, unsigned>::Result uintmax_t;
 typedef Meta::TypeSelector<sizeof(void *) == 8, unsigned long long, void>::Result uint64_t;
+typedef Meta::TypeSelector<sizeof(void *) == 8, long long, void>::Result int64_t;
 typedef uint32_t size_t;
 typedef uintmax_t Microsecond;
 typedef uintmax_t Tick;

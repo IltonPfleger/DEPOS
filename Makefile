@@ -1,26 +1,25 @@
 include Makedefs.mk
 
-BUILD := build
-TARGET := $(BUILD)/DEPOS
-LINKER=$(BUILD)/linker.ld
+TARGET := $(KERNEL)
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 
 CPUS=$(shell ./Meta get $(TRAITS) Traits::Machine::CPUS)
 MACHINE=$(shell ./Meta get $(TRAITS) Traits::Machine::NAME)
-BOOT_ADDR=$(shell ./Meta get $(TRAITS) Traits::System::ADDR)
-APP_ADDR=$(shell ./Meta get $(TRAITS) Traits::Application::ADDR)
+MEMORY=$(shell ./Meta get $(TRAITS) Traits::Memory::SIZE)
+SYSTEM=$(shell ./Meta get $(TRAITS) Traits::System::ADDR)
 
 run: $(TARGET)
 	(cd app && make APPLICATION=$(APPLICATION))
-	@( \
-		TMP=$$(mktemp); \
-		cat $(TARGET) app/build/$(APPLICATION).elf > $$TMP; \
-		$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m 1024 -device loader,file=$$TMP,addr=$(BOOT_ADDR),force-raw=on\
-	)
-	#$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m 1024 -device loader,file=$(TARGET),addr=$(BOOT_ADDR),force-raw=on
-	#$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024
+	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY)b -device loader,file=$(TARGET),addr=$(SYSTEM),force-raw=on
+
+#@( \
+	#	TMP=$$(mktemp); \
+	#	cat $(TARGET) app/build/$(APPLICATION).elf > $$TMP; \
+	#	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m 1024 -device loader,file=$$TMP,addr=$(BOOT_ADDR),force-raw=on\
+	#)
+	
 
 debug: $(TARGET)
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -S -gdb tcp::1234
@@ -36,11 +35,13 @@ gdb:
 		-ex "file $(TARGET).elf"
 
 $(TARGET): $(OBJS)
+	LINKER=$(BUILD)/linker.ld
 	@touch $(LINKER)
 	@./Meta linker $LINKER $(BOOT_ADDR)
 	@$(LD) -T $LINKER -o $@.elf $(OBJS)
 	@rm -f $LINKER
-	@$(OBJCOPY) -O binary --set-section-flags .bss=alloc,load,contents $@.elf $(TARGET)
+	@$(OBJCOPY) -O binary $@.elf $(TARGET)
+	#@$(OBJCOPY) -O binary --set-section-flags .bss=alloc,load,contents $@.elf $(TARGET)
 
 $(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)
