@@ -1,3 +1,4 @@
+#include <Application.hpp>
 #include <IO/Debug.hpp>
 #include <Machine.hpp>
 #include <Thread.hpp>
@@ -14,14 +15,14 @@ namespace Kernel {
             Console::init();
             TraceIn();
             Memory::init();
+            Application::init();
             // Task::init();
             booting = false;
         }
         while (booting);
         if (BSP) {
             Thread::init();
-            TraceOut()
-            starting = false;
+            TraceOut() starting = false;
         }
         while (starting);
         if (Machine::CPU::core() < Traits::Machine::CPUS) {

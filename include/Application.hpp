@@ -2,10 +2,11 @@
 
 #include <ELF.hpp>
 #include <Traits.hpp>
+#include <utils/Console.hpp>
 
 extern "C" const char __KERNEL_END__[];
 
-class Applications {
+class Application {
    public:
     static uintptr_t start() { return reinterpret_cast<uintptr_t>(const_cast<char*>(__KERNEL_END__)); }
     static uintptr_t end() {
@@ -17,10 +18,13 @@ class Applications {
     };
 
     static void init() {
-        ELF* elf = reinterpret_cast<ELF*>(start());
-        while (elf->valid()) {
-            size_t size = elf->size();
-            elf         = reinterpret_cast<ELF*>(reinterpret_cast<uintptr_t>(elf) + size);
+        uintptr_t i = start();
+        for (;;) {
+            ELF* elf = reinterpret_cast<ELF*>(i);
+            if (!elf->valid()) break;
+
+            Console::out << "OI\n";
+            i += elf->size();
         }
     };
 };

@@ -37,10 +37,7 @@ void MIC::handler(void* args) {
 void MIC::error(intmax_t mcause) {
     auto mepc  = reinterpret_cast<void*>(RISCV::csrr<RISCV::Machine::EPC>());
     auto mtval = reinterpret_cast<void*>(RISCV::csrr<RISCV::Machine::TVAL>());
-    ERROR(true,
-          "Ohh it's a Trap!\n"
-          "mcause: ",
-          mcause, "\nmepc: ", mepc, "\nmtval: ", mtval, "\n");
+    ERROR(true, "Ohh it's a Trap!\nmcause: %d\nmepc: %p\nmtval: %p", mcause, mepc, mtval);
 }
 
 void SIC::entry() {
