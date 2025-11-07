@@ -86,14 +86,6 @@ class RISCV {
         return tp;
     }
 
-    static void *thread() {
-        // static void *running[Traits::Machine::CPUS];
-        // return running[core()];
-        void *gp;
-        asm volatile("mv %0, gp" : "=r"(gp));
-        return gp;
-    }
-
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
 
     __attribute__((naked)) static void setup() {
@@ -104,7 +96,6 @@ class RISCV {
             "mul t0, t0, %1\n"
             "mv t1, %0\n"
             "sub sp, t1, t0\n"
-            "mv gp, zero\n"
             "ret"
             :
             : "r"(Traits::Memory::RAM_END), "r"(Traits::Memory::Page::SIZE));

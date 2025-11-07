@@ -5,14 +5,15 @@
 #include <Traits.hpp>
 #include <utils/Console.hpp>
 
-#define ERROR(expr, ...)                                                              \
-    if constexpr (Traits::Debug::ERROR) {                                             \
-        if (expr) {                                                                   \
-            Machine::CPU::Interrupt::disable();                                       \
-            Console::println("<%d> %s\n", Machine::CPU::core(), __PRETTY_FUNCTION__); \
-            __VA_OPT__(Console::println(__VA_ARGS__));                                \
-            for (;;);                                                                 \
-        }                                                                             \
+#define ERROR(expr, ...)                                                                      \
+    if constexpr (Traits::Debug::ERROR) {                                                     \
+        if (expr) {                                                                           \
+            Machine::CPU::Interrupt::disable();                                               \
+            Console::println("<%d> [ERROR] %s\n", Machine::CPU::core(), __PRETTY_FUNCTION__); \
+            __VA_OPT__(Console::println(__VA_ARGS__));                                        \
+            __VA_OPT__(Console::println("\n"));                                               \
+            for (;;);                                                                         \
+        }                                                                                     \
     }
 
 constexpr const char* TrimPrettyFunction(const char* func) {
@@ -37,6 +38,5 @@ constexpr const char* TrimPrettyFunction(const char* func) {
     if constexpr (Traits::Debug::TRACE) {        \
         __VA_OPT__(Console::println("return=")); \
         __VA_OPT__(Console::out << __VA_ARGS__); \
-        __VA_OPT__(Console::out << "\n");        \
         Console::println("}\n");                 \
     }

@@ -6,12 +6,11 @@
 #include <memory/Memory.hpp>
 #include <memory/Segment.hpp>
 
-extern int main(void *);
 static volatile int _count = 0;
 static Scheduler<Thread> _scheduler;
 static Spin _lock;
 
-Thread *Thread::running() { return reinterpret_cast<Thread *>(CPU::thread()); }
+Thread *Thread::running() { return _scheduler.current(); }
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->state = State::RUNNING;
@@ -47,7 +46,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
     }
     // Console::println("%d\n", sizeof(Segment));
     _lock.lock();
-    _scheduler.push(&link);
+    _scheduler.insert(&link);
     _count = _count + 1;
     _lock.unlock();
 }
@@ -69,7 +68,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
 //
 //     if (joining) {
 //         joining->state = State::READY;
-//         _scheduler.push(&joining->link);
+//         _scheduler.insert(&joining->link);
 //     }
 //
 //     _lock.release();
@@ -102,7 +101,7 @@ void Thread::exit() {
 
     if (previous->joining) {
         previous->joining->state = State::READY;
-        _scheduler.push(&previous->joining->link);
+        _scheduler.insert(&previous->joining->link);
         previous->joining = 0;
     }
 
@@ -131,7 +130,7 @@ void Thread::reschedule() {
     previous->state = State::READY;
 
     _lock.acquire();
-    _scheduler.push(&previous->link);
+    _scheduler.insert(&previous->link);
     dispatch(previous, _scheduler.pop(), &_lock);
 }
 
@@ -161,7 +160,7 @@ void Thread::wakeup(Queue &waiting) {
     awake->value->waiting = nullptr;
 
     _lock.acquire();
-    _scheduler.push(awake);
+    _scheduler.insert(awake);
     _lock.release();
 }
 

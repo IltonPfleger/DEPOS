@@ -7,8 +7,8 @@
 #include <memory/Segment.hpp>
 
 class Thread {
-    friend void *operator new(unsigned long bytes, Heap &heap);
-    friend void *operator new(unsigned long);
+    // friend void *operator new(unsigned long bytes, Heap &heap);
+    // friend void *operator new(unsigned long);
 
    public:
     enum class State { RUNNING, READY, WAITING, FINISHED };

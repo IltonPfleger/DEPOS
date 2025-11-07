@@ -23,6 +23,7 @@ class BuddyAllocator {
             node = m_free[i].remove();
             if (node) break;
         }
+        if (!node) return nullptr;
         while (i > n) {
             i--;
             size_t half     = 1 << i;

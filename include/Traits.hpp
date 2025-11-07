@@ -1,7 +1,6 @@
 #pragma once
 
 struct Thread;
-template <typename T>
 struct RR;
 
 struct Traits {
@@ -55,5 +54,5 @@ struct Traits {
 template <>
 struct Traits::Scheduler<Thread> {
     static constexpr unsigned long Frequency = Traits::Timer::MHz / 10;
-    using Criterion                          = RR<Thread>;
+    using Criterion                          = RR;
 };

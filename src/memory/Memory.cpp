@@ -13,15 +13,24 @@ void Memory::init() {
     constexpr uintptr_t RamEnd  = Traits::Memory::RAM_END;
     uintptr_t KernelStart       = reinterpret_cast<uintptr_t>(const_cast<char *>(__KERNEL_START__));
     uintptr_t KernelEnd         = reinterpret_cast<uintptr_t>(const_cast<char *>(__KERNEL_END__));
-    KernelEnd                   = (KernelEnd + (PageSize - 1)) & ~(PageSize - 1);
     uintptr_t KernelSize        = KernelEnd - KernelStart;
     TraceIn(KernelStart, KernelEnd, KernelSize);
 
+    uintptr_t ApplicationStart = KernelEnd;
+    uintptr_t ApplicationEnd   = KernelEnd;
+    for (;;) {
+        ELF *elf = reinterpret_cast<ELF *>(ApplicationEnd);
+        if (!elf->valid()) break;
+        ApplicationEnd += elf->size();
+    };
+
     uintptr_t c;
-    for (c = RamBase; c + PageSize < RamEnd; c += PageSize) {
+    for (c = RamEnd - PageSize; c > RamBase; c -= PageSize) {
         if (c >= KernelStart && c < KernelEnd) continue;
+        if (c >= ApplicationStart && c < ApplicationEnd) continue;
         buddy_.insert(reinterpret_cast<void *>(c), PageSize);
     }
+
     TraceOut();
 }
 
@@ -30,7 +39,7 @@ void *Memory::kmalloc(size_t size) {
     _lock.lock();
     void *page = buddy_.remove(size);
     _lock.unlock();
-    ERROR(!page, "Out of pages}");
+    ERROR(!page, "Out of pages.");
     TraceOut(page);
     return page;
 }
