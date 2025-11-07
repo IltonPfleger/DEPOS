@@ -4,7 +4,8 @@
 #include <memory/Buddy.hpp>
 
 class Memory {
-    using Buddy = BuddyAllocator<Traits::Memory::Page::ORDER>;
+   private:
+    using Buddy = BuddyAllocator<Traits::Memory::ORDER>;
 
    public:
     static void init();
@@ -14,5 +15,3 @@ class Memory {
    private:
     static inline Buddy buddy_;
 };
-
-void* operator new(unsigned long, void*);

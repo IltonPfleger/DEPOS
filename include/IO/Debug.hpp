@@ -13,8 +13,7 @@
             __VA_OPT__(Console::println(__VA_ARGS__));                                        \
             __VA_OPT__(Console::println("\n"));                                               \
             for (;;);                                                                         \
-        }                                                                                     \
-    }
+        }
 
 constexpr const char* TrimPrettyFunction(const char* func) {
     static char buf[128];
