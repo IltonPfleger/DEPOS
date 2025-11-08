@@ -12,6 +12,7 @@ SYSTEM=$(shell ./Meta get $(TRAITS) Traits::System::ADDR)
 
 run: $(TARGET)
 	(cd app && make APPLICATION=$(APPLICATION))
+	 -Ttext=0x80000000
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY)b -device loader,file=$(TARGET),addr=$(SYSTEM),force-raw=on
 
 #@( \
@@ -34,13 +35,15 @@ gdb:
 		-ex "set confirm off"\
 		-ex "file $(TARGET).elf"
 
-$(TARGET): $(OBJS)
-	LINKER=$(BUILD)/linker.ld
-	@touch $(LINKER)
-	@./Meta linker $LINKER $(BOOT_ADDR)
-	@$(LD) -T $LINKER -o $@.elf $(OBJS)
-	@rm -f $LINKER
+$(TARGET) : $(TARGET).elf
 	@$(OBJCOPY) -O binary $@.elf $(TARGET)
+
+$(TARGET).elf: $(OBJS)
+	export LINKER=$(BUILD)/linker.ld touch $$LINKER
+	export LINKER=$(BUILD)/linker.ld ./Meta linker $$LINKER $(BOOT_ADDR)
+	export LINKER=$(BUILD)/linker.ld $(LD) -T $$LINKER -o $@.elf $(OBJS)
+	export LINKER=$(BUILD)/linker.ld rm -f $LINKER
+	#@$(OBJCOPY) -O binary $@.elf $(TARGET)
 	#@$(OBJCOPY) -O binary --set-section-flags .bss=alloc,load,contents $@.elf $(TARGET)
 
 $(BUILD)/%.o: src/%.cpp 

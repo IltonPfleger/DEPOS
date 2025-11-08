@@ -9,9 +9,9 @@ DEPS := $(OBJS:.o=.d)
 
 
 $(TARGET): $(OBJS)
+	$(LD) -r $(OBJS) -o $@
 	#$(CC) -o $@ $(OBJS) -e main
 	#$(LD) -r --just-symbols ../$(KERNEL).elf $(OBJS) -o $@
-	$(CC) -nostdlib -Wl,-r,--just-symbols=../$(KERNEL).elf $(OBJS) -o $@
 	#$(LD) -r ../$(KERNEL).elf $(OBJS) -o $@
 
 $(BUILD)/$(APPLICATION)/%.o: ./$(APPLICATION)/%.cpp
