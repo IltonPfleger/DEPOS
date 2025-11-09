@@ -35,11 +35,11 @@ struct Traits {
 
     struct System {
         static constexpr unsigned long ADDR = 0x80000000;
-        static constexpr int MULTITASK      = true;
+        static constexpr int MULTITASK      = false;
     };
 
     struct Application {
-        static constexpr unsigned long ADDR = System::ADDR + Memory::Page::SIZE * 10;
+        static constexpr unsigned long ADDR = Memory::RAM_BASE + (Memory::SIZE/2);
     };
 
     struct Debug {

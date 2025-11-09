@@ -3,25 +3,25 @@
 #include <memory/Memory.hpp>
 #include <memory/MemoryMap.hpp>
 
-extern "C" const char __KERNEL_START__[];
-extern "C" const char __KERNEL_END__[];
 static Spin _lock;
 
 void Memory::init() {
     constexpr size_t PageSize   = Traits::Memory::Page::SIZE;
     constexpr uintptr_t RamBase = Traits::Memory::RAM_BASE;
     constexpr uintptr_t RamEnd  = Traits::Memory::RAM_END;
-    uintptr_t KernelStart       = reinterpret_cast<uintptr_t>(const_cast<char *>(__KERNEL_START__));
-    uintptr_t KernelEnd         = reinterpret_cast<uintptr_t>(const_cast<char *>(__KERNEL_END__));
+    uintptr_t KernelStart       = reinterpret_cast<uintptr_t>(__mm.kernel.start);
+    uintptr_t KernelEnd         = reinterpret_cast<uintptr_t>(__mm.kernel.end);
+    uintptr_t ApplicationStart  = reinterpret_cast<uintptr_t>(__mm.app.start);
+    uintptr_t ApplicationEnd    = reinterpret_cast<uintptr_t>(__mm.app.end);
     uintptr_t KernelSize        = KernelEnd - KernelStart;
+    uintptr_t ApplicationSize   = ApplicationEnd - ApplicationStart;
 
-    Console::out << __memory_map.kernel.end;
-
-    TraceIn(KernelStart, KernelEnd, KernelSize);
+    TraceIn(__mm.kernel.start, __mm.kernel.end, KernelSize, __mm.app.start, __mm.app.end, ApplicationSize);
 
     uintptr_t c;
     for (c = RamEnd - PageSize; c > RamBase; c -= PageSize) {
         if (c >= KernelStart && c < KernelEnd) continue;
+        if (c >= ApplicationStart && c < ApplicationEnd) continue;
         buddy_.insert(reinterpret_cast<void *>(c), PageSize);
     }
 

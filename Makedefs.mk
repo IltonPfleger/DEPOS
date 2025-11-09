@@ -2,6 +2,7 @@ TOOL := riscv64-linux-gnu
 CC := $(TOOL)-g++
 LD := $(TOOL)-ld
 NM := $(TOOL)-nm
+SIZE := $(TOOL)-size
 OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 INCLUDE := include
@@ -16,8 +17,3 @@ CFLAGS += -g -std=c++2c -g -Os
 BUILD := build
 TRAITS := include/Traits.hpp
 KERNEL := $(BUILD)/DEPOS
-
-#Memory Map
-MEMORY_MAP_GENERATOR=./$(BUILD)/MemoryMapGenerator
-MEMORY_MAP=./$(BUILD)/__MemoryMap.bin
-

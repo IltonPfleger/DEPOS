@@ -8,7 +8,8 @@ struct MemoryMap {
     struct {
         void* start;
         void* end;
-    } application;
+        void* entry;
+    } app;
 };
 
-__attribute__((section(".MemoryMap"))) MemoryMap __memory_map = {};
+__attribute__((section(".__MEMORY_MAP__"))) inline MemoryMap __mm;
