@@ -1,6 +1,7 @@
 #include <IO/Debug.hpp>
 #include <Spin.hpp>
 #include <memory/Memory.hpp>
+#include <memory/MemoryMap.hpp>
 
 extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
@@ -13,6 +14,9 @@ void Memory::init() {
     uintptr_t KernelStart       = reinterpret_cast<uintptr_t>(const_cast<char *>(__KERNEL_START__));
     uintptr_t KernelEnd         = reinterpret_cast<uintptr_t>(const_cast<char *>(__KERNEL_END__));
     uintptr_t KernelSize        = KernelEnd - KernelStart;
+
+    Console::out << __memory_map.kernel.end;
+
     TraceIn(KernelStart, KernelEnd, KernelSize);
 
     uintptr_t c;
