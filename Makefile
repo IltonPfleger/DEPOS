@@ -1,19 +1,28 @@
 include Makedefs.mk
 
 TARGET := $(KERNEL)
+TOOLS := $(patsubst tools/%.cpp,$(BUILD)/%,$(shell find tools -type f -name "*.cpp"))
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
+LINKER := $(BUILD)/linker.ld
 
 CPUS=$(shell ./Meta get $(TRAITS) Traits::Machine::CPUS)
 MACHINE=$(shell ./Meta get $(TRAITS) Traits::Machine::NAME)
 MEMORY=$(shell ./Meta get $(TRAITS) Traits::Memory::SIZE)
-SYSTEM=$(shell ./Meta get $(TRAITS) Traits::System::ADDR)
+BOOT_ADDR=$(shell ./Meta get $(TRAITS) Traits::System::ADDR)
+KERNEL_END ?=
 
-run: $(TARGET)
-	(cd app && make APPLICATION=$(APPLICATION))
-	 -Ttext=0x80000000
-	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY)b -device loader,file=$(TARGET),addr=$(SYSTEM),force-raw=on
+run: $(TOOLS) $(TARGET).elf
+	(cd app && make APPLICATION=$(APPLICATION) KERNEL_ADDR=$(BOOT_ADDR))
+	$(MEMORY_MAP_GENERATOR) $(MEMORY_MAP)
+	$(OBJCOPY) --update-section .MemoryMap=$(MEMORY_MAP) $(TARGET).elf
+	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET)
+	#KERNEL_END=$$($(NM) $(TARGET).elf | grep __KERNEL_END__ | awk '{print $$1}'); \
+	#echo "Kernel end address: $$KERNEL_END"; \
+	#$(LD) -Ttext=$$KERNEL_END -o build/$(APPLICATION) build/$(APPLICATION).elf --just-symbols $(TARGET).elf
+	#@echo "Kernel end address: $$KERNEL_END"
+	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY)b -device loader,file=$(TARGET),addr=$(BOOT_ADDR),force-raw=on
 
 #@( \
 	#	TMP=$$(mktemp); \
@@ -35,20 +44,19 @@ gdb:
 		-ex "set confirm off"\
 		-ex "file $(TARGET).elf"
 
-$(TARGET) : $(TARGET).elf
-	@$(OBJCOPY) -O binary $@.elf $(TARGET)
+$(BUILD)/MemoryMapGenerator: $(TARGET).elf tools/MemoryMapGenerator.cpp 
+	KERNEL_END=$$($(NM) $(TARGET).elf | grep __KERNEL_END__ | awk '{print $$1}') && \
+	g++ -D__KERNEL_END__=0x$$KERNEL_END -I$(INCLUDE) tools/MemoryMapGenerator.cpp -o build/MemoryMapGenerator
+
 
 $(TARGET).elf: $(OBJS)
-	export LINKER=$(BUILD)/linker.ld touch $$LINKER
-	export LINKER=$(BUILD)/linker.ld ./Meta linker $$LINKER $(BOOT_ADDR)
-	export LINKER=$(BUILD)/linker.ld $(LD) -T $$LINKER -o $@.elf $(OBJS)
-	export LINKER=$(BUILD)/linker.ld rm -f $LINKER
-	#@$(OBJCOPY) -O binary $@.elf $(TARGET)
-	#@$(OBJCOPY) -O binary --set-section-flags .bss=alloc,load,contents $@.elf $(TARGET)
+	touch $(LINKER)
+	./Meta linker $(LINKER) $(BOOT_ADDR)
+	$(LD) -T $(LINKER) -o $@ $(OBJS)
 
 $(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -Iinclude -MMD -MP -c $< -o $@
+	$(CC) $(CFLAGS) -I$(INCLUDE) -MMD -MP -c $< -o $@
 
 clean:
 	rm -rf build

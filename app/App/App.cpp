@@ -25,7 +25,7 @@ static Thread *threads[N];
 //     return 0;
 // }
 
-int main() {
+int main(int, char * []) {
     Console::out << "Application: \n";
 
     // mutex.p();
