@@ -1,21 +1,28 @@
-#!/bin/sh 
-# Use: ./Linker.sh <ADDR> <PREFIX>
+#!/bin/sh
+# Use: ./Linker.sh <ADDR> <PREFIX> [PAGE_SIZE]
 
 BOOT_ADDR="$1"
 PREFIX="$2"
+PAGE_SIZE="$3"
 
 if [ -z "$BOOT_ADDR" ] || [ -z "$PREFIX" ]; then
-    echo "Use: $0 <BOOT_ADDR> <PREFIX>"
+    echo "Use: $0 <BOOT_ADDR> <PREFIX> [PAGE_SIZE]"
     exit 1
+fi
+
+if [ -n "$PAGE_SIZE" ]; then
+    ALIGNMENT=". = ALIGN($PAGE_SIZE);"
+else
+    ALIGNMENT=""
 fi
 
 cat <<EOL
 PHDRS {
-	/*READ | WRITE | EXECUTE*/
-	r PT_LOAD FLAGS(4);
-	re PT_LOAD FLAGS(5);
-	rw PT_LOAD FLAGS(6);
-} 
+    /*READ | WRITE | EXECUTE*/
+    r PT_LOAD FLAGS(4);
+    re PT_LOAD FLAGS(5);
+    rw PT_LOAD FLAGS(6);
+}
 SECTIONS
 {
     . = $BOOT_ADDR;
@@ -35,6 +42,8 @@ SECTIONS
     __${PREFIX}_rodata_end__ = .;
     __${PREFIX}_rodata_size__ = __${PREFIX}_rodata_end__ - __${PREFIX}_rodata_start__;
 
+    $ALIGNMENT
+
     __${PREFIX}_data_start__ = .;
     .data : { *(.data .data.* .sdata .sdata.*) } : rw
     __${PREFIX}_data_end__ = .;
@@ -45,7 +54,10 @@ SECTIONS
     __${PREFIX}_bss_end__ = .;
     __${PREFIX}_bss_size__ = __${PREFIX}_bss_end__ - __${PREFIX}_bss_start__;
 
+    $ALIGNMENT
+
     __${PREFIX}_START__ = __${PREFIX}_boot_start__;
     __${PREFIX}_END__   = __${PREFIX}_bss_end__;
 }
 EOL
+
