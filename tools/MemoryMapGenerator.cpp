@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <symbols.h>
 
 #include <memory/MemoryMap.hpp>
 
@@ -9,7 +10,11 @@ int main(int argc, char *argv[]) {
     }
 
     MemoryMap mm{};
-    mm.kernel.end = reinterpret_cast<void *>(__KERNEL_END__);
+    mm.kernel.start      = reinterpret_cast<void *>(___LD_KERNEL_START__);
+    mm.kernel.end        = reinterpret_cast<void *>(___LD_KERNEL_END__);
+    mm.app.start = reinterpret_cast<void *>(___LD_APPLICATION_START__);
+    mm.app.end   = reinterpret_cast<void *>(___LD_APPLICATION_END__);
+    mm.app.entry = reinterpret_cast<void *>(_main);
 
     FILE *file = fopen(argv[1], "wb");
     if (!file) {

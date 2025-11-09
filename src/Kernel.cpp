@@ -15,25 +15,22 @@ namespace Kernel {
             Console::init();
             TraceIn();
             Memory::init();
-            // Application::init();
+            Application::init();
             // Task::init();
             booting = false;
         }
-        while (booting)
-            ;
+        while (booting);
         if (BSP) {
             Thread::init();
             TraceOut();
             starting = false;
         }
-        while (starting)
-            ;
+        while (starting);
         if (Machine::CPU::core() < Traits::Machine::CPUS) {
             Timer::init();
             Thread::run();
         }
-        for (;;)
-            ;
+        for (;;);
     }
 }
 

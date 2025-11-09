@@ -1,6 +1,6 @@
 include ../Makedefs.mk
 
-TARGET := $(BUILD)/$(APPLICATION).elf
+TARGET := $(BUILD)/$(APPLICATION).o
 APPLICATION ?=
 
 SRCS := $(if $(APPLICATION),$(shell find $(APPLICATION) -type f -name "*.cpp"))
@@ -8,7 +8,6 @@ OBJS := $(patsubst $(APPLICATION)/%.cpp,$(BUILD)/$(APPLICATION)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 
 $(TARGET): $(OBJS)
-	#$(LD) $(OBJS) -o $@ --just-symbols ../$(KERNEL).elf -e main
 	$(LD) -r $(OBJS) -o ../$@
 
 $(BUILD)/$(APPLICATION)/%.o: ./$(APPLICATION)/%.cpp
