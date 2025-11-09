@@ -14,10 +14,17 @@ MACHINE=$(shell ./Meta get $(TRAITS) Traits::Machine::NAME)
 MEMORY=$(shell ./Meta get $(TRAITS) Traits::Memory::SIZE)
 BOOT_ADDR=$(shell ./Meta get $(TRAITS) Traits::System::ADDR)
 APP_ADDR=$(shell ./Meta get $(TRAITS) Traits::Application::ADDR)
+PAGE_SIZE ?=
+
+ifeq ($(shell ./Meta get $(TRAITS) Traits::System::MULTITASK), 1)
+    PAGE_SIZE := $(shell ./Meta get $(TRAITS) Traits::Memory::Page::SIZE)
+else
+    PAGE_SIZE :=
+endif
 
 run: $(TARGET).elf
 	make APPLICATION=$(APPLICATION) -C app
-	./Linker $(APP_ADDR) LD_APPLICATION > $(LINKER)
+	./Linker $(APP_ADDR) LD_APPLICATION $(PAGE_SIZE) > $(LINKER)
 	$(LD) -T $(LINKER) --just-symbols $(TARGET).elf $(BUILD)/$(APPLICATION).o -o $(BUILD)/$(APPLICATION).elf
 	$(NM) -n $(BUILD)/$(APPLICATION).elf | grep -e LD -e main | awk '{if($$3!="") printf "#define _%s 0x%s\n", $$3, $$1}' > $(SYMBOLS)
 	g++ -Ibuild -I$(INCLUDE) tools/MemoryMapGenerator.cpp -o $(BUILD)/MemoryMapGenerator $(SYMBOLS)
@@ -41,7 +48,7 @@ gdb:
 		-ex "file $(TARGET).elf"
 
 $(TARGET).elf: $(OBJS)
-	./Linker $(BOOT_ADDR) LD_KERNEL > $(LINKER)
+	./Linker $(BOOT_ADDR) LD_KERNEL $(PAGE_SIZE) > $(LINKER)
 	$(LD) -T $(LINKER) -o $@ $(OBJS)
 
 $(BUILD)/%.o: src/%.cpp 

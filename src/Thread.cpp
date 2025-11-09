@@ -114,7 +114,6 @@ void Thread::exit() {
 void Thread::init() {
     TraceIn();
     for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
-    // new (Heap::SYSTEM) Thread(main, 0, Criterion::NORMAL);
     TraceOut()
 }
 
