@@ -2,13 +2,34 @@
 
 struct MemoryMap {
     struct {
-        void* start;
-        void* end;
+        void *start;
+        void *end;
     } kernel;
     struct {
-        void* start;
-        void* end;
-        void* entry;
+        void *start;
+        void *end;
+        void *entry;
+
+        struct {
+            void *start;
+            void *end;
+        } code;
+
+        struct {
+            void *start;
+            void *end;
+        } rodata;
+
+        struct {
+            void *start;
+            void *end;
+        } data;
+
+        struct {
+            void *start;
+            void *end;
+        } bss;
+
     } app;
 };
 

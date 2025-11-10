@@ -39,5 +39,6 @@ constexpr const char *TrimPrettyFunction(const char *func) {
     if constexpr (Traits::Debug::TRACE) {                                                                              \
         __VA_OPT__(Console::println("return="));                                                                       \
         __VA_OPT__(Console::out << __VA_ARGS__);                                                                       \
-        Console::println("}\n");                                                                                       \
+        __VA_OPT__(Console::out << "\n");                                                                              \
+        Console::println("%s}\n", TrimPrettyFunction(__PRETTY_FUNCTION__));                                            \
     }
