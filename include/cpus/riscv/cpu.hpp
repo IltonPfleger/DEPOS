@@ -57,7 +57,12 @@ class RISCV {
     using CLINT = SiFiveCLINT;
     using Mode  = Supervisor;
 
-    __attribute__((always_inline)) static inline void ecall() { asm volatile("ecall"); }
+    __attribute__((always_inline)) static inline auto syscall(auto f) {
+        asm volatile("mv a0, %0" ::"r"(f));
+        asm volatile("ecall");
+    }
+
+    //__attribute__((always_inline)) static inline void ecall() { asm volatile("ecall"); }
 
     template <const int R> static void csrw(auto r) { asm volatile("csrw %c0, %1" ::"i"(R), "r"(r)); }
 

@@ -27,7 +27,7 @@ void MIC::handler(void *args) {
         if (mcause == Exception::SYSCALL) {
             RISCV::Context *context = reinterpret_cast<RISCV::Context *>(args);
             context->pc += 4;
-            RSyscall::handler(static_cast<RSyscall::Code>(context->a0));
+            RSyscall::handler(reinterpret_cast<void *>(context->a0));
         } else {
             error(mcause);
         }
@@ -54,7 +54,8 @@ void SIC::handler() {
     if (is_interrupt) {
         switch (code) {
         case Interrupt::TIMER:
-            RSyscall::call(RSyscall::RESET_CLINT_TIMER);
+            // RISCV::syscall(RSyscall::RESET_CLINT_TIMER);
+            RISCV::syscall(RISCV::CLINT::reset);
             Timer::handler(core);
             break;
         }
@@ -71,19 +72,15 @@ void SIC::error(intmax_t scause) {
           scause, "\nsepc: ", sepc, "\n");
 }
 
-// TODO: Vai existir 2 desses caraasw???????????????
-template <typename... Args> void RSyscall::call(Args &&...args) {
-    ((void)args, ...);
-    // asm volatile("mv a0, %0" ::"r"(code) : "memory");
-    RISCV::ecall();
-}
-
-void RSyscall::handler(Code code) {
+void RSyscall::handler(void *function) {
     auto core = RISCV::core();
-    switch (code) {
-    case RESET_CLINT_TIMER:
+    auto addr = reinterpret_cast<uintptr_t>(function);
+    if (addr == reinterpret_cast<uintptr_t>(&RISCV::CLINT::reset)) {
         RISCV::CLINT::reset(core);
         RISCV::csrs<RISCV::Machine::IE>(RISCV::Machine::TI);
         RISCV::csrc<RISCV::Machine::IP>(RISCV::Supervisor::TI);
-    };
+    } else {
+        reinterpret_cast<void (*)()>(function)();
+        ERROR(true, "Invalid Syscall!\n");
+    }
 }

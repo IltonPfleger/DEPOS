@@ -26,9 +26,8 @@ class RSyscall {
     friend MIC;
 
   public:
-    enum Code { RESET_CLINT_TIMER };
-    template <typename... Args> static void call(Args &&...);
+    // enum Code { RESET_CLINT_TIMER };
 
   private:
-    static void handler(Code);
+    static void handler(void *function);
 };
