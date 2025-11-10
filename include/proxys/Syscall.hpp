@@ -3,8 +3,6 @@
 #include <Machine.hpp>
 
 class Syscall {
-    template <auto Function, auto... Args> static auto call() {
-        ((void)Args, ...);
-        Machine::CPU::ecall();
-    }
+  public:
+    template <auto Function, auto... Args> static auto call() { Machine::CPU::syscall(Function, Args...); }
 };

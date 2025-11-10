@@ -17,14 +17,14 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->state = State::RUNNING;
     lock->release();
     if (next != previous) {
-        CPU::Atomic::wait(next->context);
+        CPU::Atomic::wait(next->context_);
 
         if constexpr (Traits::System::MULTITASK) {
             next->task_->attach(previous->stack_);
             next->task_->load();
         }
 
-        CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context), CPU::Atomic::clear(next->context));
+        CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context_), CPU::Atomic::clear(next->context_));
     }
 }
 
@@ -43,17 +43,18 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c, Task *t)
-    : stack_(Segment(Traits::Memory::Page::SIZE)),
-      context(new(stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, exit, this)), state(State::READY), joining(0),
-      criterion(c), waiting(0), link(Element(this, c())) {
+    : stack_(Segment(Traits::Memory::Page::SIZE)), state(State::READY), joining(0), criterion(c), waiting(0),
+      link(Element(this, c())) {
     TraceIn(this);
     if constexpr (Traits::System::MULTITASK) {
-        if (t)
-            task_ = t;
-        else {
+        context_ = new (stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, Syscall::call<Thread::exit>, this);
+        task_    = t;
+        if (!task_) {
             task_ = new (Heap::SYSTEM) Task();
         }
         task_->attach(stack_);
+    } else {
+        context_ = new (stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, exit, this);
     }
     _lock.lock();
     _scheduler.insert(&link);
@@ -133,10 +134,10 @@ void Thread::init() {
 void Thread::run() {
     _lock.acquire();
     TraceIn();
-    Thread *t       = _scheduler.pop();
-    t->state        = State::RUNNING;
-    CPU::Context *c = t->context;
+    Thread *t = _scheduler.pop();
+    t->state  = State::RUNNING;
     _lock.release();
+    CPU::Context *c = t->context_;
     t->task_->load();
     c->load();
 }
