@@ -1,7 +1,9 @@
 #pragma once
 
+#include <IO/Debug.hpp>
 #include <memory/AddressSpace.hpp>
 #include <memory/Heap.hpp>
+#include <memory/Memory.hpp>
 #include <utils/Console.hpp>
 
 extern "C" const char __KERNEL_START__[];
@@ -21,24 +23,20 @@ class Task {
     // // private:
     // //  Task(Heap* h, AddressSpace* a) : heap(h), as(a) {}
 
-    // public:
-    //  static void init() {
-    //      TRACE(__PRETTY_FUNCTION__, "{\n");
-    //      AddressSpace* as = new (Memory::kmalloc()) AddressSpace();
-    //      // Task* SYSTEM     = new (Heap::SYSTEM) Task(&Heap::SYSTEM, new (Memory::kmalloc()) AddressSpace());
-    //      // AddressSpace* as = SYSTEM->as;
+   public:
+    static void init() {
+        TraceIn();
+        AddressSpace* as = new (Heap::SYSTEM) AddressSpace();
 
-    //     for (uintptr_t pa = Traits::Memory::RAM_BASE; pa < Traits::Memory::RAM_END; pa += Traits::Memory::Page::SIZE)
-    //     {
-    //         as->map(pa, pa);
-    //     }
+        for (uintptr_t pa = Traits::Memory::RAM_BASE; pa < Traits::Memory::RAM_END; pa += Traits::Memory::Page::SIZE) {
+            as->map(pa, pa);
+        }
 
-    //     as->map(Machine::IO::Addr, Machine::IO::Addr);
+        as->map(Machine::IO::Addr, Machine::IO::Addr);
 
-    //     as->load();
-
-    //     TRACE("}\n");
-    // }
+        as->load();
+        TraceOut();
+    }
 
     // void* attach(void* addr) { return as->map(addr); }
 

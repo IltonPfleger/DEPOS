@@ -1,12 +1,12 @@
 #!/bin/sh
 # Use: ./Linker.sh <ADDR> <PREFIX> [PAGE_SIZE]
 
-BOOT_ADDR="$1"
+PA="$1"
 PREFIX="$2"
 PAGE_SIZE="$3"
 
-if [ -z "$BOOT_ADDR" ] || [ -z "$PREFIX" ]; then
-    echo "Use: $0 <BOOT_ADDR> <PREFIX> [PAGE_SIZE]"
+if [ -z "$PA" ] || [ -z "$PREFIX" ]; then
+    echo "Use: $0 <PA> <PREFIX> [PAGE_SIZE]"
     exit 1
 fi
 
@@ -25,7 +25,7 @@ PHDRS {
 }
 SECTIONS
 {
-    . = $BOOT_ADDR;
+    . = $PA;
 
     __${PREFIX}_boot_start__ = .;
     .boot : { KEEP(*(.boot)) } : r
