@@ -1,5 +1,3 @@
 #pragma once
 
-template <typename T, typename... Rest>
-class Proxy {
-};
+template <typename T, typename... Rest> class Proxy {};

@@ -11,20 +11,20 @@ namespace Kernel {
 }
 
 class RISCV {
-   public:
+  public:
     typedef uintmax_t Register;
     struct Machine {
         enum : Register {
             PMPADDR0      = 0x3B0,
             PMPCFG0       = 0x3A0,
-            MHARTID       = 0xF14,       // Core Number/ID
-            MEDELEG       = 0x302,       // Machine Exception Delegation
-            MIDELEG       = 0x303,       // Machine Interrupt Delegation
-            ME2ME         = 3ULL << 11,  // Machine to Machine
-            ME2SUPERVISOR = 1ULL << 11,  // Machine to Supervisor
-            TI            = 1ULL << 7,   // Timer Interrupt Enable
-            IRQE          = 1ULL << 3,   // Interrupt Enable
-            PIRQE         = 1ULL << 7,   // Previous Interrupt Enable
+            MHARTID       = 0xF14,      // Core Number/ID
+            MEDELEG       = 0x302,      // Machine Exception Delegation
+            MIDELEG       = 0x303,      // Machine Interrupt Delegation
+            ME2ME         = 3ULL << 11, // Machine to Machine
+            ME2SUPERVISOR = 1ULL << 11, // Machine to Supervisor
+            TI            = 1ULL << 7,  // Timer Interrupt Enable
+            IRQE          = 1ULL << 3,  // Interrupt Enable
+            PIRQE         = 1ULL << 7,  // Previous Interrupt Enable
         };
         static constexpr const int STATUS = 0x300;
         static constexpr const int IE     = 0x304;
@@ -35,15 +35,14 @@ class RISCV {
         static constexpr const int TVAL   = 0x343;
 
         __attribute__((always_inline)) static inline void ret() { asm volatile("mret"); }
-        __attribute__((always_inline)) static inline void ecall() { asm volatile("ecall"); }
     };
 
     struct Supervisor {
         enum : Register {
-            ME2ME = 1ULL << 8,  // Supervisor to Supervisor
-            IRQE  = 1ULL << 1,  // Interrupt Enable
-            TI    = 1ULL << 5,  // Timer Interrupt Enable
-            PIRQE = 1ULL << 5,  // Previous Interrupt Enable
+            ME2ME = 1ULL << 8, // Supervisor to Supervisor
+            IRQE  = 1ULL << 1, // Interrupt Enable
+            TI    = 1ULL << 5, // Timer Interrupt Enable
+            PIRQE = 1ULL << 5, // Previous Interrupt Enable
         };
         static constexpr const int SATP   = 0x180;
         static constexpr const int STATUS = 0x100;
@@ -58,27 +57,19 @@ class RISCV {
     using CLINT = SiFiveCLINT;
     using Mode  = Supervisor;
 
-    template <const int R>
-    static void csrw(auto r) {
-        asm volatile("csrw %c0, %1" ::"i"(R), "r"(r));
-    }
+    __attribute__((always_inline)) static inline void ecall() { asm volatile("ecall"); }
 
-    template <const int R>
-    static auto csrr() {
+    template <const int R> static void csrw(auto r) { asm volatile("csrw %c0, %1" ::"i"(R), "r"(r)); }
+
+    template <const int R> static auto csrr() {
         Register r;
         asm volatile("csrr %0, %1" : "=r"(r) : "i"(R));
         return r;
     }
 
-    template <const int R>
-    static void csrs(auto r) {
-        asm volatile("csrs %0, %1" ::"i"(R), "r"(r));
-    }
+    template <const int R> static void csrs(auto r) { asm volatile("csrs %0, %1" ::"i"(R), "r"(r)); }
 
-    template <const int R>
-    static void csrc(auto r) {
-        asm volatile("csrc %0, %1" ::"i"(R), "r"(r));
-    }
+    template <const int R> static void csrc(auto r) { asm volatile("csrc %0, %1" ::"i"(R), "r"(r)); }
 
     static auto core() {
         unsigned int tp;
@@ -89,16 +80,15 @@ class RISCV {
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
 
     __attribute__((naked)) static void setup() {
-        // Use the end of the last pages as boot stack
-        __asm__ volatile(
-            "csrr tp, mhartid\n"
-            "csrr t0, mhartid\n"
-            "mul t0, t0, %1\n"
-            "mv t1, %0\n"
-            "sub sp, t1, t0\n"
-            "ret"
-            :
-            : "r"(Traits::Memory::RAM_END), "r"(Traits::Memory::Page::SIZE));
+        // Use lastest pages as boot stack
+        __asm__ volatile("csrr tp, mhartid\n"
+                         "csrr t0, mhartid\n"
+                         "mul t0, t0, %1\n"
+                         "mv t1, %0\n"
+                         "sub sp, t1, t0\n"
+                         "ret"
+                         :
+                         : "r"(Traits::Memory::RAM_END), "r"(Traits::Memory::Page::SIZE));
     }
 
     static void init() {
@@ -106,7 +96,8 @@ class RISCV {
 
         if constexpr (Meta::StringCompare(Traits::Machine::NAME, "sifive_u") && Meta::SAME<Mode, Supervisor>::Result) {
             if (core() == 0) {
-                for (;;) idle();
+                for (;;)
+                    idle();
             }
         }
 
@@ -133,7 +124,7 @@ class RISCV {
     }
 
     class Context {
-       public:
+      public:
         uintptr_t ra;
         uintptr_t gp;
         uintptr_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
@@ -150,8 +141,7 @@ class RISCV {
             this->a0     = reinterpret_cast<uintptr_t>(a0);
         }
 
-        template <typename T = Mode>
-        void load() {
+        template <typename T = Mode> void load() {
             asm volatile(
                 "mv sp, %[sp]\n"
                 "ld ra,	 %[ra](sp)\n"
@@ -186,8 +176,7 @@ class RISCV {
             __builtin_unreachable();
         }
 
-        template <typename T = Mode>
-        __attribute__((naked)) static void swtch(Context **previous, Context *next) {
+        template <typename T = Mode> __attribute__((naked)) static void swtch(Context **previous, Context *next) {
             asm volatile(
                 "addi sp, sp, %[size]\n"
                 "sd   ra,     %[ra](sp)\n"
@@ -221,8 +210,7 @@ class RISCV {
             next->load();
         }
 
-        template <typename T = Mode>
-        __attribute__((always_inline)) static inline Context *push() {
+        template <typename T = Mode> __attribute__((always_inline)) static inline Context *push() {
             asm volatile(
                 "addi sp, sp, %[size]\n"
                 "sd ra, %[ra](sp)\n"
@@ -251,24 +239,21 @@ class RISCV {
                   [a6] "i"(offsetof(Context, a6)), [a7] "i"(offsetof(Context, a7)), [size] "i"(-sizeof(Context))
                 : "memory");
 
-            asm volatile(
-                "csrr t0, %0\n"
-                "sd t0, %c[status](sp)\n"
-                "csrr t0, %1\n"
-                "sd t0, %c[pc](sp)" ::"i"(T::STATUS),
-                "i"(T::EPC), [status] "i"(offsetof(Context, status)), [pc] "i"(offsetof(Context, pc)));
+            asm volatile("csrr t0, %0\n"
+                         "sd t0, %c[status](sp)\n"
+                         "csrr t0, %1\n"
+                         "sd t0, %c[pc](sp)" ::"i"(T::STATUS),
+                         "i"(T::EPC), [status] "i"(offsetof(Context, status)), [pc] "i"(offsetof(Context, pc)));
             register Context *sp asm("sp");
             return sp;
         }
 
-        template <typename T = Mode>
-        __attribute__((naked)) static void pop() {
-            asm volatile(
-                "ld t0, %c[status](sp)\n"
-                "csrw %0, t0\n"
-                "ld t0, %c[pc](sp)\n"
-                "csrw %1, t0" ::"i"(T::STATUS),
-                "i"(T::EPC), [pc] "i"(offsetof(Context, pc)), [status] "i"(offsetof(Context, status)));
+        template <typename T = Mode> __attribute__((naked)) static void pop() {
+            asm volatile("ld t0, %c[status](sp)\n"
+                         "csrw %0, t0\n"
+                         "ld t0, %c[pc](sp)\n"
+                         "csrw %1, t0" ::"i"(T::STATUS),
+                         "i"(T::EPC), [pc] "i"(offsetof(Context, pc)), [status] "i"(offsetof(Context, status)));
             asm volatile(
                 "ld ra, %[ra](sp)\n"
                 "ld gp, %[gp](sp)\n"
@@ -302,16 +287,13 @@ class RISCV {
     };
 
     class Atomic {
-       public:
-        template <typename T>
-        static void wait(T &value) {
-            while (!__atomic_load_n(&value, __ATOMIC_SEQ_CST));
+      public:
+        template <typename T> static void wait(T &value) {
+            while (!__atomic_load_n(&value, __ATOMIC_SEQ_CST))
+                ;
         }
 
-        template <typename T>
-        static T clear(T &value) {
-            return __atomic_exchange_n(&value, 0, __ATOMIC_SEQ_CST);
-        }
+        template <typename T> static T clear(T &value) { return __atomic_exchange_n(&value, 0, __ATOMIC_SEQ_CST); }
     };
 
     struct Interrupt {

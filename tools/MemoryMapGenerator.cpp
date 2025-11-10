@@ -10,11 +10,29 @@ int main(int argc, char *argv[]) {
     }
 
     MemoryMap mm{};
-    mm.kernel.start      = reinterpret_cast<void *>(___LD_KERNEL_START__);
-    mm.kernel.end        = reinterpret_cast<void *>(___LD_KERNEL_END__);
+    mm.kernel.start = reinterpret_cast<void *>(___LD_KERNEL_START__);
+    mm.kernel.end   = reinterpret_cast<void *>(___LD_KERNEL_END__);
+
+    // General
     mm.app.start = reinterpret_cast<void *>(___LD_APPLICATION_START__);
     mm.app.end   = reinterpret_cast<void *>(___LD_APPLICATION_END__);
     mm.app.entry = reinterpret_cast<void *>(_main);
+
+    //.text
+    mm.app.code.start = reinterpret_cast<void *>(___LD_APPLICATION_text_start__);
+    mm.app.code.end   = reinterpret_cast<void *>(___LD_APPLICATION_text_end__);
+
+    //.rodata
+    mm.app.rodata.start = reinterpret_cast<void *>(___LD_APPLICATION_rodata_start__);
+    mm.app.rodata.end   = reinterpret_cast<void *>(___LD_APPLICATION_rodata_end__);
+
+    //.data
+    mm.app.data.start = reinterpret_cast<void *>(___LD_APPLICATION_data_start__);
+    mm.app.data.end   = reinterpret_cast<void *>(___LD_APPLICATION_data_end__);
+
+    //.bss
+    mm.app.bss.start = reinterpret_cast<void *>(___LD_APPLICATION_bss_start__);
+    mm.app.bss.end   = reinterpret_cast<void *>(___LD_APPLICATION_bss_end__);
 
     FILE *file = fopen(argv[1], "wb");
     if (!file) {
