@@ -13,15 +13,15 @@ void MIC::handler(void *args) {
 
     if (is_interrupt) {
         switch (code) {
-        case Interrupt::TIMER:
-            if constexpr (Meta::SAME<RISCV::Mode, RISCV::Supervisor>::Result) {
-                RISCV::csrc<RISCV::Machine::IE>(RISCV::Machine::TI);
-                RISCV::csrs<RISCV::Machine::IP>(RISCV::Supervisor::TI);
-            } else {
-                auto core = RISCV::core();
-                RISCV::CLINT::reset(core);
-                Timer::handler(core);
-            }
+            case Interrupt::TIMER:
+                if constexpr (Meta::SAME<RISCV::KernelMode, RISCV::Supervisor>::Result) {
+                    RISCV::csrc<RISCV::Machine::IE>(RISCV::Machine::TI);
+                    RISCV::csrs<RISCV::Machine::IP>(RISCV::Supervisor::TI);
+                } else {
+                    auto core = RISCV::core();
+                    RISCV::CLINT::reset(core);
+                    Timer::handler(core);
+                }
         }
     } else {
         if (mcause == Exception::SYSCALL) {
@@ -53,10 +53,10 @@ void SIC::handler() {
     auto core         = RISCV::core();
     if (is_interrupt) {
         switch (code) {
-        case Interrupt::TIMER:
-            RISCV::syscall(RISCV::CLINT::reset);
-            Timer::handler(core);
-            break;
+            case Interrupt::TIMER:
+                RISCV::syscall(RISCV::CLINT::reset);
+                Timer::handler(core);
+                break;
         }
     } else {
         error(scause);
