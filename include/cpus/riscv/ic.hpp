@@ -25,9 +25,6 @@ class SIC {
 class RSyscall {
     friend MIC;
 
-  public:
-    // enum Code { RESET_CLINT_TIMER };
-
   private:
     static void handler(void *function);
 };

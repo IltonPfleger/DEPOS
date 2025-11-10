@@ -26,6 +26,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
 
         CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context_), CPU::Atomic::clear(next->context_));
     }
+    // TODO:Detach previous stack from next here
 }
 
 int Thread::idle(void *) {

@@ -54,7 +54,6 @@ void SIC::handler() {
     if (is_interrupt) {
         switch (code) {
         case Interrupt::TIMER:
-            // RISCV::syscall(RSyscall::RESET_CLINT_TIMER);
             RISCV::syscall(RISCV::CLINT::reset);
             Timer::handler(core);
             break;
@@ -80,6 +79,7 @@ void RSyscall::handler(void *function) {
         RISCV::csrs<RISCV::Machine::IE>(RISCV::Machine::TI);
         RISCV::csrc<RISCV::Machine::IP>(RISCV::Supervisor::TI);
     } else {
+        // TODO: THIS EXECUTE IN MACHINE MODE
         reinterpret_cast<void (*)()>(function)();
         ERROR(true, "Invalid Syscall!\n");
     }
