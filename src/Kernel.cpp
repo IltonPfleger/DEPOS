@@ -16,7 +16,7 @@ namespace Kernel {
             TraceIn();
             Memory::init();
             Application::init();
-            // Task::init();
+            Task::init();
             booting = false;
         }
         while (booting);
