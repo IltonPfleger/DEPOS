@@ -39,7 +39,7 @@ struct Traits {
     };
 
     struct Application {
-        static constexpr unsigned long ADDR = Memory::RAM_BASE + (Memory::SIZE/2);
+        static constexpr unsigned long ADDR = Memory::RAM_BASE + (Memory::SIZE / 2);
     };
 
     struct Debug {

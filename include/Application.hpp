@@ -7,7 +7,7 @@
 #include <memory/MemoryMap.hpp>
 
 class Application {
-  public:
+   public:
     static void init() {
         if constexpr (Traits::System::MULTITASK) {
             uintptr_t CodeStart = reinterpret_cast<uintptr_t>(__mm.app.code.start);

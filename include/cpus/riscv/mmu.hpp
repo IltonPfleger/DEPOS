@@ -3,29 +3,28 @@
 #include <Types.hpp>
 
 class SV39_MMU {
-  public:
+   public:
     static constexpr size_t PageSize = 4096;
 
-  private:
+   private:
     static constexpr uintptr_t Mode       = 8UL << 60;
     static constexpr size_t EntriesNumber = 512;
 
-  public:
+   public:
     typedef uintptr_t Flags;
     enum {
-        V = 1 << 0, // Valid
-        R = 1 << 1, // Readable
-        W = 1 << 2, // Writable
-        X = 1 << 3, // Executable
-        U = 1 << 4, // User accessible
-        A = 1 << 6, // Accessed
-        D = 1 << 7, // Dirty
+        V = 1 << 0,  // Valid
+        R = 1 << 1,  // Readable
+        W = 1 << 2,  // Writable
+        X = 1 << 3,  // Executable
+        U = 1 << 4,  // User accessible
+        A = 1 << 6,  // Accessed
+        D = 1 << 7,  // Dirty
     };
 
     class PageTable {
         bool set(int vpn, uintptr_t addr, Flags flags) {
-            if (entries[vpn])
-                return false;
+            if (entries[vpn]) return false;
             entries[vpn] = (addr >> 2) | flags;
             return true;
         }
@@ -36,14 +35,15 @@ class SV39_MMU {
             return reinterpret_cast<PageTable *>(addr);
         }
 
-      public:
-        bool map(uintptr_t, uintptr_t, Flags = (D | A | R | W | X | V));
+       public:
+        bool map(uintptr_t va, uintptr_t pa, Flags);
+        bool map(uintptr_t va, Flags flags) { return map(va, va, flags); }
+
         PageTable() {
-            for (auto &e : entries)
-                e = 0;
+            for (auto &e : entries) e = 0;
         }
 
-      private:
+       private:
         alignas(PageSize) uintptr_t entries[EntriesNumber];
     };
 

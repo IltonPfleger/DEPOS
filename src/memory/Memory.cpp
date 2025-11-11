@@ -29,12 +29,12 @@ void Memory::init() {
 }
 
 void *Memory::kmalloc(size_t size) {
-    TraceIn(size);
+    //TraceIn(size);
     _lock.lock();
     void *page = buddy_.remove(size);
     _lock.unlock();
     ERROR(!page, "Out of pages.");
-    TraceOut(page);
+    //TraceOut(page);
     return page;
 }
 

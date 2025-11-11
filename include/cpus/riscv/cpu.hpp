@@ -12,6 +12,14 @@ namespace Kernel {
 
 class RISCV {
    public:
+    struct Machine;
+    struct Supervisor;
+    struct User;
+
+    using CLINT      = SiFiveCLINT;
+    using KernelMode = Supervisor;
+    using UserMode   = User;
+
     typedef uintmax_t Register;
     struct Machine {
         enum : Register {
@@ -22,6 +30,7 @@ class RISCV {
             MIDELEG       = 0x303,       // Machine Interrupt Delegation
             ME2ME         = 3ULL << 11,  // Machine to Machine
             ME2SUPERVISOR = 1ULL << 11,  // Machine to Supervisor
+            ME2USER       = 0ULL << 11,  // Machine to User
             TI            = 1ULL << 7,   // Timer Interrupt Enable
             IRQE          = 1ULL << 3,   // Interrupt Enable
             PIRQE         = 1ULL << 7,   // Previous Interrupt Enable
@@ -39,10 +48,12 @@ class RISCV {
 
     struct Supervisor {
         enum : Register {
-            ME2ME = 1ULL << 8,  // Supervisor to Supervisor
-            IRQE  = 1ULL << 1,  // Interrupt Enable
-            TI    = 1ULL << 5,  // Timer Interrupt Enable
-            PIRQE = 1ULL << 5,  // Previous Interrupt Enable
+            ME2ME   = 1ULL << 8,   // Supervisor to Supervisor
+            ME2USER = 0ULL << 8,   // Supervisor to User
+            IRQE    = 1ULL << 1,   // Interrupt Enable
+            TI      = 1ULL << 5,   // Timer Interrupt Enable
+            PIRQE   = 1ULL << 5,   // Previous Interrupt Enable
+            SUM     = 1ULL << 18,  // Supervisor User Memory
         };
         static constexpr const int SATP   = 0x180;
         static constexpr const int STATUS = 0x100;
@@ -55,12 +66,9 @@ class RISCV {
     };
 
     struct User {
+        enum : Register { KERNEL2ME = KernelMode::ME2USER };
         __attribute__((always_inline)) static inline void ret() { asm volatile("ret"); }
     };
-
-    using CLINT      = SiFiveCLINT;
-    using KernelMode = Supervisor;
-    using UserMode   = User;
 
     __attribute__((always_inline)) static inline auto syscall(auto f) {
         asm volatile("mv a0, %0" ::"r"(f));
@@ -98,7 +106,6 @@ class RISCV {
     __attribute__((always_inline)) static inline void idle() { asm volatile("wfi"); }
 
     __attribute__((naked)) static void setup() {
-        // Use lastest pages as boot stack
         __asm__ volatile(
             "csrr tp, mhartid\n"
             "csrr t0, mhartid\n"
@@ -152,11 +159,10 @@ class RISCV {
         uintptr_t status;
         uintptr_t pc;
 
-        Context(int (*entry)(void *), void *a0, void (*exit)(), void *gp) {
+        Context(int (*entry)(void *), void *a0, void (*exit)()) {
             this->ra     = reinterpret_cast<uintptr_t>(exit);
-            this->gp     = reinterpret_cast<uintptr_t>(gp);
             this->pc     = reinterpret_cast<uintptr_t>(entry);
-            this->status = static_cast<Register>(KernelMode::ME2ME | KernelMode::PIRQE);
+            this->status = static_cast<Register>(User::KERNEL2ME) | static_cast<Register>(KernelMode::PIRQE);
             this->a0     = reinterpret_cast<uintptr_t>(a0);
         }
 
@@ -273,11 +279,11 @@ class RISCV {
         template <typename T = KernelMode>
         __attribute__((naked)) static void pop() {
             asm volatile(
-                "ld t0, %c[status](sp)\n"
-                "csrw %0, t0\n"
-                "ld t0, %c[pc](sp)\n"
-                "csrw %1, t0" ::"i"(T::STATUS),
-                "i"(T::EPC), [pc] "i"(offsetof(Context, pc)), [status] "i"(offsetof(Context, status)));
+                "ld t0, %[statuso](sp)\n"
+                "csrw %[statusr], t0\n"
+                "ld t0, %[pc](sp)\n"
+                "csrw %[epcr], t0" ::[statusr] "i"(T::STATUS),
+                [epcr] "i"(T::EPC), [pc] "i"(offsetof(Context, pc)), [statuso] "i"(offsetof(Context, status)));
             asm volatile(
                 "ld ra, %[ra](sp)\n"
                 "ld gp, %[gp](sp)\n"
