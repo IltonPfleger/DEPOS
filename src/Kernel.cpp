@@ -19,21 +19,18 @@ namespace Init {
             Application::init();
             booting = false;
         }
-        while (booting)
-            ;
+        while (booting);
         if (BSP) {
             Thread::init();
             TraceOut();
             starting = false;
         }
-        while (starting)
-            ;
+        while (starting);
         if (Machine::CPU::core() < Traits::Machine::CPUS) {
             Timer::init();
             Thread::run();
         }
-        for (;;)
-            ;
+        for (;;);
     }
 }
 
@@ -41,4 +38,5 @@ namespace Init {
 extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
     Machine::CPU::setup();
     Machine::CPU::init();
+    Init::init();
 }
