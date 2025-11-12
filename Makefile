@@ -33,12 +33,11 @@ gdb:
 		-ex "file $(TARGET).elf"
 
 $(TARGET).elf: $(OBJS)
-	$(LD) --section-start=.init=$(BOOT_ADDR) --image-base=$(BOOT_ADDR) -o $@ $(OBJS)
+	$(LD) -e kboot --section-start=.init=$(BOOT_ADDR) --image-base=$(BOOT_ADDR) -o $@ $(OBJS)
 
-$(BUILD)/%.o: tools/%.cpp 
+$(BUILD)/%: tools/%.cpp 
 	mkdir -p $(dir $@)
 	g++ -Iinclude -o $@ $<
-
 
 $(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)
