@@ -1,3 +1,9 @@
+INCLUDE := include
+BUILD := build
+APP := app
+TRAITS := include/Traits.hpp
+KERNEL := $(BUILD)/DEPOS
+
 TOOL := riscv64-linux-gnu
 CC := $(TOOL)-g++
 LD := $(TOOL)-ld
@@ -5,15 +11,30 @@ NM := $(TOOL)-nm
 SIZE := $(TOOL)-size
 OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
-INCLUDE := include
+GET := ./Meta get $(TRAITS)
+
+CPUS=$(shell $(GET) Traits::Machine::CPUS)
+MACHINE=$(shell $(GET) Traits::Machine::NAME)
+MEMORY_SIZE=$(shell $(GET) Traits::Memory::SIZE)
+BOOT_ADDR=0x$(shell printf "%x\n" $$($(GET) Traits::System::ADDR))
+APP_ADDR=0x$(shell printf "%x\n" $$($(GET) Traits::Application::ADDR))
+PAGE_SIZE=$(shell $(GET) Traits::Memory::Page::SIZE)
+MULTITASK=$(shell $(GET) Traits::System::MULTITASK)
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
-CFLAGS += -fno-exceptions -fno-rtti -ffreestanding -nostdlib -nostartfiles
+#CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -ffunction-sections -mno-relax
+CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
 CFLAGS += -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -g -std=c++2c -g -Os
 
-BUILD := build
-TRAITS := include/Traits.hpp
-KERNEL := $(BUILD)/DEPOS
+#LDFLAGS =
+#
+#ifeq ($(MULTITASK), 1)
+#	LDFLAGS += --section-alignment=$(PAGE_SIZE)
+#endif
+
+
+
+

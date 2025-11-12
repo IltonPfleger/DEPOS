@@ -26,7 +26,7 @@
 // }
 
 int main(int, char *[]) {
-    // Console::out << "Application: \n";
+    Console::out << "Application: \n";
 
     // mutex.p();
     // for (unsigned long i = 0; i < N; i++) {
