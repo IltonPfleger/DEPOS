@@ -6,22 +6,31 @@
 static Spin _lock;
 
 void Memory::init() {
+    //(void)__kmm;
+    // Console::out << reinterpret_cast<void *>(__kmm.text.start) << "\n";
     constexpr size_t PageSize   = Traits::Memory::Page::SIZE;
     constexpr uintptr_t RamBase = Traits::Memory::RAM_BASE;
     constexpr uintptr_t RamEnd  = Traits::Memory::RAM_END;
-    uintptr_t KernelStart       = reinterpret_cast<uintptr_t>(__mm.kernel.start);
-    uintptr_t KernelEnd         = reinterpret_cast<uintptr_t>(__mm.kernel.end);
-    uintptr_t ApplicationStart  = reinterpret_cast<uintptr_t>(__mm.app.start);
-    uintptr_t ApplicationEnd    = reinterpret_cast<uintptr_t>(__mm.app.end);
+    uintptr_t KernelStart       = __kmm.start;
+    uintptr_t KernelEnd         = __kmm.end;
     uintptr_t KernelSize        = KernelEnd - KernelStart;
+    uintptr_t ApplicationStart  = __mm.start;
+    uintptr_t ApplicationEnd    = __mm.end;
     uintptr_t ApplicationSize   = ApplicationEnd - ApplicationStart;
 
-    TraceIn(__mm.kernel.start, __mm.kernel.end, KernelSize, __mm.app.start, __mm.app.end, ApplicationSize);
+    Console::out << ApplicationStart << " " << Traits::Application::ADDR << "\n";
+
+    Console::out << reinterpret_cast<void *>(ApplicationStart) << " "
+                 << reinterpret_cast<void *>(Traits::Application::ADDR) << "\n";
+
+    TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize);
 
     uintptr_t c;
     for (c = RamEnd - PageSize; c > RamBase; c -= PageSize) {
-        if (c >= KernelStart && c < KernelEnd) continue;
-        if (c >= ApplicationStart && c < ApplicationEnd) continue;
+        if (c >= KernelStart && c < KernelEnd)
+            continue;
+        if (c >= ApplicationStart && c < ApplicationEnd)
+            continue;
         buddy_.insert(reinterpret_cast<void *>(c), PageSize);
     }
 
@@ -29,12 +38,12 @@ void Memory::init() {
 }
 
 void *Memory::kmalloc(size_t size) {
-    //TraceIn(size);
+    TraceIn(size);
     _lock.lock();
     void *page = buddy_.remove(size);
     _lock.unlock();
     ERROR(!page, "Out of pages.");
-    //TraceOut(page);
+    TraceOut(page);
     return page;
 }
 

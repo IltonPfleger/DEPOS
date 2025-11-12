@@ -19,7 +19,8 @@ class Thread {
     using Element   = Queue::Node;
     using CPU       = Machine::CPU;
 
-    Thread(Function, Argument, Criterion, Task * = nullptr);
+    //Thread(Function, Argument, Criterion, Task * = nullptr);
+    Thread(Function, Argument, Criterion);
     ~Thread();
 
     static Thread *running();

@@ -1,36 +1,19 @@
 #pragma once
 
 struct MemoryMap {
-    struct {
-        void *start;
-        void *end;
-    } kernel;
-    struct {
-        void *start;
-        void *end;
-        void *entry;
+    struct Entry {
+        unsigned long start;
+        unsigned long end;
+    };
 
-        struct {
-            void *start;
-            void *end;
-        } code;
-
-        struct {
-            void *start;
-            void *end;
-        } rodata;
-
-        struct {
-            void *start;
-            void *end;
-        } data;
-
-        struct {
-            void *start;
-            void *end;
-        } bss;
-
-    } app;
+    struct App : Entry {
+        uintptr_t main;
+        Entry text;
+        Entry data;
+        Entry rodata;
+        Entry bss;
+    };
 };
 
-__attribute__((section(".__MEMORY_MAP__"))) inline MemoryMap __mm;
+__attribute__((section(".__kernel_mm__"))) inline MemoryMap::App __kmm;
+__attribute__((section(".__app_mm__"))) inline MemoryMap::App __mm;

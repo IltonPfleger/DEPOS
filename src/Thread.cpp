@@ -17,47 +17,46 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->state = State::RUNNING;
     lock->release();
     if (next != previous) {
+
+        // if constexpr (Traits::System::MULTITASK) {
+        //     // next->task_->attach(previous->stack_);
+        //     // next->task_->load();
+        // }
+
         CPU::Atomic::wait(next->context_);
-
-        if constexpr (Traits::System::MULTITASK) {
-            next->task_->attach(previous->stack_);
-            next->task_->load();
-        }
-
         CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context_), CPU::Atomic::clear(next->context_));
     }
-    // TODO:Detach previous stack from next here
 }
 
 int Thread::idle(void *) {
     while (_count > Traits::Machine::CPUS) {
-        if (!_scheduler.empty()) yield();
+        if (!_scheduler.empty())
+            yield();
     }
 
     CPU::Interrupt::disable();
-    if (CPU::core() == Traits::Machine::BSP) Console::println("*** Shutdown! ***\n");
-    for (;;);
+    if (CPU::core() == Traits::Machine::BSP)
+        Console::println("*** Shutdown! ***\n");
+    for (;;)
+        ;
     return 0;
 }
 
-Thread::Thread(Function f, Argument a, Criterion c, Task *t)
-    : stack_(Segment(Traits::Memory::Page::SIZE)),
-      state(State::READY),
-      joining(0),
-      criterion(c),
-      waiting(0),
+Thread::Thread(Function f, Argument a, Criterion c)
+    : stack_(Segment(Traits::Memory::Page::SIZE)), state(State::READY), joining(0), criterion(c), waiting(0),
       link(Element(this, c())) {
     TraceIn(this);
-    if constexpr (Traits::System::MULTITASK) {
-        context_ = new (stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, Syscall::call<Thread::exit>);
-        task_    = t;
-        if (!task_) {
-            task_ = new (Heap::SYSTEM) Task();
-        }
-        task_->attach(stack_);
-    } else {
-        context_ = new (stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, exit);
-    }
+
+    // if constexpr (Traits::System::MULTITASK) {
+    //     context_ = new (stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, Syscall::call<Thread::exit>);
+    //     task_    = t;
+    //     if (!task_) {
+    //         task_ = new (Heap::SYSTEM) Task();
+    //     }
+    //     //task_->attach(stack_);
+    // } else {
+    context_ = new (stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, exit);
+    // }
     _lock.lock();
     _scheduler.insert(&link);
     _count = _count + 1;
@@ -128,7 +127,8 @@ void Thread::exit() {
 
 void Thread::init() {
     TraceIn();
-    for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+    for (int i = 0; i < Traits::Machine::CPUS; ++i)
+        new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     TraceOut()
 }
 
@@ -137,15 +137,13 @@ void Thread::run() {
     TraceIn();
     Thread *t = _scheduler.pop();
     t->state  = State::RUNNING;
-    Machine::CPU::csrs<Machine::CPU::Supervisor::STATUS>(Machine::CPU::Supervisor::SUM);
     _lock.release();
-    CPU::Context *c = t->context_;
-    t->task_->load();
-    c->load();
+    t->context_->load();
 }
 
 void Thread::reschedule() {
-    if (_scheduler.empty()) return;
+    if (_scheduler.empty())
+        return;
 
     auto previous   = running();
     previous->state = State::READY;
