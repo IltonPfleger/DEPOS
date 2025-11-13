@@ -75,6 +75,8 @@ class RISCV {
         asm volatile("ecall");
     }
 
+    __attribute__((always_inline)) static inline auto flush() { asm volatile("sfence.vma zero, zero"); }
+
     template <const int R>
     static void csrw(auto r) {
         asm volatile("csrw %c0, %1" ::"i"(R), "r"(r));
