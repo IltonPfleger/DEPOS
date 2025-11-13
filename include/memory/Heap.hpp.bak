@@ -13,7 +13,7 @@ class Heap {
 
     // private:
     //  using Chunk                            = Node<void>;
-    //  static constexpr unsigned int CAPSTONE = Traits<Memory>::Page::ORDER;
+    //  static constexpr unsigned int CAPSTONE = Traits::Memory::Page::ORDER;
 
   public:
     static Heap SYSTEM;

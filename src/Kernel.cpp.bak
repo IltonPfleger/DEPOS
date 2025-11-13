@@ -10,7 +10,7 @@ static volatile bool starting = true;
 
 namespace Init {
     void init() {
-        bool BSP = Machine::CPU::core() == Traits<Machine>::BSP;
+        bool BSP = Machine::CPU::core() == Traits::Machine::BSP;
         if (BSP) {
             Console::init();
             TraceIn();
@@ -26,7 +26,7 @@ namespace Init {
             starting = false;
         }
         while (starting);
-        if (Machine::CPU::core() < Traits<Machine>::CPUS) {
+        if (Machine::CPU::core() < Traits::Machine::CPUS) {
             Timer::init();
             Thread::run();
         }

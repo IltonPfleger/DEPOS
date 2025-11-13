@@ -17,7 +17,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->state = State::RUNNING;
     lock->release();
     if (next != previous) {
-        // if constexpr (Traits<System>::MULTITASK) {
+        // if constexpr (Traits::System::MULTITASK) {
         //     // next->task_->attach(previous->stack_);
         //     // next->task_->load();
         // }
@@ -28,18 +28,18 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
 }
 
 int Thread::idle(void *) {
-    while (_count > Traits<Machine>::CPUS) {
+    while (_count > Traits::Machine::CPUS) {
         if (!_scheduler.empty()) yield();
     }
 
     CPU::Interrupt::disable();
-    if (CPU::core() == Traits<Machine>::BSP) Console::println("*** Shutdown! ***\n");
+    if (CPU::core() == Traits::Machine::BSP) Console::println("*** Shutdown! ***\n");
     for (;;);
     return 0;
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : stack_(Segment(Traits<Memory>::PAGE_SIZE)),
+    : stack_(Segment(Traits::Memory::Page::SIZE)),
       state(State::READY),
       joining(0),
       criterion(c),
@@ -47,7 +47,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
       link(Element(this, c())) {
     TraceIn(this);
 
-    // if constexpr (Traits<System>::MULTITASK) {
+    // if constexpr (Traits::System::MULTITASK) {
     //     context_ = new (stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, Syscall::call<Thread::exit>);
     //     task_    = t;
     //     if (!task_) {
@@ -127,7 +127,7 @@ void Thread::exit() {
 
 void Thread::init() {
     TraceIn();
-    for (int i = 0; i < Traits<Machine>::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+    for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     TraceOut()
 }
 

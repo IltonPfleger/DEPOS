@@ -1,3 +1,7 @@
+namespace Timer {
+    void handler(unsigned int core);
+}
+
 class MIC {
     static void error(intmax_t);
     static void handler(void *);
@@ -5,7 +9,7 @@ class MIC {
     enum Interrupt { TIMER = 7 };
     enum Exception { SYSCALL = 9 };
 
-   public:
+  public:
     __attribute__((naked, aligned(4))) static void entry();
 };
 
@@ -14,13 +18,13 @@ class SIC {
     static void handler();
     enum Interrupt { TIMER = 5 };
 
-   public:
+  public:
     __attribute__((naked, aligned(4))) static void entry();
 };
 
 class RSyscall {
     friend MIC;
 
-   private:
+  private:
     static void handler(void *function);
 };

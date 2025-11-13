@@ -39,12 +39,14 @@ struct Traits<Alarm> {
 
 template <>
 struct Traits<Memory> {
-    static constexpr unsigned long ORDER      = 30;
-    static constexpr unsigned long SIZE       = (1 << ORDER);
-    static constexpr unsigned long RAM_BASE   = 0x80000000;
-    static constexpr unsigned long RAM_END    = RAM_BASE + SIZE;
-    static constexpr unsigned long PAGE_ORDER = 12;
-    static constexpr unsigned long PAGE_SIZE  = (1 << PAGE_ORDER);
+    static constexpr unsigned long RAM_BASE = 0x80000000;
+    static constexpr unsigned int ORDER     = 30;
+    static constexpr unsigned int SIZE      = (1 << ORDER);
+    static constexpr unsigned long RAM_END  = RAM_BASE + SIZE;
+    class Page {
+        static constexpr unsigned int ORDER = 12;
+        static constexpr unsigned int SIZE  = (1 << ORDER);
+    };
 };
 
 template <>

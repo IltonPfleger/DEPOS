@@ -3,10 +3,10 @@
 // #include <Traits.hpp>
 //
 // template <typename T>
-// concept AlarmEnable = Traits<Alarm>::Enable;
+// concept AlarmEnable = Traits::Alarm::Enable;
 //
 // template <typename T>
-// concept AlarmMHz = (Traits<Alarm>::Frequency >= 1'000'000);
+// concept AlarmMHz = (Traits::Alarm::Frequency >= 1'000'000);
 //
 // struct Alarm {
 //     struct Delay {

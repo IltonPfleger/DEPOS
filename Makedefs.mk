@@ -13,13 +13,13 @@ OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 GET := ./Meta get $(TRAITS)
 
-CPUS=$(shell $(GET) Traits::Machine::CPUS)
-MACHINE=$(shell $(GET) Traits::Machine::NAME)
-MEMORY_SIZE=$(shell $(GET) Traits::Memory::SIZE)
-BOOT_ADDR=0x$(shell printf "%x\n" $$($(GET) Traits::System::ADDR))
-APP_ADDR=0x$(shell printf "%x\n" $$($(GET) Traits::Application::ADDR))
-PAGE_SIZE=$(shell $(GET) Traits::Memory::Page::SIZE)
-MULTITASK=$(shell $(GET) Traits::System::MULTITASK)
+CPUS=$(shell $(GET) "Traits<Machine>::CPUS")
+MACHINE=$(shell $(GET) "Traits<Machine>::NAME")
+MEMORY_SIZE=$(shell $(GET) "Traits<Memory>::SIZE")
+BOOT_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<System>::ADDR"))
+APP_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<Application>::ADDR"))
+PAGE_SIZE=$(shell $(GET) "Traits<Memory>::PAGE_SIZE")
+MULTITASK=$(shell $(GET) "Traits<System>::MULTITASK")
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -Wall -Wextra -Werror -pedantic
