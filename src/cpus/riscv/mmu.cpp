@@ -28,5 +28,5 @@ bool SV39_MMU::PageTable::map(uintptr_t va, uintptr_t pa, Flags flags) {
 
 void SV39_MMU::set(uintptr_t root) {
     RISCV::csrw<RISCV::Supervisor::SATP>(Mode | root >> 12);
-    asm volatile("sfence.vma zero, zero");
+    RISCV::flush();
 }

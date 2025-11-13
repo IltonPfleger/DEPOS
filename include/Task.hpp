@@ -9,7 +9,7 @@
 class Task {
     using AddressSpace = Machine::MMU::PageTable;
 
-  public:
+   public:
     Task() : as(new(Heap::SYSTEM) AddressSpace()) {
         // uintptr_t KernelStart = reinterpret_cast<uintptr_t>(__mm.kernel.start);
         // uintptr_t KernelEnd   = reinterpret_cast<uintptr_t>(__mm.kernel.end);
@@ -41,16 +41,16 @@ class Task {
         TraceOut();
     }
 
-  public:
+   public:
     static void init() {
         TraceIn();
         Task *SYSTEM = new (Heap::SYSTEM) Task();
         char buffer[sizeof(Segment)];
         Segment *s = reinterpret_cast<Segment *>(buffer);
         new (buffer) Segment(Traits::Memory::RAM_BASE, Traits::Memory::SIZE);
-        SYSTEM->attach(*s, AddressSpace::KernelRW);
+        SYSTEM->attach(*s, AddressSpace::Flags::KernelRW);
         new (buffer) Segment(Machine::IO::Addr, AddressSpace::PageSize);
-        SYSTEM->attach(*s, AddressSpace::KernelRW);
+        SYSTEM->attach(*s, AddressSpace::Flags::KernelRW);
         SYSTEM->load();
         TraceOut();
     }
@@ -59,7 +59,7 @@ class Task {
 
     void attach(Segment &) {}
 
-  public:
+   public:
     Heap *heap;
     AddressSpace *as;
 };

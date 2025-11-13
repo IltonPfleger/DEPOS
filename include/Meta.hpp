@@ -42,6 +42,16 @@ namespace Meta {
     };
 
     template <typename T>
+    struct VOID {
+        static constexpr bool Result = false;
+    };
+
+    template <>
+    struct VOID<void> {
+        static constexpr bool Result = true;
+    };
+
+    template <typename T>
     struct SIGNED {
         static constexpr bool Result = T(-1) < T(0);
     };
