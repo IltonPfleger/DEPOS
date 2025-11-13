@@ -17,7 +17,6 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->state = State::RUNNING;
     lock->release();
     if (next != previous) {
-
         // if constexpr (Traits::System::MULTITASK) {
         //     // next->task_->attach(previous->stack_);
         //     // next->task_->load();
@@ -30,20 +29,21 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
 
 int Thread::idle(void *) {
     while (_count > Traits::Machine::CPUS) {
-        if (!_scheduler.empty())
-            yield();
+        if (!_scheduler.empty()) yield();
     }
 
     CPU::Interrupt::disable();
-    if (CPU::core() == Traits::Machine::BSP)
-        Console::println("*** Shutdown! ***\n");
-    for (;;)
-        ;
+    if (CPU::core() == Traits::Machine::BSP) Console::println("*** Shutdown! ***\n");
+    for (;;);
     return 0;
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : stack_(Segment(Traits::Memory::Page::SIZE)), state(State::READY), joining(0), criterion(c), waiting(0),
+    : stack_(Segment(Traits::Memory::Page::SIZE)),
+      state(State::READY),
+      joining(0),
+      criterion(c),
+      waiting(0),
       link(Element(this, c())) {
     TraceIn(this);
 
@@ -127,23 +127,21 @@ void Thread::exit() {
 
 void Thread::init() {
     TraceIn();
-    for (int i = 0; i < Traits::Machine::CPUS; ++i)
-        new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+    for (int i = 0; i < Traits::Machine::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     TraceOut()
 }
 
 void Thread::run() {
+    char buffer[sizeof(Thread)];
+    Thread *previous = reinterpret_cast<Thread *>(buffer);
     _lock.acquire();
     TraceIn();
-    Thread *t = _scheduler.pop();
-    t->state  = State::RUNNING;
-    _lock.release();
-    t->context_->load();
+    Thread *next = _scheduler.pop();
+    dispatch(previous, next, &_lock);
 }
 
 void Thread::reschedule() {
-    if (_scheduler.empty())
-        return;
+    if (_scheduler.empty()) return;
 
     auto previous   = running();
     previous->state = State::READY;

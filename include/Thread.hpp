@@ -10,7 +10,7 @@ class Thread {
     // friend void *operator new(unsigned long bytes, Heap &heap);
     // friend void *operator new(unsigned long);
 
-  public:
+   public:
     enum class State { RUNNING, READY, WAITING, FINISHED };
     using Criterion = typename Traits::Scheduler<Thread>::Criterion;
     using Argument  = void *;
@@ -19,7 +19,7 @@ class Thread {
     using Element   = Queue::Node;
     using CPU       = Machine::CPU;
 
-    //Thread(Function, Argument, Criterion, Task * = nullptr);
+    // Thread(Function, Argument, Criterion, Task * = nullptr);
     Thread(Function, Argument, Criterion);
     ~Thread();
 
@@ -35,7 +35,7 @@ class Thread {
     static void reschedule();
     static int idle(void *);
 
-  private:
+   private:
     Task *task_;
     Segment stack_;
     CPU::Context *volatile context_;

@@ -15,7 +15,7 @@ namespace Init {
             Console::init();
             TraceIn();
             Memory::init();
-            // Task::init();
+            Task::init();
             Application::init();
             booting = false;
         }

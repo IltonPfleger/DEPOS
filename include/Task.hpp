@@ -11,7 +11,7 @@ extern "C" const char __KERNEL_START__[];
 extern "C" const char __KERNEL_END__[];
 
 class Task {
-  public:
+   public:
     Task() : as(new(Heap::SYSTEM) AddressSpace()) {
         // uintptr_t KernelStart = reinterpret_cast<uintptr_t>(__mm.kernel.start);
         // uintptr_t KernelEnd   = reinterpret_cast<uintptr_t>(__mm.kernel.end);
@@ -34,20 +34,26 @@ class Task {
 
     // // private:
     // //  Task(Heap* h, AddressSpace* a) : heap(h), as(a) {}
+    void attach(Segment &s, AddressSpace::Flags f) {
+        TraceIn(reinterpret_cast<void *>(s.base()), s.size());
+        ERROR(s.size() % AddressSpace::PageSize != 0);
+        for (auto addr = s.base(); addr <= s.end(); addr += AddressSpace::PageSize) {
+            as->map(reinterpret_cast<uintptr_t>(addr), f);
+        }
+        TraceOut();
+    }
 
-  public:
+   public:
     static void init() {
         TraceIn();
-        // AddressSpace *as = new (Heap::SYSTEM) AddressSpace();
-
-        // for (uintptr_t pa = Traits::Memory::RAM_BASE; pa < Traits::Memory::RAM_END; pa += Traits::Memory::Page::SIZE)
-        // {
-        //     as->map(pa, AddressSpace::KernelRW);
-        // }
-
-        // as->map(Machine::IO::Addr, AddressSpace::KernelRW);
-
-        // as->load();
+        Task *SYSTEM = new (Heap::SYSTEM) Task();
+        char buffer[sizeof(Segment)];
+        Segment *s = reinterpret_cast<Segment *>(buffer);
+        new (buffer) Segment(Traits::Memory::RAM_BASE, Traits::Memory::SIZE);
+        SYSTEM->attach(*s, AddressSpace::KernelRW);
+        new (buffer) Segment(Machine::IO::Addr, AddressSpace::PageSize);
+        SYSTEM->attach(*s, AddressSpace::KernelRW);
+        SYSTEM->load();
         TraceOut();
     }
 
@@ -66,7 +72,7 @@ class Task {
 
     // void* attach(void* addr) { return as->map(addr); }
 
-  public:
+   public:
     Heap *heap;
     AddressSpace *as;
 };
