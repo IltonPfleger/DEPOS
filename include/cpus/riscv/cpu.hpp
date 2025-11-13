@@ -6,10 +6,6 @@
 #include <cpus/riscv/ic.hpp>
 #include <cpus/riscv/mmu.hpp>
 
-namespace Init {
-    void init();
-}
-
 class RISCV {
    public:
     struct Machine;
@@ -18,7 +14,7 @@ class RISCV {
 
     using CLINT      = SiFiveCLINT;
     using KernelMode = Supervisor;
-    using UserMode   = User;
+    using UserMode   = Supervisor;
 
     typedef uintmax_t Register;
     struct Machine {
