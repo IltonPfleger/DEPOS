@@ -35,7 +35,7 @@ struct Traits {
 
     struct System {
         static constexpr unsigned long ADDR = 0x80000000;
-        static constexpr int MULTITASK      = true;
+        static constexpr int MULTITASK      = false;
     };
 
     struct Application {

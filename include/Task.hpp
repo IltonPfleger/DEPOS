@@ -1,17 +1,15 @@
 #pragma once
 
 #include <IO/Debug.hpp>
-#include <memory/AddressSpace.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
 #include <memory/MemoryMap.hpp>
 #include <memory/Segment.hpp>
 
-extern "C" const char __KERNEL_START__[];
-extern "C" const char __KERNEL_END__[];
-
 class Task {
-   public:
+    using AddressSpace = Machine::MMU::PageTable;
+
+  public:
     Task() : as(new(Heap::SYSTEM) AddressSpace()) {
         // uintptr_t KernelStart = reinterpret_cast<uintptr_t>(__mm.kernel.start);
         // uintptr_t KernelEnd   = reinterpret_cast<uintptr_t>(__mm.kernel.end);
@@ -43,7 +41,7 @@ class Task {
         TraceOut();
     }
 
-   public:
+  public:
     static void init() {
         TraceIn();
         Task *SYSTEM = new (Heap::SYSTEM) Task();
@@ -60,19 +58,8 @@ class Task {
     void load() { as->load(); };
 
     void attach(Segment &) {}
-    // void attach(Segment &s, AddressSpace::Flags flags = AddressSpace::UserRW) {
-    //     TraceIn(reinterpret_cast<void *>(s.base()), s.size());
-    //     (void)flags;
-    //     // ERROR(s.size() % Machine::MMU::PageSize != 0);
-    //     // for (auto i = s.base(); i <= s.end(); i += Machine::MMU::PageSize) {
-    //     //     as->map(reinterpret_cast<uintptr_t>(i), flags);
-    //     // }
-    //     TraceOut();
-    // }
 
-    // void* attach(void* addr) { return as->map(addr); }
-
-   public:
+  public:
     Heap *heap;
     AddressSpace *as;
 };
