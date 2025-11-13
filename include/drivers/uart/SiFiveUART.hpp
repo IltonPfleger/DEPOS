@@ -1,10 +1,12 @@
 #include <Types.hpp>
 
+template <unsigned long A, unsigned long C, unsigned long B>
 struct SiFiveUART {
-    static constexpr uintptr_t Addr = 0x10010000;
-    static constexpr int Clock      = 31250000;
-    static constexpr int Baudrate   = 115200;
-    static constexpr int Divisor    = Clock / Baudrate;
+    static constexpr auto Addr     = A;
+    static constexpr auto Clock    = C;
+    static constexpr auto Baudrate = B;
+
+    static constexpr int Divisor = Clock / Baudrate;
 
     static volatile unsigned int *base() { return reinterpret_cast<volatile unsigned int *>(Addr); }
 
@@ -15,7 +17,6 @@ struct SiFiveUART {
     static volatile unsigned int &IE() { return *(base() + 4); }
     static volatile unsigned int &IP() { return *(base() + 5); }
     static volatile unsigned int &DIV() { return *(base() + 6); }
-
     static constexpr unsigned int TX_EMPTY_MASK = (1 << 31);
     static constexpr unsigned int RX_EMPTY_MASK = 0x80000000;
 
@@ -27,10 +28,8 @@ struct SiFiveUART {
     }
 
     static void put(char c) {
-        while (TXDATA() & TX_EMPTY_MASK)
-            ;
+        while (TXDATA() & TX_EMPTY_MASK);
         TXDATA() = c;
-        while (TXDATA() & TX_EMPTY_MASK)
-            ;
+        while (TXDATA() & TX_EMPTY_MASK);
     }
 };

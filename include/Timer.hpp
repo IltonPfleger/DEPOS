@@ -22,8 +22,6 @@ class Timer {
         //     _channels[ALARM]._default              = Traits<Timer>::Frequency / Traits<Alarm>::Frequency;
         //     _channels[ALARM]._current[CPU::core()] = _channels[ALARM]._default;
         // }
-
-        // CPU::Interrupt::Timer::enable();
     }
 
     static void handler(unsigned int core) {
