@@ -6,9 +6,8 @@
 #include <cpus/riscv/mmu.hpp>
 #include <drivers/uart/SiFiveUART.hpp>
 
-class Machine {
-   public:
+namespace Machine {
     using IO  = SiFiveUART;
     using CPU = RISCV;
-    using MMU = Meta::IF<Traits<System>::MULTITASK, SV39_MMU, DefaultMMU<>>::Result;
+    using MMU = Meta::IF<Traits::System::MULTITASK, SV39_MMU, DefaultMMU<>>::Result;
 };

@@ -12,7 +12,7 @@ class Thread {
 
    public:
     enum class State { RUNNING, READY, WAITING, FINISHED };
-    using Criterion = typename Scheduler<Thread>::Criterion;
+    using Criterion = typename Traits<Scheduler<Thread>>;
     using Argument  = void *;
     using Function  = int (*)(Argument);
     using Queue     = FIFO<Thread *>;

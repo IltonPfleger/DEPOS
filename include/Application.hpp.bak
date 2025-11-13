@@ -9,7 +9,7 @@
 class Application {
   public:
     static void init() {
-        // if constexpr (Traits<System>::MULTITASK) {
+        // if constexpr (Traits::System::MULTITASK) {
         //    uintptr_t CodeStart = reinterpret_cast<uintptr_t>(__mm.app.code.start);
         //    uintptr_t CodeEnd   = reinterpret_cast<uintptr_t>(__mm.app.code.end);
         //    TraceIn(CodeStart, CodeEnd);

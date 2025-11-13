@@ -116,12 +116,12 @@ class RISCV {
             "sub sp, t1, t0\n"
             "ret"
             :
-            : "r"(Traits<Memory>::RAM_END), "r"(Traits<Memory>::PAGE_SIZE));
+            : "r"(Traits::Memory::RAM_END), "r"(Traits::Memory::Page::SIZE));
     }
 
     __attribute__((noinline)) static void init() {
-        static_assert(!Traits<System>::MULTITASK || Meta::SAME<KernelMode, Supervisor>::Result);
-        static_assert(!Meta::SAME<UserMode, User>::Result || Traits<System>::MULTITASK);
+        static_assert(!Traits::System::MULTITASK || Meta::SAME<KernelMode, Supervisor>::Result);
+        static_assert(!Meta::SAME<UserMode, User>::Result || Traits::System::MULTITASK);
 
         if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
             if (core() == 0) {
@@ -129,7 +129,7 @@ class RISCV {
             }
         }
 
-        if constexpr (Traits<Timer>::Enable) {
+        if constexpr (Traits::Timer::Enable) {
             csrs<Machine::IE>(Machine::TI);
             csrs<Supervisor::IE>(Supervisor::TI);
         }
