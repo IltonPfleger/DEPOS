@@ -9,34 +9,39 @@ static volatile bool booting  = true;
 static volatile bool starting = true;
 
 namespace Init {
-    void init() {
-        bool BSP = Machine::CPU::core() == Traits<Machine>::BSP;
-        if (BSP) {
-            Console::init();
-            TraceIn();
-            Memory::init();
-            Task::init();
-            Application::init();
-            booting = false;
-        }
-        while (booting);
-        if (BSP) {
-            Thread::init();
-            TraceOut();
-            starting = false;
-        }
-        while (starting);
-        if (Machine::CPU::core() < Traits<Machine>::CPUS) {
-            Timer::init();
-            Thread::run();
-        }
-        for (;;);
+void init() {
+    bool BSP = Machine::CPU::core() == Traits<Machine>::BSP;
+    if (BSP) {
+        // while(1);
+        Console::init();
+        TraceIn();
+        Memory::init();
+        // Task::init();
+        // Application::init();
+        booting = false;
     }
+    while (booting)
+        ;
+    if (BSP) {
+        Thread::init();
+        TraceOut();
+        starting = false;
+    }
+    while (starting)
+        ;
+    if (Machine::CPU::core() < Traits<Machine>::CPUS) {
+        Timer::init();
+        Thread::run();
+    }
+    for (;;)
+        ;
 }
+} // namespace Init
 
 // extern "C" __attribute__((naked, section(".boot"))) void kboot() {
-extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
+__attribute__((naked, used, noinline, section(".init"))) void _init() {
     Machine::CPU::setup();
     Machine::CPU::init();
+    Machine::MMU::init();
     Init::init();
 }

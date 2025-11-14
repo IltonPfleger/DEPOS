@@ -1,14 +1,13 @@
-#include <Types.hpp>
-
-template <unsigned long A, unsigned long C, unsigned long B>
-struct SiFiveUART {
+template <unsigned long A, unsigned long C, unsigned long B> struct SiFiveUART {
     static constexpr auto Addr     = A;
     static constexpr auto Clock    = C;
     static constexpr auto Baudrate = B;
 
     static constexpr int Divisor = Clock / Baudrate;
 
-    static volatile unsigned int *base() { return reinterpret_cast<volatile unsigned int *>(Addr); }
+    static volatile unsigned int *base() {
+        return reinterpret_cast<volatile unsigned int *>(Addr);
+    }
 
     static volatile unsigned int &TXDATA() { return *(base() + 0); }
     static volatile unsigned int &RXDATA() { return *(base() + 1); }
@@ -28,8 +27,10 @@ struct SiFiveUART {
     }
 
     static void put(char c) {
-        while (TXDATA() & TX_EMPTY_MASK);
+        while (TXDATA() & TX_EMPTY_MASK)
+            ;
         TXDATA() = c;
-        while (TXDATA() & TX_EMPTY_MASK);
+        while (TXDATA() & TX_EMPTY_MASK)
+            ;
     }
 };

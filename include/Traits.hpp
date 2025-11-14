@@ -9,63 +9,59 @@ class System;
 class Application;
 class Debug;
 class Alarm;
+class MemoryMap;
 
-template <typename U>
-class Scheduler;
+template <typename U> class Scheduler;
 
-template <typename T>
-struct Traits;
+template <typename T> struct Traits;
 
-template <>
-struct Traits<Machine> {
-    static constexpr const char* NAME = "sifive_u";
+template <> struct Traits<Machine> {
+    static constexpr const char *NAME = "sifive_u";
     static constexpr int XLEN         = 64;
     static constexpr int CPUS         = 2;
     static constexpr int BSP          = 1;
 };
 
-template <>
-struct Traits<Timer> {
+template <> struct Traits<Memory> {
+    static constexpr unsigned long ORDER      = 30;
+    static constexpr unsigned long SIZE       = (1 << ORDER);
+    static constexpr unsigned long PAGE_ORDER = 12;
+    static constexpr unsigned long PAGE_SIZE  = (1 << PAGE_ORDER);
+};
+
+template <> struct Traits<MemoryMap> {
+    static constexpr unsigned long RAM_BASE = 0x80000000;
+    static constexpr unsigned long RAM_END  = RAM_BASE + Traits<Memory>::SIZE;
+    static constexpr unsigned long UART0    = 0x10010000UL;
+};
+
+template <> struct Traits<Timer> {
     static constexpr bool Enable             = true;
     static constexpr unsigned long MHz       = 1'000'000;
     static constexpr unsigned long Frequency = MHz;
 };
 
-template <>
-struct Traits<Alarm> {
+template <> struct Traits<Alarm> {
     static constexpr bool Enable             = true;
     static constexpr unsigned long Frequency = Traits<Timer>::MHz;
 };
 
-template <>
-struct Traits<Memory> {
-    static constexpr unsigned long ORDER      = 30;
-    static constexpr unsigned long SIZE       = (1 << ORDER);
-    static constexpr unsigned long RAM_BASE   = 0x80000000;
-    static constexpr unsigned long RAM_END    = RAM_BASE + SIZE;
-    static constexpr unsigned long PAGE_ORDER = 12;
-    static constexpr unsigned long PAGE_SIZE  = (1 << PAGE_ORDER);
+template <> struct Traits<System> {
+    static constexpr unsigned long ADDR      = 0x80000000;
+    static constexpr unsigned long VIRT_ADDR = 0xFFFFFFC000000000ULL;
+    static constexpr bool MULTITASK          = true;
 };
 
-template <>
-struct Traits<System> {
-    static constexpr unsigned long ADDR = 0x80000000;
-    static constexpr bool MULTITASK     = false;
-};
-
-template <>
-struct Traits<Application> {
+template <> struct Traits<Application> {
     static constexpr unsigned long ADDR = 0xA0000000;
 };
 
-template <>
-struct Traits<Debug> {
+template <> struct Traits<Debug> {
     static constexpr bool Error = true;
     static constexpr bool Trace = true;
 };
 
-template <>
-struct Traits<Scheduler<Thread>> {
+template <> struct Traits<Scheduler<Thread>> {
     static constexpr unsigned long Frequency = Traits<Timer>::MHz / 10;
     using Criterion                          = RR;
 };

@@ -7,24 +7,26 @@ static Spin _lock;
 
 void Memory::init() {
     constexpr size_t PageSize   = Traits<Memory>::PAGE_SIZE;
-    constexpr uintptr_t RamBase = Traits<Memory>::RAM_BASE;
-    constexpr uintptr_t RamEnd  = Traits<Memory>::RAM_END;
+    constexpr uintptr_t RamBase = Traits<MemoryMap>::RAM_BASE;
+    constexpr uintptr_t RamEnd  = Traits<MemoryMap>::RAM_END;
     uintptr_t KernelStart       = __kmm.start;
     uintptr_t KernelEnd         = __kmm.end;
     uintptr_t KernelSize        = KernelEnd - KernelStart;
     uintptr_t ApplicationStart  = __mm.start;
     uintptr_t ApplicationEnd    = __mm.end;
     uintptr_t ApplicationSize   = ApplicationEnd - ApplicationStart;
-
-    TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize);
-
-    uintptr_t c;
-    for (c = RamEnd - PageSize; c > RamBase; c -= PageSize) {
-        if (c >= KernelStart && c < KernelEnd) continue;
-        if (c >= ApplicationStart && c < ApplicationEnd) continue;
-        buddy_.insert(reinterpret_cast<void *>(c), PageSize);
+    TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart,
+            ApplicationEnd, ApplicationSize);
+    if (buddy_.empty()) {
+        uintptr_t c;
+        for (c = RamEnd - PageSize; c > RamBase; c -= PageSize) {
+            if (c >= KernelStart && c < KernelEnd)
+                continue;
+            if (c >= ApplicationStart && c < ApplicationEnd)
+                continue;
+            buddy_.insert(reinterpret_cast<void *>(c), PageSize);
+        }
     }
-
     TraceOut();
 }
 

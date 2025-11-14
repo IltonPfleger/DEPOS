@@ -116,7 +116,7 @@ class RISCV {
             "sub sp, t1, t0\n"
             "ret"
             :
-            : "r"(Traits<Memory>::RAM_END), "r"(Traits<Memory>::PAGE_SIZE));
+            : "r"(Traits<MemoryMap>::RAM_END), "r"(Traits<Memory>::PAGE_SIZE));
     }
 
     __attribute__((noinline)) static void init() {
