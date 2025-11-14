@@ -4,15 +4,15 @@
 #include <memory/Buddy.hpp>
 
 class Memory {
-   private:
+  private:
     using Buddy = BuddyAllocator<Traits<Memory>::ORDER>;
 
-   public:
+  public:
     static void init();
-    static void* kmalloc(size_t);
-    static void kfree(void*, size_t);
+    static void *kmalloc(size_t);
+    static void kfree(void *, size_t);
 
-   private:
+  private:
     static inline Buddy buddy_;
 };
 

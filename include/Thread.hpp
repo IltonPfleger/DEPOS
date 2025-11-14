@@ -7,7 +7,7 @@
 #include <memory/Segment.hpp>
 
 class Thread {
-   public:
+  public:
     enum class State { RUNNING, READY, WAITING, FINISHED };
     using Criterion = typename Scheduler<Thread>::Criterion;
     using Argument  = void *;
@@ -17,18 +17,16 @@ class Thread {
     using CPU       = Machine::CPU;
 
     Thread(Function f, Argument a, Criterion c, Task *t = nullptr)
-        : task_(t ? t : new(Heap::SYSTEM) Task()),
+        : // task_(t ? t : new(Heap::SYSTEM) Task()),
           stack_(Segment(Traits<Memory>::PAGE_SIZE)),
-          ustack_(Segment(Traits<Memory>::PAGE_SIZE)),
-          waiting(0),
-          link(Element(this, c())),
-          criterion(c),
-          state(State::RUNNING),
-          joining(0),
-          context_(new(stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, exit)) {
+          ustack_(Segment(Traits<Memory>::PAGE_SIZE)), waiting(0),
+          link(Element(this, c())), criterion(c), state(State::RUNNING),
+          joining(0), context_(new(stack_.end() - sizeof(CPU::Context))
+                                   CPU::Context(f, a, exit)) {
         TraceIn(this);
-        task_->attach(stack_, Task::AddressSpace::Flags::KernelRW);
-        task_->attach(ustack_, Task::AddressSpace::Flags::UserRW);
+        (void)t;
+        // task_->attach(stack_, Task::AddressSpace::Flags::KernelRW);
+        // task_->attach(ustack_, Task::AddressSpace::Flags::UserRW);
         lock_.lock();
         scheduler_.insert(&link);
         count_ = count_ + 1;
@@ -39,13 +37,10 @@ class Thread {
     template <typename T = void>
         requires(!Traits<System>::MULTITASK)
     Thread(Function f, Argument a, Criterion c)
-        : stack_(Segment(Traits<Memory>::PAGE_SIZE)),
-          waiting(0),
-          link(Element(this, c())),
-          criterion(c),
-          state(State::READY),
-          joining(0),
-          context_(new(stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, exit)) {
+        : stack_(Segment(Traits<Memory>::PAGE_SIZE)), waiting(0),
+          link(Element(this, c())), criterion(c), state(State::READY),
+          joining(0), context_(new(stack_.end() - sizeof(CPU::Context))
+                                   CPU::Context(f, a, exit)) {
         TraceIn(this);
         lock_.lock();
         scheduler_.insert(&link);
@@ -68,7 +63,7 @@ class Thread {
     static void reschedule();
     static int idle(void *);
 
-   private:
+  private:
     Task *task_;
     Segment stack_;
     Segment ustack_;
@@ -79,7 +74,7 @@ class Thread {
     Thread *volatile joining;
     CPU::Context *volatile context_;
 
-   private:
+  private:
     static inline Scheduler<Thread> scheduler_;
     static inline volatile unsigned int count_;
     static inline Spin lock_;
@@ -92,5 +87,6 @@ class Thread {
 //     const Microsecond duration;
 //     Microsecond start;
 //
-//     RT_Thread(Function, Argument, Microsecond, Microsecond, Microsecond, Microsecond);
+//     RT_Thread(Function, Argument, Microsecond, Microsecond, Microsecond,
+//     Microsecond);
 // };
