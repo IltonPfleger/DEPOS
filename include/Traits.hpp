@@ -30,9 +30,11 @@ template <> struct Traits<Memory> {
 };
 
 template <> struct Traits<MemoryMap> {
-    static constexpr unsigned long RAM_BASE = 0x80000000;
-    static constexpr unsigned long RAM_END  = RAM_BASE + Traits<Memory>::SIZE;
-    static constexpr unsigned long UART0    = 0x10010000UL;
+    static constexpr unsigned long VIRT_ADDR = 0xFFFFFFC000000000ULL;
+    static constexpr unsigned long RAM_BASE  = 0x80000000;
+    static constexpr unsigned long BOOT_ADDR = RAM_BASE;
+    static constexpr unsigned long RAM_END   = RAM_BASE + Traits<Memory>::SIZE;
+    static constexpr unsigned long UART0     = 0x10010000UL;
 };
 
 template <> struct Traits<Timer> {
@@ -47,9 +49,7 @@ template <> struct Traits<Alarm> {
 };
 
 template <> struct Traits<System> {
-    static constexpr unsigned long ADDR      = 0x80000000;
-    static constexpr unsigned long VIRT_ADDR = 0xFFFFFFC000000000ULL;
-    static constexpr bool MULTITASK          = true;
+    static constexpr bool MULTITASK = true;
 };
 
 template <> struct Traits<Application> {

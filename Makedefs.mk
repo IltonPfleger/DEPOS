@@ -16,7 +16,7 @@ GET := ./Meta get $(TRAITS)
 CPUS=$(shell $(GET) "Traits<Machine>::CPUS")
 MACHINE=$(shell $(GET) "Traits<Machine>::NAME")
 MEMORY_SIZE=$(shell $(GET) "Traits<Memory>::SIZE")
-BOOT_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<System>::ADDR"))
+BOOT_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::BOOT_ADDR"))
 APP_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<Application>::ADDR"))
 PAGE_SIZE=$(shell $(GET) "Traits<Memory>::PAGE_SIZE")
 MULTITASK=$(shell $(GET) "Traits<System>::MULTITASK")
@@ -24,7 +24,6 @@ MULTITASK=$(shell $(GET) "Traits<System>::MULTITASK")
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
-#CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -ffunction-sections -mno-relax
 CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
 CFLAGS += -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -g -std=c++2c -g -Os

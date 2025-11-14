@@ -20,33 +20,29 @@ class DefaultMMU {
     };
 
     static void init() {
-        unsigned long KernelTextStart = __kmm.text.start;
-        unsigned long KernelTextEnd   = __kmm.text.end;
-        unsigned long KernelTextSize  = KernelTextEnd - KernelTextStart;
+        // unsigned long KernelTextStart = __kmm.text.start;
+        // unsigned long KernelTextEnd   = __kmm.text.end;
+        // unsigned long KernelTextSize  = KernelTextEnd - KernelTextStart;
 
-        unsigned long KernelDataStart = __kmm.data.start;
-        unsigned long KernelDataEnd   = __kmm.data.end;
-        unsigned long KernelDataSize  = KernelDataEnd - KernelDataStart;
+        // unsigned long KernelDataStart = __kmm.data.start;
+        // unsigned long KernelDataEnd   = __kmm.data.end;
+        // unsigned long KernelDataSize  = KernelDataEnd - KernelDataStart;
 
-        unsigned long KernelBssStart = __kmm.bss.start;
-        unsigned long KernelBssEnd   = __kmm.bss.end;
-        unsigned long KernelBssSize  = KernelBssEnd - KernelBssStart;
+        // unsigned long KernelBssStart = __kmm.bss.start;
+        // unsigned long KernelBssEnd   = __kmm.bss.end;
+        // unsigned long KernelBssSize  = KernelBssEnd - KernelBssStart;
 
-        unsigned long KernelRODataStart = __kmm.rodata.start;
-        unsigned long KernelRODataEnd   = __kmm.rodata.end;
-        unsigned long KernelRODataSize  = KernelRODataEnd - KernelRODataStart;
-
-        Segment text(KernelTextStart, KernelTextSize, false);
-        Segment data(KernelDataStart, KernelDataSize, false);
-        Segment bss(KernelBssStart, KernelBssSize, false);
-        Segment rodata(KernelRODataStart, KernelRODataSize, false);
+        // unsigned long KernelRODataStart = __kmm.rodata.start;
+        // unsigned long KernelRODataEnd   = __kmm.rodata.end;
+        // unsigned long KernelRODataSize  = KernelRODataEnd -
+        // KernelRODataStart;
 
         Memory::init();
         using PT = typename Derived::PageTable;
         PT *pt   = new (Memory::kmalloc(sizeof(PT))) PT();
 
-        // pt->map(Traits<System>::VIRT_ADDR, Traits<Memory>::RAM_BASE,
-        //         Traits<Memory>::RAM_END, PT::Flags::KernelRW);
+        pt->map(Traits<MemoryMap>::VIRT_ADDR, Traits<MemoryMap>::RAM_BASE,
+                Traits<MemoryMap>::RAM_END, PT::Flags::KernelRW);
 
         pt->map(Traits<MemoryMap>::RAM_BASE, Traits<MemoryMap>::RAM_BASE,
                 Traits<Memory>::SIZE, PT::Flags::KernelRW);
