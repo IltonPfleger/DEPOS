@@ -5,8 +5,7 @@
 class Segment {
    public:
     Segment(uintptr_t addr, size_t size) : addr_(reinterpret_cast<char *>(addr)), size_(size) {}
-    Segment(void *addr, size_t size) : addr_(static_cast<char *>(addr)), size_(size) {}
-    Segment(size_t size) : Segment(Memory::kmalloc(size), size) {}
+    Segment(size_t size) : Segment(reinterpret_cast<uintptr_t>(Memory::kmalloc(size)), size) {}
     ~Segment() { Memory::kfree(addr_, size_); }
 
     char *base() const { return addr_; }

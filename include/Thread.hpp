@@ -7,9 +7,6 @@
 #include <memory/Segment.hpp>
 
 class Thread {
-    // friend void *operator new(unsigned long bytes, Heap &heap);
-    // friend void *operator new(unsigned long);
-
    public:
     enum class State { RUNNING, READY, WAITING, FINISHED };
     using Criterion = typename Scheduler<Thread>::Criterion;
@@ -19,8 +16,44 @@ class Thread {
     using Element   = Queue::Node;
     using CPU       = Machine::CPU;
 
-    // Thread(Function, Argument, Criterion, Task * = nullptr);
-    Thread(Function, Argument, Criterion);
+    Thread(Function f, Argument a, Criterion c, Task *t = nullptr)
+        : task_(t ? t : new(Heap::SYSTEM) Task()),
+          stack_(Segment(Traits<Memory>::PAGE_SIZE)),
+          ustack_(Segment(Traits<Memory>::PAGE_SIZE)),
+          waiting(0),
+          link(Element(this, c())),
+          criterion(c),
+          state(State::RUNNING),
+          joining(0),
+          context_(new(stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, exit)) {
+        TraceIn(this);
+        task_->attach(stack_, Task::AddressSpace::Flags::KernelRW);
+        task_->attach(ustack_, Task::AddressSpace::Flags::UserRW);
+        lock_.lock();
+        scheduler_.insert(&link);
+        count_ = count_ + 1;
+        lock_.unlock();
+        TraceOut();
+    }
+
+    template <typename T = void>
+        requires(!Traits<System>::MULTITASK)
+    Thread(Function f, Argument a, Criterion c)
+        : stack_(Segment(Traits<Memory>::PAGE_SIZE)),
+          waiting(0),
+          link(Element(this, c())),
+          criterion(c),
+          state(State::READY),
+          joining(0),
+          context_(new(stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, exit)) {
+        TraceIn(this);
+        lock_.lock();
+        scheduler_.insert(&link);
+        count_ = count_ + 1;
+        lock_.unlock();
+        TraceOut();
+    }
+
     ~Thread();
 
     static Thread *running();
@@ -38,12 +71,18 @@ class Thread {
    private:
     Task *task_;
     Segment stack_;
-    CPU::Context *volatile context_;
-    volatile State state;
-    Thread *volatile joining;
-    Criterion criterion;
+    Segment ustack_;
     Queue *waiting;
     Queue::Node link;
+    Criterion criterion;
+    volatile State state;
+    Thread *volatile joining;
+    CPU::Context *volatile context_;
+
+   private:
+    static inline Scheduler<Thread> scheduler_;
+    static inline volatile unsigned int count_;
+    static inline Spin lock_;
 };
 
 // struct RT_Thread : Thread {

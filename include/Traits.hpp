@@ -18,7 +18,7 @@ struct Traits;
 
 template <>
 struct Traits<Machine> {
-    static constexpr const char *NAME = "sifive_u";
+    static constexpr const char* NAME = "sifive_u";
     static constexpr int XLEN         = 64;
     static constexpr int CPUS         = 2;
     static constexpr int BSP          = 1;
@@ -50,7 +50,7 @@ struct Traits<Memory> {
 template <>
 struct Traits<System> {
     static constexpr unsigned long ADDR = 0x80000000;
-    static constexpr int MULTITASK      = true;
+    static constexpr bool MULTITASK     = false;
 };
 
 template <>

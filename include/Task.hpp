@@ -7,9 +7,8 @@
 #include <memory/Segment.hpp>
 
 class Task {
-    using AddressSpace = Machine::MMU::PageTable;
-
    public:
+    using AddressSpace = Machine::MMU::PageTable;
     Task() : as(new(Heap::SYSTEM) AddressSpace()) {
         // uintptr_t KernelStart = reinterpret_cast<uintptr_t>(__mm.kernel.start);
         // uintptr_t KernelEnd   = reinterpret_cast<uintptr_t>(__mm.kernel.end);
@@ -29,9 +28,8 @@ class Task {
     //       for (uintptr_t pa = KERNEL_START; pa < KERNEL_END; pa += PAGE_SIZE) as->map(pa, pa, SV39_MMU::X);
     //       as->map(Machine::IO::Addr, Machine::IO::Addr);
     //   }
-
-    // // private:
-    // //  Task(Heap* h, AddressSpace* a) : heap(h), as(a) {}
+    //
+   public:
     void attach(Segment &s, AddressSpace::Flags f) {
         TraceIn(reinterpret_cast<void *>(s.base()), s.size());
         ERROR(s.size() % AddressSpace::PageSize != 0);
@@ -43,23 +41,24 @@ class Task {
 
    public:
     static void init() {
-        TraceIn();
-        Task *SYSTEM = new (Heap::SYSTEM) Task();
-        char buffer[sizeof(Segment)];
-        Segment *s = reinterpret_cast<Segment *>(buffer);
-        new (buffer) Segment(Traits<Memory>::RAM_BASE, Traits<Memory>::SIZE);
-        SYSTEM->attach(*s, AddressSpace::Flags::KernelRW);
-        new (buffer) Segment(Machine::IO::Addr, AddressSpace::PageSize);
-        SYSTEM->attach(*s, AddressSpace::Flags::KernelRW);
-        SYSTEM->load();
-        TraceOut();
+        // TraceIn();
+        // SYSTEM = new (Heap::SYSTEM) Task();
+        // char buffer[sizeof(Segment)];
+        // Segment *s = reinterpret_cast<Segment *>(buffer);
+        // new (buffer) Segment(Traits<Memory>::RAM_BASE, Traits<Memory>::SIZE);
+        // SYSTEM->attach(*s, AddressSpace::Flags::KernelRW);
+        // new (buffer) Segment(Machine::IO::Addr, AddressSpace::PageSize);
+        // SYSTEM->attach(*s, AddressSpace::Flags::KernelRW);
+        // SYSTEM->load();
+        // TraceOut();
     }
 
     void load() { as->load(); };
 
-    void attach(Segment &) {}
+    // void attach(Segment &s) { attach(s, AddressSpace::KernelRW); }
 
    public:
     Heap *heap;
     AddressSpace *as;
+    // static inline Task *SYSTEM;
 };
