@@ -12,7 +12,7 @@ void Timer::handler(unsigned long core) {
     //         }
     //     }
 
-    if constexpr (Traits<Scheduler<Thread>>::Criterion::Timed) {
+    if constexpr (Traits<Scheduler<Thread>>::Preemptive) {
         if (--_scheduler._current[core] == 0) {
             _scheduler._current[core] = _scheduler._default;
             Thread::reschedule();
