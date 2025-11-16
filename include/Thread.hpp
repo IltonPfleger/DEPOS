@@ -27,10 +27,10 @@ class Thread {
         (void)t;
         // task_->attach(stack_, Task::AddressSpace::Flags::KernelRW);
         // task_->attach(ustack_, Task::AddressSpace::Flags::UserRW);
-        lock_.lock();
-        scheduler_.insert(&link);
-        count_ = count_ + 1;
-        lock_.unlock();
+        lock_s.lock();
+        scheduler_s.insert(&link);
+        count_s = count_s + 1;
+        lock_s.unlock();
         TraceOut();
     }
 
@@ -42,10 +42,10 @@ class Thread {
           joining(0), context_(new(stack_.end() - sizeof(CPU::Context))
                                    CPU::Context(f, a, exit)) {
         TraceIn(this);
-        lock_.lock();
-        scheduler_.insert(&link);
-        count_ = count_ + 1;
-        lock_.unlock();
+        lock_s.lock();
+        scheduler_s.insert(&link);
+        count_s = count_s + 1;
+        lock_s.unlock();
         TraceOut();
     }
 
@@ -75,9 +75,9 @@ class Thread {
     CPU::Context *volatile context_;
 
   private:
-    static inline Scheduler<Thread> scheduler_;
-    static inline volatile unsigned int count_;
-    static inline Spin lock_;
+    static inline Scheduler<Thread> scheduler_s;
+    static inline volatile unsigned int count_s;
+    static inline Spin lock_s;
 };
 
 // struct RT_Thread : Thread {

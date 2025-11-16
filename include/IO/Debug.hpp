@@ -5,16 +5,17 @@
 #include <Traits.hpp>
 #include <utils/Console.hpp>
 
-#define ERROR(expr, ...)                                                                      \
-    if constexpr (Traits<Debug>::Error) {                                                     \
-        if (expr) {                                                                           \
-            Machine::CPU::Interrupt::disable();                                               \
-            Console::println("<%d> [ERROR] %s\n", Machine::CPU::core(), __PRETTY_FUNCTION__); \
-            __VA_OPT__(Console::println(__VA_ARGS__));                                        \
-            __VA_OPT__(Console::println("\n"));                                               \
-            for (;;) {                                                                        \
-            }                                                                                 \
-        }                                                                                     \
+#define ERROR(expr, ...)                                                       \
+    if constexpr (Traits<Debug>::Error) {                                      \
+        if (expr) {                                                            \
+            Machine::CPU::Interruptions::disable();                            \
+            Console::println("<%d> [ERROR] %s\n", Machine::CPU::core(),        \
+                             __PRETTY_FUNCTION__);                             \
+            __VA_OPT__(Console::println(__VA_ARGS__));                         \
+            __VA_OPT__(Console::println("\n"));                                \
+            for (;;) {                                                         \
+            }                                                                  \
+        }                                                                      \
     }
 
 // constexpr const char *TrimPrettyFunction(const char *func) {
@@ -28,17 +29,18 @@
 //     return buf;
 // }
 
-#define TraceIn(...)                                                             \
-    if constexpr (Traits<Debug>::Trace) {                                        \
-        Console::println("<%d> %s(", Machine::CPU::core(), __PRETTY_FUNCTION__); \
-        __VA_OPT__(Console::cprintln(__VA_ARGS__));                              \
-        Console::println("){\n");                                                \
+#define TraceIn(...)                                                           \
+    if constexpr (Traits<Debug>::Trace) {                                      \
+        Console::println("<%d> %s(", Machine::CPU::core(),                     \
+                         __PRETTY_FUNCTION__);                                 \
+        __VA_OPT__(Console::cprintln(__VA_ARGS__));                            \
+        Console::println("){\n");                                              \
     }
 
-#define TraceOut(...)                            \
-    if constexpr (Traits<Debug>::Trace) {        \
-        __VA_OPT__(Console::println("return=")); \
-        __VA_OPT__(Console::out << __VA_ARGS__); \
-        __VA_OPT__(Console::out << "\n");        \
-        Console::println("%s}\n", __func__);     \
+#define TraceOut(...)                                                          \
+    if constexpr (Traits<Debug>::Trace) {                                      \
+        __VA_OPT__(Console::println("return="));                               \
+        __VA_OPT__(Console::out << __VA_ARGS__);                               \
+        __VA_OPT__(Console::out << "\n");                                      \
+        Console::println("%s}\n", __func__);                                   \
     }
