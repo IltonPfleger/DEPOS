@@ -34,14 +34,16 @@ class Task {
     //
   public:
     void attach(Segment &s, AddressSpace::Flags f) {
-        TraceIn(reinterpret_cast<void *>(s.base()), s.size());
-        ERROR(s.size() % AddressSpace::Size != 0);
-        (void)f;
-        // for (auto addr = s.base(); addr <= s.end(); addr +=
-        // AddressSpace::PageSize) {
-        // as->map(reinterpret_cast<uintptr_t>(addr), f);
-        // }
-        TraceOut();
+		(void)s;
+		(void)f;
+        // TraceIn(reinterpret_cast<void *>(s.base()), s.size());
+        // ERROR(s.size() % AddressSpace::Size != 0);
+        //(void)f;
+        //// for (auto addr = s.base(); addr <= s.end(); addr +=
+        //// AddressSpace::PageSize) {
+        //// as->map(reinterpret_cast<uintptr_t>(addr), f);
+        //// }
+        // TraceOut();
     }
 
   public:

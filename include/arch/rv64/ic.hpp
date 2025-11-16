@@ -5,7 +5,7 @@ class MIC {
     enum Interrupt { TIMER = 7 };
     enum Exception { SYSCALL = 9 };
 
-   public:
+  public:
     __attribute__((naked, aligned(4))) static void entry();
 };
 
@@ -14,13 +14,13 @@ class SIC {
     static void handler();
     enum Interrupt { TIMER = 5 };
 
-   public:
+  public:
     __attribute__((naked, aligned(4))) static void entry();
 };
 
-class RSyscall {
+class Syscall {
     friend MIC;
 
-   private:
+  private:
     static void handler(void *function);
 };

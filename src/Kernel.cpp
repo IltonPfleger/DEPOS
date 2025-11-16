@@ -5,17 +5,17 @@
 #include <Timer.hpp>
 #include <memory/Memory.hpp>
 
-static volatile bool booting  = true;
+static volatile bool booting = true;
 static volatile bool starting = true;
 
 namespace Init {
 void init() {
     bool BSP = Machine::CPU::core() == Traits<Machine>::BSP;
     if (BSP) {
-        // while(1);
         Console::init();
         TraceIn();
         Memory::init();
+        Machine::MMU::KernelPageTable::init();
         // Task::init();
         // Application::init();
         booting = false;
@@ -38,10 +38,9 @@ void init() {
 }
 } // namespace Init
 
-// extern "C" __attribute__((naked, section(".boot"))) void kboot() {
-__attribute__((naked, used, noinline, section(".init"))) void _init() {
+extern "C" __attribute__((naked, used, noinline, section(".init"))) void
+_init() {
     Machine::CPU::setup();
     Machine::CPU::init();
-    Machine::MMU::init();
     Init::init();
 }
