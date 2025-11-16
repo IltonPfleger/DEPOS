@@ -22,7 +22,7 @@ class Policy {
 
 class RR : public Policy {
   public:
-    static constexpr bool Timed = true;
+    static constexpr bool Preemptive = true;
     template <typename T> using Queue = POFO<T>;
     enum : Rank { NORMAL, IDLE = ~0ULL };
     RR(Rank r = NORMAL, ...) : Policy(r) {}
@@ -31,12 +31,15 @@ class RR : public Policy {
 template <typename T>
 class Scheduler : private Traits<Scheduler<T>>::Criterion::template Queue<T *>,
                   public Head<T> {
+
   public:
     using Criterion = typename Traits<Scheduler<T>>::Criterion;
     using Queue = typename Criterion::template Queue<T *>;
     using Node = typename Queue::Node;
     using Queue::empty;
     using Queue::insert;
+
+    static_assert(Traits<Scheduler<T>>::Preemptive == Criterion::Preemptive);
 
     T *pop() {
         auto e = this->next();
