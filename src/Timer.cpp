@@ -4,11 +4,11 @@
 
 void Timer::init() {
     if constexpr (Traits<Scheduler<Thread>>::Preemptive) {
-        _scheduler._default =
+        scheduler_s.duration =
             Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
-        for (auto &e : _scheduler._current)
-            e = _scheduler._default;
-        //_scheduler._current[Machine::CPU::core()] = _scheduler._default;
+        for (auto &e : scheduler_s.current)
+            e = scheduler_s.duration;
+        // scheduler_s.current[Machine::CPU::core()] = scheduler_s.duration;
     }
 }
 
@@ -16,15 +16,15 @@ void Timer::handler(unsigned long core) {
     // auto core = Machine::CPU::core();
     //  reset(core);
     //     if constexpr (Traits<Alarm>::Enable) {
-    //         if (--_channels[ALARM]._current[CPU::core()] == 0) {
-    //             _channels[ALARM]._current[CPU::core()] =
-    //             _channels[ALARM]._default; Alarm::handler();
+    //         if (--_channels[ALARM].current[CPU::core()] == 0) {
+    //             _channels[ALARM].current[CPU::core()] =
+    //             _channels[ALARM].duration; Alarm::handler();
     //         }
     //     }
 
     if constexpr (Traits<Scheduler<Thread>>::Preemptive) {
-        if (--_scheduler._current[core] == 0) {
-            _scheduler._current[core] = _scheduler._default;
+        if (--scheduler_s.current[core] == 0) {
+            scheduler_s.current[core] = scheduler_s.duration;
             Thread::reschedule();
         }
     }

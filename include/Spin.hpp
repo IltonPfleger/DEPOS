@@ -1,16 +1,19 @@
 #pragma once
 
 class Spin {
-    volatile bool locked     = false;
+    volatile bool locked = false;
     volatile bool interrupts = false;
 
-   public:
-    void acquire() { while (__atomic_test_and_set(&locked, __ATOMIC_SEQ_CST)); }
+  public:
+    void acquire() {
+        while (__atomic_test_and_set(&locked, __ATOMIC_SEQ_CST))
+            ;
+    }
 
     void release() { __atomic_clear(&locked, __ATOMIC_SEQ_CST); }
 
     void lock() {
-        auto i = Machine::CPU::Interrupt::off();
+        auto i = Machine::CPU::Interruptions::off();
         acquire();
         interrupts = i;
     }
@@ -18,6 +21,7 @@ class Spin {
     void unlock() {
         auto i = interrupts;
         release();
-        if (i) Machine::CPU::Interrupt::on();
+        if (i)
+            Machine::CPU::Interruptions::on();
     }
 };

@@ -3,7 +3,7 @@
 #include <Traits.hpp>
 #include <utils/Lists.hpp>
 
-template <typename U> struct Head {};
+template <typename T> struct Head {};
 
 template <> struct Head<Thread> {
     static constexpr unsigned long N = Traits<Machine>::CPUS;

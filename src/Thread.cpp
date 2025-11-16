@@ -7,7 +7,7 @@
 #include <memory/Segment.hpp>
 #include <proxys/Syscall.hpp>
 
-Thread *Thread::running() { return scheduler_.current(); }
+Thread *Thread::running() { return scheduler_s.current(); }
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->state = State::RUNNING;
@@ -19,33 +19,38 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
         // }
 
         CPU::Atomic::wait(next->context_);
-        CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context_), CPU::Atomic::clear(next->context_));
+        CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context_),
+                            CPU::Atomic::clear(next->context_));
     }
 }
 
 int Thread::idle(void *) {
-    while (count_ > Traits<Machine>::CPUS) {
-        if (!scheduler_.empty()) yield();
+    while (count_s > Traits<Machine>::CPUS) {
+        if (!scheduler_s.empty())
+            yield();
     }
 
-    CPU::Interrupt::disable();
-    if (CPU::core() == Traits<Machine>::BSP) Console::println("*** Shutdown! ***\n");
-    for (;;);
+    CPU::Interruptions::disable();
+    if (CPU::core() == Traits<Machine>::BSP)
+        Console::println("*** Shutdown! ***\n");
+    for (;;)
+        ;
     return 0;
 }
 
-// Thread::Thread(Task *t, Function f, Argument a, Criterion c) : task_(t), Thread(f, a, c) {}
+// Thread::Thread(Task *t, Function f, Argument a, Criterion c) : task_(t),
+// Thread(f, a, c) {}
 
 // Thread::~Thread() {
-//     lock_.lock();
+//     lock_s.lock();
 //     switch (state) {
 //         case (State::READY):
-//             scheduler_.remove(&link);
-//             count_ = count_ - 1;
+//             scheduler_s.remove(&link);
+//             count_s = count_s - 1;
 //             break;
 //         case (State::WAITING):
 //             waiting->remove(&link);
-//             count_ = count_ - 1;
+//             count_s = count_s - 1;
 //             break;
 //         default:
 //             break;
@@ -53,10 +58,10 @@ int Thread::idle(void *) {
 //
 //     if (joining) {
 //         joining->state = State::READY;
-//         scheduler_.insert(&joining->link);
+//         scheduler_s.insert(&joining->link);
 //     }
 //
-//     lock_.release();
+//     lock_s.release();
 //     Memory::kfree(stack);
 // }
 
@@ -65,77 +70,79 @@ void Thread::join(Thread &thread) {
     ERROR(&thread == previous, "[Thread::join] Join itself.");
     ERROR(thread.joining, "[Thread::join] Already joined.");
 
-    lock_.lock();
+    lock_s.lock();
     if (thread.state == State::FINISHED) {
-        lock_.unlock();
+        lock_s.unlock();
         return;
     }
 
     previous->state = State::WAITING;
-    thread.joining  = previous;
+    thread.joining = previous;
 
-    dispatch(previous, scheduler_.pop(), &lock_);
-    CPU::Interrupt::enable();
+    dispatch(previous, scheduler_s.pop(), &lock_s);
+    CPU::Interruptions::enable();
 }
 
 void Thread::exit() {
-    lock_.lock();
+    lock_s.lock();
     TraceIn();
 
-    auto previous   = running();
+    auto previous = running();
     previous->state = State::FINISHED;
 
     if (previous->joining) {
         previous->joining->state = State::READY;
-        scheduler_.insert(&previous->joining->link);
+        scheduler_s.insert(&previous->joining->link);
         previous->joining = 0;
     }
 
-    count_ = count_ - 1;
-    dispatch(previous, scheduler_.pop(), &lock_);
+    count_s = count_s - 1;
+    dispatch(previous, scheduler_s.pop(), &lock_s);
 }
 
 void Thread::init() {
     TraceIn();
-    for (int i = 0; i < Traits<Machine>::CPUS; ++i) new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+    for (int i = 0; i < Traits<Machine>::CPUS; ++i)
+        new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     TraceOut()
 }
 
 void Thread::run() {
     char buffer[sizeof(Thread)];
     Thread *previous = reinterpret_cast<Thread *>(buffer);
-    lock_.acquire();
+    lock_s.acquire();
     TraceIn();
-    Thread *next = scheduler_.pop();
-    dispatch(previous, next, &lock_);
+    Thread *next = scheduler_s.pop();
+    dispatch(previous, next, &lock_s);
 }
 
 void Thread::reschedule() {
-    if (scheduler_.empty()) return;
+    if (scheduler_s.empty())
+        return;
 
-    auto previous   = running();
+    auto previous = running();
     previous->state = State::READY;
 
-    lock_.acquire();
-    scheduler_.insert(&previous->link);
-    dispatch(previous, scheduler_.pop(), &lock_);
+    lock_s.acquire();
+    scheduler_s.insert(&previous->link);
+    dispatch(previous, scheduler_s.pop(), &lock_s);
 }
 
 void Thread::yield() {
-    CPU::Interrupt::disable();
+    CPU::Interruptions::disable();
     reschedule();
-    CPU::Interrupt::enable();
+    CPU::Interruptions::enable();
 }
 
 void Thread::sleep(Queue &waiting, Spin &lock) {
-    auto previous     = running();
-    previous->state   = State::WAITING;
+    auto previous = running();
+    previous->state = State::WAITING;
     previous->waiting = &waiting;
     waiting.insert(&previous->link);
 
-    lock_.acquire();
-    auto next = scheduler_.pop();
-    lock_.release();
+    lock_s.acquire();
+    auto next = scheduler_s.pop();
+    lock_s.release();
 
     dispatch(previous, next, &lock);
 }
@@ -143,18 +150,18 @@ void Thread::sleep(Queue &waiting, Spin &lock) {
 void Thread::wakeup(Queue &waiting) {
     Element *awake = waiting.next();
     ERROR(!awake, "[Thread::wakeup] Empty queue.");
-    awake->value->state   = State::READY;
+    awake->value->state = State::READY;
     awake->value->waiting = nullptr;
 
-    lock_.acquire();
-    scheduler_.insert(awake);
-    lock_.release();
+    lock_s.acquire();
+    scheduler_s.insert(awake);
+    lock_s.release();
 }
 
 // int entry(void *arg) {
-//     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile RT_Thread *>(Thread::running()));
-//     auto now           = Alarm::utime();
-//     if (now < current->start) Alarm::usleep(current->start - now);
+//     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile
+//     RT_Thread *>(Thread::running())); auto now           = Alarm::utime(); if
+//     (now < current->start) Alarm::usleep(current->start - now);
 //
 //     while (1) {
 //         current->function(arg);
@@ -169,5 +176,7 @@ void Thread::wakeup(Queue &waiting) {
 //     return 0;
 // }
 //
-// RT_Thread::RT_Thread(Function f, Argument a, Microsecond d, Microsecond p, Microsecond c, Microsecond s)
-//     : Thread(entry, a, Criterion(d, p, c)), function(f), deadline(d), period(p), duration(c), start(s) {}
+// RT_Thread::RT_Thread(Function f, Argument a, Microsecond d, Microsecond p,
+// Microsecond c, Microsecond s)
+//     : Thread(entry, a, Criterion(d, p, c)), function(f), deadline(d),
+//     period(p), duration(c), start(s) {}
