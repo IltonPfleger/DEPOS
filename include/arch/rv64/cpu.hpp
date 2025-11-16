@@ -1,11 +1,12 @@
 #pragma once
 
+#include <Timer.hpp>
 #include <Traits.hpp>
 #include <Types.hpp>
 #include <arch/rv64/clint.hpp>
-#include <arch/rv64/ic.hpp>
 
 class RISCV {
+
   public:
     struct Machine;
     struct Supervisor;
@@ -32,7 +33,7 @@ class RISCV {
         asm volatile("csrw %c0, %1" ::"i"(R), "r"(r));
     }
 
-    template <const int R> static auto csrr() {
+    template <const int R> static Register csrr() {
         Register r;
         asm volatile("csrr %0, %1" : "=r"(r) : "i"(R));
         return r;
@@ -46,11 +47,13 @@ class RISCV {
         asm volatile("csrc %0, %1" ::"i"(R), "r"(r));
     }
 
-    static auto core() {
-        unsigned int tp;
+    static Register core() {
+        Register tp;
         asm volatile("mv %0, tp" : "=r"(tp));
         return tp;
     }
+
+#include "IC.hpp"
 
     __attribute__((always_inline)) static inline void idle() {
         asm volatile("wfi");
@@ -103,19 +106,8 @@ class RISCV {
         Machine::ret();
     }
 
+#include "Atomic.hpp"
 #include "Context.hpp"
-
-    class Atomic {
-      public:
-        template <typename T> static void wait(T &value) {
-            while (!__atomic_load_n(&value, __ATOMIC_SEQ_CST))
-                ;
-        }
-
-        template <typename T> static T clear(T &value) {
-            return __atomic_exchange_n(&value, 0, __ATOMIC_SEQ_CST);
-        }
-    };
 
     struct Interrupt {
         static void disable() { csrc<KernelMode::STATUS>(KernelMode::IRQE); }

@@ -15,6 +15,7 @@ void init() {
         Console::init();
         TraceIn();
         Memory::init();
+        Timer::init();
         Machine::MMU::KernelPageTable::init();
         // Task::init();
         // Application::init();
@@ -30,7 +31,7 @@ void init() {
     while (starting)
         ;
     if (Machine::CPU::core() < Traits<Machine>::CPUS) {
-        Timer::init();
+        // Timer::init();
         Thread::run();
     }
     for (;;)
