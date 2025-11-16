@@ -1,9 +1,9 @@
-#include <Alarm.hpp>
-#include <Machine.hpp>
-#include <Semaphore.hpp>
-#include <Thread.hpp>
-#include <memory/Memory.hpp>
-#include <utils/Console.hpp>
+// #include <Alarm.hpp>
+// #include <Machine.hpp>
+// #include <Semaphore.hpp>
+// #include <Thread.hpp>
+// #include <memory/Memory.hpp>
+// #include <utils/Console.hpp>
 
 // static constexpr unsigned long N = 5;
 // static Thread *threads[N];

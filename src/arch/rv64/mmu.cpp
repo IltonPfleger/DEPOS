@@ -1,5 +1,4 @@
-#include <cpus/riscv/cpu.hpp>
-#include <cpus/riscv/mmu.hpp>
+#include <arch/rv64/mmu.hpp>
 #include <memory/Memory.hpp>
 
 bool SV39_MMU::PageTable::map(uintptr_t va, uintptr_t pa, Flags flags) {
@@ -24,9 +23,4 @@ bool SV39_MMU::PageTable::map(uintptr_t va, uintptr_t pa, Flags flags) {
     }
 
     return l0->set(vpn0, reinterpret_cast<uintptr_t>(pa), flags);
-}
-
-void SV39_MMU::set(uintptr_t root) {
-    RISCV::csrw<RISCV::Supervisor::SATP>(Mode | root >> 12);
-    RISCV::flush();
 }
