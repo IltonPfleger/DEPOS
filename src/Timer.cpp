@@ -2,6 +2,16 @@
 #include <Timer.hpp>
 #include <Traits.hpp>
 
+void Timer::init() {
+    if constexpr (Traits<Scheduler<Thread>>::Preemptive) {
+        _scheduler._default =
+            Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
+        for (auto &e : _scheduler._current)
+            e = _scheduler._default;
+        //_scheduler._current[Machine::CPU::core()] = _scheduler._default;
+    }
+}
+
 void Timer::handler(unsigned long core) {
     // auto core = Machine::CPU::core();
     //  reset(core);
