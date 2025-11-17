@@ -59,6 +59,7 @@ class Context {
     template <typename T = KernelMode>
     __attribute__((naked)) static void swtch(Context **previous,
                                              Context *next) {
+        Context *saved;
         asm volatile(
             "addi sp, sp, %[size]\n"
             "sd   ra,     %[ra](sp)\n"
@@ -78,8 +79,8 @@ class Context {
             "csrr t0,     %[statusr]\n"
             "sd   t0,     %[statuso](sp)\n"
             "sd   ra,     %[pc](sp)\n"
-            "sd   sp,    (%[previous])\n"
-            :
+            "mv   %[saved], sp\n"
+            : [saved] "=r"(saved)
             : [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)),
               [s0] "i"(offsetof(Context, s0)), [s1] "i"(offsetof(Context, s1)),
               [s2] "i"(offsetof(Context, s2)), [s3] "i"(offsetof(Context, s3)),
@@ -90,8 +91,10 @@ class Context {
               [s11] "i"(offsetof(Context, s11)), [size] "i"(-sizeof(Context)),
               [statusr] "i"(T::STATUS),
               [statuso] "i"(offsetof(Context, status)),
-              [pc] "i"(offsetof(Context, pc)), [previous] "r"(previous)
+              [pc] "i"(offsetof(Context, pc))
             : "memory");
+        saved->status |= (T::ME2ME);
+        *previous = saved;
         next->load();
     }
 

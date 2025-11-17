@@ -1,13 +1,12 @@
 #pragma once
-#include <Machine.hpp>
 #include <Meta.hpp>
 #include <Variadic.hpp>
 
-constexpr char HEX[] = "0123456789ABCDEF";
+static inline constexpr char HEX[] = "0123456789ABCDEF";
 
 struct Console {
-    static inline void init() { Machine::IO::init(); }
-    static void put(char c) { Machine::IO::put(c); }
+    static void init();
+    static void put(char);
 
     class Stream {
         using Manipulator = Stream &(*)(Stream &);

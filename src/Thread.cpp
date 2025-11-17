@@ -85,7 +85,7 @@ void Thread::join(Thread &thread) {
 
 void Thread::exit() {
     lock_s.lock();
-    TraceIn();
+    //TraceIn();
 
     auto previous = running();
     previous->state = State::FINISHED;
@@ -97,6 +97,7 @@ void Thread::exit() {
     }
 
     count_s = count_s - 1;
+    //TraceOut();
     dispatch(previous, scheduler_s.pop(), &lock_s);
 }
 

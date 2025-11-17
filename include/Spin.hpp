@@ -1,4 +1,5 @@
 #pragma once
+#include <Machine.hpp>
 
 class Spin {
     volatile bool locked = false;
