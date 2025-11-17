@@ -4,7 +4,7 @@
 #include <Traits.hpp>
 #include <Types.hpp>
 
-class RISCV {
+class RV64 {
   public:
     struct MachineMode;
     struct SupervisorMode;

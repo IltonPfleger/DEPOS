@@ -1,9 +1,9 @@
 #pragma once
 class CPU {
   public:
-    using Context = RISCV::Context;
-    using Interruptions = RISCV::Interruptions;
-    using Atomic = RISCV::Atomic;
+    using Context = RV64::Context;
+    using Interruptions = RV64::Interruptions;
+    using Atomic = RV64::Atomic;
     class TLB {
       public:
         static auto flush() { asm volatile("sfence.vma zero, zero"); }
@@ -46,8 +46,10 @@ class CPU {
             csrw<MachineMode::MIDELEG>(0x222);
             csrw<MachineMode::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
             csrw<MachineMode::PMPCFG0>(0b11111);
-            csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
-            csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
+            csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR |
+                                      MachineMode::PIRQE);
+            csrc<MachineMode::STATUS>(SupervisorMode::PIRQE |
+                                      SupervisorMode::IRQE);
         } else {
             csrs<MachineMode::STATUS>(MachineMode::ME2ME);
             csrw<MachineMode::TVEC>(MIC::entry);
