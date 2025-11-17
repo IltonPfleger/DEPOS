@@ -10,7 +10,7 @@ class RV64 {
     struct SupervisorMode;
     struct HypervisorMode;
     struct UserMode;
-    using KernelMode = MachineMode;
+    using KernelMode = SupervisorMode;
 
 #include "CSRS.hpp"
 /**/
