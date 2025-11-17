@@ -1,8 +1,4 @@
-#pragma once
-
-#include <memory/Memory.hpp>
-
-class SV39_MMU {
+template <typename Allocator> class SV39_MMU {
   private:
     static constexpr unsigned long Mode = 8UL << 60;
     static constexpr unsigned long Giga = (1 << 30);
@@ -29,12 +25,34 @@ class SV39_MMU {
         };
 
         void load() const {
-            csrw<Supervisor::SATP>(Mode |
+            csrw<SupervisorMode::SATP>(Mode |
                                    reinterpret_cast<uintptr_t>(this) >> 12);
-            flush();
+            CPU::TLB::flush();
         }
 
-        bool map(uintptr_t va, uintptr_t pa, Flags);
+        bool map(uintptr_t va, uintptr_t pa, Flags flags) {
+            uintptr_t vpn2 = (va >> 30) & 0x1FF;
+            uintptr_t vpn1 = (va >> 21) & 0x1FF;
+            uintptr_t vpn0 = (va >> 12) & 0x1FF;
+
+            PageTable *l1;
+            PageTable *l0;
+
+            if (!entries[vpn2]) {
+                l1 = new (Allocator::kmalloc(Size)) PageTable();
+                set(vpn2, reinterpret_cast<uintptr_t>(l1), V);
+            } else {
+                l1 = walk(vpn2);
+            }
+            if (!l1->entries[vpn1]) {
+                l0 = new (Allocator::kmalloc(Size)) PageTable();
+                l1->set(vpn1, reinterpret_cast<uintptr_t>(l0), V);
+            } else {
+                l0 = l1->walk(vpn1);
+            }
+
+            return l0->set(vpn0, reinterpret_cast<uintptr_t>(pa), flags);
+        }
         bool map(uintptr_t va, Flags flags) { return map(va, va, flags); }
         void map(uintptr_t va, uintptr_t pa, size_t size, Flags flags) {
             if ((size % Giga == 0) && ((va % Giga == 0) && (pa % Giga == 0))) {
@@ -70,11 +88,11 @@ class SV39_MMU {
         alignas(Size) uintptr_t entries[EntriesNumber];
     };
 
-    //// TODO: Don't need to be here
+    // TODO: Don't need to be here
     // class KernelPageTable {
-    //   private:
-    //     KernelPageTable();
-    //     static inline PageTable *instance_s = nullptr;
+    //  private:
+    //    KernelPageTable();
+    //    static inline PageTable *instance_s = nullptr;
 
     //  public:
     //    static void init() {
@@ -82,8 +100,7 @@ class SV39_MMU {
     //        instance_s->map(Traits<MemoryMap>::RAM_BASE,
     //                        Traits<MemoryMap>::RAM_BASE, Traits<Memory>::SIZE,
     //                        PageTable::KernelRW);
-    //        instance_s->map(Traits<MemoryMap>::UART0,
-    //        Traits<MemoryMap>::UART0,
+    //        instance_s->map(Traits<MemoryMap>::UART, Traits<MemoryMap>::UART,
     //                        PageTable::KernelRW);
     //        instance_s->load();
     //    }

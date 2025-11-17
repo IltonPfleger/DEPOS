@@ -10,11 +10,11 @@ class Thread {
   public:
     enum class State { RUNNING, READY, WAITING, FINISHED };
     using Criterion = typename Scheduler<Thread>::Criterion;
-    using Argument  = void *;
-    using Function  = int (*)(Argument);
-    using Queue     = FIFO<Thread *>;
-    using Element   = Queue::Node;
-    using CPU       = Machine::CPU;
+    using Argument = void *;
+    using Function = int (*)(Argument);
+    using Queue = FIFO<Thread *>;
+    using Element = Queue::Node;
+    using CPU = Machine::CPU;
 
     Thread(Function f, Argument a, Criterion c, Task *t = nullptr)
         : // task_(t ? t : new(Heap::SYSTEM) Task()),

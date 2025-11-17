@@ -31,7 +31,7 @@ int Thread::idle(void *) {
     }
 
     CPU::Interruptions::disable();
-    if (CPU::core() == Traits<Machine>::BSP)
+    if (CPU::id() == Traits<Machine>::BSP)
         Console::println("*** Shutdown! ***\n");
     for (;;)
         ;

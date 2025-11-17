@@ -1,19 +1,20 @@
+#pragma once
 class MIC {
     static void handler(void *args) {
-        uintmax_t mcause = csrr<Machine::CAUSE>();
-        bool is_interrupt = mcause >> (Traits<::Machine>::XLEN - 1);
+        uintmax_t mcause = csrr<MachineMode::CAUSE>();
+        bool is_interrupt = mcause >> (Traits<Machine>::XLEN - 1);
         int code = (mcause << 1) >> 1;
 
         if (is_interrupt) {
             switch (code) {
             case Interrupt::TIMER:
-                if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
-                    csrc<Machine::IE>(Machine::TI);
-                    csrs<Machine::IP>(Supervisor::TI);
+                if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
+                    csrc<MachineMode::IE>(MachineMode::TI);
+                    csrs<MachineMode::IP>(SupervisorMode::TI);
                 } else {
-                    int _core = core();
-                    CLINT::reset(_core);
-                    Timer::handler(_core);
+                    int core = CPU::id();
+                    CLINT::reset(core);
+                    Timer::handler(core);
                 }
             }
         } else {
@@ -28,9 +29,9 @@ class MIC {
     }
 
     static void error() {
-        // auto mstatus = reinterpret_cast<void *>(csrr<Machine::STATUS>());
-        // auto mepc = reinterpret_cast<void *>(csrr<Machine::EPC>());
-        // auto mtval = reinterpret_cast<void *>(csrr<Machine::TVAL>());
+        // auto mstatus = reinterpret_cast<void *>(csrr<MachineMode::STATUS>());
+        // auto mepc = reinterpret_cast<void *>(csrr<MachineMode::EPC>());
+        // auto mtval = reinterpret_cast<void *>(csrr<MachineMode::TVAL>());
         //  ERROR(
         //      true,
         //      "Ohh it's a Trap!\nmcause: %d\nmepc: %p\nmtval: %p\nmstatus:
@@ -42,8 +43,8 @@ class MIC {
 
   public:
     __attribute__((naked, aligned(4))) static void entry() {
-        handler(Context::push<Machine>());
-        Context::pop<Machine>();
+        handler(Context::push<MachineMode>());
+        Context::pop<MachineMode>();
     }
 };
 
@@ -51,7 +52,7 @@ class SIC {
     enum Interrupt { TIMER = 5 };
 
     static void error() {
-        // auto sepc = reinterpret_cast<void *>(csrr<Supervisor::EPC>());
+        // auto sepc = reinterpret_cast<void *>(csrr<SupervisorMode::EPC>());
         //  ERROR(true,
         //        "Ohh it's a Trap!\n"
         //        "scause: ",
@@ -59,15 +60,15 @@ class SIC {
     }
 
     static void handler() {
-        uintmax_t scause = csrr<Supervisor::CAUSE>();
-        bool is_interrupt = scause >> (Traits<::Machine>::XLEN - 1);
+        uintmax_t scause = csrr<SupervisorMode::CAUSE>();
+        bool is_interrupt = scause >> (Traits<Machine>::XLEN - 1);
         int code = (scause << 1) >> 1;
-        auto _core = core();
+        auto core = CPU::id();
         if (is_interrupt) {
             switch (code) {
             case Interrupt::TIMER:
-                syscall(CLINT::reset);
-                Timer::handler(_core);
+                CPU::syscall(CLINT::reset);
+                Timer::handler(core);
                 break;
             }
         } else {
@@ -77,9 +78,9 @@ class SIC {
 
   public:
     __attribute__((naked, aligned(4))) static void entry() {
-        Context::push<Supervisor>();
+        Context::push<SupervisorMode>();
         SIC::handler();
-        Context::pop<Supervisor>();
+        Context::pop<SupervisorMode>();
     }
 };
 
@@ -88,12 +89,12 @@ class Syscall {
 
   private:
     void handler(void *function) {
-        auto _core = core();
+        auto core = CPU::id();
         auto addr = reinterpret_cast<uintptr_t>(function);
         if (addr == reinterpret_cast<uintptr_t>(&CLINT::reset)) {
-            CLINT::reset(_core);
-            csrs<Machine::IE>(Machine::TI);
-            csrc<Machine::IP>(Supervisor::TI);
+            CLINT::reset(core);
+            csrs<MachineMode::IE>(MachineMode::TI);
+            csrc<MachineMode::IP>(SupervisorMode::TI);
         } else {
             // TODO: THIS EXECUTE IN MACHINE MODE
             reinterpret_cast<void (*)()>(function)();

@@ -1,6 +1,6 @@
 template <unsigned long A, unsigned long C, unsigned long B> struct SiFiveUART {
-    static constexpr auto Addr     = A;
-    static constexpr auto Clock    = C;
+    static constexpr auto Addr = A;
+    static constexpr auto Clock = C;
     static constexpr auto Baudrate = B;
 
     static constexpr int Divisor = Clock / Baudrate;
@@ -20,10 +20,10 @@ template <unsigned long A, unsigned long C, unsigned long B> struct SiFiveUART {
     static constexpr unsigned int RX_EMPTY_MASK = 0x80000000;
 
     static void init() {
-        DIV()    = Divisor;
+        DIV() = Divisor;
         TXCTRL() = 1;
         RXCTRL() = 1;
-        IE()     = 0;
+        IE() = 0;
     }
 
     static void put(char c) {
