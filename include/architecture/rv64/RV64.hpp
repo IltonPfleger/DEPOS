@@ -3,6 +3,7 @@
 #include <Timer.hpp>
 #include <Traits.hpp>
 #include <Types.hpp>
+#include <utils/Console.hpp>
 
 class RV64 {
   public:
@@ -29,4 +30,4 @@ class RV64 {
 #include "IC.hpp"
 /**/
 #include "MMU.hpp"
-}; // namespace RISCV
+};

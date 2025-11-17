@@ -8,7 +8,7 @@
 #define ERROR(expr, ...)                                                       \
     if constexpr (Traits<Debug>::Error) {                                      \
         if (expr) {                                                            \
-            Machine::CPU::Interruptions::disable();                            \
+            /*Machine::CPU::Interruptions::disable(); \*/                                                                           \
             Console::println("<%d> [ERROR] %s\n", Machine::CPU::id(),          \
                              __PRETTY_FUNCTION__);                             \
             __VA_OPT__(Console::println(__VA_ARGS__));                         \

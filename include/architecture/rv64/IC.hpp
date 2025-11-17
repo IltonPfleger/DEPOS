@@ -1,4 +1,5 @@
 #pragma once
+
 class MIC {
     static void handler(void *args) {
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
@@ -29,13 +30,15 @@ class MIC {
     }
 
     static void error() {
-        // auto mstatus = reinterpret_cast<void *>(csrr<MachineMode::STATUS>());
-        // auto mepc = reinterpret_cast<void *>(csrr<MachineMode::EPC>());
-        // auto mtval = reinterpret_cast<void *>(csrr<MachineMode::TVAL>());
-        //  ERROR(
-        //      true,
-        //      "Ohh it's a Trap!\nmcause: %d\nmepc: %p\nmtval: %p\nmstatus:
-        //      %p\n", mcause, mepc, mtval, mstatus);
+        auto mstatus = reinterpret_cast<void *>(csrr<MachineMode::STATUS>());
+        auto mepc = reinterpret_cast<void *>(csrr<MachineMode::EPC>());
+        auto mtval = reinterpret_cast<void *>(csrr<MachineMode::TVAL>());
+        Console::out << "ERROR: " << Console::Stream::endl;
+        Console::out << "mstatus: " << mstatus << Console::Stream::endl;
+        Console::out << "mepc: " << mepc << Console::Stream::endl;
+        Console::out << "mtval: " << mtval << Console::Stream::endl;
+        while (1)
+            ;
     }
 
     enum Interrupt { TIMER = 7 };
@@ -52,11 +55,16 @@ class SIC {
     enum Interrupt { TIMER = 5 };
 
     static void error() {
-        // auto sepc = reinterpret_cast<void *>(csrr<SupervisorMode::EPC>());
-        //  ERROR(true,
-        //        "Ohh it's a Trap!\n"
-        //        "scause: ",
-        //        scause, "\nsepc: ", sepc, "\n");
+
+        auto sstatus = reinterpret_cast<void *>(csrr<SupervisorMode::STATUS>());
+        auto sepc = reinterpret_cast<void *>(csrr<SupervisorMode::EPC>());
+        auto stval = reinterpret_cast<void *>(csrr<SupervisorMode::TVAL>());
+        Console::out << "ERROR: " << Console::Stream::endl;
+        Console::out << "sstatus: " << sstatus << Console::Stream::endl;
+        Console::out << "sepc: " << sepc << Console::Stream::endl;
+        Console::out << "stval: " << stval << Console::Stream::endl;
+        while (1)
+            ;
     }
 
     static void handler() {

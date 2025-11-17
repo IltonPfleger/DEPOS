@@ -7,7 +7,7 @@ class Semaphore {
     Thread::Queue waiting;
     Spin _lock;
 
-   public:
+  public:
     void p() {
         _lock.lock();
         if (_value-- < 1)
@@ -18,7 +18,8 @@ class Semaphore {
 
     void v() {
         _lock.lock();
-        if (_value++ < 0) Thread::wakeup(waiting);
+        if (_value++ < 0)
+            Thread::wakeup(waiting);
         _lock.unlock();
     }
 };

@@ -42,6 +42,7 @@ struct SupervisorMode {
     static constexpr const int TVEC = 0x105;
     static constexpr const int EPC = 0x141;
     static constexpr const int CAUSE = 0x142;
+    static constexpr const int TVAL = 0x143;
     static constexpr const int IP = 0x144;
     __attribute__((always_inline)) static inline void ret() {
         asm volatile("sret");
