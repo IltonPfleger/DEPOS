@@ -10,7 +10,7 @@ static volatile bool starting = true;
 
 namespace Init {
 void init() {
-    bool BSP = Machine::CPU::id() == Traits<Machine>::BSP;
+    bool BSP = CPU::id() == Traits<Machine>::BSP;
     if (BSP) {
         Console::init();
         TraceIn();
@@ -30,7 +30,7 @@ void init() {
     }
     while (starting)
         ;
-    if (Machine::CPU::id() < Traits<Machine>::CPUS) {
+    if (CPU::id() < Traits<Machine>::CPUS) {
         Thread::run();
     }
     for (;;)
@@ -40,7 +40,7 @@ void init() {
 
 extern "C" __attribute__((naked, used, noinline, section(".init"))) void
 _init() {
-    Machine::CPU::setup();
-    Machine::CPU::init();
+    CPU::setup();
+    CPU::init();
     Init::init();
 }

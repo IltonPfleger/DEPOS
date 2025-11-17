@@ -1,6 +1,5 @@
 #include <Alarm.hpp>
 #include <IO/Debug.hpp>
-#include <Spin.hpp>
 #include <Thread.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>

@@ -1,15 +1,13 @@
 #pragma once
 
-#include <Machine.hpp>
-#include <Spin.hpp>
 #include <Traits.hpp>
 #include <utils/Console.hpp>
 
 #define ERROR(expr, ...)                                                       \
     if constexpr (Traits<Debug>::Error) {                                      \
         if (expr) {                                                            \
-            /*Machine::CPU::Interruptions::disable(); \*/                                                                           \
-            Console::println("<%d> [ERROR] %s\n", Machine::CPU::id(),          \
+            CPU::Interruptions::disable();                                     \
+            Console::println("<%d> [ERROR] %s\n", CPU::id(),                   \
                              __PRETTY_FUNCTION__);                             \
             __VA_OPT__(Console::println(__VA_ARGS__));                         \
             __VA_OPT__(Console::println("\n"));                                \
@@ -31,7 +29,7 @@
 
 #define TraceIn(...)                                                           \
     if constexpr (Traits<Debug>::Trace) {                                      \
-        Console::println("<%d> %s(", Machine::CPU::id(), __PRETTY_FUNCTION__); \
+        Console::println("<%d> %s(", CPU::id(), __PRETTY_FUNCTION__);          \
         __VA_OPT__(Console::cprintln(__VA_ARGS__));                            \
         Console::println("){\n");                                              \
     }

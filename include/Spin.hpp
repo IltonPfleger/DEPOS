@@ -14,7 +14,7 @@ class Spin {
     void release() { __atomic_clear(&locked, __ATOMIC_SEQ_CST); }
 
     void lock() {
-        auto i = Machine::CPU::Interruptions::off();
+        auto i = CPU::Interruptions::off();
         acquire();
         interrupts = i;
     }
@@ -23,6 +23,6 @@ class Spin {
         auto i = interrupts;
         release();
         if (i)
-            Machine::CPU::Interruptions::on();
+            CPU::Interruptions::on();
     }
 };
