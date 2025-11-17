@@ -1,6 +1,5 @@
-class Machine {
-  public:
-    enum : Register {
+struct MachineMode {
+    enum : unsigned long {
         PMPADDR0 = 0x3B0,
         PMPCFG0 = 0x3A0,
         MHARTID = 0xF14,            // Core Number/ID
@@ -27,9 +26,8 @@ class Machine {
     }
 };
 
-class Supervisor {
-  public:
-    enum : Register {
+struct SupervisorMode {
+    enum : unsigned long {
         ME2ME = 1ULL << 8,   // Supervisor to Supervisor
         ME2USER = 0ULL << 8, // Supervisor to User
         IRQE = 1ULL << 1,    // Interrupt Enable

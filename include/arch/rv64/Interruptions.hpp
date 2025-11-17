@@ -4,7 +4,7 @@ struct Interruptions {
 
     static void on() { enable(); }
     static bool off() {
-        Register status = csrr<KernelMode::STATUS>();
+        unsigned long status = csrr<KernelMode::STATUS>();
         disable();
         return (status & KernelMode::IRQE) != 0;
     }

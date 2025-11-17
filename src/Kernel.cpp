@@ -10,15 +10,15 @@ static volatile bool starting = true;
 
 namespace Init {
 void init() {
-    bool BSP = Machine::CPU::core() == Traits<Machine>::BSP;
+    bool BSP = Machine::CPU::id() == Traits<Machine>::BSP;
     if (BSP) {
         Console::init();
         TraceIn();
         Memory::init();
         Timer::init();
-        Machine::MMU::KernelPageTable::init();
-        // Task::init();
-        // Application::init();
+        // Machine::MMU::KernelPageTable::init();
+        //  Task::init();
+        //  Application::init();
         booting = false;
     }
     while (booting)
@@ -30,8 +30,7 @@ void init() {
     }
     while (starting)
         ;
-    if (Machine::CPU::core() < Traits<Machine>::CPUS) {
-        // Timer::init();
+    if (Machine::CPU::id() < Traits<Machine>::CPUS) {
         Thread::run();
     }
     for (;;)
