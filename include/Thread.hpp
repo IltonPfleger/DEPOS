@@ -2,6 +2,7 @@
 
 #include <Machine.hpp>
 #include <Scheduler.hpp>
+#include <Spin.hpp>
 #include <Task.hpp>
 #include <Traits.hpp>
 #include <memory/Segment.hpp>
@@ -14,7 +15,6 @@ class Thread {
     using Function = int (*)(Argument);
     using Queue = FIFO<Thread *>;
     using Element = Queue::Node;
-    using CPU = Machine::CPU;
 
     // Thread(Function f, Argument a, Criterion c, Task *t = nullptr)
     //     : // task_(t ? t : new(Heap::SYSTEM) Task()),
@@ -66,7 +66,7 @@ class Thread {
   private:
     Task *task_;
     Segment stack_;
-    //Segment ustack_;
+    // Segment ustack_;
     Queue *waiting;
     Queue::Node link;
     Criterion criterion;

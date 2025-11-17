@@ -9,6 +9,6 @@ class SiFive_U {
 
   public:
     using CPU = RV64::CPU;
-    using MMU = RV64::SV39_MMU<Memory>;
+    using MMU = typename RV64::SV39_MMU<Memory>;
     using IO = SiFiveUART<Traits<MemoryMap>::UART, 31250000, 115200>;
 };
