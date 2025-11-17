@@ -3,7 +3,7 @@
 // #include <Semaphore.hpp>
 // #include <Thread.hpp>
 // #include <memory/Memory.hpp>
-// #include <utils/Console.hpp>
+#include <utils/Console.hpp>
 
 // static constexpr unsigned long N = 5;
 // static Thread *threads[N];
@@ -25,7 +25,7 @@
 // }
 
 int main(int, char *[]) {
-    // Console::out << "Application: \n";
+    Console::out << "Application: \n";
 
     // mutex.p();
     // for (unsigned long i = 0; i < N; i++) {
@@ -38,6 +38,6 @@ int main(int, char *[]) {
 
     //// for (int i = 0; i < N; i++) delete threads[i];
 
-    // Console::out << "\nApplication Done!\n";
+    Console::out << "\nApplication Done!\n";
     return 0;
 }

@@ -18,7 +18,7 @@ void init() {
         Timer::init();
         // Machine::MMU::KernelPageTable::init();
         //  Task::init();
-        //  Application::init();
+        Application::init();
         booting = false;
     }
     while (booting)
