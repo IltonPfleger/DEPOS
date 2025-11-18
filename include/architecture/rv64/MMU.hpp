@@ -26,7 +26,7 @@ template <typename Allocator> class SV39_MMU {
 
         void load() const {
             csrw<SupervisorMode::SATP>(Mode |
-                                   reinterpret_cast<uintptr_t>(this) >> 12);
+                                       reinterpret_cast<uintptr_t>(this) >> 12);
             CPU::TLB::flush();
         }
 

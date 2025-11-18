@@ -1,9 +1,9 @@
 #pragma once
 
-#include <IO/Debug.hpp>
 #include <Timer.hpp>
 #include <Traits.hpp>
 #include <Types.hpp>
+#include <utils/Debug.hpp>
 
 class RV64 {
   public:

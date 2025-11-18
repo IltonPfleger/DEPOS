@@ -1,20 +1,20 @@
-#include <IO/Debug.hpp>
 #include <Spin.hpp>
 #include <memory/Memory.hpp>
 #include <memory/MemoryMap.hpp>
+#include <utils/Debug.hpp>
 
 static Spin _lock;
 
 void Memory::init() {
-    constexpr size_t PageSize   = Traits<Memory>::PAGE_SIZE;
+    constexpr size_t PageSize = Traits<Memory>::PAGE_SIZE;
     constexpr uintptr_t RamBase = Traits<MemoryMap>::RAM_BASE;
-    constexpr uintptr_t RamEnd  = Traits<MemoryMap>::RAM_END;
-    uintptr_t KernelStart       = __kmm.start;
-    uintptr_t KernelEnd         = __kmm.end;
-    uintptr_t KernelSize        = KernelEnd - KernelStart;
-    uintptr_t ApplicationStart  = __mm.start;
-    uintptr_t ApplicationEnd    = __mm.end;
-    uintptr_t ApplicationSize   = ApplicationEnd - ApplicationStart;
+    constexpr uintptr_t RamEnd = Traits<MemoryMap>::RAM_END;
+    uintptr_t KernelStart = __kmm.start;
+    uintptr_t KernelEnd = __kmm.end;
+    uintptr_t KernelSize = KernelEnd - KernelStart;
+    uintptr_t ApplicationStart = __mm.start;
+    uintptr_t ApplicationEnd = __mm.end;
+    uintptr_t ApplicationSize = ApplicationEnd - ApplicationStart;
     TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart,
             ApplicationEnd, ApplicationSize);
     if (buddy_.empty()) {
