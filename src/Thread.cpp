@@ -1,5 +1,5 @@
 #include <Alarm.hpp>
-#include <IO/Debug.hpp>
+#include <utils/Debug.hpp>
 #include <Thread.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>

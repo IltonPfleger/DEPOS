@@ -1,6 +1,6 @@
 #pragma once
 
-#include <IO/Debug.hpp>
+#include <utils/Debug.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
 #include <memory/MemoryMap.hpp>

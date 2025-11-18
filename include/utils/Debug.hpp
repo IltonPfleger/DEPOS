@@ -1,8 +1,5 @@
 #pragma once
-
-#include <Traits.hpp>
 #include <utils/Console.hpp>
-
 #define ERROR(expr, ...)                                                       \
     if constexpr (Traits<Debug>::Error) {                                      \
         if (expr) {                                                            \
@@ -15,17 +12,6 @@
             }                                                                  \
         }                                                                      \
     }
-
-// constexpr const char *TrimPrettyFunction(const char *func) {
-//     static char buf[128];
-//     unsigned i = 0;
-//     while (func[i] && func[i] != '(' && i < sizeof(buf) - 1) {
-//         buf[i] = func[i];
-//         i += 1;
-//     };
-//     buf[i] = '\0';
-//     return buf;
-// }
 
 #define TraceIn(...)                                                           \
     if constexpr (Traits<Debug>::Trace) {                                      \

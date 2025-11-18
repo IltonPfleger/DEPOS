@@ -1,6 +1,7 @@
 #pragma once
-#include <IO/Debug.hpp>
 #include <Traits.hpp>
+#include <machine/Machine.hpp>
+#include <utils/Debug.hpp>
 #include <utils/Lists.hpp>
 
 template <typename T> struct Head {};

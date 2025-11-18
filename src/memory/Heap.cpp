@@ -1,4 +1,3 @@
-#include <IO/Debug.hpp>
 #include <Spin.hpp>
 #include <Thread.hpp>
 #include <memory/Heap.hpp>
@@ -29,7 +28,8 @@
 //         Chunk *block = _chunks[i];
 //         _chunks[i--] = block->next;
 //
-//         Chunk *buddy = reinterpret_cast<Chunk *>(reinterpret_cast<uintptr_t>(block) + (1UL << i));
+//         Chunk *buddy = reinterpret_cast<Chunk
+//         *>(reinterpret_cast<uintptr_t>(block) + (1UL << i));
 //
 //         buddy->next = _chunks[i];
 //         _chunks[i]  = buddy;
@@ -100,8 +100,10 @@ void *operator new(unsigned long bytes, Heap &heap) {
     return addr;
     // TRACE("P:%p\n", addr);
     // TRACE("T:%p\n", Thread::running());
-    // void *ret = Thread::running()->task->attach(reinterpret_cast<uintptr_t>(addr));
-    //// return Thread::running()->task->attach(reinterpret_cast<uintptr_t>(addr));
+    // void *ret =
+    // Thread::running()->task->attach(reinterpret_cast<uintptr_t>(addr));
+    //// return
+    ///Thread::running()->task->attach(reinterpret_cast<uintptr_t>(addr));
     // TRACE("R:%p\n", ret);
     // return ret;
     //_lock.lock();

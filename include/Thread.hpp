@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Machine.hpp>
 #include <Scheduler.hpp>
 #include <Spin.hpp>
 #include <Task.hpp>
 #include <Traits.hpp>
+#include <machine/Machine.hpp>
 #include <memory/Segment.hpp>
 
 class Thread {
