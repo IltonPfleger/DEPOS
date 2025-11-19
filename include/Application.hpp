@@ -9,6 +9,7 @@
 class Application {
   public:
     static void init() {
+        TraceIn();
         auto main = reinterpret_cast<int (*)(void *)>(__mm.main);
         // if constexpr (Traits<System>::MULTITASK) {
         //  uintptr_t TextStart = __mm.text.start;
@@ -39,5 +40,6 @@ class Application {
         //} else {
         new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL);
         // }
+        TraceOut();
     };
 };

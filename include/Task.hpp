@@ -1,13 +1,39 @@
 #pragma once
 
-#include <utils/Debug.hpp>
+#include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
 #include <memory/MemoryMap.hpp>
 #include <memory/Segment.hpp>
+#include <utils/Debug.hpp>
 
 class Task {
-    //   public:
+    using AddressSpace = MMU::PageTable;
+
+  public:
+    static void init() {
+        TraceIn();
+        System = new (Heap::SYSTEM) Task();
+        AddressSpace *as = System->as_;
+
+        as->map(Traits<MemoryMap>::RAM_BASE, Traits<MemoryMap>::RAM_BASE,
+                Traits<Memory>::SIZE, AddressSpace::KernelRW);
+
+        as->map(Traits<MemoryMap>::UART, Traits<MemoryMap>::UART,
+                AddressSpace::KernelRW);
+
+        //as->load();
+        TraceOut();
+    }
+
+  private:
+    Task() : as_(new(Heap::SYSTEM) AddressSpace()) {}
+
+  private:
+    static inline Task *System;
+
+  private:
+    AddressSpace *as_;
     //     using AddressSpace = Machine::MMU::PageTable;
     //     Task() : as(new(Heap::SYSTEM) AddressSpace()) {
     //         // uintptr_t KernelStart =

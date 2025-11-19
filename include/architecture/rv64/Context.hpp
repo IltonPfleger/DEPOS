@@ -16,6 +16,27 @@ class Context {
         this->a0 = reinterpret_cast<uint64_t>(a0);
     }
 
+    __attribute__((always_inline)) static void save_s() {
+        asm("sd s0,  %[s0](sp)\n"
+            "sd s1,  %[s1](sp)\n"
+            "sd s2,  %[s2](sp)\n"
+            "sd s3,  %[s3](sp)\n"
+            "sd s4,  %[s4](sp)\n"
+            "sd s5,  %[s5](sp)\n"
+            "sd s6,  %[s6](sp)\n"
+            "sd s7,  %[s7](sp)\n"
+            "sd s8,  %[s8](sp)\n"
+            "sd s9,  %[s9](sp)\n"
+            "sd s10, %[s10](sp)\n"
+            "sd s11, %[s11](sp)\n" ::[s0] "i"(offsetof(Context, s0)),
+            [s1] "i"(offsetof(Context, s1)), [s2] "i"(offsetof(Context, s2)),
+            [s3] "i"(offsetof(Context, s3)), [s4] "i"(offsetof(Context, s4)),
+            [s5] "i"(offsetof(Context, s5)), [s6] "i"(offsetof(Context, s6)),
+            [s7] "i"(offsetof(Context, s7)), [s8] "i"(offsetof(Context, s8)),
+            [s9] "i"(offsetof(Context, s9)), [s10] "i"(offsetof(Context, s10)),
+            [s11] "i"(offsetof(Context, s11)));
+    }
+
     template <typename T = KernelMode> void load() {
         asm volatile(
             "mv sp, %[sp]\n"

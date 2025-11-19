@@ -18,17 +18,17 @@ class Thread {
 
     // Thread(Function f, Argument a, Criterion c, Task *t = nullptr)
     //     : // task_(t ? t : new(Heap::SYSTEM) Task()),
-    //       stack_(Segment(Traits<Memory>::PAGE_SIZE)),
-    //       ustack_(Segment(Traits<Memory>::PAGE_SIZE)), waiting(0),
-    //       link(Element(this, c())), criterion(c), state(State::RUNNING),
-    //       joining(0), context_(new(stack_.end() - sizeof(CPU::Context))
+    //       m_stack_(Segment(Traits<Memory>::PAGE_SIZE)),
+    //       um_stack_(Segment(Traits<Memory>::PAGE_SIZE)), waiting(0),
+    //       m_link(Element(this, c())), criterion(c), state(State::RUNNING),
+    //       joining(0), context_(new(m_stack_.end() - sizeof(CPU::Context))
     //                                CPU::Context(f, a, exit)) {
     //     TraceIn(this);
     //     (void)t;
-    //     // task_->attach(stack_, Task::AddressSpace::Flags::KernelRW);
-    //     // task_->attach(ustack_, Task::AddressSpace::Flags::UserRW);
+    //     // task_->attach(m_stack_, Task::AddressSpace::Flags::KernelRW);
+    //     // task_->attach(um_stack_, Task::AddressSpace::Flags::UserRW);
     //     lock_s.lock();
-    //     scheduler_s.insert(&link);
+    //     scheduler_s.insert(&m_link);
     //     count_s = count_s + 1;
     //     lock_s.unlock();
     //     TraceOut();
@@ -36,19 +36,7 @@ class Thread {
 
     // template <typename T = void>
     //     requires(!Traits<System>::MULTITASK)
-    Thread(Function f, Argument a, Criterion c)
-        : stack_(Segment(Traits<Memory>::PAGE_SIZE)), waiting(0),
-          link(Element(this, c())), criterion(c), state(State::READY),
-          joining(0), context_(new(stack_.end() - sizeof(CPU::Context))
-                                   CPU::Context(f, a, exit)) {
-        TraceIn(this);
-        lock_s.lock();
-        scheduler_s.insert(&link);
-        count_s = count_s + 1;
-        lock_s.unlock();
-        TraceOut();
-    }
-
+    Thread(Function, Argument, Criterion);
     ~Thread();
 
     static Thread *running();
@@ -64,20 +52,18 @@ class Thread {
     static int idle(void *);
 
   private:
-    Task *task_;
-    Segment stack_;
-    // Segment ustack_;
-    Queue *waiting;
-    Queue::Node link;
-    Criterion criterion;
-    volatile State state;
-    Thread *volatile joining;
-    CPU::Context *volatile context_;
+    Segment m_stack_;
+    Queue *m_waiting;
+    Queue::Node m_link;
+    Criterion m_criterion;
+    volatile State m_state;
+    Thread *volatile m_joining;
+    CPU::Context *volatile m_context;
 
   private:
-    static inline Scheduler<Thread> scheduler_s;
-    static inline volatile unsigned int count_s;
-    static inline Spin lock_s;
+    static inline Scheduler<Thread> s_scheduler;
+    static inline volatile unsigned int s_count;
+    static inline Spin s_lock;
 };
 
 // struct RT_Thread : Thread {

@@ -1,15 +1,15 @@
 #include <Alarm.hpp>
-#include <utils/Debug.hpp>
 #include <Thread.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
 #include <memory/Segment.hpp>
 #include <proxys/Syscall.hpp>
+#include <utils/Debug.hpp>
 
-Thread *Thread::running() { return scheduler_s.current(); }
+Thread *Thread::running() { return s_scheduler.current(); }
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
-    next->state = State::RUNNING;
+    next->m_state = State::RUNNING;
     lock->release();
     if (next != previous) {
         // if constexpr (Traits<System>::MULTITASK) {
@@ -17,15 +17,15 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
         //     // next->task_->load();
         // }
 
-        CPU::Atomic::wait(next->context_);
-        CPU::Context::swtch(const_cast<CPU::Context **>(&previous->context_),
-                            CPU::Atomic::clear(next->context_));
+        CPU::Atomic::wait(next->m_context);
+        CPU::Context::swtch(const_cast<CPU::Context **>(&previous->m_context),
+                            CPU::Atomic::clear(next->m_context));
     }
 }
 
 int Thread::idle(void *) {
-    while (count_s > Traits<Machine>::CPUS) {
-        if (!scheduler_s.empty())
+    while (s_count > Traits<Machine>::CPUS) {
+        if (!s_scheduler.empty())
             yield();
     }
 
@@ -37,67 +37,78 @@ int Thread::idle(void *) {
     return 0;
 }
 
+Thread::Thread(Function f, Argument a, Criterion c)
+    : m_stack_(Segment(Traits<Memory>::PAGE_SIZE)), m_waiting(0),
+      m_link(Element(this, c())), m_criterion(c), m_state(State::READY),
+      m_joining(0), m_context(new(m_stack_.end() - sizeof(CPU::Context))
+                                  CPU::Context(f, a, exit)) {
+    TraceIn(this);
+    s_lock.lock();
+    s_scheduler.insert(&m_link);
+    s_count = s_count + 1;
+    s_lock.unlock();
+    TraceOut();
+}
+
 // Thread::Thread(Task *t, Function f, Argument a, Criterion c) : task_(t),
 // Thread(f, a, c) {}
 
 // Thread::~Thread() {
-//     lock_s.lock();
-//     switch (state) {
+//     s_lock.lock();
+//     switch (m_state) {
 //         case (State::READY):
-//             scheduler_s.remove(&link);
-//             count_s = count_s - 1;
+//             s_scheduler.remove(&m_link);
+//             s_count = s_count - 1;
 //             break;
 //         case (State::WAITING):
-//             waiting->remove(&link);
-//             count_s = count_s - 1;
+//             m_waiting->remove(&m_link);
+//             s_count = s_count - 1;
 //             break;
 //         default:
 //             break;
 //     }
 //
-//     if (joining) {
-//         joining->state = State::READY;
-//         scheduler_s.insert(&joining->link);
+//     if (m_joining) {
+//         m_joining->m_state = State::READY;
+//         s_scheduler.insert(&m_joining->m_link);
 //     }
 //
-//     lock_s.release();
+//     s_lock.release();
 //     Memory::kfree(stack);
 // }
 
 void Thread::join(Thread &thread) {
     auto previous = running();
     ERROR(&thread == previous, "[Thread::join] Join itself.");
-    ERROR(thread.joining, "[Thread::join] Already joined.");
+    ERROR(thread.m_joining, "[Thread::join] Already joined.");
 
-    lock_s.lock();
-    if (thread.state == State::FINISHED) {
-        lock_s.unlock();
+    s_lock.lock();
+    if (thread.m_state == State::FINISHED) {
+        s_lock.unlock();
         return;
     }
 
-    previous->state = State::WAITING;
-    thread.joining = previous;
+    previous->m_state = State::WAITING;
+    thread.m_joining = previous;
 
-    dispatch(previous, scheduler_s.pop(), &lock_s);
+    dispatch(previous, s_scheduler.pop(), &s_lock);
     CPU::Interruptions::enable();
 }
 
 void Thread::exit() {
-    lock_s.lock();
-    //TraceIn();
+    s_lock.lock();
 
     auto previous = running();
-    previous->state = State::FINISHED;
+    previous->m_state = State::FINISHED;
 
-    if (previous->joining) {
-        previous->joining->state = State::READY;
-        scheduler_s.insert(&previous->joining->link);
-        previous->joining = 0;
+    if (previous->m_joining) {
+        previous->m_joining->m_state = State::READY;
+        s_scheduler.insert(&previous->m_joining->m_link);
+        previous->m_joining = 0;
     }
 
-    count_s = count_s - 1;
-    //TraceOut();
-    dispatch(previous, scheduler_s.pop(), &lock_s);
+    s_count = s_count - 1;
+    dispatch(previous, s_scheduler.pop(), &s_lock);
 }
 
 void Thread::init() {
@@ -110,22 +121,22 @@ void Thread::init() {
 void Thread::run() {
     char buffer[sizeof(Thread)];
     Thread *previous = reinterpret_cast<Thread *>(buffer);
-    lock_s.acquire();
+    s_lock.acquire();
     TraceIn();
-    Thread *next = scheduler_s.pop();
-    dispatch(previous, next, &lock_s);
+    Thread *next = s_scheduler.pop();
+    dispatch(previous, next, &s_lock);
 }
 
 void Thread::reschedule() {
-    if (scheduler_s.empty())
+    if (s_scheduler.empty())
         return;
 
     auto previous = running();
-    previous->state = State::READY;
+    previous->m_state = State::READY;
 
-    lock_s.acquire();
-    scheduler_s.insert(&previous->link);
-    dispatch(previous, scheduler_s.pop(), &lock_s);
+    s_lock.acquire();
+    s_scheduler.insert(&previous->m_link);
+    dispatch(previous, s_scheduler.pop(), &s_lock);
 }
 
 void Thread::yield() {
@@ -134,15 +145,15 @@ void Thread::yield() {
     CPU::Interruptions::enable();
 }
 
-void Thread::sleep(Queue &waiting, Spin &lock) {
+void Thread::sleep(Queue &m_waiting, Spin &lock) {
     auto previous = running();
-    previous->state = State::WAITING;
-    previous->waiting = &waiting;
-    waiting.insert(&previous->link);
+    previous->m_state = State::WAITING;
+    previous->m_waiting = &m_waiting;
+    m_waiting.insert(&previous->m_link);
 
-    lock_s.acquire();
-    auto next = scheduler_s.pop();
-    lock_s.release();
+    s_lock.acquire();
+    auto next = s_scheduler.pop();
+    s_lock.release();
 
     dispatch(previous, next, &lock);
 }
@@ -150,12 +161,12 @@ void Thread::sleep(Queue &waiting, Spin &lock) {
 void Thread::wakeup(Queue &waiting) {
     Element *awake = waiting.next();
     ERROR(!awake, "[Thread::wakeup] Empty queue.");
-    awake->value->state = State::READY;
-    awake->value->waiting = nullptr;
+    awake->value->m_state = State::READY;
+    awake->value->m_waiting = nullptr;
 
-    lock_s.acquire();
-    scheduler_s.insert(awake);
-    lock_s.release();
+    s_lock.acquire();
+    s_scheduler.insert(awake);
+    s_lock.release();
 }
 
 // int entry(void *arg) {

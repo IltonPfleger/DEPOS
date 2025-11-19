@@ -21,7 +21,6 @@ int main(int argc, char *argv[]) {
     fseek(f, 0, SEEK_END);
     long filesize = ftell(f);
     rewind(f);
-    printf("[INFO] Tamanho total do ELF: %ld bytes\n", filesize);
 
     Elf64_Ehdr ehdr;
     if (fread(&ehdr, 1, sizeof(ehdr), f) != sizeof(ehdr)) {
@@ -49,7 +48,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (fread(phdrs, sizeof(Elf64_Phdr), ehdr.e_phnum, f) != (size_t)ehdr.e_phnum) {
+    if (fread(phdrs, sizeof(Elf64_Phdr), ehdr.e_phnum, f) !=
+        (size_t)ehdr.e_phnum) {
         fprintf(stderr, "Error reading program headers.\n");
         free(phdrs);
         fclose(f);
@@ -57,10 +57,13 @@ int main(int argc, char *argv[]) {
     }
 
     Elf64_Addr max_addr = 0;
+    Elf64_Addr min_addr = 0;
     for (int i = 0; i < ehdr.e_phnum; i++) {
         if (phdrs[i].p_type == PT_LOAD) {
             if (phdrs[i].p_vaddr + phdrs[i].p_memsz > max_addr)
                 max_addr = phdrs[i].p_vaddr + phdrs[i].p_memsz;
+            if (phdrs[i].p_vaddr < min_addr)
+                min_addr = phdrs[i].p_vaddr;
         }
     }
     free(phdrs);
@@ -78,7 +81,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (fread(shdrs, sizeof(Elf64_Shdr), ehdr.e_shnum, f) != (size_t)ehdr.e_shnum) {
+    if (fread(shdrs, sizeof(Elf64_Shdr), ehdr.e_shnum, f) !=
+        (size_t)ehdr.e_shnum) {
         fprintf(stderr, "Error reading section headers.\n");
         free(shdrs);
         fclose(f);
@@ -86,7 +90,7 @@ int main(int argc, char *argv[]) {
     }
 
     Elf64_Shdr strtab_hdr = shdrs[ehdr.e_shstrndx];
-    char *shstrtab        = (char *)malloc(strtab_hdr.sh_size);
+    char *shstrtab = (char *)malloc(strtab_hdr.sh_size);
     if (!shstrtab) {
         fprintf(stderr, "Failed to allocate section name table.\n");
         free(shdrs);
@@ -103,7 +107,7 @@ int main(int argc, char *argv[]) {
 
         if (strcmp(name, ".text") == 0) {
             app.text.start = shdrs[i].sh_addr;
-            app.text.end   = shdrs[i].sh_addr + shdrs[i].sh_size;
+            app.text.end = shdrs[i].sh_addr + shdrs[i].sh_size;
         } else if (strcmp(name, ".data") == 0 || strcmp(name, ".sdata") == 0) {
             if (app.data.start == 0 || shdrs[i].sh_addr < app.data.start)
                 app.data.start = shdrs[i].sh_addr;
@@ -116,13 +120,13 @@ int main(int argc, char *argv[]) {
                 app.bss.end = shdrs[i].sh_addr + shdrs[i].sh_size;
         } else if (strcmp(name, ".rodata") == 0) {
             app.rodata.start = shdrs[i].sh_addr;
-            app.rodata.end   = shdrs[i].sh_addr + shdrs[i].sh_size;
+            app.rodata.end = shdrs[i].sh_addr + shdrs[i].sh_size;
         }
     }
 
     app.start = app.text.start;
-    app.end   = max_addr;
-    app.main  = ehdr.e_entry;
+    app.end = max_addr;
+    app.main = ehdr.e_entry;
 
     FILE *file = fopen(argv[2], "wb");
     if (!file) {
@@ -141,8 +145,6 @@ int main(int argc, char *argv[]) {
         perror("fclose");
         return 1;
     }
-
-    printf("[INFO] ELF salvo em %s\n", argv[2]);
 
     free(shstrtab);
     free(shdrs);

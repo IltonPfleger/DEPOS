@@ -16,8 +16,7 @@ void init() {
         TraceIn();
         Memory::init();
         Timer::init();
-        // Machine::MMU::KernelPageTable::init();
-        //  Task::init();
+        Task::init();
         Application::init();
         booting = false;
     }
