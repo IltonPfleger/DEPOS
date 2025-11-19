@@ -13,8 +13,8 @@ class Task {
   public:
     static void init() {
         TraceIn();
-        System = new (Heap::SYSTEM) Task();
-        AddressSpace *as = System->as_;
+        s_system = new (Heap::SYSTEM) Task();
+        AddressSpace *as = s_system->m_as;
 
         as->map(Traits<MemoryMap>::RAM_BASE, Traits<MemoryMap>::RAM_BASE,
                 Traits<Memory>::SIZE, AddressSpace::KernelRW);
@@ -22,18 +22,16 @@ class Task {
         as->map(Traits<MemoryMap>::UART, Traits<MemoryMap>::UART,
                 AddressSpace::KernelRW);
 
-        //as->load();
+        // as->load();
         TraceOut();
     }
 
   private:
-    Task() : as_(new(Heap::SYSTEM) AddressSpace()) {}
+    Task() : m_as(new(Heap::SYSTEM) AddressSpace()) {}
 
   private:
-    static inline Task *System;
-
-  private:
-    AddressSpace *as_;
+    static inline Task *s_system;
+    AddressSpace *m_as;
     //     using AddressSpace = Machine::MMU::PageTable;
     //     Task() : as(new(Heap::SYSTEM) AddressSpace()) {
     //         // uintptr_t KernelStart =

@@ -8,6 +8,11 @@ class CPU {
       public:
         static auto flush() { asm volatile("sfence.vma zero, zero"); }
     };
+
+    __attribute__((always_inline)) static void sp(auto addr) {
+        asm("mv sp, %0" ::"r"(addr));
+    }
+
     static auto idle() { asm volatile("wfi"); }
     static auto syscall(auto f) { asm volatile("mv a0, %0\necall" ::"r"(f)); }
     static auto id() {
@@ -21,7 +26,8 @@ class CPU {
         unsigned long stacksz = Traits<Memory>::PAGE_SIZE;
         asm volatile("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
         uintptr_t addr = Traits<MemoryMap>::RAM_END - stacksz * core;
-        asm volatile("mv sp, %0\nret" ::"r"(addr));
+        sp(addr);
+        asm volatile("ret");
     }
 
     __attribute__((noinline)) static void init() {

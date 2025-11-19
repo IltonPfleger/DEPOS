@@ -22,25 +22,11 @@ class Context {
 
     template <typename U, typename T = KernelMode>
     __attribute__((naked)) void load(U &object, void (U::*method)()) {
+        CPU::sp(sp);
         (object.*method)();
-        asm volatile("mv t0, %[me]\nld sp, %[sp](t0)"
-                     :
-                     : [me] "r"(this), [sp] "i"(offsetof(Context, sp)));
-
-        (void)object;
-        (void)method;
-        //(object.*method)();
-
-        // Restore control registers
-        asm volatile("csrw %0, %1\n"
-                     "csrw %2, %3\n"
-                     :
-                     : "i"(T::STATUS), "r"(this->status), "i"(T::EPC),
-                       "r"(this->pc));
-
-        // Restore registers from context
-        asm volatile(
-            "mv t0, %[me]\n"
+        csrw<T::STATUS>(status);
+        csrw<T::EPC>(pc);
+        asm("mv t0, %[me]\n"
             "ld ra, %[ra](t0)\n"
             "ld gp, %[gp](t0)\n"
             "ld s0, %[s0](t0)\n"
@@ -72,53 +58,46 @@ class Context {
         __builtin_unreachable();
     }
 
-    // template <typename T = KernelMode> __attribute__((naked)) bool save() {
-    //     asm volatile(
-    //         "mv t0, %[me]\n"
-    //         "sd ra, %[ra](t0)\n"
-    //         "sd gp, %[gp](t0)\n"
-    //         "sd sp, %[sp](t0)\n"
-    //         "sd s0, %[s0](t0)\n"
-    //         "sd s1, %[s1](t0)\n"
-    //         "sd s2, %[s2](t0)\n"
-    //         "sd s3, %[s3](t0)\n"
-    //         "sd s4, %[s4](t0)\n"
-    //         "sd s5, %[s5](t0)\n"
-    //         "sd s6, %[s6](t0)\n"
-    //         "sd s7, %[s7](t0)\n"
-    //         "sd s8, %[s8](t0)\n"
-    //         "sd s9, %[s9](t0)\n"
-    //         "sd s10, %[s10](t0)\n"
-    //         "sd s11, %[s11](t0)\n"
-    //         "csrr t1, %[statusr]\n"
-    //         "sd t1, %[statuso](t0)\n"
-    //         "csrr t1, mepc\n"
-    //         "sd t1, %[pc](t0)\n"
-    //         :
-    //         : [me] "r"(this), [ra] "i"(offsetof(Context, ra)),
-    //           [gp] "i"(offsetof(Context, gp)), [sp] "i"(offsetof(Context,
-    //           sp)), [s0] "i"(offsetof(Context, s0)), [s1]
-    //           "i"(offsetof(Context, s1)), [s2] "i"(offsetof(Context, s2)),
-    //           [s3] "i"(offsetof(Context, s3)), [s4] "i"(offsetof(Context,
-    //           s4)), [s5] "i"(offsetof(Context, s5)), [s6]
-    //           "i"(offsetof(Context, s6)), [s7] "i"(offsetof(Context, s7)),
-    //           [s8] "i"(offsetof(Context, s8)), [s9] "i"(offsetof(Context,
-    //           s9)), [s10] "i"(offsetof(Context, s10)), [s11]
-    //           "i"(offsetof(Context, s11)), [statusr] "i"(T::STATUS),
-    //           [statuso] "i"(offsetof(Context, status)),
-    //           [pc] "i"(offsetof(Context, pc))
-    //         : "memory", "t0", "t1");
+    template <typename T = KernelMode> __attribute__((naked)) bool save() {
+        asm("mv t0, %[me]\n"
+            "sd ra, %[ra](t0)\n"
+            "sd gp, %[gp](t0)\n"
+            "sd sp, %[sp](t0)\n"
+            "sd zero, %[a0](t0)\n"
+            "sd s0, %[s0](t0)\n"
+            "sd s1, %[s1](t0)\n"
+            "sd s2, %[s2](t0)\n"
+            "sd s3, %[s3](t0)\n"
+            "sd s4, %[s4](t0)\n"
+            "sd s5, %[s5](t0)\n"
+            "sd s6, %[s6](t0)\n"
+            "sd s7, %[s7](t0)\n"
+            "sd s8, %[s8](t0)\n"
+            "sd s9, %[s9](t0)\n"
+            "sd s10, %[s10](t0)\n"
+            "sd s11, %[s11](t0)\n"
+            "sd ra, %[pc](t0)\n"
+            :
+            : [me] "r"(this), [ra] "i"(offsetof(Context, ra)),
+              [gp] "i"(offsetof(Context, gp)), [sp] "i"(offsetof(Context, sp)),
+              [a0] "i"(offsetof(Context, a0)), [s0] "i"(offsetof(Context, s0)),
+              [s1] "i"(offsetof(Context, s1)), [s2] "i"(offsetof(Context, s2)),
+              [s3] "i"(offsetof(Context, s3)), [s4] "i"(offsetof(Context, s4)),
+              [s5] "i"(offsetof(Context, s5)), [s6] "i"(offsetof(Context, s6)),
+              [s7] "i"(offsetof(Context, s7)), [s8] "i"(offsetof(Context, s8)),
+              [s9] "i"(offsetof(Context, s9)),
+              [s10] "i"(offsetof(Context, s10)),
+              [s11] "i"(offsetof(Context, s11)), [pc] "i"(offsetof(Context, pc))
+            : "memory");
 
-    //    this->status |= T::ME2ME;
-
-    //    asm volatile("li a0, 1\n"
-    //                 "ret\n");
-    //}
+        this->status = csrr<T::STATUS>() | T::ME2ME;
+        asm("li a0, 1\n"
+            "ret\n");
+    }
 
     template <typename T = KernelMode>
     __attribute__((always_inline)) static inline Context *push() {
-        asm volatile(
-            "addi sp, sp, %[size]\n"
+        asm("addi sp, sp, %[size]\n"
             "sd ra, %[ra](sp)\n"
             "sd gp, %[gp](sp)\n"
             "sd t0, %[t0](sp)\n"
@@ -148,26 +127,25 @@ class Context {
               [a7] "i"(offsetof(Context, a7)), [size] "i"(-sizeof(Context))
             : "memory");
 
-        asm volatile("csrr t0, %0\n"
-                     "sd t0, %c[status](sp)\n"
-                     "csrr t0, %1\n"
-                     "sd t0, %c[pc](sp)" ::"i"(T::STATUS),
-                     "i"(T::EPC), [status] "i"(offsetof(Context, status)),
-                     [pc] "i"(offsetof(Context, pc)));
+        asm("csrr t0, %0\n"
+            "sd t0, %c[status](sp)\n"
+            "csrr t0, %1\n"
+            "sd t0, %c[pc](sp)" ::"i"(T::STATUS),
+            "i"(T::EPC), [status] "i"(offsetof(Context, status)),
+            [pc] "i"(offsetof(Context, pc)));
         register Context *sp asm("sp");
         return sp;
     }
 
     template <typename T = KernelMode>
     __attribute__((naked)) static void pop() {
-        asm volatile("ld t0, %[statuso](sp)\n"
-                     "csrw %[statusr], t0\n"
-                     "ld t0, %[pc](sp)\n"
-                     "csrw %[epcr], t0" ::[statusr] "i"(T::STATUS),
-                     [epcr] "i"(T::EPC), [pc] "i"(offsetof(Context, pc)),
-                     [statuso] "i"(offsetof(Context, status)));
-        asm volatile(
-            "ld ra, %[ra](sp)\n"
+        asm("ld t0, %[statuso](sp)\n"
+            "csrw %[statusr], t0\n"
+            "ld t0, %[pc](sp)\n"
+            "csrw %[epcr], t0" ::[statusr] "i"(T::STATUS),
+            [epcr] "i"(T::EPC), [pc] "i"(offsetof(Context, pc)),
+            [statuso] "i"(offsetof(Context, status)));
+        asm("ld ra, %[ra](sp)\n"
             "ld gp, %[gp](sp)\n"
             "ld t0, %[t0](sp)\n"
             "ld t1, %[t1](sp)\n"

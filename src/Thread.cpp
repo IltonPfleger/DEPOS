@@ -9,28 +9,17 @@
 Thread *Thread::running() { return s_scheduler.current(); }
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
-    (void)previous;
-    (void)next;
-    (void)lock;
-    next->m_context->load<Spin>(*lock, &Spin::release);
-    Console::out << "ERROR";
-    // next->m_state = State::RUNNING;
-    // CPU::Context context;
-    // previous->m_context = &context;
-    // if (context.save()) {
-    //     next->m_context->load<Spin>(*lock, &Spin::release);
-    // }
-    //   lock->release();
-    //   if (next != previous) {
-    //       // if constexpr (Traits<System>::MULTITASK) {
-    //       //     // next->task_->attach(previous->stack_);
-    //       //     // next->task_->load();
-    //       // }
+    next->m_state = State::RUNNING;
+    CPU::Context context;
 
-    //    CPU::Atomic::wait(next->m_context);
-    //    CPU::Context::swtch(const_cast<CPU::Context **>(&previous->m_context),
-    //                        CPU::Atomic::clear(next->m_context));
-    //}
+    if (next == previous) {
+        lock->release();
+        return;
+    }
+    if (context.save()) {
+        previous->m_context = &context;
+        next->m_context->load<Spin>(*lock, &Spin::release);
+    }
 }
 
 int Thread::idle(void *) {
@@ -107,7 +96,7 @@ void Thread::join(Thread &thread) {
 
 void Thread::exit() {
     s_lock.lock();
-    TraceIn();
+    // TraceIn();
 
     auto previous = running();
     previous->m_state = State::FINISHED;
@@ -119,7 +108,7 @@ void Thread::exit() {
     }
 
     s_count = s_count - 1;
-    TraceOut();
+    // TraceOut();
     dispatch(previous, s_scheduler.pop(), &s_lock);
 }
 
@@ -140,15 +129,15 @@ void Thread::run() {
 }
 
 void Thread::reschedule() {
-    // if (s_scheduler.empty())
-    //     return;
+    if (s_scheduler.empty())
+        return;
 
-    // auto previous = running();
-    // previous->m_state = State::READY;
+    auto previous = running();
+    previous->m_state = State::READY;
 
-    // s_lock.acquire();
-    // s_scheduler.insert(&previous->m_link);
-    // dispatch(previous, s_scheduler.pop(), &s_lock);
+    s_lock.acquire();
+    s_scheduler.insert(&previous->m_link);
+    dispatch(previous, s_scheduler.pop(), &s_lock);
 }
 
 void Thread::yield() {
