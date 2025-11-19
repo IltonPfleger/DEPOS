@@ -14,6 +14,7 @@ struct MachineMode {
     };
 
     static constexpr const int STATUS = 0x300;
+    static constexpr const int MISA = 0x301;
     static constexpr const int IE = 0x304;
     static constexpr const int TVEC = 0x305;
     static constexpr const int EPC = 0x341;

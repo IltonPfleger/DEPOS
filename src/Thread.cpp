@@ -9,18 +9,28 @@
 Thread *Thread::running() { return s_scheduler.current(); }
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
-    next->m_state = State::RUNNING;
-    lock->release();
-    if (next != previous) {
-        // if constexpr (Traits<System>::MULTITASK) {
-        //     // next->task_->attach(previous->stack_);
-        //     // next->task_->load();
-        // }
+    (void)previous;
+    (void)next;
+    (void)lock;
+    next->m_context->load<Spin>(*lock, &Spin::release);
+    Console::out << "ERROR";
+    // next->m_state = State::RUNNING;
+    // CPU::Context context;
+    // previous->m_context = &context;
+    // if (context.save()) {
+    //     next->m_context->load<Spin>(*lock, &Spin::release);
+    // }
+    //   lock->release();
+    //   if (next != previous) {
+    //       // if constexpr (Traits<System>::MULTITASK) {
+    //       //     // next->task_->attach(previous->stack_);
+    //       //     // next->task_->load();
+    //       // }
 
-        CPU::Atomic::wait(next->m_context);
-        CPU::Context::swtch(const_cast<CPU::Context **>(&previous->m_context),
-                            CPU::Atomic::clear(next->m_context));
-    }
+    //    CPU::Atomic::wait(next->m_context);
+    //    CPU::Context::swtch(const_cast<CPU::Context **>(&previous->m_context),
+    //                        CPU::Atomic::clear(next->m_context));
+    //}
 }
 
 int Thread::idle(void *) {
@@ -41,7 +51,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
     : m_stack_(Segment(Traits<Memory>::PAGE_SIZE)), m_waiting(0),
       m_link(Element(this, c())), m_criterion(c), m_state(State::READY),
       m_joining(0), m_context(new(m_stack_.end() - sizeof(CPU::Context))
-                                  CPU::Context(f, a, exit)) {
+                                  CPU::Context(f, a, m_stack_.end(), exit)) {
     TraceIn(this);
     s_lock.lock();
     s_scheduler.insert(&m_link);
@@ -97,6 +107,7 @@ void Thread::join(Thread &thread) {
 
 void Thread::exit() {
     s_lock.lock();
+    TraceIn();
 
     auto previous = running();
     previous->m_state = State::FINISHED;
@@ -108,6 +119,7 @@ void Thread::exit() {
     }
 
     s_count = s_count - 1;
+    TraceOut();
     dispatch(previous, s_scheduler.pop(), &s_lock);
 }
 
@@ -128,15 +140,15 @@ void Thread::run() {
 }
 
 void Thread::reschedule() {
-    if (s_scheduler.empty())
-        return;
+    // if (s_scheduler.empty())
+    //     return;
 
-    auto previous = running();
-    previous->m_state = State::READY;
+    // auto previous = running();
+    // previous->m_state = State::READY;
 
-    s_lock.acquire();
-    s_scheduler.insert(&previous->m_link);
-    dispatch(previous, s_scheduler.pop(), &s_lock);
+    // s_lock.acquire();
+    // s_scheduler.insert(&previous->m_link);
+    // dispatch(previous, s_scheduler.pop(), &s_lock);
 }
 
 void Thread::yield() {

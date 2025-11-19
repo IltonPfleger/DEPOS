@@ -18,7 +18,7 @@ template <typename T> struct Traits;
 template <> struct Traits<Machine> {
     static constexpr const char *NAME = "sifive_u";
     static constexpr int XLEN = 64;
-    static constexpr int CPUS = 4;
+    static constexpr int CPUS = 5;
     static constexpr int BSP = 1;
 };
 
@@ -52,7 +52,7 @@ template <> struct Traits<Alarm> {
 };
 
 template <> struct Traits<System> {
-    static constexpr bool MULTITASK = false;
+    static constexpr bool MULTITASK = true;
 };
 
 template <> struct Traits<Application> {

@@ -28,8 +28,8 @@ class CPU {
         static_assert(!Traits<System>::MULTITASK ||
                       Meta::SAME<KernelMode, SupervisorMode>::Result);
 
-        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
-            if (CPU::id() == 0) {
+        if constexpr (Traits<System>::MULTITASK) {
+            if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
                 for (;;)
                     CPU::idle();
             }
