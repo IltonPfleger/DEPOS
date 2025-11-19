@@ -5,7 +5,7 @@
 
 class Memory {
   private:
-    using Buddy = BuddyAllocator<Traits<Memory>::ORDER>;
+    using Allocator = BuddyAllocator<Traits<Memory>::ORDER>;
 
   public:
     static void init();
@@ -13,7 +13,7 @@ class Memory {
     static void kfree(void *, size_t);
 
   private:
-    static inline Buddy buddy_;
+    static inline Allocator s_allocator;
 };
 
 void *operator new(unsigned long, void *);

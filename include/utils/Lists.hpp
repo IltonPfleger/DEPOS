@@ -15,6 +15,7 @@ template <typename T> class LinkedListBase {
   public:
     using DataType = T;
     using Node = Element<T>;
+    LinkedListBase() = default;
     bool empty() const { return m_head == nullptr; }
     Node *head() { return m_head; }
 
@@ -26,6 +27,7 @@ template <typename T> class LIFO : public LinkedListBase<T> {
   public:
     using Base = LinkedListBase<T>;
     using Node = typename Base::Node;
+    LIFO() = default;
 
     void insert(Node *node) {
         node->next = this->m_head;

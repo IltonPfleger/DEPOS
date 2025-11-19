@@ -17,15 +17,15 @@ void Memory::init() {
     uintptr_t ApplicationSize = ApplicationEnd - ApplicationStart;
     TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart,
             ApplicationEnd, ApplicationSize);
-    if (buddy_.empty()) {
-        uintptr_t c;
-        for (c = RamEnd - PageSize; c > RamBase; c -= PageSize) {
-            if (c >= KernelStart && c < KernelEnd)
-                continue;
-            if (c >= ApplicationStart && c < ApplicationEnd)
-                continue;
-            buddy_.insert(reinterpret_cast<void *>(c), PageSize);
+    new (&s_allocator) Allocator();
+
+    for (uintptr_t c = RamEnd - PageSize; c > RamBase; c -= PageSize) {
+        if (c + PageSize >= KernelStart && c < KernelEnd)
+            continue;
+        if (c + PageSize >= ApplicationStart && c < ApplicationEnd) {
+            continue;
         }
+        s_allocator.insert(reinterpret_cast<void *>(c), PageSize);
     }
     TraceOut();
 }
@@ -33,7 +33,7 @@ void Memory::init() {
 void *Memory::kmalloc(size_t size) {
     TraceIn(size);
     _lock.lock();
-    void *page = buddy_.remove(size);
+    void *page = s_allocator.remove(size);
     _lock.unlock();
     ERROR(!page, "Out of pages.");
     TraceOut(page);
@@ -44,7 +44,7 @@ void Memory::kfree(void *addr, size_t size) {
     TraceIn(addr, size);
     ERROR(addr == nullptr, "}\n");
     _lock.lock();
-    buddy_.insert(addr, size);
+    s_allocator.insert(addr, size);
     _lock.unlock();
     TraceOut();
 }
