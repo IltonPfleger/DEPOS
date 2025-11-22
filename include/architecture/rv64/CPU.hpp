@@ -17,15 +17,17 @@ class CPU {
         return tp;
     }
 
-    static void kill() { Atomic::decf(s_alive); }
+    static void kill() { Atomic::fdec(s_alive); }
     static void barrier() {
         static volatile unsigned int counter = 0;
-        if (Atomic::incf(counter) == s_alive) {
+        if (Atomic::finc(counter) == s_alive - 1) {
             Atomic::store(counter, 0);
         } else {
             while (Atomic::load(counter) != s_alive)
                 ;
         }
+        while (Atomic::load(counter) != 0)
+            ;
     }
 
     /* *** Boot Functions *** */
@@ -40,7 +42,7 @@ class CPU {
     __attribute__((noinline)) static void init() {
         static_assert(!Traits<System>::MULTITASK || Meta::SAME<KernelMode, SupervisorMode>::Result);
 
-        if constexpr (Traits<System>::MULTITASK) {
+        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
             if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
                 kill();
                 for (;;)

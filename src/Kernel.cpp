@@ -5,9 +5,6 @@
 #include <memory/Memory.hpp>
 #include <utils/Debug.hpp>
 
-static volatile bool booting = true;
-static volatile bool starting = true;
-
 namespace Init {
 void init() {
     bool BSP = CPU::id() == Traits<Machine>::BSP;
@@ -16,19 +13,14 @@ void init() {
         TraceIn();
         Memory::init();
         Timer::init();
-        Task::init();
-        Application::init();
-        booting = false;
-    }
-    while (booting)
-        ;
-    if (BSP) {
+        // Task::init();
+        // Application::init();
         Thread::init();
         TraceOut();
-        starting = false;
     }
-    while (starting)
-        ;
+
+    CPU::barrier();
+
     if (CPU::id() < Traits<Machine>::CPUS) {
         Thread::run();
     }
@@ -37,8 +29,7 @@ void init() {
 }
 } // namespace Init
 
-extern "C" __attribute__((naked, used, noinline, section(".init"))) void
-_init() {
+extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
     CPU::setup();
     CPU::init();
     Init::init();
