@@ -32,5 +32,6 @@ void init() {
 extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
     CPU::setup();
     CPU::init();
+    MMU::init();
     Init::init();
 }

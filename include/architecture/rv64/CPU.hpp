@@ -19,22 +19,29 @@ class CPU {
 
     static void kill() { Atomic::fdec(s_alive); }
     static void barrier() {
-        static volatile unsigned int counter = 0;
-        if (Atomic::finc(counter) == s_alive - 1) {
-            Atomic::store(counter, 0);
+        static volatile int ready[2] = {0, 0};
+        static volatile int i;
+
+        int j = i;
+
+        Atomic::finc(ready[j]);
+
+        if (CPU::id() == Traits<Machine>::BSP) {
+            while (ready[j] < s_alive)
+                ;
+            i = !i;
+            ready[j] = 0;
         } else {
-            while (Atomic::load(counter) != s_alive)
+            while (ready[j])
                 ;
         }
-        while (Atomic::load(counter) != 0)
-            ;
     }
 
     /* *** Boot Functions *** */
     __attribute__((naked)) static void setup() {
         unsigned long core;
         asm volatile("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
-        uintptr_t addr = Traits<MemoryMap>::RAM_END - Traits<Memory>::PAGE_SIZE * core;
+        uintptr_t addr = Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PAGE_SIZE * core;
         asm("mv sp, %0" ::"r"(addr));
         asm volatile("ret");
     }
@@ -73,5 +80,5 @@ class CPU {
     }
 
   private:
-    static volatile inline unsigned int s_alive = Traits<Machine>::CPUS;
+    static volatile inline int s_alive = Traits<Machine>::CPUS;
 };

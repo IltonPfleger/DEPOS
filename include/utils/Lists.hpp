@@ -15,12 +15,12 @@ template <typename T> class LinkedListBase {
   public:
     using DataType = T;
     using Node = Element<T>;
-    LinkedListBase() = default;
+    LinkedListBase() { m_head = nullptr; };
     bool empty() const { return m_head == nullptr; }
     Node *head() { return m_head; }
 
   protected:
-    Node *m_head = nullptr;
+    Node *m_head;
 };
 
 template <typename T> class LIFO : public LinkedListBase<T> {

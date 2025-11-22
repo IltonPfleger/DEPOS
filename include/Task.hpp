@@ -16,7 +16,7 @@ class Task {
         s_system = new (Heap::SYSTEM) Task();
         AddressSpace *as = s_system->m_as;
 
-        as->map(Traits<MemoryMap>::RAM_BASE, Traits<MemoryMap>::RAM_BASE,
+        as->map(Traits<MemoryMap>::PhysicalRamStart, Traits<MemoryMap>::PhysicalRamStart,
                 Traits<Memory>::SIZE, AddressSpace::KernelRW);
 
         as->map(Traits<MemoryMap>::UART, Traits<MemoryMap>::UART,
@@ -41,7 +41,7 @@ class Task {
     //         // Segment(__mm.kernel.start, KernelEnd - KernelStart); for (int
     //         i = 0;
     //         // i < Traits<Machine>::CPUS; i++) {
-    //         //     as->map(Traits<Memory>::RAM_END - (i + 1) *
+    //         //     as->map(Traits<Memory>::PhysicalRamEnd - (i + 1) *
     //         //     Machine::MMU::PageSize, AddressSpace::KernelRW);
     //         // };
     //
@@ -81,7 +81,7 @@ class Task {
     //         // SYSTEM = new (Heap::SYSTEM) Task();
     //         // char buffer[sizeof(Segment)];
     //         // Segment *s = reinterpret_cast<Segment *>(buffer);
-    //         // new (buffer) Segment(Traits<Memory>::RAM_BASE,
+    //         // new (buffer) Segment(Traits<Memory>::PhysicalRamStart,
     //         Traits<Memory>::SIZE);
     //         // SYSTEM->attach(*s, AddressSpace::Flags::KernelRW);
     //         // new (buffer) Segment(Machine::IO::Addr,

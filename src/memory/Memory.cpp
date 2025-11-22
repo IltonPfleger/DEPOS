@@ -7,8 +7,6 @@ static Spin _lock;
 
 void Memory::init() {
     constexpr size_t PageSize = Traits<Memory>::PAGE_SIZE;
-    constexpr uintptr_t RamBase = Traits<MemoryMap>::RAM_BASE;
-    constexpr uintptr_t RamEnd = Traits<MemoryMap>::RAM_END;
     uintptr_t KernelStart = __kmm.start;
     uintptr_t KernelEnd = __kmm.end;
     uintptr_t KernelSize = KernelEnd - KernelStart;
@@ -18,13 +16,10 @@ void Memory::init() {
     TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize);
     new (&s_allocator) Allocator();
 
-    uintptr_t c = RamEnd - (PageSize * 10);
-    for (; c > RamBase; c -= PageSize) {
-        if (c + PageSize >= KernelStart && c < KernelEnd)
+    uintptr_t c = Traits<MemoryMap>::RamStart;
+    for (; c < Traits<MemoryMap>::RamEnd; c += PageSize) {
+        if (c + PageSize > KernelStart && c < KernelEnd)
             continue;
-        if (c + PageSize >= ApplicationStart && c < ApplicationEnd) {
-            continue;
-        }
         s_allocator.insert(reinterpret_cast<void *>(c), PageSize);
     }
     TraceOut();

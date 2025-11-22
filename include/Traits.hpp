@@ -22,6 +22,10 @@ template <> struct Traits<Machine> {
     static constexpr int BSP = 1;
 };
 
+template <> struct Traits<System> {
+    static constexpr bool MULTITASK = true;
+};
+
 template <> struct Traits<Memory> {
     static constexpr unsigned long ORDER = 30;
     static constexpr unsigned long SIZE = (1 << ORDER);
@@ -30,14 +34,25 @@ template <> struct Traits<Memory> {
 };
 
 template <> struct Traits<MemoryMap> {
-    static constexpr unsigned long RAM_BASE = 0x80000000;
-    static constexpr unsigned long RAM_END = RAM_BASE + Traits<Memory>::SIZE;
-    static constexpr unsigned long BOOT_ADDR = RAM_BASE;
+    static constexpr unsigned long PhysicalRamStart = 0x80000000;
+    static constexpr unsigned long PhysicalRamEnd = PhysicalRamStart + Traits<Memory>::SIZE - 1;
+    static constexpr unsigned long PhysicalBootAddr = PhysicalRamStart;
 
-    /* *** Devices *** */
-    static constexpr unsigned long UART = 0x10010000ULL;
-    static constexpr unsigned long CLINT = 0x02000000ULL;
+    static constexpr unsigned long VirtualRamStart = 0xffffffff80000000;
+    static constexpr unsigned long VirtualRamEnd = VirtualRamStart + Traits<Memory>::SIZE - 1;
+
+    static constexpr unsigned long RamStart = Traits<System>::MULTITASK ? VirtualRamStart : PhysicalRamStart;
+    static constexpr unsigned long RamEnd = Traits<System>::MULTITASK ? VirtualRamEnd : PhysicalRamEnd;
+
+    static constexpr unsigned long SystemAddr = RamStart;
+    static constexpr unsigned long ApplicationAddr = SystemAddr + Traits<Memory>::SIZE / 2;
+
+    /* *** MMIO Devices *** */
+    static constexpr unsigned long UART = 0x10010000;
+    static constexpr unsigned long CLINT = 0x02000000;
     static constexpr unsigned long PLIC = 0;
+    static constexpr unsigned long MMIOStart = 0;
+    static constexpr unsigned long MMIOEnd = 0x40000000;
 };
 
 template <> struct Traits<Timer> {
@@ -49,14 +64,6 @@ template <> struct Traits<Timer> {
 template <> struct Traits<Alarm> {
     static constexpr bool Enable = true;
     static constexpr unsigned long Frequency = Traits<Timer>::MHz;
-};
-
-template <> struct Traits<System> {
-    static constexpr bool MULTITASK = false;
-};
-
-template <> struct Traits<Application> {
-    static constexpr unsigned long ADDR = 0xA0000000;
 };
 
 template <> struct Traits<Debug> {

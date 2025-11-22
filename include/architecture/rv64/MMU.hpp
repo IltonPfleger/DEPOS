@@ -8,7 +8,11 @@ template <typename Allocator> class SV39_MMU {
         friend SV39_MMU;
 
       public:
-        PageTable() = default;
+        PageTable() {
+            for (unsigned int i = 0; i < EntriesNumber; i++) {
+                entries[i] = 0;
+            }
+        };
         enum Flags {
             V = 1 << 0, // Valid
             R = 1 << 1, // Readable
@@ -17,16 +21,17 @@ template <typename Allocator> class SV39_MMU {
             U = 1 << 4, // User accessible
             A = 1 << 6, // Accessed
             D = 1 << 7, // Dirty
-            UserRO = A | D | R | U | V | X,
-            UserRW = A | D | R | U | V | W | X,
-            KernelRO = A | D | R | V | X,
-            KernelRW = A | D | R | V | W | X,
-            Default = UserRW
+            UserRO = A | D | R | U | V,
+            UserRW = A | D | R | U | V | W,
+            UserRWX = A | D | R | U | V | W | X,
+            KernelRO = A | D | R | V,
+            KernelRW = A | D | R | V | W,
+            KernelRWX = A | D | R | V | W | X,
+            Default = UserRWX
         };
 
         void load() const {
-            csrw<SupervisorMode::SATP>(Mode |
-                                       reinterpret_cast<uintptr_t>(this) >> 12);
+            csrw<SupervisorMode::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
             CPU::TLB::flush();
         }
 
@@ -54,17 +59,21 @@ template <typename Allocator> class SV39_MMU {
             return l0->set(vpn0, reinterpret_cast<uintptr_t>(pa), flags);
         }
         bool map(uintptr_t va, Flags flags) { return map(va, va, flags); }
+
         void map(uintptr_t va, uintptr_t pa, size_t size, Flags flags) {
-            if ((size % Giga == 0) && ((va % Giga == 0) && (pa % Giga == 0))) {
+            while (size >= Giga && (va % Giga == 0) && (pa % Giga == 0)) {
                 uintptr_t vpn2 = (va >> 30) & 0x1FF;
-                this->set(vpn2, pa, flags);
-            } else {
-                uintptr_t end = pa + size;
-                for (; pa < end;) {
-                    map(va, pa, flags);
-                    va += Size;
-                    pa += Size;
-                }
+                set(vpn2, pa, flags);
+                va += Giga;
+                pa += Giga;
+                size -= Giga;
+            }
+
+            while (size > 0) {
+                map(va, pa, flags);
+                va += Size;
+                pa += Size;
+                size -= Size;
             }
         }
 
@@ -88,22 +97,25 @@ template <typename Allocator> class SV39_MMU {
         alignas(Size) uintptr_t entries[EntriesNumber];
     };
 
-    // TODO: Don't need to be here
-    // class KernelPageTable {
-    //  private:
-    //    KernelPageTable();
-    //    static inline PageTable *instance_s = nullptr;
+    static void init() {
+        static_assert(Traits<MemoryMap>::PhysicalRamStart % Giga == 0);
+        static_assert(Traits<MemoryMap>::VirtualRamStart % Giga == 0);
+        static_assert(Traits<MemoryMap>::MMIOStart % Giga == 0);
+        if constexpr (Traits<System>::MULTITASK) {
+            PageTable &pt = s_base.Result;
+            if (CPU::id() == Traits<Machine>::BSP) {
+                pt.map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart, Traits<Memory>::SIZE,
+                       PageTable::KernelRWX);
+                pt.map(Traits<MemoryMap>::PhysicalRamStart, Traits<MemoryMap>::PhysicalRamStart, Traits<Memory>::SIZE,
+                       PageTable::KernelRWX);
+                pt.map(Traits<MemoryMap>::MMIOStart, Traits<MemoryMap>::MMIOStart,
+                       Traits<MemoryMap>::MMIOEnd - Traits<MemoryMap>::MMIOStart, PageTable::KernelRWX);
+            }
+            CPU::barrier();
+            pt.load();
+        }
+    }
 
-    //  public:
-    //    static void init() {
-    //        instance_s = new (Memory::kmalloc(PageTable::Size)) PageTable();
-    //        instance_s->map(Traits<MemoryMap>::RAM_BASE,
-    //                        Traits<MemoryMap>::RAM_BASE, Traits<Memory>::SIZE,
-    //                        PageTable::KernelRW);
-    //        instance_s->map(Traits<MemoryMap>::UART, Traits<MemoryMap>::UART,
-    //                        PageTable::KernelRW);
-    //        instance_s->load();
-    //    }
-    //    static const PageTable *get() { return instance_s; }
-    //};
+  private:
+    static inline Meta::ConditionalValue<PageTable, Traits<System>::MULTITASK> s_base;
 };

@@ -25,7 +25,7 @@ SECTIONS {
 
 	.init : { KEEP(*(.init)) } AT>ram
 
-	. = SYS_ADDR;
+	. = SystemAddr;
 
 	.text : { *(.text) *(.text.*) } AT>ram
 
