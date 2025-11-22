@@ -8,6 +8,8 @@
 
 Thread *Thread::running() { return s_scheduler.current(); }
 
+static void teste(Spin *lock) { lock->release(); }
+
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->m_state = State::RUNNING;
     CPU::Context context;
@@ -18,7 +20,8 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     }
     if (context.save()) {
         previous->m_context = &context;
-        next->m_context->load<Spin>(*lock, &Spin::release);
+        // Console::out << reinterpret_cast<void *>(next->m_context);
+        next->m_context->load(teste, lock);
     }
 }
 
@@ -37,10 +40,9 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : m_stack_(Segment(Traits<Memory>::PAGE_SIZE)), m_waiting(0),
-      m_link(Element(this, c())), m_criterion(c), m_state(State::READY),
-      m_joining(0), m_context(new(m_stack_.end() - sizeof(CPU::Context))
-                                  CPU::Context(f, a, m_stack_.end(), exit)) {
+    : m_stack_(Segment(Traits<Memory>::PAGE_SIZE)), m_waiting(0), m_link(Element(this, c())), m_criterion(c),
+      m_state(State::READY), m_joining(0),
+      m_context(new(m_stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack_.end(), exit)) {
     TraceIn(this);
     s_lock.lock();
     s_scheduler.insert(&m_link);

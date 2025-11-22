@@ -18,7 +18,7 @@ template <typename T> struct Traits;
 template <> struct Traits<Machine> {
     static constexpr const char *NAME = "sifive_u";
     static constexpr int XLEN = 64;
-    static constexpr int CPUS = 5;
+    static constexpr int CPUS = 2;
     static constexpr int BSP = 1;
 };
 

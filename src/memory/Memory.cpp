@@ -15,11 +15,11 @@ void Memory::init() {
     uintptr_t ApplicationStart = __mm.start;
     uintptr_t ApplicationEnd = __mm.end;
     uintptr_t ApplicationSize = ApplicationEnd - ApplicationStart;
-    TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart,
-            ApplicationEnd, ApplicationSize);
+    TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize);
     new (&s_allocator) Allocator();
 
-    for (uintptr_t c = RamEnd - PageSize; c > RamBase; c -= PageSize) {
+    uintptr_t c = RamEnd - (PageSize * 10);
+    for (; c > RamBase; c -= PageSize) {
         if (c + PageSize >= KernelStart && c < KernelEnd)
             continue;
         if (c + PageSize >= ApplicationStart && c < ApplicationEnd) {
