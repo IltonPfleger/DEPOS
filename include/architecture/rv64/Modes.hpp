@@ -17,14 +17,13 @@ struct MachineMode {
     static constexpr const int MISA = 0x301;
     static constexpr const int IE = 0x304;
     static constexpr const int TVEC = 0x305;
+    static constexpr const int SCRATCH = 0x340;
     static constexpr const int EPC = 0x341;
     static constexpr const int CAUSE = 0x342;
     static constexpr const int IP = 0x344;
     static constexpr const int TVAL = 0x343;
 
-    __attribute__((always_inline)) static inline void ret() {
-        asm volatile("mret");
-    }
+    __attribute__((always_inline)) static inline void ret() { asm volatile("mret"); }
 };
 
 struct SupervisorMode {
@@ -41,11 +40,10 @@ struct SupervisorMode {
     static constexpr const int STATUS = 0x100;
     static constexpr const int IE = 0x104;
     static constexpr const int TVEC = 0x105;
+    static constexpr const int SCRATCH = 0x140;
     static constexpr const int EPC = 0x141;
     static constexpr const int CAUSE = 0x142;
     static constexpr const int TVAL = 0x143;
     static constexpr const int IP = 0x144;
-    __attribute__((always_inline)) static inline void ret() {
-        asm volatile("sret");
-    }
+    __attribute__((always_inline)) static inline void ret() { asm volatile("sret"); }
 };

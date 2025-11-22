@@ -17,7 +17,7 @@ run: $(TARGET).elf $(TOOLS)
 	./$(BUILD)/ELFParser $(TARGET).elf $(MEMORY_MAP)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MEMORY_MAP) $(TARGET).elf
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
-	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(TARGET).bin -device loader,file=$(_APPLICATION).elf,addr=$(APP_ADDR)
+	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(TARGET).bin -device loader,file=$(_APPLICATION).elf,addr=$(APP_ADDR) # -S -gdb tcp::1234
 
 debug: $(TARGET)
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -S -gdb tcp::1234
