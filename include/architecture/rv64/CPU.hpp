@@ -9,10 +9,6 @@ class CPU {
         static auto flush() { asm volatile("sfence.vma zero, zero"); }
     };
 
-    __attribute__((always_inline)) static void sp(auto addr) {
-        asm("mv sp, %0" ::"r"(addr));
-    }
-
     static auto idle() { asm volatile("wfi"); }
     static auto syscall(auto f) { asm volatile("mv a0, %0\necall" ::"r"(f)); }
     static auto id() {
@@ -21,21 +17,32 @@ class CPU {
         return tp;
     }
 
+    static void kill() { Atomic::decf(s_alive); }
+    static void barrier() {
+        static volatile unsigned int counter = 0;
+        if (Atomic::incf(counter) == s_alive) {
+            Atomic::store(counter, 0);
+        } else {
+            while (Atomic::load(counter) != s_alive)
+                ;
+        }
+    }
+
+    /* *** Boot Functions *** */
     __attribute__((naked)) static void setup() {
         unsigned long core;
-        unsigned long stacksz = Traits<Memory>::PAGE_SIZE;
         asm volatile("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
-        uintptr_t addr = Traits<MemoryMap>::RAM_END - stacksz * core;
-        sp(addr);
+        uintptr_t addr = Traits<MemoryMap>::RAM_END - Traits<Memory>::PAGE_SIZE * core;
+        asm("mv sp, %0" ::"r"(addr));
         asm volatile("ret");
     }
 
     __attribute__((noinline)) static void init() {
-        static_assert(!Traits<System>::MULTITASK ||
-                      Meta::SAME<KernelMode, SupervisorMode>::Result);
+        static_assert(!Traits<System>::MULTITASK || Meta::SAME<KernelMode, SupervisorMode>::Result);
 
         if constexpr (Traits<System>::MULTITASK) {
             if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
+                kill();
                 for (;;)
                     CPU::idle();
             }
@@ -52,10 +59,8 @@ class CPU {
             csrw<MachineMode::MIDELEG>(0x222);
             csrw<MachineMode::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
             csrw<MachineMode::PMPCFG0>(0b11111);
-            csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR |
-                                      MachineMode::PIRQE);
-            csrc<MachineMode::STATUS>(SupervisorMode::PIRQE |
-                                      SupervisorMode::IRQE);
+            csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
+            csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
         } else {
             csrs<MachineMode::STATUS>(MachineMode::ME2ME);
             csrw<MachineMode::TVEC>(MIC::entry);
@@ -64,4 +69,7 @@ class CPU {
         csrw<MachineMode::EPC>(__builtin_return_address(0));
         MachineMode::ret();
     }
+
+  private:
+    static volatile inline unsigned int s_alive = Traits<Machine>::CPUS;
 };

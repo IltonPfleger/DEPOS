@@ -23,7 +23,7 @@ static consteval bool StringCompare(const char *a, const char *b) {
 }
 
 template <typename T, auto Method, typename... Args> struct Caller {
-    static auto Result(T &obj, Args &&...args) { (obj.*Method)(args...); }
+    static auto Result(T *obj, Args &&...args) { (obj->*Method)(args...); }
 };
 
 template <typename T, typename U> struct SAME {
