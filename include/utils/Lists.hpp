@@ -162,5 +162,5 @@ template <typename T> struct POFO : private LinkedList<T> {
     using Node = typename LinkedList<T>::Element;
 
     void insert(Node *value) { LinkedList<T>::push_sorted(value); }
-    Node *next() { return LinkedList<T>::remove_front(); }
+    Node *remove() { return LinkedList<T>::remove_front(); }
 };

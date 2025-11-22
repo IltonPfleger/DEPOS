@@ -24,26 +24,26 @@ class Policy {
 class RR : public Policy {
   public:
     static constexpr bool Preemptive = true;
+    static constexpr int Levels = 2;
     template <typename T> using Queue = POFO<T>;
-    enum : Rank { NORMAL, IDLE = ~0ULL };
+    enum : Rank { NORMAL, IDLE };
     RR(Rank r = NORMAL, ...) : Policy(r) {}
 };
 
-template <typename T>
-class Scheduler : private Traits<Scheduler<T>>::Criterion::template Queue<T *>,
-                  public Head<T> {
+template <typename T> class Scheduler : public Head<T> {
 
   public:
     using Criterion = typename Traits<Scheduler<T>>::Criterion;
     using Queue = typename Criterion::template Queue<T *>;
     using Node = typename Queue::Node;
-    using Queue::empty;
-    using Queue::insert;
 
     static_assert(Traits<Scheduler<T>>::Preemptive == Criterion::Preemptive);
 
+    bool empty() { return m_levels[0].empty(); }
+
+    void insert(Node *n) { m_levels[0].insert(n); }
     T *pop() {
-        auto e = this->next();
+        auto e = m_levels[0].remove();
         ERROR(!e);
         heads_[this->id()] = e;
         return e->value;
@@ -56,4 +56,5 @@ class Scheduler : private Traits<Scheduler<T>>::Criterion::template Queue<T *>,
 
   private:
     Node *heads_[Head<T>::N];
+    Queue m_levels[Criterion::Levels];
 };
