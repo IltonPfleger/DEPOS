@@ -8,8 +8,6 @@
 
 Thread *Thread::running() { return s_scheduler.current(); }
 
-static void teste(Spin *lock) { lock->release(); }
-
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->m_state = State::RUNNING;
     CPU::Context context;
@@ -20,8 +18,8 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     }
     if (context.save()) {
         previous->m_context = &context;
-        // Console::out << reinterpret_cast<void *>(next->m_context);
-        next->m_context->load(teste, lock);
+        auto release = [](Spin *obj) { return obj->release(); };
+        next->m_context->load(release, lock);
     }
 }
 

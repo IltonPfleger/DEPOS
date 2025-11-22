@@ -24,6 +24,7 @@ class Context {
         asm("csrw sscratch, a0");
         asm("addi sp, sp, %0" ::"i"(-sizeof(Context)));
         f(a);
+        // method(object);
         asm("addi sp, sp, %0" ::"i"(sizeof(Context)));
         asm("csrr a1, sscratch");
         asm("ld ra, %[ra](a1)\n"
