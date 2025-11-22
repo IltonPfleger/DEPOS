@@ -17,9 +17,8 @@ int thread_function(void *arg) {
     while (i--) {
         mutex.p();
         Console::out << id << " ";
-        // Console::println("THREAD: %d | Core: %d\n", id,
         mutex.v();
-        // Thread::yield();
+        Thread::yield();
         //     Alarm::usleep(10000);
     }
     return 0;
@@ -30,8 +29,7 @@ int main(int, char *[]) {
 
     mutex.p();
     for (unsigned long i = 0; i < N; i++) {
-        threads[i] = new Thread(thread_function, (void *)(long long)i,
-                                Thread::Criterion::NORMAL);
+        threads[i] = new Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);
     }
     Console::out << "Created!\n";
     mutex.v();
