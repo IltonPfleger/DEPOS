@@ -19,12 +19,12 @@ class Context {
         this->sp = reinterpret_cast<uint64_t>(sp);
     }
 
-    template <typename F, typename A, typename T = KernelMode> __attribute__((naked)) void load(F f, A a) {
+    template <typename F, typename... Args, typename T = KernelMode>
+    __attribute__((naked)) void load(F f, Args... args) {
         asm("ld sp, %[sp](a0)" ::[sp] "i"(offsetof(Context, sp)));
         asm("csrw sscratch, a0");
         asm("addi sp, sp, %0" ::"i"(-sizeof(Context)));
-        f(a);
-        // method(object);
+        f(args...);
         asm("addi sp, sp, %0" ::"i"(sizeof(Context)));
         asm("csrr a1, sscratch");
         asm("ld ra, %[ra](a1)\n"
