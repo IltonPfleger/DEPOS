@@ -39,9 +39,16 @@ template <typename T> class Scheduler : public Head<T> {
 
     static_assert(Traits<Scheduler<T>>::Preemptive == Criterion::Preemptive);
 
-    bool empty() { return m_levels[0].empty(); }
+    bool empty() {
+        for (auto &l : m_levels) {
+            if (!l.empty())
+                return false;
+        }
+        return true;
+    }
 
     void insert(Node *n) { m_levels[0].insert(n); }
+
     T *pop() {
         auto e = m_levels[0].remove();
         ERROR(!e);
