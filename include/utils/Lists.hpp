@@ -44,6 +44,40 @@ template <typename T> class LIFO : public LinkedList<T> {
     }
 };
 
+template <typename T> class FIFO : public LinkedList<T> {
+  public:
+    using Node = T;
+
+    FIFO() : LinkedList<T>() { m_tail = nullptr; }
+
+    void insert(Node *n) {
+        n->next = nullptr;
+        if (!this->m_head) {
+            this->m_head = n;
+            m_tail = n;
+        } else {
+            m_tail->next = n;
+            m_tail = n;
+        }
+    }
+
+    Node *remove() {
+        if (!this->m_head)
+            return nullptr;
+
+        Node *n = this->m_head;
+        this->m_head = n->next;
+
+        if (!this->m_head)
+            m_tail = nullptr;
+
+        return n;
+    }
+
+  private:
+    Node *m_tail;
+};
+
 template <typename Queue, int Levels> class MLQ {
   public:
     using Node = typename Queue::Node;

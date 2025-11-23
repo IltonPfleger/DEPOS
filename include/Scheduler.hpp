@@ -15,7 +15,7 @@ class RR : public Priority {
   public:
     static constexpr bool Preemptive = true;
     static constexpr int Levels = 2;
-    template <typename T> using Queue = MLQ<LIFO<Element<T, RR>>, Levels>;
+    template <typename T> using Queue = MLQ<FIFO<Element<T, RR>>, Levels>;
     enum { NORMAL, IDLE };
     RR(Priority::Type r = NORMAL, ...) : Priority(r) {}
 };
