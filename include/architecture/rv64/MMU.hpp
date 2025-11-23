@@ -31,7 +31,7 @@ template <typename Allocator> class SV39_MMU {
         };
 
         void load() const {
-            csrw<SupervisorMode::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
+            csrw<Supervisor::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
             CPU::TLB::flush();
         }
 
@@ -103,7 +103,7 @@ template <typename Allocator> class SV39_MMU {
         static_assert(Traits<MemoryMap>::MMIOStart % Giga == 0);
         if constexpr (Traits<System>::MULTITASK) {
             PageTable &pt = s_base.Result;
-            if (CPU::id() == Traits<Machine>::BSP) {
+            if (CPU::id() == Traits<::Machine>::BSP) {
                 pt.map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart, Traits<Memory>::SIZE,
                        PageTable::KernelRWX);
                 pt.map(Traits<MemoryMap>::PhysicalRamStart, Traits<MemoryMap>::PhysicalRamStart, Traits<Memory>::SIZE,

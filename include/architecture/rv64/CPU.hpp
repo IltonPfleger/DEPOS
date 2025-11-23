@@ -26,7 +26,7 @@ class CPU {
 
         Atomic::finc(ready[j]);
 
-        if (CPU::id() == Traits<Machine>::BSP) {
+        if (CPU::id() == Traits<::Machine>::BSP) {
             while (ready[j] < s_alive)
                 ;
             i = !i;
@@ -47,10 +47,10 @@ class CPU {
     }
 
     __attribute__((noinline)) static void init() {
-        static_assert(!Traits<System>::MULTITASK || Meta::SAME<KernelMode, SupervisorMode>::Result);
+        static_assert(!Traits<System>::MULTITASK || Meta::SAME<KernelMode, Supervisor>::Result);
 
-        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
-            if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
+        if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
+            if (!(csrr<Machine::MISA>() & (1UL << ('S' - 'A')))) {
                 kill();
                 for (;;)
                     CPU::idle();
@@ -58,27 +58,27 @@ class CPU {
         }
 
         if constexpr (Traits<Timer>::Enable) {
-            csrs<MachineMode::IE>(MachineMode::TI);
-            csrs<SupervisorMode::IE>(SupervisorMode::TI);
+            csrs<Machine::IE>(Machine::TI);
+            csrs<Supervisor::IE>(Supervisor::TI);
         }
 
-        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
-            csrw<SupervisorMode::TVEC>(SIC::entry);
-            csrw<MachineMode::TVEC>(MIC::entry);
-            csrw<MachineMode::MIDELEG>(0x222);
-            csrw<MachineMode::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-            csrw<MachineMode::PMPCFG0>(0b11111);
-            csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
-            csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
+        if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
+            csrw<Supervisor::TVEC>(SIC::entry);
+            csrw<Machine::TVEC>(MIC::entry);
+            csrw<Machine::MIDELEG>(0x222);
+            csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
+            csrw<Machine::PMPCFG0>(0b11111);
+            csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIRQE);
+            csrc<Machine::STATUS>(Supervisor::PIRQE | Supervisor::IRQE);
         } else {
-            csrs<MachineMode::STATUS>(MachineMode::ME2ME);
-            csrw<MachineMode::TVEC>(MIC::entry);
+            csrs<Machine::STATUS>(Machine::ME2ME);
+            csrw<Machine::TVEC>(MIC::entry);
         }
 
-        csrw<MachineMode::EPC>(__builtin_return_address(0));
-        MachineMode::ret();
+        csrw<Machine::EPC>(__builtin_return_address(0));
+        Machine::ret();
     }
 
   private:
-    static volatile inline int s_alive = Traits<Machine>::CPUS;
+    static volatile inline int s_alive = Traits<::Machine>::CPUS;
 };

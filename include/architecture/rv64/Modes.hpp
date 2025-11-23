@@ -1,4 +1,5 @@
-struct MachineMode {
+class Machine {
+  public:
     enum : unsigned long {
         PMPADDR0 = 0x3B0,
         PMPCFG0 = 0x3A0,
@@ -26,7 +27,8 @@ struct MachineMode {
     __attribute__((always_inline)) static inline void ret() { asm volatile("mret"); }
 };
 
-struct SupervisorMode {
+class Supervisor {
+  public:
     enum : unsigned long {
         ME2ME = 1ULL << 8,   // Supervisor to Supervisor
         ME2USER = 0ULL << 8, // Supervisor to User

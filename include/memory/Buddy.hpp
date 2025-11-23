@@ -20,14 +20,6 @@ template <size_t MAX> class BuddyAllocator {
         }
     }
 
-    bool empty() {
-        for (unsigned int i = 0; i < MAX + 1; i++) {
-            if (!m_free[i].empty())
-                return false;
-        }
-        return true;
-    }
-
     void *remove(size_t size) {
         Node *node = nullptr;
         size_t n = level(size);

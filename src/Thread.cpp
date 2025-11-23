@@ -40,9 +40,9 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : m_stack_(Segment(Traits<Memory>::PAGE_SIZE)), m_waiting(0), m_link(Node(this, c)), m_criterion(c),
+    : m_stack(Segment(Traits<Memory>::PAGE_SIZE)), m_waiting(0), m_link(Node(this, c)), m_criterion(c),
       m_state(State::READY), m_joining(0),
-      m_context(new(m_stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack_.end(), exit)) {
+      m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
     TraceIn(this);
     s_lock.lock();
     s_scheduler.insert(&m_link);
