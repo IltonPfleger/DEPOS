@@ -11,13 +11,15 @@ template <> struct Head<Thread> {
     static auto id() { return CPU::id(); }
 };
 
-class RR : public Priority {
+class RR {
   public:
     static constexpr bool Preemptive = true;
     static constexpr int Levels = 2;
     template <typename T> using Queue = MLQ<FIFO<Element<T, RR>>, Levels>;
     enum { NORMAL, IDLE };
-    RR(Priority::Type r = NORMAL, ...) : Priority(r) {}
+    RR(int r = NORMAL, ...) : m_priority(r) {}
+    operator int() const { return m_priority; }
+    int m_priority;
 };
 
 template <typename T> class Scheduler : private Traits<Scheduler<T>>::Criterion::template Queue<T *>, public Head<T> {

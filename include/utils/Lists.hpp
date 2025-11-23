@@ -2,18 +2,12 @@
 
 #include <Meta.hpp>
 
-struct Priority {
-    using Type = unsigned int;
-    Type m_priority;
-    operator Type &() { return m_priority; }
-};
-
 template <typename T = void, typename P = void> struct Element {
     typename Meta::TypeSelector<!Meta::VOID<T>::Result, T>::Result m_value;
     typename Meta::TypeSelector<!Meta::VOID<P>::Result, P>::Result m_priority;
     Element *next = nullptr;
 
-    operator Meta::TypeSelector<!Meta::VOID<T>::Result, T>::Result &() { return m_value; }
+    operator Meta::TypeSelector<!Meta::VOID<T>::Result, T>::Result() const { return m_value; }
 };
 
 template <typename T> class LinkedList {
