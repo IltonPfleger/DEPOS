@@ -45,7 +45,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
       m_context(new(m_stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack_.end(), exit)) {
     TraceIn(this);
     s_lock.lock();
-    s_scheduler.insert(&m_link);
+    s_scheduler.insert(&m_link, m_criterion);
     s_count = s_count + 1;
     s_lock.unlock();
     TraceOut();
@@ -105,7 +105,7 @@ void Thread::exit() {
 
     if (previous->m_joining) {
         previous->m_joining->m_state = State::READY;
-        s_scheduler.insert(&previous->m_joining->m_link);
+        s_scheduler.insert(&previous->m_joining->m_link, previous->m_joining->m_criterion);
         previous->m_joining = 0;
     }
 
@@ -138,7 +138,7 @@ void Thread::reschedule() {
     previous->m_state = State::READY;
 
     s_lock.acquire();
-    s_scheduler.insert(&previous->m_link);
+    s_scheduler.insert(&previous->m_link, previous->m_criterion);
     dispatch(previous, s_scheduler.pop(), &s_lock);
 }
 
@@ -152,7 +152,7 @@ void Thread::sleep(Queue &m_waiting, Spin &lock) {
     auto previous = running();
     previous->m_state = State::WAITING;
     previous->m_waiting = &m_waiting;
-    m_waiting.insert(&previous->m_link);
+    m_waiting.insert(&previous->m_link); //, previous->m_criterion);
 
     s_lock.acquire();
     auto next = s_scheduler.pop();
@@ -168,7 +168,7 @@ void Thread::wakeup(Queue &waiting) {
     awake->value->m_waiting = nullptr;
 
     s_lock.acquire();
-    s_scheduler.insert(awake);
+    s_scheduler.insert(awake, awake->value->m_criterion);
     s_lock.release();
 }
 

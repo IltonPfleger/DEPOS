@@ -47,13 +47,16 @@ template <typename T> class Scheduler : public Head<T> {
         return true;
     }
 
-    void insert(Node *n) { m_levels[0].insert(n); }
+    void insert(Node *n, Criterion &c) { m_levels[c()].insert(n); }
 
     T *pop() {
-        auto e = m_levels[0].remove();
-        ERROR(!e);
-        heads_[this->id()] = e;
-        return e->value;
+        for (auto &l : m_levels) {
+            if (auto n = l.remove()) {
+                heads_[this->id()] = n;
+                return n->value;
+            }
+        }
+        ERROR(true);
     }
 
     T *current() {
