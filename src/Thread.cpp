@@ -162,13 +162,14 @@ void Thread::sleep(Queue &m_waiting, Spin &lock) {
 }
 
 void Thread::wakeup(Queue &waiting) {
-    Node *awake = waiting.remove();
+    Thread *awake = *waiting.remove();
+    // Node *awake = waiting.remove();
     ERROR(!awake, "[Thread::wakeup] Empty queue.");
-    awake->value->m_state = State::READY;
-    awake->value->m_waiting = nullptr;
+    awake->m_state = State::READY;
+    awake->m_waiting = nullptr;
 
     s_lock.acquire();
-    s_scheduler.insert(awake);
+    s_scheduler.insert(&awake->m_link);
     s_lock.release();
 }
 

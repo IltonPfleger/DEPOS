@@ -5,13 +5,15 @@
 struct Priority {
     using Type = unsigned int;
     Type m_priority;
-    Type operator()() const { return m_priority; }
+    operator Type &() { return m_priority; }
 };
 
-template <typename T, typename P = void> struct Element {
-    typename Meta::TypeSelector<!Meta::VOID<T>::Result, T, void>::Result value;
-    typename Meta::TypeSelector<!Meta::VOID<P>::Result, P, void>::Result m_priority;
+template <typename T = void, typename P = void> struct Element {
+    typename Meta::TypeSelector<!Meta::VOID<T>::Result, T>::Result m_value;
+    typename Meta::TypeSelector<!Meta::VOID<P>::Result, P>::Result m_priority;
     Element *next = nullptr;
+
+    operator Meta::TypeSelector<!Meta::VOID<T>::Result, T>::Result &() { return m_value; }
 };
 
 template <typename T> class LinkedList {
@@ -91,7 +93,7 @@ template <typename Queue, int Levels> class MLQ {
         return true;
     }
 
-    void insert(Node *n) { m_levels[n->m_priority()].insert(n); }
+    void insert(Node *n) { m_levels[n->m_priority].insert(n); }
 
     Node *remove() {
         for (auto &l : m_levels) {

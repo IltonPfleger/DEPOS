@@ -5,7 +5,7 @@
 struct Empty {};
 
 namespace Meta {
-template <bool B, typename True, typename False> struct TypeSelector {
+template <bool B, typename True, typename False = Empty> struct TypeSelector {
     using Result = True;
 };
 
@@ -13,9 +13,9 @@ template <typename True, typename False> struct TypeSelector<false, True, False>
     using Result = False;
 };
 
-template <typename True> struct TypeSelector<false, True, void> {
-    using Result = Empty;
-};
+//template <typename True> struct TypeSelector<false, True, void> {
+//    using Result = Empty;
+//};
 
 template <typename T, bool B> struct ConditionalValue {
     T Result;

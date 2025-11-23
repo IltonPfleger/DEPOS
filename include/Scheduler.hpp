@@ -32,8 +32,8 @@ template <typename T> class Scheduler : private Traits<Scheduler<T>>::Criterion:
     T *remove() {
         Node *n = Queue::remove();
         ERROR(!n);
-        m_heads[this->id()] = n->value;
-        return n->value;
+        m_heads[this->id()] = *n;
+        return *n;
     }
 
     T *current() {
