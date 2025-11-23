@@ -2,6 +2,8 @@
 
 #define offsetof(type, member) ((unsigned long)&(((type *)0)->member))
 
+struct Empty {};
+
 namespace Meta {
 template <bool B, typename True, typename False> struct TypeSelector {
     using Result = True;
@@ -9,6 +11,10 @@ template <bool B, typename True, typename False> struct TypeSelector {
 
 template <typename True, typename False> struct TypeSelector<false, True, False> {
     using Result = False;
+};
+
+template <typename True> struct TypeSelector<false, True, void> {
+    using Result = Empty;
 };
 
 template <typename T, bool B> struct ConditionalValue {

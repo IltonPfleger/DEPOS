@@ -2,7 +2,7 @@
 #include <utils/Lists.hpp>
 
 template <size_t MAX> class BuddyAllocator {
-    using List = LIFO<void>;
+    using List = LIFO<Element<void>>;
     using Node = typename List::Node;
 
     static size_t level(size_t size) {

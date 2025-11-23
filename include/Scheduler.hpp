@@ -11,60 +11,36 @@ template <> struct Head<Thread> {
     static auto id() { return CPU::id(); }
 };
 
-class Policy {
-  public:
-    using Rank = unsigned long;
-    Policy(Rank r, ...) : rank_(r) {}
-    Rank operator()() const { return rank_; }
-
-  private:
-    Rank rank_;
-};
-
-class RR : public Policy {
+class RR : public Priority {
   public:
     static constexpr bool Preemptive = true;
     static constexpr int Levels = 2;
-    template <typename T> using Queue = LIFO<T>;
-    enum : Rank { NORMAL, IDLE };
-    RR(Rank r = NORMAL, ...) : Policy(r) {}
+    template <typename T> using Queue = MLQ<LIFO<Element<T, RR>>, Levels>;
+    enum { NORMAL, IDLE };
+    RR(Priority::Type r = NORMAL, ...) : Priority(r) {}
 };
 
-template <typename T> class Scheduler : public Head<T> {
-
+template <typename T> class Scheduler : private Traits<Scheduler<T>>::Criterion::template Queue<T *>, public Head<T> {
   public:
     using Criterion = typename Traits<Scheduler<T>>::Criterion;
     using Queue = typename Criterion::template Queue<T *>;
     using Node = typename Queue::Node;
 
-    static_assert(Traits<Scheduler<T>>::Preemptive == Criterion::Preemptive);
+    using Queue::empty;
+    using Queue::insert;
 
-    bool empty() {
-        for (auto &l : m_levels) {
-            if (!l.empty())
-                return false;
-        }
-        return true;
-    }
-
-    void insert(Node *n, Criterion &c) { m_levels[c()].insert(n); }
-
-    T *pop() {
-        for (auto &l : m_levels) {
-            if (auto n = l.remove()) {
-                heads_[this->id()] = n;
-                return n->value;
-            }
-        }
-        ERROR(true);
+    T *remove() {
+        Node *n = Queue::remove();
+        ERROR(!n);
+        m_heads[this->id()] = n->value;
+        return n->value;
     }
 
     T *current() {
-        ERROR(!heads_[this->id()]);
-        return heads_[this->id()]->value;
+        ERROR(!m_heads[this->id()]);
+        return m_heads[this->id()];
     }
 
   private:
-    Node *heads_[Head<T>::N];
-    Queue m_levels[Criterion::Levels];
+    T *m_heads[Head<T>::N];
 };

@@ -73,6 +73,5 @@ template <> struct Traits<Debug> {
 
 template <> struct Traits<Scheduler<Thread>> {
     static constexpr unsigned long Frequency = Traits<Timer>::MHz / 10;
-    static constexpr bool Preemptive = true;
     using Criterion = RR;
 };

@@ -3,9 +3,8 @@
 #include <Traits.hpp>
 
 void Timer::init() {
-    if constexpr (Traits<Scheduler<Thread>>::Preemptive) {
-        scheduler_s.duration =
-            Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
+    if constexpr (Traits<Scheduler<Thread>>::Criterion::Preemptive) {
+        scheduler_s.duration = Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
         for (auto &e : scheduler_s.current)
             e = scheduler_s.duration;
         // scheduler_s.current[Machine::CPU::core()] = scheduler_s.duration;
@@ -22,7 +21,7 @@ void Timer::handler(unsigned long core) {
     //         }
     //     }
 
-    if constexpr (Traits<Scheduler<Thread>>::Preemptive) {
+    if constexpr (Traits<Scheduler<Thread>>::Criterion::Preemptive) {
         if (--scheduler_s.current[core] == 0) {
             scheduler_s.current[core] = scheduler_s.duration;
             Thread::reschedule();

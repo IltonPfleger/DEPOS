@@ -13,8 +13,8 @@ class Thread {
     using Criterion = typename Scheduler<Thread>::Criterion;
     using Argument = void *;
     using Function = int (*)(Argument);
-    using Queue = Scheduler<Thread>::Queue;
-    using Element = Queue::Node;
+    using Queue = LIFO<Element<Thread *, Criterion>>;
+    using Node = Queue::Node;
 
     // Thread(Function f, Argument a, Criterion c, Task *t = nullptr)
     //     : // task_(t ? t : new(Heap::SYSTEM) Task()),
