@@ -25,7 +25,7 @@ class RR : public Policy {
   public:
     static constexpr bool Preemptive = true;
     static constexpr int Levels = 2;
-    template <typename T> using Queue = POFO<T>;
+    template <typename T> using Queue = LIFO<T>;
     enum : Rank { NORMAL, IDLE };
     RR(Rank r = NORMAL, ...) : Policy(r) {}
 };

@@ -3,7 +3,7 @@
 #include <Types.hpp>
 
 template <typename T> struct Element {
-    const T &data;
+    const T value;
     Element *next;
 };
 
