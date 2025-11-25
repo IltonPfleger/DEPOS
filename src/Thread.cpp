@@ -8,8 +8,6 @@
 
 Thread *Thread::running() { return s_scheduler.current(); }
 
-// static void teste(Spin *lock) { lock->release(); }
-
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->m_state = State::RUNNING;
     CPU::Context context;
@@ -43,7 +41,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
     : m_stack(Segment(Traits<Memory>::PAGE_SIZE)), m_waiting(0), m_link(Node(this, c)), m_criterion(c),
       m_state(State::READY), m_joining(0),
       m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
-    TraceIn(this);
+    TraceIn(this, static_cast<int>(c));
     s_lock.lock();
     s_scheduler.insert(&m_link);
     s_count = s_count + 1;
@@ -125,8 +123,8 @@ void Thread::run() {
     char buffer[sizeof(Thread)];
     Thread *previous = reinterpret_cast<Thread *>(buffer);
     s_lock.acquire();
-    TraceIn();
     Thread *next = s_scheduler.remove();
+    TraceIn(next);
     dispatch(previous, next, &s_lock);
 }
 

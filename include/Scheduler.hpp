@@ -16,7 +16,7 @@ class RR {
     static constexpr bool Preemptive = true;
     static constexpr int Levels = 2;
     template <typename T> using Queue = MLQ<FIFO<Element<T, RR>>, Levels>;
-    enum { NORMAL, IDLE };
+    enum { NORMAL, IDLE = 1 };
     RR(int r = NORMAL, ...) : m_priority(r) {}
     operator int() const { return m_priority; }
     int m_priority;

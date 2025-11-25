@@ -14,8 +14,8 @@ void init() {
         Memory::init();
         Timer::init();
         // Task::init();
-        // Application::init();
         Thread::init();
+        Application::init();
         TraceOut();
     }
 

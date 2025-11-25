@@ -5,9 +5,7 @@ template <unsigned long A, unsigned long C, unsigned long B> struct SiFiveUART {
 
     static constexpr int Divisor = Clock / Baudrate;
 
-    static volatile unsigned int *base() {
-        return reinterpret_cast<volatile unsigned int *>(Addr);
-    }
+    static volatile unsigned int *base() { return reinterpret_cast<volatile unsigned int *>(Addr); }
 
     static volatile unsigned int &TXDATA() { return *(base() + 0); }
     static volatile unsigned int &RXDATA() { return *(base() + 1); }
@@ -32,5 +30,12 @@ template <unsigned long A, unsigned long C, unsigned long B> struct SiFiveUART {
         TXDATA() = c;
         while (TXDATA() & TX_EMPTY_MASK)
             ;
+    }
+
+    static char get() {
+        unsigned int c;
+        while ((c = RXDATA()) & RX_EMPTY_MASK)
+            ;
+        return (char)(c & 0xFF);
     }
 };
