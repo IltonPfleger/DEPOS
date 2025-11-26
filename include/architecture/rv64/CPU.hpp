@@ -30,7 +30,8 @@ class CPU {
 
         if (CPU::id() == Traits<::Machine>::BSP) {
             while (ready[j] < s_alive)
-                i = !i;
+                ;
+            i = !i;
             ready[j] = 0;
         } else {
             while (ready[j])

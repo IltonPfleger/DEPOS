@@ -22,11 +22,11 @@ class Context {
     template <typename F, typename... Args, typename T = KernelMode>
     __attribute__((naked)) void load(F f, Args... args) {
         asm("ld sp, %[sp](a0)" ::[sp] "i"(offsetof(Context, sp)));
-        asm("csrw %[csrscratch], a0" ::[csrscratch] "i"(T::SCRATCH));
+        asm("mv s0, a0");
         asm("addi sp, sp, %0" ::"i"(-sizeof(Context)));
         f(args...);
         asm("addi sp, sp, %0" ::"i"(sizeof(Context)));
-        asm("csrr a1, %[csrscratch]" ::[csrscratch] "i"(T::SCRATCH));
+        asm("mv a1, s0");
         asm("ld ra, %[ra](a1)\n"
             "ld gp, %[gp](a1)\n"
             "ld s0, %[s0](a1)\n"

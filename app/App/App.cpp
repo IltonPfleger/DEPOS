@@ -27,7 +27,7 @@
 int main(int, char *[]) {
     Console::out << "Application: \n";
 
-	//while(1);
+    // while(1);
 
     // mutex.p();
     // for (unsigned long i = 0; i < N; i++) {
@@ -42,6 +42,6 @@ int main(int, char *[]) {
     //// for (int i = 0; i < N; i++)
     ////     delete threads[i];
 
-    // Console::out << "\nApplication Done!\n";
+    Console::out << "\nApplication Done!\n";
     return 0;
 }
