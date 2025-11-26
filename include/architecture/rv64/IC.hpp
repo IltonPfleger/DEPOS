@@ -13,7 +13,6 @@ class MIC {
                     csrc<Machine::IE>(Machine::TI);
                     csrs<Machine::IP>(Supervisor::TI);
                 } else {
-                    //Console::out << "TIMER\n";
                     int core = CPU::id();
                     CLINT::reset(core);
                     Timer::handler(core);

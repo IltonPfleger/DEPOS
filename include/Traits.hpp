@@ -22,7 +22,7 @@ template <> struct Traits<System> {
 template <> struct Traits<Machine> {
     static constexpr const char *NAME = "sifive_u";
     static constexpr int XLEN = 64;
-    static constexpr int CPUS = 2;
+    static constexpr int CPUS = 5;
     static constexpr int BSP = Traits<System>::MULTITASK ? 1 : 0;
 };
 

@@ -12,39 +12,40 @@ void Console::println(const char *fmt, ...) {
             switch (*fmt) {
             case 'c': {
                 char c = static_cast<char>(va_arg(args, int));
-                out << c;
+                print(c);
                 break;
             }
             case 's': {
                 const char *s = va_arg(args, const char *);
-                out << s;
+                print(s);
                 break;
             }
             case 'd': {
                 int i = va_arg(args, int);
-                out << i;
+                print(i);
                 break;
             }
             case 'u': {
                 unsigned int u = va_arg(args, unsigned int);
-                out << u;
+                print(u);
                 break;
             }
             case 'p': {
                 void *p = va_arg(args, void *);
-                out << p;
+                print(p);
                 break;
             }
             case '%': {
-                out << '%';
+                print('%');
                 break;
             }
             default:
-                out << '%' << *fmt;
+                print('%');
+                print(*fmt);
                 break;
             }
         } else {
-            out << *fmt;
+            print(*fmt);
         }
         ++fmt;
     }
