@@ -15,15 +15,15 @@ template <typename U> class Scheduler;
 
 template <typename T> struct Traits;
 
+template <> struct Traits<System> {
+    static constexpr bool MULTITASK = false;
+};
+
 template <> struct Traits<Machine> {
     static constexpr const char *NAME = "sifive_u";
     static constexpr int XLEN = 64;
     static constexpr int CPUS = 2;
-    static constexpr int BSP = 1;
-};
-
-template <> struct Traits<System> {
-    static constexpr bool MULTITASK = false;
+    static constexpr int BSP = Traits<System>::MULTITASK ? 1 : 0;
 };
 
 template <> struct Traits<Memory> {
@@ -45,7 +45,9 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long RamEnd = Traits<System>::MULTITASK ? VirtualRamEnd : PhysicalRamEnd;
 
     static constexpr unsigned long SystemAddr = RamStart;
-    static constexpr unsigned long ApplicationAddr = SystemAddr + Traits<Memory>::SIZE / 2;
+    static constexpr unsigned long PhysicalApplicationAddr = PhysicalRamStart + Traits<Memory>::SIZE / 2;
+    static constexpr unsigned long ApplicationAddr =
+        Traits<System>::MULTITASK ? VirtualRamStart | PhysicalApplicationAddr : PhysicalApplicationAddr;
 
     /* *** MMIO Devices *** */
     static constexpr unsigned long UART = 0x10010000;
@@ -58,6 +60,7 @@ template <> struct Traits<MemoryMap> {
 template <> struct Traits<Timer> {
     static constexpr bool Enable = true;
     static constexpr unsigned long MHz = 1'000'000;
+    static constexpr unsigned long Clock = 1000000UL;
     static constexpr unsigned long Frequency = MHz;
 };
 
@@ -68,7 +71,7 @@ template <> struct Traits<Alarm> {
 
 template <> struct Traits<Debug> {
     static constexpr bool Error = true;
-    static constexpr bool Trace = false;
+    static constexpr bool Trace = true;
 };
 
 template <> struct Traits<Scheduler<Thread>> {

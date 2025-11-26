@@ -11,7 +11,7 @@ class RV64 {
     class Supervisor;
     class Hypervisor;
     class User;
-    using KernelMode = Supervisor;
+    using KernelMode = Meta::TypeSelector<Traits<System>::MULTITASK, Supervisor, Machine>::Result;
 
 #include "CSRS.hpp"
 /**/

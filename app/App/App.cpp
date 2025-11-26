@@ -27,6 +27,8 @@
 int main(int, char *[]) {
     Console::out << "Application: \n";
 
+	//while(1);
+
     // mutex.p();
     // for (unsigned long i = 0; i < N; i++) {
     //     threads[i] = new Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);

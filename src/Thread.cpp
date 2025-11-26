@@ -32,8 +32,7 @@ int Thread::idle(void *) {
     CPU::barrier();
     if (CPU::id() == Traits<Machine>::BSP)
         Console::println("*** Shutdown! ***\n");
-    for (;;)
-        ;
+    CPU::halt();
     return 0;
 }
 
@@ -96,7 +95,7 @@ void Thread::join(Thread &thread) {
 
 void Thread::exit() {
     s_lock.lock();
-    // TraceIn();
+    TraceIn();
 
     auto previous = running();
     previous->m_state = State::FINISHED;
@@ -108,7 +107,7 @@ void Thread::exit() {
     }
 
     s_count = s_count - 1;
-    // TraceOut();
+    TraceOut();
     dispatch(previous, s_scheduler.remove(), &s_lock);
 }
 

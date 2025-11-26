@@ -13,6 +13,7 @@ class MIC {
                     csrc<Machine::IE>(Machine::TI);
                     csrs<Machine::IP>(Supervisor::TI);
                 } else {
+                    //Console::out << "TIMER\n";
                     int core = CPU::id();
                     CLINT::reset(core);
                     Timer::handler(core);
@@ -22,7 +23,7 @@ class MIC {
             if (mcause == Exception::SYSCALL) {
                 Context *context = reinterpret_cast<Context *>(args);
                 context->pc += 4;
-                // Syscall::handler(reinterpret_cast<void *>(context->a0));
+                Syscall::handler(reinterpret_cast<void *>(context->a0));
             } else {
                 error();
             }
@@ -87,17 +88,13 @@ class Syscall {
     friend MIC;
 
   private:
-    void handler(void *function) {
+    static void handler(void *function) {
         auto core = CPU::id();
         auto addr = reinterpret_cast<uintptr_t>(function);
         if (addr == reinterpret_cast<uintptr_t>(&CLINT::reset)) {
             CLINT::reset(core);
             csrs<Machine::IE>(Machine::TI);
             csrc<Machine::IP>(Supervisor::TI);
-        } else {
-            // TODO: THIS EXECUTE IN MACHINE MODE
-            reinterpret_cast<void (*)()>(function)();
-            // ERROR(true, "Invalid Syscall!\n");
         }
     }
 };

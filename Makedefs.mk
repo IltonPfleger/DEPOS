@@ -19,6 +19,7 @@ MEMORY_SIZE=$(shell $(GET) "Traits<Memory>::SIZE")
 PhysicalBootAddr=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::PhysicalBootAddr"))
 SystemAddr=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::SystemAddr"))
 ApplicationAddr=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::ApplicationAddr"))
+PhysicalApplicationAddr=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::PhysicalApplicationAddr"))
 PAGE_SIZE=$(shell $(GET) "Traits<Memory>::PAGE_SIZE")
 MULTITASK=$(shell $(GET) "Traits<System>::MULTITASK")
 
@@ -27,7 +28,7 @@ CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
 CFLAGS += -march=rv64imac_zicsr -mabi=lp64
-CFLAGS += -g -std=c++2c
+CFLAGS += -g -std=c++2c -O3
 
 #LDFLAGS =
 #

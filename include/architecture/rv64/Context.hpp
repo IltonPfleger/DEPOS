@@ -14,7 +14,7 @@ class Context {
     Context(int (*entry)(void *), void *a0, void *sp, void (*exit)()) {
         this->ra = reinterpret_cast<uint64_t>(exit);
         this->pc = reinterpret_cast<uint64_t>(entry);
-        this->status = static_cast<uint64_t>(KernelMode::ME2ME | static_cast<uint64_t>(KernelMode::PIRQE));
+        this->status = static_cast<uint64_t>(KernelMode::ME2ME | KernelMode::PIRQE);
         this->a0 = reinterpret_cast<uint64_t>(a0);
         this->sp = reinterpret_cast<uint64_t>(sp);
     }
@@ -22,11 +22,11 @@ class Context {
     template <typename F, typename... Args, typename T = KernelMode>
     __attribute__((naked)) void load(F f, Args... args) {
         asm("ld sp, %[sp](a0)" ::[sp] "i"(offsetof(Context, sp)));
-        asm("csrw sscratch, a0");
+        asm("csrw %[csrscratch], a0" ::[csrscratch] "i"(T::SCRATCH));
         asm("addi sp, sp, %0" ::"i"(-sizeof(Context)));
         f(args...);
         asm("addi sp, sp, %0" ::"i"(sizeof(Context)));
-        asm("csrr a1, sscratch");
+        asm("csrr a1, %[csrscratch]" ::[csrscratch] "i"(T::SCRATCH));
         asm("ld ra, %[ra](a1)\n"
             "ld gp, %[gp](a1)\n"
             "ld s0, %[s0](a1)\n"
@@ -78,6 +78,7 @@ class Context {
             "sd ra, %[pc](a0)\n"
             "csrr t1, %[csrstatus]\n"
             "or t1, t1, %[me2me]\n"
+            "and t1, t1, %[pirqe]\n"
             "sd t1, %[status](a0)\n"
             :
             : [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)), [sp] "i"(offsetof(Context, sp)),
@@ -86,7 +87,7 @@ class Context {
               [s5] "i"(offsetof(Context, s5)), [s6] "i"(offsetof(Context, s6)), [s7] "i"(offsetof(Context, s7)),
               [s8] "i"(offsetof(Context, s8)), [s9] "i"(offsetof(Context, s9)), [s10] "i"(offsetof(Context, s10)),
               [s11] "i"(offsetof(Context, s11)), [pc] "i"(offsetof(Context, pc)), [csrstatus] "i"(T::STATUS),
-              [me2me] "i"(T::ME2ME), [status] "i"(offsetof(Context, status))
+              [me2me] "r"(T::ME2ME), [pirqe] "r"(~T::PIRQE), [status] "i"(offsetof(Context, status))
             : "memory");
         asm("li a0, 1\n"
             "ret\n");

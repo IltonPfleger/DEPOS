@@ -10,7 +10,9 @@ class CPU {
     };
 
     static auto idle() { asm volatile("wfi"); }
+    static auto halt() { asm volatile("j ."); }
     static auto syscall(auto f) { asm volatile("mv a0, %0\necall" ::"r"(f)); }
+
     static auto id() {
         unsigned long tp;
         asm volatile("mv %0, tp" : "=r"(tp));
@@ -28,8 +30,7 @@ class CPU {
 
         if (CPU::id() == Traits<::Machine>::BSP) {
             while (ready[j] < s_alive)
-                ;
-            i = !i;
+                i = !i;
             ready[j] = 0;
         } else {
             while (ready[j])
@@ -49,6 +50,8 @@ class CPU {
     __attribute__((noinline)) static void init() {
         static_assert(!Traits<System>::MULTITASK || Meta::SAME<KernelMode, Supervisor>::Result);
 
+        csrc<Machine::STATUS>(Machine::IRQE);
+
         if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
             if (!(csrr<Machine::MISA>() & (1UL << ('S' - 'A')))) {
                 kill();
@@ -59,7 +62,6 @@ class CPU {
 
         if constexpr (Traits<Timer>::Enable) {
             csrs<Machine::IE>(Machine::TI);
-            csrs<Supervisor::IE>(Supervisor::TI);
         }
 
         if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
@@ -69,7 +71,7 @@ class CPU {
             csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
             csrw<Machine::PMPCFG0>(0b11111);
             csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIRQE);
-            csrc<Machine::STATUS>(Supervisor::PIRQE | Supervisor::IRQE);
+            csrc<Machine::STATUS>(Supervisor::PIRQE);
         } else {
             csrs<Machine::STATUS>(Machine::ME2ME);
             csrw<Machine::TVEC>(MIC::entry);

@@ -17,9 +17,7 @@ run: $(TARGET).elf $(TOOLS)
 	./$(BUILD)/ELFParser $(TARGET).elf $(MEMORY_MAP)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MEMORY_MAP) $(TARGET).elf
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
-	#$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(TARGET).bin -device loader,file=$(_APPLICATION).elf,addr=$(ApplicationAddr) #-S -gdb tcp::1234
-	#lrzsz-sz --verbose --ymodem Meta | $(QEMU) -serial pipe -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(TARGET).bin -device loader,file=$(_APPLICATION).elf,addr=$(ApplicationAddr)
-	$(QEMU) -serial pty -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(TARGET).bin -device loader,file=$(_APPLICATION).elf,addr=$(ApplicationAddr)
+	$(QEMU) -nographic -M $(MACHINE) -smp $(CPUS) -bios none -m $(MEMORY_SIZE)b -kernel $(TARGET).bin -device loader,file=$(_APPLICATION).elf,addr=$(PhysicalApplicationAddr),force-raw=on
 
 debug: $(TARGET)
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -S -gdb tcp::1234
@@ -33,6 +31,8 @@ gdb:
 		-ex "attach 2"\
 		-ex "set confirm off"\
 		-ex "file $(TARGET).elf"
+		#-ex "add-symbol-file $(TARGET).elf $(PhysicalBootAddr)"\
+
 
 $(TARGET).elf: $(OBJS)
 	$(LD) -e _init --section-start=.init=$(SystemAddr) --image-base=$(SystemAddr) -o $@ $(OBJS)
