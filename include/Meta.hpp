@@ -43,7 +43,7 @@ template <> struct VOID<void> {
     static constexpr bool Result = true;
 };
 
-template <typename T> struct SIGNED {
+template <typename T> struct Signed {
     static constexpr bool Result = T(-1) < T(0);
 };
 
@@ -56,7 +56,7 @@ template <typename T, long unsigned int N> struct ArrayType<T[N]> {
 };
 
 template <typename T>
-concept INTEGRAL = requires(T a) { a % 2; };
+concept Integral = requires(T a) { a % 2; };
 
 template <typename T>
 concept POINTER = requires(T a) { *a; };

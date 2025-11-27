@@ -3,6 +3,22 @@
 
 void Console::init() { IO::init(); }
 void Console::put(char c) { IO::put(c); }
+
+void Console::print(void *p) {
+    auto addr = reinterpret_cast<unsigned long>(p);
+    put('0');
+    put('x');
+    for (int i = (sizeof(void *) * 2) - 1; i >= 0; i--) {
+        put(HEX[(addr >> (i * 4)) & 0xF]);
+    }
+}
+
+void Console::print(char s) { put(s); };
+void Console::print(const char *s) {
+    while (*s)
+        put(*s++);
+};
+
 void Console::println(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
