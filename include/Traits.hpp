@@ -16,7 +16,7 @@ template <typename U> class Scheduler;
 template <typename T> struct Traits;
 
 template <> struct Traits<System> {
-    static constexpr bool MULTITASK = false;
+    static constexpr bool MULTITASK = true;
 };
 
 template <> struct Traits<Machine> {
@@ -27,7 +27,7 @@ template <> struct Traits<Machine> {
 };
 
 template <> struct Traits<Memory> {
-    static constexpr unsigned long ORDER = 27;
+    static constexpr unsigned long ORDER = 30;
     static constexpr unsigned long SIZE = (1 << ORDER);
     static constexpr unsigned long PAGE_ORDER = 12;
     static constexpr unsigned long PAGE_SIZE = (1 << PAGE_ORDER);

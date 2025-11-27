@@ -34,7 +34,8 @@ struct Console {
 
     template <typename T, typename U, typename... Rest> static void print(T &&first, U &&second, Rest &&...rest) {
         print(first);
+        print(',');
         print(second);
-        (print(rest), ...);
+        ((print(','), print(rest)), ...);
     }
 };

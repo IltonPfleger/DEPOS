@@ -53,6 +53,7 @@ class CPU {
 
         csrc<Machine::STATUS>(Machine::IRQE);
 
+
         if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
             if (!(csrr<Machine::MISA>() & (1UL << ('S' - 'A')))) {
                 kill();
