@@ -2,8 +2,6 @@
 #include <Meta.hpp>
 #include <Variadic.hpp>
 
-static inline constexpr char HEX[] = "0123456789ABCDEF";
-
 struct Console {
     static void init();
     static void put(char);

@@ -95,7 +95,7 @@ void Thread::join(Thread &thread) {
 
 void Thread::exit() {
     s_lock.lock();
-    TraceIn();
+    TraceIn(running());
 
     auto previous = running();
     previous->m_state = State::FINISHED;

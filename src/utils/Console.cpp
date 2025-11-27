@@ -1,6 +1,8 @@
 #include <machine/Machine.hpp>
 #include <utils/Console.hpp>
 
+static constexpr char HEX[] = "0123456789ABCDEF";
+
 void Console::init() { IO::init(); }
 void Console::put(char c) { IO::put(c); }
 
