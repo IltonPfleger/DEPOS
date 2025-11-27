@@ -17,19 +17,17 @@ class RV64 {
 /**/
 #include "CLINT.hpp"
 /**/
-#include "Modes.hpp"
-/**/
 #include "Context.hpp"
 /**/
 #include "modes/Machine.hpp"
+/**/
+#include "modes/Supervisor.hpp"
 /**/
 #include "Interruptions.hpp"
 /**/
 #include "Atomic.hpp"
 /**/
 #include "CPU.hpp"
-/**/
-#include "IC.hpp"
 /**/
 #include "MMU.hpp"
 };

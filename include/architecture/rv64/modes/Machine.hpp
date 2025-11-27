@@ -44,7 +44,7 @@ class Machine {
 
         static void handler(Context *) {
             uintmax_t mcause = csrr<CAUSE>();
-			bool is_interrupt = mcause >> (Traits<::Machine>::XLEN - 1);
+            bool is_interrupt = mcause >> (Traits<::Machine>::XLEN - 1);
             int code = (mcause << 1) >> 1;
 
             if (is_interrupt) {

@@ -66,8 +66,8 @@ class CPU {
         }
 
         if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
-            csrw<Supervisor::TVEC>(SIC::entry);
-            csrw<Machine::TVEC>(Machine::IC::entry);
+            csrw<Supervisor::TVEC>(Supervisor::IC::entry);
+            csrw<Machine::TVEC>(Supervisor::Firmware::entry);
             csrw<Machine::MIDELEG>(0x222);
             csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
             csrw<Machine::PMPCFG0>(0b11111);
