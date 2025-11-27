@@ -37,8 +37,10 @@ class Application {
         /// task); /    TraceOut();
         // new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL,
         // task);
+
         //} else {
-        new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL);
+        if (main)
+            new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL);
         // }
         TraceOut();
     };

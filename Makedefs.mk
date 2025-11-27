@@ -27,10 +27,14 @@ CFLAGS = -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
+CFLAGS += -fno-unwind-tables -fno-asynchronous-unwind-tables
+CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += -march=rv64imac_zicsr -mabi=lp64
-CFLAGS += -g -std=c++2c -O3
+CFLAGS += -std=c++2c -Os
 
-#LDFLAGS =
+
+
+LDFLAGS = --gc-sections --strip-all --discard-all
 #
 #ifeq ($(MULTITASK), 1)
 #	LDFLAGS += --section-alignment=$(PAGE_SIZE)

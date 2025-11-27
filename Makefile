@@ -10,14 +10,15 @@ DEPS := $(OBJS:.o=.d)
 MEMORY_MAP := $(BUILD)/MemoryMap
 
 run: $(TARGET).elf $(TOOLS)
-	make APPLICATION=$(APPLICATION) -C app
-	$(LD) -e main --just-symbols $(TARGET).elf --image-base=$(ApplicationAddr) -o $(_APPLICATION).elf $(_APPLICATION).o
-	./$(BUILD)/ELFParser $(_APPLICATION).elf $(MEMORY_MAP)
-	$(OBJCOPY) --update-section .__app_mm__=$(MEMORY_MAP) $(TARGET).elf
+	#make APPLICATION=$(APPLICATION) -C app
+	#$(LD) -e main --just-symbols $(TARGET).elf --image-base=$(ApplicationAddr) -o $(_APPLICATION).elf $(_APPLICATION).o
+	#./$(BUILD)/ELFParser $(_APPLICATION).elf $(MEMORY_MAP)
+	#$(OBJCOPY) --update-section .__app_mm__=$(MEMORY_MAP) $(TARGET).elf
 	./$(BUILD)/ELFParser $(TARGET).elf $(MEMORY_MAP)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MEMORY_MAP) $(TARGET).elf
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
-	$(QEMU) -nographic -M $(MACHINE) -smp $(CPUS) -bios none -m $(MEMORY_SIZE)b -kernel $(TARGET).bin -device loader,file=$(_APPLICATION).elf,addr=$(PhysicalApplicationAddr),force-raw=on
+	$(QEMU) -nographic -M $(MACHINE) -smp $(CPUS) -bios none -m $(MEMORY_SIZE)b -kernel $(TARGET).bin
+	#$(QEMU) -nographic -M $(MACHINE) -smp $(CPUS) -bios none -m $(MEMORY_SIZE)b -kernel $(TARGET).bin -device loader,file=$(_APPLICATION).elf,addr=$(PhysicalApplicationAddr),force-raw=on
 
 debug: $(TARGET)
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -S -gdb tcp::1234
@@ -35,7 +36,7 @@ gdb:
 
 
 $(TARGET).elf: $(OBJS)
-	$(LD) -e _init --section-start=.init=$(SystemAddr) --image-base=$(SystemAddr) -o $@ $(OBJS)
+	$(LD) $(LDFLAGS) -e _init --section-start=.init=$(SystemAddr) --image-base=$(SystemAddr) -o $@ $(OBJS)
 
 $(BUILD)/%: tools/%.cpp 
 	mkdir -p $(dir $@)
