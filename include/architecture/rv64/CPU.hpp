@@ -13,7 +13,7 @@ class CPU {
     static auto halt() { asm volatile("j ."); }
     static auto syscall(auto f) { asm volatile("mv a0, %0\necall" ::"r"(f)); }
 
-    static auto id() {
+    static unsigned long id() {
         unsigned long tp;
         asm volatile("mv %0, tp" : "=r"(tp));
         return tp;
@@ -53,7 +53,6 @@ class CPU {
 
         csrc<Machine::STATUS>(Machine::IRQE);
 
-
         if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
             if (!(csrr<Machine::MISA>() & (1UL << ('S' - 'A')))) {
                 kill();
@@ -68,7 +67,7 @@ class CPU {
 
         if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
             csrw<Supervisor::TVEC>(SIC::entry);
-            csrw<Machine::TVEC>(MIC::entry);
+            csrw<Machine::TVEC>(Machine::IC::entry);
             csrw<Machine::MIDELEG>(0x222);
             csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
             csrw<Machine::PMPCFG0>(0b11111);
@@ -76,7 +75,7 @@ class CPU {
             csrc<Machine::STATUS>(Supervisor::PIRQE);
         } else {
             csrs<Machine::STATUS>(Machine::ME2ME);
-            csrw<Machine::TVEC>(MIC::entry);
+            csrw<Machine::TVEC>(Machine::IC::entry);
         }
 
         csrw<Machine::EPC>(__builtin_return_address(0));

@@ -34,5 +34,6 @@ extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init()
     CPU::init();
     MMU::init();
     // RV64::csrs<RV64::Supervisor::IE>(RV64::Supervisor::TI);
+    // Console::print(CPU::id());
     Init::init();
 }

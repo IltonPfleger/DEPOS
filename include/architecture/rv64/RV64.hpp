@@ -21,6 +21,8 @@ class RV64 {
 /**/
 #include "Context.hpp"
 /**/
+#include "modes/Machine.hpp"
+/**/
 #include "Interruptions.hpp"
 /**/
 #include "Atomic.hpp"
