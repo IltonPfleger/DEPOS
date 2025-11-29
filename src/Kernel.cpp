@@ -3,6 +3,7 @@
 #include <Timer.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Memory.hpp>
+#include <utils/BSS.hpp>
 #include <utils/Debug.hpp>
 
 namespace Init {
@@ -32,8 +33,9 @@ void init() {
 extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
     CPU::setup();
     CPU::init();
-    MMU::init();
-    // RV64::csrs<RV64::Supervisor::IE>(RV64::Supervisor::TI);
-    // Console::print(CPU::id());
+    BSS::init();
+    // MMU::init();
+    ////    RV64::csrs<RV64::Supervisor::IE>(RV64::Supervisor::TI);
+    ////    Console::print(CPU::id());
     Init::init();
 }

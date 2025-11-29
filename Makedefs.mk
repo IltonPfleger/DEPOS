@@ -29,8 +29,8 @@ CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
 CFLAGS += -fno-unwind-tables -fno-asynchronous-unwind-tables
 CFLAGS += -ffunction-sections -fdata-sections
-CFLAGS += -march=rv64imac_zicsr -mabi=lp64
-CFLAGS += -std=c++2c -Os
+CFLAGS += -march=rv64ima_zicsr -mabi=lp64
+CFLAGS += -std=c++2c
 
 
 

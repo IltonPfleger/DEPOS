@@ -19,7 +19,6 @@ class CPU {
         return tp;
     }
 
-    static void kill() { Atomic::fdec(s_alive); }
     static void barrier() {
         static volatile int ready[2] = {0, 0};
         static volatile int i;
@@ -55,14 +54,20 @@ class CPU {
 
         if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
             if (!(csrr<Machine::MISA>() & (1UL << ('S' - 'A')))) {
-                kill();
-                for (;;)
-                    CPU::idle();
+                CPU::idle();
             }
         }
 
         if constexpr (Traits<Timer>::Enable) {
             csrs<Machine::IE>(Machine::TI);
+        }
+
+        if (id() != Traits<::Machine>::BSP) {
+            if (Atomic::finc(s_alive) < Traits<::Machine>::CPUS) {
+            } else {
+                Atomic::fdec(s_alive);
+                idle();
+            }
         }
 
         if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
@@ -83,5 +88,5 @@ class CPU {
     }
 
   private:
-    static volatile inline int s_alive = Traits<::Machine>::CPUS;
+    static volatile inline int s_alive = 1;
 };

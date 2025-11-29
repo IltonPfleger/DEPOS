@@ -22,8 +22,8 @@ template <> struct Traits<System> {
 template <> struct Traits<Machine> {
     static constexpr const char *NAME = "sifive_u";
     static constexpr int XLEN = 64;
-    static constexpr int CPUS = 2;
-    static constexpr int BSP = Traits<System>::MULTITASK ? 1 : 0;
+    static constexpr int CPUS = 1;
+    static constexpr int BSP = 0; // Traits<System>::MULTITASK ? 1 : 0;
 };
 
 template <> struct Traits<Memory> {
@@ -34,8 +34,8 @@ template <> struct Traits<Memory> {
 };
 
 template <> struct Traits<MemoryMap> {
-    static constexpr unsigned long PhysicalRamStart = 0x80000000;
-    static constexpr unsigned long PhysicalRamEnd = PhysicalRamStart + Traits<Memory>::SIZE - 1;
+    static constexpr unsigned long PhysicalRamStart = 0x40000000;
+    static constexpr unsigned long PhysicalRamEnd = PhysicalRamStart + Traits<Memory>::SIZE;
     static constexpr unsigned long PhysicalBootAddr = PhysicalRamStart;
 
     static constexpr unsigned long VirtualRamStart = 0xffffffff80000000;
@@ -50,7 +50,7 @@ template <> struct Traits<MemoryMap> {
         Traits<System>::MULTITASK ? VirtualRamStart | PhysicalApplicationAddr : PhysicalApplicationAddr;
 
     /* *** MMIO Devices *** */
-    static constexpr unsigned long UART = 0x10010000;
+    static constexpr unsigned long UART = 0x10000000;
     static constexpr unsigned long CLINT = 0x02000000;
     static constexpr unsigned long PLIC = 0;
     static constexpr unsigned long MMIOStart = 0;
@@ -58,9 +58,9 @@ template <> struct Traits<MemoryMap> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr bool Enable = true;
+    static constexpr bool Enable = false;
     static constexpr unsigned long MHz = 1'000'000;
-    static constexpr unsigned long Clock = 1000000UL;
+    static constexpr unsigned long Clock = 10'000'000;
     static constexpr unsigned long Frequency = MHz;
 };
 

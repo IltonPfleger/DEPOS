@@ -10,11 +10,11 @@ class Application {
   public:
     static void init() {
         TraceIn();
-        auto main = reinterpret_cast<int (*)(void *)>(__mm.main);
-        // if constexpr (Traits<System>::MULTITASK) {
-        //  uintptr_t TextStart = __mm.text.start;
-        //  uintptr_t TextEnd = __mm.text.end;
-        //  uintptr_t TextSize = TextEnd - TextStart;
+        // auto main = reinterpret_cast<int (*)(void *)>(__mm.main);
+        //  if constexpr (Traits<System>::MULTITASK) {
+        //   uintptr_t TextStart = __mm.text.start;
+        //   uintptr_t TextEnd = __mm.text.end;
+        //   uintptr_t TextSize = TextEnd - TextStart;
 
         // uintptr_t DataStart = __mm.data.start;
         // uintptr_t DataEnd = __mm.data.end;
@@ -39,8 +39,8 @@ class Application {
         // task);
 
         //} else {
-        if (main)
-            new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL);
+        // if (main)
+        //    new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL);
         // }
         TraceOut();
     };

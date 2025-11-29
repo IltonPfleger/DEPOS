@@ -4,7 +4,11 @@
 static constexpr char HEX[] = "0123456789ABCDEF";
 
 void Console::init() { IO::init(); }
-void Console::put(char c) { IO::put(c); }
+void Console::put(char c) {
+    if (c == '\n')
+        IO::put('\r');
+    IO::put(c);
+}
 
 void Console::print(void *p) {
     auto addr = reinterpret_cast<unsigned long>(p);
