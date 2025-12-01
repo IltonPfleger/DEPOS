@@ -9,3 +9,4 @@ A lightweight and modular microkernel designed for RISC-V, focusing on simplicit
 * [X] Libc-like I/O.
 * [X] Multicore.
 * [ ] Real-Time.
+
