@@ -5,8 +5,8 @@
         if (expr) {                                                                                                    \
             CPU::Interruptions::disable();                                                                             \
             Console::println("<%d> [ERROR] %s\n", CPU::id(), __PRETTY_FUNCTION__);                                     \
-            __VA_OPT__(Console::println(__VA_ARGS__));                                                                 \
-            __VA_OPT__(Console::println("\n"));                                                                        \
+            __VA_OPT__(Console::print(__VA_ARGS__));                                                                 \
+            __VA_OPT__(Console::print("\n"));                                                                        \
             for (;;) {                                                                                                 \
             }                                                                                                          \
         }                                                                                                              \

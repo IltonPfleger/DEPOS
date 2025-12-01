@@ -6,6 +6,9 @@
 #include <utils/BSS.hpp>
 #include <utils/Debug.hpp>
 
+/**/
+#include <drivers/ethernet/dwmac.hpp>
+
 namespace Init {
 void init() {
     bool BSP = CPU::id() == Traits<Machine>::BSP;
@@ -18,6 +21,7 @@ void init() {
         Thread::init();
         Application::init();
         TraceOut();
+        Ethernet::init();
     }
 
     CPU::barrier();
