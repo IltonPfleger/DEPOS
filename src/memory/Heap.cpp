@@ -103,7 +103,7 @@ void *operator new(unsigned long bytes, Heap &heap) {
     // void *ret =
     // Thread::running()->task->attach(reinterpret_cast<uintptr_t>(addr));
     //// return
-    ///Thread::running()->task->attach(reinterpret_cast<uintptr_t>(addr));
+    /// Thread::running()->task->attach(reinterpret_cast<uintptr_t>(addr));
     // TRACE("R:%p\n", ret);
     // return ret;
     //_lock.lock();
@@ -131,6 +131,7 @@ void *operator new(unsigned long bytes) {
 }
 
 void *operator new(unsigned long, void *ptr) { return ptr; }
+void *operator new[](unsigned long bytes, Heap & heap) { return ::operator new(bytes, heap); }
 
 // Static Allocation For System Heap
 Heap Heap::SYSTEM;
