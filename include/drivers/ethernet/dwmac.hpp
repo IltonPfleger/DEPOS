@@ -24,10 +24,16 @@ class DMA {
         SW_RESET = 0x1,
         RX_ENABLE = 0x1,
         CH0_RX_CONTROL_BUFFER_SIZE_MASK = 0x3fff,
+        SYSBUS_MODE_EAME = 1ULL << 11,
+        SYSBUS_MODE_BURST_LEN_16 = 1ULL << 3,
+        SYSBUS_MODE_BURST_LEN_8 = 1ULL << 2,
+        SYSBUS_MODE_BURST_LEN_4 = 1ULL << 1,
+        SYSBUS_MODE_RD_OSR_LMT_SHIFT = 16,
     };
 
     enum Registers {
         MODE = 0x1000,
+        SYSBUS_MODE = 0x1004,
         CH0_CONTROL = 0x1100,
         CH0_TX_CONTROL = 0x1104,
         CH0_RX_CONTROL = 0x1108,
@@ -47,6 +53,9 @@ class DMA {
         reg(MODE) |= SW_RESET;
         while (reg(MODE) & SW_RESET)
             ;
+        reg(SYSBUS_MODE) |= (2 << SYSBUS_MODE_RD_OSR_LMT_SHIFT);
+        reg(SYSBUS_MODE) |= SYSBUS_MODE_BURST_LEN_16 | SYSBUS_MODE_BURST_LEN_8 | SYSBUS_MODE_BURST_LEN_4;
+        reg(SYSBUS_MODE) |= SYSBUS_MODE_EAME;
         descriptors();
         TraceOut();
     }
@@ -95,6 +104,25 @@ class DMA {
     static inline Descriptor *m_rx_descriptors;
 };
 
+class MTL {
+
+    static volatile inline unsigned char *base = reinterpret_cast<volatile unsigned char *>(0x16030000);
+    static volatile unsigned int &reg(int offsset) {
+        return *reinterpret_cast<volatile unsigned int *>(base + offsset);
+    }
+
+    enum Bits {
+        RX_Q0_OPERATION_MODE_RSF = 1ULL << 5,
+    };
+
+    enum Registers {
+        RX_Q0_OPERATION_MODE = 0xd30,
+    };
+
+  public:
+    static void init() { reg(RX_Q0_OPERATION_MODE) |= RX_Q0_OPERATION_MODE_RSF; }
+};
+
 class MAC {
     static volatile inline unsigned char *base = reinterpret_cast<volatile unsigned char *>(0x16030000);
     static volatile unsigned int &reg(int offsset) {
@@ -105,19 +133,25 @@ class MAC {
         RX_QUEUE_MASK = 3,
         RX_QUEUE_ENABLE_ALL = 3,
         RX_ENABLE = 0x1,
+        PACKET_FILTER_RA = 1ULL << 31,
+
     };
 
     enum Registers {
-        CONFIGURATION = 0x000,
+        CONFIGURATION = 0x0,
+        PACKET_FILTER = 0x8,
         RX_QUEUE_CONTROL0 = 0x0a0,
+
     };
 
   public:
     static void init() {
         reg(RX_QUEUE_CONTROL0) &= ~RX_QUEUE_MASK;
         reg(RX_QUEUE_CONTROL0) |= RX_QUEUE_ENABLE_ALL;
-        reg(CONFIGURATION) |= RX_ENABLE;
+        reg(PACKET_FILTER) |= PACKET_FILTER_RA;
     }
+
+    static void enable() { reg(CONFIGURATION) |= RX_ENABLE; }
 };
 
 class Ethernet {
@@ -125,7 +159,9 @@ class Ethernet {
     static void init() {
         TraceIn();
         MAC::init();
+        MTL::init();
         DMA::init();
+        MAC::enable();
         DMA::receive();
         TraceOut();
     }
