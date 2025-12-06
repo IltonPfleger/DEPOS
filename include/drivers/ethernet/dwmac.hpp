@@ -16,6 +16,8 @@ class DMA {
 
         enum Bits {
             OWN = 1ULL << 31,
+            FD = 1ULL << 29,
+            LD = 1ULL << 28,
             VALID = 1ULL << 24,
         };
     };
@@ -23,6 +25,7 @@ class DMA {
     enum Bits {
         SW_RESET = 0x1,
         RX_ENABLE = 0x1,
+        TX_ENABLE = 0x1,
         CH0_RX_CONTROL_BUFFER_SIZE_MASK = 0x3fff,
         SYSBUS_MODE_EAME = 1ULL << 11,
         SYSBUS_MODE_BURST_LEN_16 = 1ULL << 3,
@@ -64,15 +67,22 @@ class DMA {
         Descriptor *descriptors = new (Heap::SYSTEM) Descriptor[2 * k_number_of_descriptors];
         m_tx_descriptors = descriptors;
         m_rx_descriptors = descriptors + k_number_of_descriptors;
+        m_tx_buffer = reinterpret_cast<unsigned long>(new (Heap::SYSTEM) Buffer);
+
         memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
         memset(m_rx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
 
         for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
             auto &e = m_rx_descriptors[i];
             unsigned long buffer = reinterpret_cast<unsigned long>(new (Heap::SYSTEM) Buffer);
-            e.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
+            e.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF); // E o upper?
             e.des3 = Descriptor::OWN | Descriptor::VALID;
         }
+
+        reg(CH0_TX_DESCRIPTORS_LIST_HADDR) = 0;
+        reg(CH0_TX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors);
+        reg(CH0_TX_DESCRIPTORS_LIST_LENGTH) = k_number_of_descriptors - 1;
+        reg(CH0_TX_CONTROL) |= TX_ENABLE;
 
         /*RX Buffer Size*/
         reg(CH0_RX_CONTROL) &= ~(CH0_RX_CONTROL_BUFFER_SIZE_MASK << 1);
@@ -98,10 +108,42 @@ class DMA {
         TraceOut();
     }
 
+    // TODO: Conferir a invalidação de cache (não vi isso ainda, mas no u-boot tem uns comentários que deixam a entender
+    // que isso vai ser relevante. Antes a gente viu que a SiFive-U tem coerência de cache com DMA, mas a VF2 é um
+    // mistério também, pode ser que tenha ou não)
+    static void send(void *packet, int length) {
+        TraceIn();
+        memcpy(reinterpret_cast<void *>(m_tx_buffer), packet, length);
+
+        auto &desc = m_tx_descriptors[m_tx_desc_index];
+        m_tx_desc_index = (m_tx_desc_index + 1) % k_number_of_descriptors;
+
+        desc.des0 = static_cast<unsigned int>(m_tx_buffer & 0xFFFFFFFF);
+        desc.des1 = static_cast<unsigned int>(m_tx_buffer >> 32);
+        desc.des2 = length;
+
+        // TODO: Conferir o mb() do u-boot aqui
+        desc.des3 = Descriptor::OWN | Descriptor::FD | Descriptor::LD | length;
+
+        auto *next_desc = &m_tx_descriptors[m_tx_desc_index];
+        reg(CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(next_desc);
+
+        for (int i = 0; i < 1000000000; i++) {
+            if (!(desc.des3 & Descriptor::OWN))
+                return;
+        }
+
+        // Timeout
+
+        TraceOut();
+    }
+
   private:
     static constexpr unsigned int k_number_of_descriptors = 5;
     static inline Descriptor *m_tx_descriptors;
     static inline Descriptor *m_rx_descriptors;
+    static inline unsigned long m_tx_buffer;
+    static inline int m_tx_desc_index = 0;
 };
 
 class MTL {
@@ -158,9 +200,9 @@ class Ethernet {
   public:
     static void init() {
         TraceIn();
-        MAC::init();
-        MTL::init();
         DMA::init();
+        MTL::init();
+        MAC::init();
         MAC::enable();
         DMA::receive();
         TraceOut();
