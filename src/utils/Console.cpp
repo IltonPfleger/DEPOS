@@ -1,8 +1,6 @@
 #include <machine/Machine.hpp>
 #include <utils/Console.hpp>
 
-static constexpr char HEX[] = "0123456789ABCDEF";
-
 void Console::init() { IO::init(); }
 void Console::put(char c) {
     if (c == '\n')
@@ -10,13 +8,27 @@ void Console::put(char c) {
     IO::put(c);
 }
 
-void Console::print(void *p) {
-    auto addr = reinterpret_cast<unsigned long>(p);
+void Console::print(void *value) {
+    auto hex = reinterpret_cast<unsigned long>(value);
     put('0');
     put('x');
-    for (int i = (sizeof(void *) * 2) - 1; i >= 0; i--) {
-        put(HEX[(addr >> (i * 4)) & 0xF]);
+
+    for (int i = (sizeof(hex) * 8) - 4; i >= 0; i -= 4) {
+        unsigned int current = (hex >> i) & 0xF;
+        put(current < 10 ? current + '0' : current - 10 + 'A');
     }
+}
+
+void Console::print(unsigned long value) {
+    char buffer[64];
+    int position = 0;
+    do {
+        buffer[position++] = '0' + (value % 10);
+        value /= 10;
+    } while (value != 0);
+
+    for (int i = position - 1; i >= 0; --i)
+        put(buffer[i]);
 }
 
 void Console::print(char s) { put(s); };

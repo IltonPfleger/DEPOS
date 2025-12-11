@@ -7,7 +7,7 @@ struct MemoryMap {
     };
 
     struct App : Entry {
-        uintptr_t main;
+        unsigned long main;
         Entry text;
         Entry data;
         Entry rodata;

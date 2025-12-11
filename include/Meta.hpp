@@ -13,15 +13,17 @@ template <typename True, typename False> struct TypeSelector<false, True, False>
     using Result = False;
 };
 
-//template <typename True> struct TypeSelector<false, True, void> {
-//    using Result = Empty;
-//};
+// template <typename True> struct TypeSelector<false, True, void> {
+//     using Result = Empty;
+// };
 
 template <typename T, bool B> struct ConditionalValue {
     T Result;
 };
 
-template <typename T> struct ConditionalValue<T, false> {};
+template <typename T> struct ConditionalValue<T, false> {
+    Empty Result;
+};
 
 template <typename T, auto Method, typename... Args> struct Caller {
     static auto Result(T *obj, Args &&...args) { (obj->*Method)(args...); }

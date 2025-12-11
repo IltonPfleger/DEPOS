@@ -2,27 +2,30 @@
 #include <machine/Machine.hpp>
 
 class Spin {
-    volatile bool locked = false;
-    volatile bool interrupts = false;
-
   public:
+    Spin() : m_locked(false), m_interrupts(false) {}
+
     void acquire() {
-        while (__atomic_test_and_set(&locked, __ATOMIC_SEQ_CST))
+        while (__atomic_test_and_set(&m_locked, __ATOMIC_SEQ_CST))
             ;
     }
 
-    void release() { __atomic_clear(&locked, __ATOMIC_SEQ_CST); }
+    void release() { __atomic_clear(&m_locked, __ATOMIC_SEQ_CST); }
 
     void lock() {
         auto i = CPU::Interruptions::off();
         acquire();
-        interrupts = i;
+        m_interrupts = i;
     }
 
     void unlock() {
-        auto i = interrupts;
+        auto i = m_interrupts;
         release();
         if (i)
             CPU::Interruptions::on();
     }
+
+  private:
+    volatile bool m_locked;
+    volatile bool m_interrupts;
 };

@@ -2,8 +2,16 @@
 class BSS {
   public:
     static void init() {
-        for (auto i = __kmm.bss.start; i != __kmm.bss.end; i++) {
-            *reinterpret_cast<unsigned char *>(i) = 0;
+        unsigned char *current = reinterpret_cast<unsigned char *>(__kmm.bss.start);
+        unsigned char *end = reinterpret_cast<unsigned char *>(__kmm.bss.end);
+        for (; current < end; current++) {
+            *current = 0;
+        }
+
+        current = reinterpret_cast<unsigned char *>(__mm.bss.start);
+        end = reinterpret_cast<unsigned char *>(__mm.bss.end);
+        for (; current < end; current++) {
+            *current = 0;
         }
     }
 };

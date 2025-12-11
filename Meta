@@ -1,14 +1,14 @@
 #!/bin/sh
 
 get() {
-    FILE="$1"
-    VAR="$2"
+    #FILE="$1"
+    VAR="$1"
     INPUT=$(mktemp)
     OUT=$(mktemp)
 
     cat > "$INPUT" <<EOL
 #include <iostream>
-#include "$FILE"
+#include <Traits.hpp>
 
 
 int main() {
@@ -17,7 +17,7 @@ int main() {
 }
 EOL
 
-    g++ -x c++ -I"$(pwd)" "$INPUT" -o "$OUT"
+    g++ -x c++ -I"$(pwd)"/include "$INPUT" -o "$OUT"
     "$OUT"
     rm -f "$INPUT" "$OUT"
 }

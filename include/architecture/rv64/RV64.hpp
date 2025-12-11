@@ -19,15 +19,15 @@ class RV64 {
 /**/
 #include "Context.hpp"
 /**/
-#include "modes/Machine.hpp"
-/**/
-#include "modes/Supervisor.hpp"
+#include "Atomic.hpp"
 /**/
 #include "Interruptions.hpp"
 /**/
-#include "Atomic.hpp"
-/**/
 #include "CPU.hpp"
+/**/
+#include "modes/Machine.hpp"
+/**/
+#include "modes/Supervisor.hpp"
 /**/
 #include "MMU.hpp"
 };

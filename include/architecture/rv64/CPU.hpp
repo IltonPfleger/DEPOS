@@ -1,4 +1,5 @@
 #pragma once
+
 class CPU {
   public:
     using Context = RV64::Context;
@@ -9,9 +10,9 @@ class CPU {
         static auto flush() { asm volatile("sfence.vma zero, zero"); }
     };
 
-    static auto idle() { asm volatile("wfi"); }
-    static auto halt() { asm volatile("j ."); }
-    static auto syscall(auto f) { asm volatile("mv a0, %0\necall" ::"r"(f)); }
+    static void idle() { asm volatile("wfi"); }
+    static void halt() { asm volatile("j ."); }
+    static auto syscall(auto f) { asm volatile("mv a7, %0\necall" ::"r"(f)); }
 
     static unsigned long id() {
         unsigned long tp;
@@ -19,22 +20,22 @@ class CPU {
         return tp;
     }
 
+    static void kill() { Atomic::fdec(s_alive); }
     static void barrier() {
-        static volatile int ready[2] = {0, 0};
-        static volatile int i;
+        static volatile int ready = 0;
+        static volatile bool gsense = true;
+        static bool lsense[Traits<::Machine>::CPUS] = {true};
 
-        int j = i;
+        lsense[CPU::id()] = !lsense[CPU::id()];
 
-        Atomic::finc(ready[j]);
+        int arrived = Atomic::finc(ready);
 
-        if (CPU::id() == Traits<::Machine>::BSP) {
-            while (ready[j] < s_alive)
-                ;
-            i = !i;
-            ready[j] = 0;
+        if (arrived == s_alive - 1) {
+            Atomic::store(ready, 0);
+            Atomic::store(gsense, !Atomic::load(gsense));
         } else {
-            while (ready[j])
-                ;
+            while (Atomic::load(gsense) != lsense[CPU::id()])
+                asm volatile("nop");
         }
     }
 
@@ -47,46 +48,8 @@ class CPU {
         asm volatile("ret");
     }
 
-    __attribute__((noinline)) static void init() {
-        static_assert(!Traits<System>::MULTITASK || Meta::SAME<KernelMode, Supervisor>::Result);
-
-        csrc<Machine::STATUS>(Machine::IRQE);
-
-        if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
-            if (!(csrr<Machine::MISA>() & (1UL << ('S' - 'A')))) {
-                CPU::idle();
-            }
-        }
-
-        if constexpr (Traits<Timer>::Enable) {
-            csrs<Machine::IE>(Machine::TI);
-        }
-
-        if (id() != Traits<::Machine>::BSP) {
-            if (Atomic::finc(s_alive) < Traits<::Machine>::CPUS) {
-            } else {
-                Atomic::fdec(s_alive);
-                idle();
-            }
-        }
-
-        if constexpr (Meta::SAME<KernelMode, Supervisor>::Result) {
-            csrw<Supervisor::TVEC>(Supervisor::IC::entry);
-            csrw<Machine::TVEC>(Supervisor::Firmware::entry);
-            csrw<Machine::MIDELEG>(0x222);
-            csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-            csrw<Machine::PMPCFG0>(0b11111);
-            csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIRQE);
-            csrc<Machine::STATUS>(Supervisor::PIRQE);
-        } else {
-            csrs<Machine::STATUS>(Machine::ME2ME);
-            csrw<Machine::TVEC>(Machine::IC::entry);
-        }
-
-        csrw<Machine::EPC>(__builtin_return_address(0));
-        Machine::ret();
-    }
+    static void init() { KernelMode::init(); }
 
   private:
-    static volatile inline int s_alive = 1;
+    static volatile inline int s_alive = Traits<::Machine>::CPUS;
 };

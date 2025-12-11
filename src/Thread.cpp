@@ -77,8 +77,8 @@ Thread::Thread(Function f, Argument a, Criterion c)
 
 void Thread::join(Thread &thread) {
     auto previous = running();
-    ERROR(&thread == previous, "[Thread::join] Join itself.");
-    ERROR(thread.m_joining, "[Thread::join] Already joined.");
+    ERROR(&thread == previous)
+    ERROR(thread.m_joining)
 
     s_lock.lock();
     if (thread.m_state == State::FINISHED) {
@@ -113,6 +113,7 @@ void Thread::exit() {
 
 void Thread::init() {
     TraceIn();
+    new (&s_lock) Spin;
     for (int i = 0; i < Traits<Machine>::CPUS; ++i)
         new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     TraceOut()
@@ -122,8 +123,8 @@ void Thread::run() {
     char buffer[sizeof(Thread)];
     Thread *previous = reinterpret_cast<Thread *>(buffer);
     s_lock.acquire();
+    TraceIn();
     Thread *next = s_scheduler.remove();
-    TraceIn(next);
     dispatch(previous, next, &s_lock);
 }
 
@@ -160,7 +161,7 @@ void Thread::sleep(Queue &m_waiting, Spin &lock) {
 
 void Thread::wakeup(Queue &waiting) {
     Thread *awake = *waiting.remove();
-    ERROR(!awake, "[Thread::wakeup] Empty queue.");
+    ERROR(!awake);
     awake->m_state = State::READY;
     awake->m_waiting = nullptr;
     s_lock.acquire();

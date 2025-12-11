@@ -5,8 +5,8 @@
         if (expr) {                                                                                                    \
             CPU::Interruptions::disable();                                                                             \
             Console::println("<%d> [ERROR] %s\n", CPU::id(), __PRETTY_FUNCTION__);                                     \
-            __VA_OPT__(Console::print(__VA_ARGS__));                                                                 \
-            __VA_OPT__(Console::print("\n"));                                                                        \
+            __VA_OPT__(Console::print(__VA_ARGS__));                                                                   \
+            __VA_OPT__(Console::print('\n'));                                                                          \
             for (;;) {                                                                                                 \
             }                                                                                                          \
         }                                                                                                              \
@@ -23,6 +23,6 @@
     if constexpr (Traits<Debug>::Trace) {                                                                              \
         __VA_OPT__(Console::println("return="));                                                                       \
         __VA_OPT__(Console::print(__VA_ARGS__));                                                                       \
-        __VA_OPT__(Console::print("\n"));                                                                              \
+        __VA_OPT__(Console::print('\n'));                                                                              \
         Console::println("%s}\n", __func__);                                                                           \
     }

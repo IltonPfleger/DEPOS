@@ -103,6 +103,7 @@ template <typename Allocator> class SV39_MMU {
         static_assert(Traits<MemoryMap>::MMIOStart % Giga == 0);
         if constexpr (Traits<System>::MULTITASK) {
             PageTable &pt = s_base.Result;
+            new (&pt) PageTable();
             if (CPU::id() == Traits<::Machine>::BSP) {
                 pt.map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart, Traits<Memory>::SIZE,
                        PageTable::KernelRWX);
@@ -117,5 +118,5 @@ template <typename Allocator> class SV39_MMU {
     }
 
   private:
-    static inline Meta::ConditionalValue<PageTable, Traits<System>::MULTITASK> s_base;
+    __attribute__((section(".mmu"))) static inline Meta::ConditionalValue<PageTable, Traits<System>::MULTITASK> s_base;
 };

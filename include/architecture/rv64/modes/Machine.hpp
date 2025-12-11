@@ -1,3 +1,5 @@
+#pragma once
+
 class Machine {
   public:
     enum Registers : unsigned long {
@@ -26,12 +28,12 @@ class Machine {
         PIRQE = 1ULL << 7           // Previous Interrupt Enable
     };
 
-    enum InterruptionsCode : unsigned long {
+    enum Interruption : unsigned long {
         TIMER = 7,
     };
 
-    enum ExceptionsCode : unsigned long {
-        SYSCALL = 9,
+    enum Exception : unsigned long {
+        SUPERVISOR_SYSCALL = 9,
     };
 
     class IC {
@@ -56,7 +58,7 @@ class Machine {
 
         static void interrupt(int code) {
             switch (code) {
-            case InterruptionsCode::TIMER:
+            case Interruption::TIMER:
                 int core = CPU::id();
                 CLINT::reset(core);
                 Timer::handler(core);
@@ -73,4 +75,12 @@ class Machine {
     };
 
     __attribute__((always_inline)) static inline void ret() { asm volatile("mret"); }
+
+    static void init() {
+        csrc<Machine::STATUS>(Machine::IRQE);
+        if constexpr (Traits<Timer>::Enable) {
+            csrs<Machine::IE>(Machine::TI);
+        }
+        csrw<Machine::TVEC>(Machine::IC::entry);
+    }
 };

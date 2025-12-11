@@ -93,7 +93,10 @@ class Context {
             "ret\n");
     }
 
-    template <typename T = KernelMode> __attribute__((always_inline)) static inline Context *push() {
+    template <typename T = KernelMode, bool ChangeStack = false> __attribute__((always_inline)) static inline Context *push() {
+        if constexpr (ChangeStack) {
+            asm("csrrw sp, %[csrscratch], sp" ::[csrscratch] "i"(T::SCRATCH));
+        }
         asm("addi sp, sp, %[size]\n"
             "sd ra, %[ra](sp)\n"
             "sd gp, %[gp](sp)\n"
@@ -130,7 +133,7 @@ class Context {
         return sp;
     }
 
-    template <typename T = KernelMode> __attribute__((naked)) static void pop() {
+    template <typename T = KernelMode, bool ChangeStack = false> __attribute__((naked)) static void pop() {
         asm("ld t0, %[statuso](sp)\n"
             "csrw %[statusr], t0\n"
             "ld t0, %[pc](sp)\n"
@@ -162,6 +165,9 @@ class Context {
               [a3] "i"(offsetof(Context, a3)), [a4] "i"(offsetof(Context, a4)), [a5] "i"(offsetof(Context, a5)),
               [a6] "i"(offsetof(Context, a6)), [a7] "i"(offsetof(Context, a7)), [size] "i"(sizeof(Context))
             : "memory");
+        if constexpr (ChangeStack) {
+            asm("csrrw sp, %[csrscratch], sp" ::[csrscratch] "i"(T::SCRATCH));
+        }
         T::ret();
         __builtin_unreachable();
     }

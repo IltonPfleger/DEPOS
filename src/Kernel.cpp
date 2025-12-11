@@ -6,40 +6,32 @@
 #include <utils/BSS.hpp>
 #include <utils/Debug.hpp>
 
-/**/
-#include <drivers/ethernet/dwmac.hpp>
+class Init {
+  public:
+    static void init() {
+        if (CPU::id() == Traits<Machine>::BSP) {
+            Console::init();
+            TraceIn();
+            Memory::init();
+            Timer::init();
+            Thread::init();
+            Application::init();
+            TraceOut();
+        }
 
-namespace Init {
-void init() {
-    bool BSP = CPU::id() == Traits<Machine>::BSP;
-    if (BSP) {
-        Console::init();
-        TraceIn();
-        Memory::init();
-        Timer::init();
-        // Task::init();
-        Thread::init();
-        Application::init();
-        TraceOut();
-        Ethernet::init();
+        CPU::barrier();
+
+        if (CPU::id() < Traits<Machine>::CPUS) {
+            Thread::run();
+        }
+        CPU::idle();
     }
+};
 
-    CPU::barrier();
-
-    if (CPU::id() < Traits<Machine>::CPUS) {
-        Thread::run();
-    }
-    for (;;)
-        ;
-}
-} // namespace Init
-
-extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
+extern "C" __attribute__((naked, used, aligned(4), section(".init"))) void _init() {
     CPU::setup();
     CPU::init();
+    MMU::init();
     BSS::init();
-    // MMU::init();
-    ////    RV64::csrs<RV64::Supervisor::IE>(RV64::Supervisor::TI);
-    ////    Console::print(CPU::id());
     Init::init();
 }

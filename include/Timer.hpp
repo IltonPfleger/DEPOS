@@ -12,5 +12,5 @@ class Timer {
     static void init();
 
   private:
-    static inline Channel scheduler_s;
+    static inline Channel s_scheduler;
 };

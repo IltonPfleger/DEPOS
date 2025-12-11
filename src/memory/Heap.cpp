@@ -1,5 +1,4 @@
 #include <Spin.hpp>
-#include <Thread.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
 
@@ -119,19 +118,14 @@ void *operator new(unsigned long bytes, Heap &heap) {
 
 void *operator new(unsigned long bytes) {
     if constexpr (Traits<System>::MULTITASK) {
-        if (!Thread::running())
-            return operator new(bytes, Heap::SYSTEM);
-        else {
-            return operator new(bytes, Heap::SYSTEM);
-            // return operator new(bytes, *Thread::running()->task->heap);
-        }
+        return operator new(bytes, Heap::SYSTEM);
     } else {
         return operator new(bytes, Heap::SYSTEM);
     }
 }
 
 void *operator new(unsigned long, void *ptr) { return ptr; }
-void *operator new[](unsigned long bytes, Heap & heap) { return ::operator new(bytes, heap); }
+void *operator new[](unsigned long bytes, Heap &heap) { return ::operator new(bytes, heap); }
 
 // Static Allocation For System Heap
 Heap Heap::SYSTEM;

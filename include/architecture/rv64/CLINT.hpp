@@ -5,7 +5,7 @@ class CLINT {
 
   public:
     static void reset(unsigned long core) {
-        static constexpr uintmax_t ticks = Traits<Timer>::Clock / Traits<Timer>::Frequency;
+        static constexpr uintmax_t ticks = Traits<Clock>::CLINT / Traits<Timer>::Frequency;
         MTIMECMP[core] = *MTIME + ticks;
     }
 };
