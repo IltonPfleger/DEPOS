@@ -69,6 +69,12 @@ void Console::println(const char *fmt, ...) {
                 print(p);
                 break;
             }
+            case 'x': {
+                void *p = va_arg(args, void *);
+                print(p);
+                break;
+            }
+
             case '%': {
                 print('%');
                 break;

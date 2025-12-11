@@ -4,6 +4,7 @@
 #include <utils/string.hpp>
 
 static constexpr unsigned long gmac0_base = 0x16030000;
+static constexpr unsigned long gmac1_base = 0x16040000;
 static constexpr unsigned long sys_crg_base = 0x13020000;
 static constexpr unsigned long aon_crg_base = 0x17000000;
 static auto &Reg(long base, long offsset) { return *reinterpret_cast<volatile unsigned int *>(base + offsset); }
@@ -38,13 +39,6 @@ class MDIO {
     };
 
   public:
-    static void init() {
-        for (unsigned char phy = 0; phy < 32; ++phy) {
-            unsigned short id1 = MDIO::read(phy, 0x02);
-            unsigned short id2 = MDIO::read(phy, 0x03);
-            Console::println("%p %p\n", id1, id2);
-        }
-    }
     static void write(unsigned char phy, unsigned char dev, unsigned short data) {
         Reg(s_base, DATA) = data;
         Reg(s_base, BASE) = GB | GOC_WRITE | CR_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
@@ -59,12 +53,55 @@ class MDIO {
     }
 };
 
+class PHY {
+    enum Register {
+        BASIC_CONTROL = 0x0,
+        BASIC_STATUS = 0x1,
+        PHY_ID_1 = 0x2,
+        PHY_ID_2 = 0x3,
+    };
+    enum Bit {
+        BASIC_CONTROL_RESET = 1 << 15,
+        BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE = 1 << 12,
+        BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE = 1 << 5,
+        BASIC_STATUS_LINK_STATUS = 1 << 2,
+    };
+
+  public:
+    static void init() {
+        for (unsigned char phy = 0; phy < 32; ++phy) {
+            unsigned short id1 = MDIO::read(phy, PHY_ID_1);
+            unsigned short id2 = MDIO::read(phy, PHY_ID_2);
+            if (id1 == 0xFFFF && id2 == 0xFFFF) {
+                continue;
+            }
+            MDIO::write(phy, BASIC_CONTROL, BASIC_CONTROL_RESET);
+            while (MDIO::read(phy, BASIC_CONTROL) & BASIC_CONTROL_RESET)
+                ;
+            MDIO::write(phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE);
+
+            while (!(MDIO::read(phy, BASIC_STATUS) & BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE))
+                ;
+
+            // Console::println("0: %x\n", MDIO::read(phy, 0x0));
+            // Console::println("1: %x\n", MDIO::read(phy, 0x1));
+
+            Console::println("%d: %x %x ", phy, id1, id2);
+            if (MDIO::read(phy, BASIC_STATUS) & BASIC_STATUS_LINK_STATUS) {
+                Console::println("Link is Up!\n");
+                continue;
+            }
+            Console::println("Link is Down!\n");
+        }
+    }
+};
+
 class Ethernet {
   public:
     static void init() {
         TraceIn();
         Clock::init();
-        MDIO::init();
+        PHY::init();
         TraceOut();
     }
 };
