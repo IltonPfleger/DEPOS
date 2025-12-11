@@ -95,116 +95,162 @@ class PHY {
     }
 };
 
-// class DMA {
-//     using Buffer = char[4096];
-//     struct Descriptor {
-//         uint32_t des0;
-//         uint32_t des1;
-//         uint32_t des2;
-//         uint32_t des3;
-//
-//         enum Bits {
-//             OWN = 1ULL << 31,
-//             VALID = 1ULL << 24,
-//         };
-//     };
-//
-//     enum Register {
-//         MODE = 0x1000,
-//         SYSBUS_MODE = 0x1004,
-//         CH0_CONTROL = 0x1100,
-//         CH0_TX_CONTROL = 0x1104,
-//         CH0_RX_CONTROL = 0x1108,
-//         CH0_TX_DESCRIPTORS_LIST_HADDR = 0x1110,
-//         CH0_TX_DESCRIPTORS_LIST_ADDR = 0x1114,
-//         CH0_RX_DESCRIPTORS_LIST_HADDR = 0x1118,
-//         CH0_RX_DESCRIPTORS_LIST_ADDR = 0x111c,
-//         CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER = 0x1120,
-//         CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER = 0x1128,
-//         CH0_TX_DESCRIPTORS_RING_LENGTH = 0x112c,
-//         CH0_RX_DESCRIPTORS_RING_LENGTH = 0x1130,
-//
-//     };
-//
-//     enum Bit {
-//         MODE_SOFTWARE_RESET = 1,
-//         SYSBUS_MODE_EAME = 1ull << 11,
-//         CH0_RX_CONTROL_BUFFER_SIZE_MASK = ~(0x3fff << 1),
-//         CH0_RX_CONTROL_BUFFER_SIZE = (sizeof(Buffer) / 4) << 1,
-//         CH0_RX_CONTROL_ENABLE = 1,
-//
-//         // SYSBUS_MODE_BURST_LEN_16 = 1 << 3,
-//         // SYSBUS_MODE_BURST_LEN_8 = 1 << 2,
-//         // SYSBUS_MODE_BURST_LEN_4 = 1 << 1,
-//
-//     };
-//
-//   public:
-//     static void init() {
-//         TraceIn();
-//         Reg(gmac_base, MODE) |= MODE_SOFTWARE_RESET;
-//         while (Reg(gmac_base, MODE) & MODE_SOFTWARE_RESET)
-//             ;
-//         Reg(gmac_base, SYSBUS_MODE) |= SYSBUS_MODE_EAME;
-//         descriptors();
-//         TraceOut();
-//         // Reg(gmac_base, SYSBUS_MODE) |= (2 << SYSBUS_MODE_RD_OSR_LMT_SHIFT);
-//         // Reg(SYSBUS_MODE) |= SYSBUS_MODE_BURST_LEN_16 | SYSBUS_MODE_BURST_LEN_8 | SYSBUS_MODE_BURST_LEN_4;
-//     }
-//
-//     static void descriptors() {
-//         Descriptor *descriptors = new (Heap::SYSTEM) Descriptor[2 * k_number_of_descriptors];
-//         m_tx_descriptors = descriptors;
-//         m_rx_descriptors = descriptors + k_number_of_descriptors;
-//         memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
-//         memset(m_rx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
-//
-//         for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
-//             auto &e = m_rx_descriptors[i];
-//             unsigned long buffer = reinterpret_cast<unsigned long>(new (Heap::SYSTEM) Buffer);
-//             e.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
-//             e.des1 = static_cast<unsigned int>(buffer >> 32);
-//             e.des3 = Descriptor::OWN | Descriptor::VALID;
-//         }
-//
-//         // Reg(gmac_base, CH0_RX_CONTROL) &= CH0_RX_CONTROL_BUFFER_SIZE_MASK;
-//         // Reg(gmac_base, CH0_RX_CONTROL) |= CH0_RX_CONTROL_BUFFER_SIZE;
-//
-//         ///*RX Buffer Size*/
-//         // reg(CH0_RX_CONTROL) &= ~(CH0_RX_CONTROL_BUFFER_SIZE_MASK << 1);
-//         // reg(CH0_RX_CONTROL) |= sizeof(Buffer) << 1;
-//
-//         Reg(gmac_base, CH0_RX_DESCRIPTORS_LIST_ADDR) =
-//             static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF);
-//         Reg(gmac_base, CH0_RX_DESCRIPTORS_LIST_HADDR) =
-//             static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32);
-//
-//         Reg(gmac_base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
-//             static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors) -
-//                                       reinterpret_cast<unsigned long>(m_rx_descriptors));
-//         Reg(gmac_base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors;
-//
-//         //     reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors);
-//         Reg(gmac_base, CH0_RX_CONTROL) |= CH0_RX_CONTROL_ENABLE;
-//     }
-//
-//     static void receive() {
-//         TraceIn();
-//         while (1) {
-//             for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
-//                 if (!(m_rx_descriptors[i].des3 & Descriptor::OWN)) {
-//                     break;
-//                 }
-//             }
-//         }
-//         TraceOut();
-//     }
-//
-//   private:
-//     static constexpr unsigned int k_number_of_descriptors = 5;
-//     static inline Descriptor *m_tx_descriptors;
-//     static inline Descriptor *m_rx_descriptors;
-// };
+class DMA {
+    using Buffer = char[2048];
+    struct Descriptor {
+        uint32_t des0;
+        uint32_t des1;
+        uint32_t des2;
+        uint32_t des3;
+
+        enum Bits {
+            OWN = 1ULL << 31,
+            VALID = 1ULL << 24,
+        };
+    };
+
+    enum Register {
+        MODE = 0x1000,
+        SYSBUS_MODE = 0x1004,
+        CH0_CONTROL = 0x1100,
+        CH0_TX_CONTROL = 0x1104,
+        CH0_RX_CONTROL = 0x1108,
+        CH0_TX_DESCRIPTORS_LIST_HADDR = 0x1110,
+        CH0_TX_DESCRIPTORS_LIST_ADDR = 0x1114,
+        CH0_RX_DESCRIPTORS_LIST_HADDR = 0x1118,
+        CH0_RX_DESCRIPTORS_LIST_ADDR = 0x111c,
+        CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER = 0x1120,
+        CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER = 0x1128,
+        CH0_TX_DESCRIPTORS_RING_LENGTH = 0x112c,
+        CH0_RX_DESCRIPTORS_RING_LENGTH = 0x1130,
+
+    };
+
+    enum Bit {
+        MODE_SOFTWARE_RESET = 1,
+        SYSBUS_MODE_EAME = 1ull << 11,
+        CH0_RX_CONTROL_BUFFER_SIZE_MASK = ~(0x3fff << 1),
+        CH0_RX_CONTROL_BUFFER_SIZE = (sizeof(Buffer) / 4) << 1,
+        CH0_RX_CONTROL_ENABLE = 1,
+
+        // SYSBUS_MODE_BURST_LEN_16 = 1 << 3,
+        // SYSBUS_MODE_BURST_LEN_8 = 1 << 2,
+        // SYSBUS_MODE_BURST_LEN_4 = 1 << 1,
+
+    };
+
+  public:
+    static void reset() {
+        TraceIn();
+        Reg(gmac_base, MODE) |= MODE_SOFTWARE_RESET;
+        while (Reg(gmac_base, MODE) & MODE_SOFTWARE_RESET)
+            ;
+        TraceOut();
+    }
+    static void init() {
+        TraceIn();
+        Reg(gmac_base, SYSBUS_MODE) |= SYSBUS_MODE_EAME;
+        descriptors();
+        Reg(gmac_base, CH0_RX_CONTROL) |= CH0_RX_CONTROL_ENABLE;
+        TraceOut();
+        // Reg(gmac_base, SYSBUS_MODE) |= (2 << SYSBUS_MODE_RD_OSR_LMT_SHIFT);
+        // Reg(SYSBUS_MODE) |= SYSBUS_MODE_BURST_LEN_16 | SYSBUS_MODE_BURST_LEN_8 | SYSBUS_MODE_BURST_LEN_4;
+    }
+
+    static void descriptors() {
+        Descriptor *descriptors = new (Heap::SYSTEM) Descriptor[2 * k_number_of_descriptors];
+        m_tx_descriptors = descriptors;
+        m_rx_descriptors = descriptors + k_number_of_descriptors;
+        memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
+        memset(m_rx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
+
+        for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
+            auto &e = m_rx_descriptors[i];
+            unsigned long buffer = reinterpret_cast<unsigned long>(new (Heap::SYSTEM) Buffer);
+            e.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
+            e.des1 = static_cast<unsigned int>(buffer >> 32);
+            e.des3 = Descriptor::OWN | Descriptor::VALID;
+        }
+
+        // Reg(gmac_base, CH0_RX_CONTROL) &= CH0_RX_CONTROL_BUFFER_SIZE_MASK;
+        // Reg(gmac_base, CH0_RX_CONTROL) |= CH0_RX_CONTROL_BUFFER_SIZE;
+
+        ///*RX Buffer Size*/
+        // reg(CH0_RX_CONTROL) &= ~(CH0_RX_CONTROL_BUFFER_SIZE_MASK << 1);
+        // reg(CH0_RX_CONTROL) |= sizeof(Buffer) << 1;
+
+        Reg(gmac_base, CH0_RX_DESCRIPTORS_LIST_ADDR) =
+            static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF);
+        Reg(gmac_base, CH0_RX_DESCRIPTORS_LIST_HADDR) =
+            static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32);
+        Reg(gmac_base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors;
+
+        Reg(gmac_base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
+            reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors + 1);
+        // static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors) -
+        //                           reinterpret_cast<unsigned long>(m_rx_descriptors));
+
+        // Reg(gmac_base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
+        //     static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors) -
+        //                               reinterpret_cast<unsigned long>(m_rx_descriptors));
+
+        //     reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors);
+    }
+
+    static void debug() {
+        enum {
+            DEBUG_STATUS0 = 0x100c,
+            CH0_STATUS = 0x1160,
+        };
+        while (1) {
+            for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
+                Descriptor descriptor = m_rx_descriptors[i];
+                if (!(descriptor.des3 & Descriptor::OWN)) {
+                    Console::println("Used Descriptor!\n");
+                    unsigned long addr64 = (static_cast<unsigned long>(descriptor.des1) << 32) |
+                                           static_cast<unsigned long>(descriptor.des0);
+
+                    unsigned short *addr = reinterpret_cast<unsigned short *>(addr64);
+
+                    for (unsigned int i = 0; i < sizeof(Buffer) / 2; i++) {
+                        if (i % 100 == 0)
+                            Console::print("\n");
+                        Console::println("%x ", addr[i]);
+                    }
+                    Console::print("\n");
+                    return;
+                }
+                //    for (unsigned int i = 0; i < sizeof(Buffer); i++) {
+                //        if (i % 100 == 0)
+                //            Console::print("\n");
+                //        Console::println("%x ", *addr);
+                //        addr++;
+                //    }
+                //}
+                // Console::print("\n");
+                // Console::println("DEBUG_STATUS0: %x\n", Reg(gmac_base, DEBUG_STATUS0));
+                // Console::println("CH0_STATUS: %x\n", Reg(gmac_base, CH0_STATUS));
+            }
+        }
+    }
+
+    // static void receive() {
+    //     TraceIn();
+    //     while (1) {
+    //         for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
+    //             if (!(m_rx_descriptors[i].des3 & Descriptor::OWN)) {
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     TraceOut();
+    // }
+
+  private:
+    static constexpr unsigned int k_number_of_descriptors = 10;
+    static inline Descriptor *m_tx_descriptors;
+    static inline Descriptor *m_rx_descriptors;
+};
 
 class MAC {
     enum Bit {
@@ -260,21 +306,26 @@ class MMC {
 
 // class MTL {
 //     enum Bit {
-//         Q0DDMACH = 1 << 4,
-//         Q0MDMACH = 0x000,
-//
-//         // RX_Q0_OPERATION_MODE_RSF = 1ULL << 5,
+//         RX_QUEUE_DMA_MAP0 = 0,
+//         RX_QUEUE_DMA_MAP1 = 0,
+//         RX_QUEUE0_OPERATION_MODE_RSF = 1 << 5,
 //     };
 //
 //     enum Register {
-//         RX_QUEUE_DMA_MAP0 = 0xc30,
-//         // RX_Q0_OPERATION_MODE = 0xd30,
+//         RX_QUEUE0_DMA_MAP = 0xc30,
+//         RX_QUEUE0_DEBUG = 0xd38,
+//         RX_QUEUE0_OPERATION_MODE = 0xd30,
 //     };
 //
 //   public:
 //     static void init() {
-//         // reg(RX_Q0_OPERATION_MODE) |= RX_Q0_OPERATION_MODE_RSF;
-//         Reg(gmac_base, RX_QUEUE_DMA_MAP0) = Q0DDMACH | Q0MDMACH;
+//         Reg(gmac_base, RX_QUEUE0_OPERATION_MODE) |= RX_QUEUE0_OPERATION_MODE_RSF;
+//         Reg(gmac_base, RX_QUEUE_DMA_MAP0) = 0;
+//         Reg(gmac_base, RX_QUEUE_DMA_MAP1) = 0;
+//
+//         while (1) {
+//             Console::println("%d\n", (Reg(gmac_base, RX_QUEUE0_DEBUG) >> 4) & 0x3);
+//         }
 //     }
 // };
 
@@ -283,14 +334,17 @@ class Ethernet {
     static void init() {
         TraceIn();
         Clock::init();
+        DMA::reset();
         PHY::init();
         MAC::init();
-        while (1)
-            Console::println("%d\n", MMC::received());
-        // MTL::init();
-        // DMA::init();
-        // MAC::enable();
+        DMA::init();
+        DMA::debug();
         // DMA::receive();
+        //  while (1)
+        //      Console::println("%d\n", MMC::received());
+        //   MTL::init();
+        //   MAC::enable();
+        //   DMA::receive();
         TraceOut();
     }
 };

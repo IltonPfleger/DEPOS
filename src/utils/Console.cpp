@@ -12,10 +12,17 @@ void Console::print(void *value) {
     auto hex = reinterpret_cast<unsigned long>(value);
     put('0');
     put('x');
+    bool started = false;
 
     for (int i = (sizeof(hex) * 8) - 4; i >= 0; i -= 4) {
         unsigned int current = (hex >> i) & 0xF;
-        put(current < 10 ? current + '0' : current - 10 + 'A');
+        if (current != 0 || started) {
+            put(current < 10 ? current + '0' : current - 10 + 'A');
+            started = true;
+        }
+    }
+    if (!started) {
+        put('0');
     }
 }
 
