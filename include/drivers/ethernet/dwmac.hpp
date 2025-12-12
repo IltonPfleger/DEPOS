@@ -57,11 +57,17 @@ class MMC {
     enum Register {
         RX_PACKETS_COUNT_GOOD_BAD = 0x780,
         TX_PACKETS_COUNT_GOOD_BAD = 0x718,
+        TX_PACKETS_COUNT_GOOD = 0x768,
+        TX_BROADCAST_PACKETS_COUNT_GOOD = 0x71c,
     };
 
   public:
     static unsigned int received() { return Reg(gmac_base, RX_PACKETS_COUNT_GOOD_BAD); }
-    static unsigned int transmitted() { return Reg(gmac_base, TX_PACKETS_COUNT_GOOD_BAD); }
+    static unsigned int not_transmitted() {
+        return Reg(gmac_base, TX_PACKETS_COUNT_GOOD_BAD) - Reg(gmac_base, TX_PACKETS_COUNT_GOOD);
+    }
+    static unsigned int transmitted() { return Reg(gmac_base, TX_PACKETS_COUNT_GOOD); }
+    static unsigned int broadcast() { return Reg(gmac_base, TX_BROADCAST_PACKETS_COUNT_GOOD); }
 };
 
 class PHY {
@@ -107,7 +113,7 @@ class PHY {
 };
 
 class DMA {
-    using Buffer = char[2048];
+    using Buffer = unsigned char[2048];
     struct Descriptor {
         uint32_t des0;
         uint32_t des1;
@@ -198,8 +204,32 @@ class DMA {
     }
 
     static void debug() {
+        unsigned char *frame = new (Heap::SYSTEM) Buffer;
+        size_t off = 0;
+
+        unsigned char dst[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        for (int i = 0; i < 6; i++)
+            frame[off++] = dst[i];
+
+        unsigned char src[6] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
+        for (int i = 0; i < 6; i++)
+            frame[off++] = src[i];
+
+        frame[off++] = 0x08;
+        frame[off++] = 0x00;
+
+        const char payload[] = "HELLO FRAME";
+        for (unsigned int i = 0; i < sizeof(payload) - 1; i++)
+            frame[off++] = payload[i];
+
+        for (; off < 1500; off++)
+            frame[off] = 0;
+
         int length = 1500;
+        unsigned long buffer = reinterpret_cast<unsigned long>(frame);
         Descriptor &descriptor = m_tx_descriptors[0];
+        descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
+        descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
         descriptor.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | length;
         descriptor.des2 = length;
         Reg(gmac_base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_tx_descriptors + 1);
@@ -209,7 +239,8 @@ class DMA {
         };
         while (1) {
             Console::println("CH0_STATUS: %x\n", Reg(gmac_base, CH0_STATUS));
-            Console::println("MMC Transmitted: %d\n", MMC::transmitted());
+            Console::println("Bad: %d | Good: %d | Broadcast: %d\n", MMC::not_transmitted(), MMC::transmitted(),
+                             MMC::broadcast());
             // Console::println("CH0_TX_CONTROL: %x\n", Reg(gmac_base, CH0_TX_CONTROL));
         }
     }
@@ -303,35 +334,35 @@ class MAC {
     }
 };
 
-// class MTL {
-//     enum Bit {
-//         TX_QUEUE0_OPERATION_MODE_QUEUE0_ENABLE = 2 << 2,
-//         TX_QUEUE0_OPERATION_MODE_TSF = 2,
-//         //         RX_QUEUE_DMA_MAP0 = 0,
-//         //         RX_QUEUE_DMA_MAP1 = 0,
-//         //         RX_QUEUE0_OPERATION_MODE_RSF = 1 << 5,
-//     };
-//     //
-//     enum Register {
-//         TX_QUEUE0_OPERATION_MODE = 0xd00,
-//         //         RX_QUEUE0_DMA_MAP = 0xc30,
-//         //         RX_QUEUE0_DEBUG = 0xd38,
-//         //         RX_QUEUE0_OPERATION_MODE = 0xd30,
-//     };
-//     //
-//   public:
-//     static void init() {
-//         Reg(gmac_base, TX_QUEUE0_OPERATION_MODE) =
-//             TX_QUEUE0_OPERATION_MODE_QUEUE0_ENABLE | TX_QUEUE0_OPERATION_MODE_TSF;
-//         //         Reg(gmac_base, RX_QUEUE0_OPERATION_MODE) |= RX_QUEUE0_OPERATION_MODE_RSF;
-//         //         Reg(gmac_base, RX_QUEUE_DMA_MAP0) = 0;
-//         //         Reg(gmac_base, RX_QUEUE_DMA_MAP1) = 0;
-//         //
-//         //         while (1) {
-//         //             Console::println("%d\n", (Reg(gmac_base, RX_QUEUE0_DEBUG) >> 4) & 0x3);
-//     }
-//     //     }
-// };
+class MTL {
+    enum Bit {
+        TX_QUEUE0_OPERATION_MODE_QUEUE0_ENABLE = 2 << 2,
+        TX_QUEUE0_OPERATION_MODE_TSF = 2,
+        //         RX_QUEUE_DMA_MAP0 = 0,
+        //         RX_QUEUE_DMA_MAP1 = 0,
+        //         RX_QUEUE0_OPERATION_MODE_RSF = 1 << 5,
+    };
+    //
+    enum Register {
+        TX_QUEUE0_OPERATION_MODE = 0xd00,
+        //         RX_QUEUE0_DMA_MAP = 0xc30,
+        //         RX_QUEUE0_DEBUG = 0xd38,
+        //         RX_QUEUE0_OPERATION_MODE = 0xd30,
+    };
+    //
+  public:
+    static void init() {
+        Reg(gmac_base, TX_QUEUE0_OPERATION_MODE) =
+            TX_QUEUE0_OPERATION_MODE_QUEUE0_ENABLE | TX_QUEUE0_OPERATION_MODE_TSF;
+        //         Reg(gmac_base, RX_QUEUE0_OPERATION_MODE) |= RX_QUEUE0_OPERATION_MODE_RSF;
+        //         Reg(gmac_base, RX_QUEUE_DMA_MAP0) = 0;
+        //         Reg(gmac_base, RX_QUEUE_DMA_MAP1) = 0;
+        //
+        //         while (1) {
+        //             Console::println("%d\n", (Reg(gmac_base, RX_QUEUE0_DEBUG) >> 4) & 0x3);
+    }
+    //     }
+};
 
 class Ethernet {
   public:
@@ -341,7 +372,7 @@ class Ethernet {
         DMA::reset();
         PHY::init();
         MAC::init();
-        // MTL::init();
+        MTL::init();
         DMA::init();
         DMA::debug();
 
