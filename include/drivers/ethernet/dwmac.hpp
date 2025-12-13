@@ -35,21 +35,42 @@ class MDIO {
         CR_250_300 = 0x5 << 8,
         GOC_WRITE = 0x1 << 2,
         GOC_READ = 0x3 << 2,
-        GB = 0x1,
+        GB = 1,
     };
 
   public:
-    static void write(unsigned char phy, unsigned char dev, unsigned short data) {
-        Reg(gmac_base, DATA) = data;
-        Reg(gmac_base, BASE) = GB | GOC_WRITE | CR_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
+    static void wait() {
         while (Reg(gmac_base, BASE) & GB)
             ;
     }
+
+    static void set(unsigned char phy, unsigned char dev, unsigned short data) {
+        MDIO::write(phy, dev, MDIO::read(phy, dev) | data);
+    }
+
+    static void write(unsigned char phy, unsigned char dev, unsigned short data) {
+        Reg(gmac_base, DATA) = data;
+        Reg(gmac_base, BASE) = GB | GOC_WRITE | CR_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
+        wait();
+    }
     static unsigned short read(unsigned char phy, unsigned char dev) {
         Reg(gmac_base, BASE) = GB | GOC_READ | CR_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
-        while (Reg(gmac_base, BASE) & GB)
-            ;
+        wait();
         return static_cast<unsigned short>(Reg(gmac_base, DATA) & 0xFFFF);
+    }
+
+    static void write45(unsigned char phy, unsigned short reg, unsigned short data) {
+        write(phy, 0x1E, reg);
+        write(phy, 0x1F, data);
+    }
+
+    static void set45(unsigned char phy, unsigned short reg, unsigned short data) {
+        MDIO::write45(phy, reg, MDIO::read45(phy, reg) | data);
+    }
+
+    static unsigned short read45(unsigned char phy, unsigned short reg) {
+        write(phy, 0x1E, reg);
+        return read(phy, 0x1F);
     }
 };
 
@@ -74,42 +95,70 @@ class PHY {
     enum Register {
         BASIC_CONTROL = 0x0,
         BASIC_STATUS = 0x1,
+        RGMII_CONFIG1 = 0xA003,
+        STATUS = 0x11,
         PHY_ID_1 = 0x2,
         PHY_ID_2 = 0x3,
     };
     enum Bit {
         BASIC_CONTROL_RESET = 1 << 15,
+        BASIC_CONTROL_LOOPBACK = 1 << 14,
         BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE = 1 << 12,
+        BASIC_CONTROL_RE_AUTO_NEGOTIATION = 1 << 9,
+        STATUS_SPEED_MASK = 3 << 14,
+        STATUS_SPEED_1000 = 2 << 14,
+        STATUS_SPEED_100 = 1 << 14,
+        STATUS_SPEED_10 = 0,
+        STATUS_FULL_DUPLEX = 1 << 13,
+        STATUS_LINK = 1 << 10,
         BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE = 1 << 5,
-        BASIC_STATUS_LINK_STATUS = 1 << 2,
+        RGMII_CONFIG1_TX_CLK_SEL = 1 << 14,
     };
 
   public:
     static void init() {
         TraceIn();
-        for (unsigned char phy = 0; phy < 32; ++phy) {
-            unsigned short id1 = MDIO::read(phy, PHY_ID_1);
-            unsigned short id2 = MDIO::read(phy, PHY_ID_2);
-            if (id1 == 0xFFFF && id2 == 0xFFFF) {
-                continue;
-            }
-            MDIO::write(phy, BASIC_CONTROL, BASIC_CONTROL_RESET);
-            while (MDIO::read(phy, BASIC_CONTROL) & BASIC_CONTROL_RESET)
-                ;
-            MDIO::write(phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE);
 
-            while (!(MDIO::read(phy, BASIC_STATUS) & BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE))
-                ;
+        unsigned short id1 = MDIO::read(phy, PHY_ID_1);
+        unsigned short id2 = MDIO::read(phy, PHY_ID_2);
 
-            Console::println("%d: %x %x ", phy, id1, id2);
-            if (MDIO::read(phy, BASIC_STATUS) & BASIC_STATUS_LINK_STATUS) {
-                Console::println("Link is Up!\n");
-                continue;
+        MDIO::set(phy, BASIC_CONTROL, BASIC_CONTROL_RESET);
+        while (MDIO::read(phy, BASIC_CONTROL) & BASIC_CONTROL_RESET)
+            ;
+        MDIO::set(phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE | BASIC_CONTROL_RE_AUTO_NEGOTIATION);
+        while (!(MDIO::read(phy, BASIC_STATUS) & BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE))
+            ;
+        Console::println("Phy ID: %x %x\n", id1, id2);
+        if (MDIO::read(phy, STATUS) & STATUS_LINK) {
+            Console::println("Link is Up!\n");
+            Console::println("Speed: %dMb/s\n", speed());
+            if (MDIO::read(phy, STATUS) & STATUS_FULL_DUPLEX) {
+                Console::println("Link is Full Duplex!\n");
+            } else {
+                Console::println("Link is Half Duplex!\n");
             }
+        } else {
             Console::println("Link is Down!\n");
         }
+
+        MDIO::set45(phy, RGMII_CONFIG1, RGMII_CONFIG1_TX_CLK_SEL);
         TraceOut();
     }
+
+    static int speed() {
+        switch ((MDIO::read(phy, STATUS) & STATUS_SPEED_MASK)) {
+        case STATUS_SPEED_1000:
+            return 1000;
+        case STATUS_SPEED_100:
+            return 100;
+        case STATUS_SPEED_10:
+            return 10;
+        default:
+            return 0;
+        }
+    }
+
+    static constexpr unsigned int phy = 0;
 };
 
 class DMA {
@@ -171,10 +220,10 @@ class DMA {
 
     static void descriptors() {
         Descriptor *descriptors = new (Heap::SYSTEM) Descriptor[2 * k_number_of_descriptors];
+        memset(descriptors, 0, 2 * k_number_of_descriptors * sizeof(Descriptor));
+
         m_tx_descriptors = descriptors;
         m_rx_descriptors = descriptors + k_number_of_descriptors;
-        memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
-        memset(m_rx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
 
         for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
             auto &e = m_rx_descriptors[i];
@@ -188,19 +237,19 @@ class DMA {
             static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF);
         Reg(gmac_base, CH0_RX_DESCRIPTORS_LIST_HADDR) =
             static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32);
-        Reg(gmac_base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors;
+        Reg(gmac_base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
         Reg(gmac_base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
-            reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors + 1);
+            reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors);
 
         Reg(gmac_base, CH0_TX_DESCRIPTORS_LIST_ADDR) =
             static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF);
         Reg(gmac_base, CH0_TX_DESCRIPTORS_LIST_HADDR) =
             static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32);
-        Reg(gmac_base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors;
+        Reg(gmac_base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
 
-        Reg(gmac_base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_tx_descriptors);
-        // Reg(gmac_base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) =
-        //     reinterpret_cast<unsigned long>(m_tx_descriptors + k_number_of_descriptors + 1);
+        // Reg(gmac_base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_tx_descriptors);
+        //  Reg(gmac_base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) =
+        //      reinterpret_cast<unsigned long>(m_tx_descriptors + k_number_of_descriptors + 1);
     }
 
     static void debug() {
@@ -225,7 +274,7 @@ class DMA {
         for (; off < 1500; off++)
             frame[off] = 0;
 
-        int length = 1500;
+        int length = 350;
         unsigned long buffer = reinterpret_cast<unsigned long>(frame);
         Descriptor &descriptor = m_tx_descriptors[0];
         descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
@@ -241,7 +290,16 @@ class DMA {
             Console::println("CH0_STATUS: %x\n", Reg(gmac_base, CH0_STATUS));
             Console::println("Bad: %d | Good: %d | Broadcast: %d\n", MMC::not_transmitted(), MMC::transmitted(),
                              MMC::broadcast());
-            // Console::println("CH0_TX_CONTROL: %x\n", Reg(gmac_base, CH0_TX_CONTROL));
+            Console::println("DMA PHY: %x\n", Reg(gmac_base, 0xf8));
+            Console::println("TX UNDERFLOW: %x\n", Reg(gmac_base, 0x748));
+            Console::println("TX LATE COLLISION: %x\n", Reg(gmac_base, 0x758));
+            Console::println("TX EXCESSIVE COLLISION: %x\n", Reg(gmac_base, 0x75c));
+            Console::println("TX CARRIER: %x\n", Reg(gmac_base, 0x760));
+            Console::println("TX DEFERRAL ERROR: %x\n", Reg(gmac_base, 0x76c));
+            Console::println("MTL TX Q0 DEBUG: %x\n", Reg(gmac_base, 0xd08));
+            Console::println("MAC RX TX STATUS: %x\n", Reg(gmac_base, 0xb8));
+            Console::println("MAC PHY CONTROL STATUS: %x\n", Reg(gmac_base, 0xf8));
+            Console::println("MAC DEBUG: %x\n", Reg(gmac_base, 0x114));
         }
     }
     // while (1) {
@@ -299,6 +357,7 @@ class MAC {
         PACKET_FILTER_PROMISCUOUS_MODE = 1,
         CONFIGURATION_TRANSMITTER_ENABLE = 2,
         CONFIGURATION_RECEIVER_ENABLE = 1,
+        CONFIGURATION_FULL_DUPLEX = 1 << 13,
         RX_QUEUE_CONTROL0_QUEUE0_ENABLE = 2,
         PHY_CONTROL_STATUS_LINK_STATUS_UP = 1 << 19,
         PHY_CONTROL_STATUS_LINK_MODE_FULL_DUPLEX = 1 << 16,
@@ -309,6 +368,8 @@ class MAC {
         PACKET_FILTER = 0x8,
         RX_QUEUE_CONTROL0 = 0xa0,
         PHY_CONTROL_STATUS = 0xf8,
+        ADDRESS0_HIGH = 0x300,
+        ADDRESS0_LOW = 0x304,
     };
 
   public:
@@ -319,6 +380,9 @@ class MAC {
             Console::println("Link is Up!\n");
             if (Reg(gmac_base, PHY_CONTROL_STATUS) & PHY_CONTROL_STATUS_LINK_MODE_FULL_DUPLEX) {
                 Console::println("Link is Full Duplex!\n");
+                address(0x001A2B3C4D5E);
+                Console::println("Address: %x\n", address());
+                // Reg(gmac_base, CONFIGURATION) |= CONFIGURATION_FULL_DUPLEX;
             } else {
                 Console::println("Link is Half Duplex!\n");
             }
@@ -326,11 +390,21 @@ class MAC {
             Console::println("Link is Down!\n");
         }
 
-        TraceOut();
-
         Reg(gmac_base, PACKET_FILTER) |= PACKET_FILTER_RECEIVE_ALL | PACKET_FILTER_PROMISCUOUS_MODE;
         Reg(gmac_base, RX_QUEUE_CONTROL0) = RX_QUEUE_CONTROL0_QUEUE0_ENABLE;
         Reg(gmac_base, CONFIGURATION) |= CONFIGURATION_RECEIVER_ENABLE | CONFIGURATION_TRANSMITTER_ENABLE;
+
+        TraceOut();
+    }
+
+    static void address(unsigned long value) {
+        Reg(gmac_base, ADDRESS0_LOW) = static_cast<unsigned int>(value);
+        Reg(gmac_base, ADDRESS0_HIGH) = static_cast<unsigned int>(value >> 32);
+    }
+
+    static unsigned long address() {
+        return static_cast<unsigned long>(Reg(gmac_base, ADDRESS0_HIGH) & 0xFFFF) << 32 |
+               static_cast<unsigned long>(Reg(gmac_base, ADDRESS0_LOW));
     }
 };
 
