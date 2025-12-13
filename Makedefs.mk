@@ -37,8 +37,8 @@ CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -
 CFLAGS += -msmall-data-limit=0
 #CFLAGS += -fno-unwind-tables -fno-asynchronous-unwind-tables 
 #CFLAGS += -ffunction-sections -fdata-sections
-CFLAGS += -march=rv64ima_zicsr -mabi=lp64
-CFLAGS += -std=c++2c -Oz
+CFLAGS += -march=rv64ima_zicsr_zicbom -mabi=lp64
+CFLAGS += -std=c++2c -Oz -g
 
 #LDFLAGS = --gc-sections --strip-all --discard-all
 

@@ -5,10 +5,31 @@
 
 static constexpr unsigned long gmac0_base = 0x16030000;
 static constexpr unsigned long gmac1_base = 0x16040000;
-static constexpr unsigned long gmac_base = gmac0_base;
+static constexpr unsigned long gmac_base = gmac1_base;
 static constexpr unsigned long sys_crg_base = 0x13020000;
 static constexpr unsigned long aon_crg_base = 0x17000000;
 static auto &Reg(long base, long offsset) { return *reinterpret_cast<volatile unsigned int *>(base + offsset); }
+
+#define L2_CACHE_FLUSH64 0x200
+#define L2_CACHE_BASE_ADDR 0x2010000
+#define CONFIG_SYS_CACHELINE_SIZE 64
+#define mb() asm __volatile__("fence iorw, iorw" : : : "memory")
+void flush(void *ptr, unsigned long size) {
+    unsigned long line;
+    unsigned long start = reinterpret_cast<unsigned long>(ptr);
+    unsigned long end = start + size;
+    volatile unsigned long *flush64;
+
+    flush64 = (volatile unsigned long *)(L2_CACHE_BASE_ADDR + L2_CACHE_FLUSH64);
+
+    mb();
+    for (line = start; line < end; line += CONFIG_SYS_CACHELINE_SIZE) {
+        (*flush64) = line;
+        mb();
+    }
+
+    return;
+}
 
 class Clock {
     static constexpr unsigned int s_enable = 1 << 31;
@@ -141,7 +162,7 @@ class PHY {
             Console::println("Link is Down!\n");
         }
 
-        MDIO::set45(phy, RGMII_CONFIG1, RGMII_CONFIG1_TX_CLK_SEL);
+        // MDIO::set45(phy, RGMII_CONFIG1, RGMII_CONFIG1_TX_CLK_SEL);
         TraceOut();
     }
 
@@ -172,8 +193,8 @@ class DMA {
         enum Bits {
             OWN = 1ULL << 31,
             VALID = 1ULL << 24,
-            FIRST = 1 << 29,
-            LAST = 1 << 28,
+            FIRST = 1ULL << 29,
+            LAST = 1ULL << 28,
         };
     };
 
@@ -274,13 +295,16 @@ class DMA {
         for (; off < 1500; off++)
             frame[off] = 0;
 
-        int length = 350;
+        int length = off;
         unsigned long buffer = reinterpret_cast<unsigned long>(frame);
+        Console::println("%x %d\n", frame, length);
+        flush(frame, length);
         Descriptor &descriptor = m_tx_descriptors[0];
         descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
         descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
-        descriptor.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | length;
-        descriptor.des2 = length;
+        descriptor.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
+        descriptor.des2 = (length & 0x7FFF);
+        flush(&descriptor, sizeof(Descriptor));
         Reg(gmac_base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_tx_descriptors + 1);
         enum {
             DEBUG_STATUS0 = 0x100c,
@@ -290,16 +314,18 @@ class DMA {
             Console::println("CH0_STATUS: %x\n", Reg(gmac_base, CH0_STATUS));
             Console::println("Bad: %d | Good: %d | Broadcast: %d\n", MMC::not_transmitted(), MMC::transmitted(),
                              MMC::broadcast());
-            Console::println("DMA PHY: %x\n", Reg(gmac_base, 0xf8));
-            Console::println("TX UNDERFLOW: %x\n", Reg(gmac_base, 0x748));
-            Console::println("TX LATE COLLISION: %x\n", Reg(gmac_base, 0x758));
-            Console::println("TX EXCESSIVE COLLISION: %x\n", Reg(gmac_base, 0x75c));
-            Console::println("TX CARRIER: %x\n", Reg(gmac_base, 0x760));
-            Console::println("TX DEFERRAL ERROR: %x\n", Reg(gmac_base, 0x76c));
-            Console::println("MTL TX Q0 DEBUG: %x\n", Reg(gmac_base, 0xd08));
-            Console::println("MAC RX TX STATUS: %x\n", Reg(gmac_base, 0xb8));
-            Console::println("MAC PHY CONTROL STATUS: %x\n", Reg(gmac_base, 0xf8));
-            Console::println("MAC DEBUG: %x\n", Reg(gmac_base, 0x114));
+            // Console::println("DMA PHY: %x\n", Reg(gmac_base, 0xf8));
+            // Console::println("TX UNDERFLOW: %x\n", Reg(gmac_base, 0x748));
+            // Console::println("TX LATE COLLISION: %x\n", Reg(gmac_base, 0x758));
+            // Console::println("TX EXCESSIVE COLLISION: %x\n", Reg(gmac_base, 0x75c));
+            // Console::println("TX CARRIER: %x\n", Reg(gmac_base, 0x760));
+            // Console::println("TX DEFERRAL ERROR: %x\n", Reg(gmac_base, 0x76c));
+            // Console::println("MTL TX Q0 DEBUG: %x\n", Reg(gmac_base, 0xd08));
+            // Console::println("MAC RX TX STATUS: %x\n", Reg(gmac_base, 0xb8));
+            // Console::println("MAC PHY CONTROL STATUS: %x\n", Reg(gmac_base, 0xf8));
+            // Console::println("MAC DEBUG: %x\n", Reg(gmac_base, 0x114));
+            // Console::println("MMC TX IRQ: %x\n", Reg(gmac_base, 0x708));
+            // Console::println("MMC TX OCT GOOD BAD: %x\n", Reg(gmac_base, 0x714));
         }
     }
     // while (1) {
@@ -375,14 +401,12 @@ class MAC {
   public:
     static void init() {
         TraceIn();
-        // TODO: Config MAC Address
         if (Reg(gmac_base, PHY_CONTROL_STATUS) & PHY_CONTROL_STATUS_LINK_STATUS_UP) {
             Console::println("Link is Up!\n");
             if (Reg(gmac_base, PHY_CONTROL_STATUS) & PHY_CONTROL_STATUS_LINK_MODE_FULL_DUPLEX) {
                 Console::println("Link is Full Duplex!\n");
                 address(0x001A2B3C4D5E);
                 Console::println("Address: %x\n", address());
-                // Reg(gmac_base, CONFIGURATION) |= CONFIGURATION_FULL_DUPLEX;
             } else {
                 Console::println("Link is Half Duplex!\n");
             }
