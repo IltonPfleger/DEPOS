@@ -6,12 +6,19 @@
 static constexpr unsigned long gmac0_base = 0x16030000;
 static constexpr unsigned long gmac1_base = 0x16040000;
 static constexpr unsigned long gmac_base = gmac0_base;
+
 static constexpr unsigned long k_sys_crg_base = 0x13020000;
 static constexpr unsigned long k_aon_crg_base = 0x17000000;
 static constexpr unsigned long k_aon_syscon_base = 0x17010000;
+static constexpr unsigned long k_l2_controller_base = 0x2010000;
+static constexpr unsigned int k_cache_line_size = 64;
 
 static auto &Reg32(unsigned long base, unsigned int offsset) {
     return *reinterpret_cast<volatile unsigned int *>(base + offsset);
+}
+
+static auto &Reg64(unsigned long base, unsigned int offsset) {
+    return *reinterpret_cast<volatile unsigned long *>(base + offsset);
 }
 
 class Cache {
@@ -22,19 +29,14 @@ class Cache {
         unsigned long line;
         unsigned long start = reinterpret_cast<unsigned long>(ptr);
         unsigned long end = start + size;
-        volatile unsigned long *flush64 = (volatile unsigned long *)(k_l2_base + L2_FLUSH);
         barrier();
         for (line = start; line < end; line += k_cache_line_size) {
-            (*flush64) = line;
+            Reg64(k_l2_controller_base, L2_FLUSH) = line;
             barrier();
         }
     }
 
     static void barrier() { asm volatile("fence iorw, iorw" ::: "memory"); }
-
-  private:
-    static constexpr unsigned int k_cache_line_size = 64;
-    static constexpr unsigned long k_l2_base = 0x2010000;
 };
 
 class Clock {
