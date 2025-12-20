@@ -4,6 +4,7 @@
 #include <Traits.hpp>
 #include <Types.hpp>
 #include <utils/Debug.hpp>
+#include <utils/DispatchTable.hpp>
 
 class RV64 {
   public:

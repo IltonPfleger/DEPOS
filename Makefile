@@ -24,7 +24,6 @@ gdb:
 		-ex "attach 2"\
 		-ex "set confirm off"\
 		-ex "file $(KERNEL).elf"
-	#-ex "add-symbol-file $(KERNEL).elf $(PhysicalBootAddr)"\
 
 $(IMAGE): $(KERNEL).elf $(TOOLS)
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)

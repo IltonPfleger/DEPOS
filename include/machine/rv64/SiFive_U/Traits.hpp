@@ -2,6 +2,7 @@ class Machine;
 class Memory;
 class MemoryMap;
 class Clock;
+class IRQ;
 
 template <> struct Traits<Machine> {
     static constexpr const char *NAME = "sifive_u";
@@ -29,7 +30,7 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long RamEnd = Traits<System>::MULTITASK ? VirtualRamEnd : PhysicalRamEnd;
 
     static constexpr unsigned long SystemAddr = RamStart;
-    static constexpr unsigned long PhysicalApplicationAddr = PhysicalRamStart + 1024 * 32;
+    static constexpr unsigned long PhysicalApplicationAddr = PhysicalRamStart + 1024 * 128;
     static constexpr unsigned long ApplicationAddr =
         Traits<System>::MULTITASK ? VirtualRamStart | PhysicalApplicationAddr : PhysicalApplicationAddr;
 
@@ -43,6 +44,13 @@ template <> struct Traits<MemoryMap> {
 
 template <> struct Traits<Clock> {
     static constexpr unsigned long CLINT = 1000000UL;
+};
+
+template <> struct Traits<IRQ> {
+    static constexpr unsigned int MinMachineModeIRQ = 7;
+    static constexpr unsigned int MaxMachineModeIRQ = 8;
+    static constexpr unsigned int MinSupervisorModeIRQ = 5;
+    static constexpr unsigned int MaxSupervisorModeIRQ = 6;
 };
 
 #define __MACHINE__ SiFive_U

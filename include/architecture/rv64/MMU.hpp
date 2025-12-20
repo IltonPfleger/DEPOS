@@ -97,6 +97,13 @@ template <typename Allocator> class SV39_MMU {
         alignas(Size) uintptr_t entries[EntriesNumber];
     };
 
+    static unsigned long virt2phys(unsigned long addr) {
+        if constexpr (Traits<System>::MULTITASK)
+            return addr - (Traits<MemoryMap>::VirtualRamStart - Traits<MemoryMap>::PhysicalRamStart);
+        else
+            return addr;
+    }
+
     static void init() {
         static_assert(Traits<MemoryMap>::PhysicalRamStart % Giga == 0);
         static_assert(Traits<MemoryMap>::VirtualRamStart % Giga == 0);

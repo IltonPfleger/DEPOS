@@ -10,8 +10,8 @@ class Application {
   public:
     static void init() {
         TraceIn();
-        // auto main = reinterpret_cast<int (*)(void *)>(Traits<MemoryMap>::ApplicationAddr);
         auto main = reinterpret_cast<int (*)(void *)>(__mm.main);
+        Console::println("%d\n", reinterpret_cast<void *>(main));
         if (main)
             new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL);
         TraceOut();
