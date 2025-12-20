@@ -18,7 +18,7 @@ template <typename U> class Scheduler;
 template <typename T> struct Traits;
 
 template <> struct Traits<System> {
-    static constexpr bool MULTITASK = false;
+    static constexpr bool MULTITASK = true;
 };
 
 template <> struct Traits<Timer> {

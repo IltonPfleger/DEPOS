@@ -29,68 +29,96 @@ class Machine {
     };
 
     enum Interruption : unsigned long {
-        IS_INTERRUPTION = 1ULL << (Traits<::Machine>::XLEN - 1),
         TIMER = 7,
     };
 
     enum Exception : unsigned long {
-        SYSCALL_FROM_SUPERVISOR = 9,
+        SUPERVISOR_SYSCALL = 9,
     };
 
+    enum Syscall {
+        TIME = 'T' << 24 | 'I' << 16 | 'M' << 8 | 'E',
+    };
+
+    __attribute__((always_inline)) static inline void ret() { asm volatile("mret"); }
+
+  public:
     class IC {
+        static void handler(Context *c) {
+            uintmax_t mcause = csrr<Machine::CAUSE>();
 
-      public:
-        __attribute__((naked, aligned(4))) static void entry() {
-            handler(Context::push<Machine>());
-            Context::pop<Machine>();
-        }
+            if (mcause >> (Traits<::Machine>::XLEN - 1)) {
+                Machine::Interruption code = static_cast<Machine::Interruption>((mcause << 1) >> 1);
+                interruption(code);
+                return;
+            }
 
-        static void handler(Context *) {
-            uintmax_t mcause = csrr<CAUSE>();
-
-            if (mcause & IS_INTERRUPTION) {
-                int code = mcause & ~IS_INTERRUPTION;
-                s_irqs.dispatch(code);
+            if (mcause == Machine::SUPERVISOR_SYSCALL) {
+                syscall(c);
                 return;
             }
 
             error();
         }
 
-        static void clint() {
-            int core = CPU::id();
-            CLINT::reset(core);
-            Timer::handler(core);
+        static void interruption(Machine::Interruption code) {
+            switch (code) {
+            case Machine::Interruption::TIMER:
+                csrc<Machine::IE>(Machine::TI);
+                csrs<Machine::IP>(Supervisor::TI);
+            }
+        }
+
+        static void syscall(Context *c) {
+            c->pc += 4;
+            switch (c->a7) {
+            case Syscall::TIME:
+                CLINT::reset(CPU::id());
+                csrs<Machine::IE>(Machine::TI);
+                csrc<Machine::IP>(Supervisor::TI);
+            }
         }
 
         static void error() {
+            auto mstatus = reinterpret_cast<void *>(csrr<STATUS>());
             auto mepc = reinterpret_cast<void *>(csrr<EPC>());
             auto mtval = reinterpret_cast<void *>(csrr<TVAL>());
             auto mcause = reinterpret_cast<void *>(csrr<CAUSE>());
-            ERROR(true, "Ohh it's a Trap!", "\nmcause: ", mcause, "\nmepc: ", mepc, "\nmtval: ", mtval);
+            ERROR(true, "Ohh it's a Trap!", "\nmcause: ", mcause, "\nmepc: ", mepc, "\nmtval: ", mtval,
+                  "\nmstatus: ", mstatus);
         }
 
-        static void init() { s_irqs.bind(Interruption::TIMER, clint); }
-
-      private:
-        static inline DispatchTable<Traits<IRQ>::MinMachineModeIRQ, Traits<IRQ>::MaxMachineModeIRQ> s_irqs;
+      public:
+        __attribute__((naked, aligned(4))) static void entry() {
+            handler(Context::push<Machine, true>());
+            Context::pop<Machine, true>();
+        }
     };
 
-    __attribute__((always_inline)) static inline void ret() { asm volatile("mret"); }
-
+  public:
     static void init() {
         csrc<Machine::STATUS>(Machine::IRQE);
 
-        if (CPU::id() == Traits<::Machine>::BSP) {
-            IC::init();
+        if (!(csrr<Machine::MISA>() & (1UL << ('S' - 'A')))) {
+            CPU::kill();
+            CPU::idle();
         }
-
-        CPU::barrier();
 
         if constexpr (Traits<Timer>::Enable) {
             csrs<Machine::IE>(Machine::TI);
         }
 
-        csrw<Machine::TVEC>(Machine::IC::entry);
+        csrw<Machine::SCRATCH>(s_stack[CPU::id()]);
+
+        csrw<Machine::TVEC>(IC::entry);
+        csrw<Machine::MIDELEG>(0x222);
+        csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
+        csrw<Machine::PMPCFG0>(0b11111);
+        csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIRQE);
+        csrc<Machine::STATUS>(Supervisor::PIRQE);
+        csrw<Machine::EPC>(__builtin_return_address(0));
+        Machine::ret();
     }
+
+    static inline unsigned char s_stack[Traits<::Machine>::CPUS][Traits<Memory>::PAGE_SIZE];
 };

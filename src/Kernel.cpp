@@ -30,7 +30,7 @@ class Init {
 
 extern "C" __attribute__((naked, used, aligned(4), section(".init"))) void _init() {
     CPU::setup();
-    BSS::init();
+    // BSS::init();
     CPU::init();
     MMU::init();
     Init::init();

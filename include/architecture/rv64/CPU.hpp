@@ -24,7 +24,7 @@ class CPU {
     static void barrier() {
         static volatile int ready = 0;
         static volatile bool gsense = true;
-        static bool lsense[Traits<::Machine>::CPUS] = {true};
+        static volatile bool lsense[Traits<::Machine>::CPUS] = {true};
 
         lsense[CPU::id()] = !lsense[CPU::id()];
 
