@@ -4,13 +4,15 @@
     if constexpr (Traits<Debug>::Error) {                                                                              \
         if (expr) {                                                                                                    \
             CPU::Interruptions::disable();                                                                             \
-            Console::println("<%d> [ERROR] %s\n", CPU::id(), __PRETTY_FUNCTION__);                                     \
+            Console::println("\n<%d> [ERROR] %s\n", CPU::id(), __PRETTY_FUNCTION__);                                     \
             __VA_OPT__(Console::print(__VA_ARGS__));                                                                   \
             __VA_OPT__(Console::print('\n'));                                                                          \
             for (;;) {                                                                                                 \
             }                                                                                                          \
         }                                                                                                              \
     }
+
+//Console::print("%s\n", expr);                                                                              
 
 #define TraceIn(...)                                                                                                   \
     if constexpr (Traits<Debug>::Trace) {                                                                              \

@@ -32,7 +32,8 @@ int Thread::idle(void *) {
     CPU::barrier();
     if (CPU::id() == Traits<Machine>::BSP)
         Console::println("*** Shutdown! ***\n");
-    CPU::halt();
+    for (;;)
+        ;
     return 0;
 }
 
@@ -123,8 +124,8 @@ void Thread::run() {
     char buffer[sizeof(Thread)];
     Thread *previous = reinterpret_cast<Thread *>(buffer);
     s_lock.acquire();
-    TraceIn();
     Thread *next = s_scheduler.remove();
+    TraceIn(next);
     dispatch(previous, next, &s_lock);
 }
 

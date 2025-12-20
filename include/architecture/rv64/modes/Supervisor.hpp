@@ -17,12 +17,13 @@ class Supervisor {
     };
 
     enum Bits : unsigned long {
-        ME2ME = 1ULL << 8,                        // Supervisor to Supervisor
-        ME2USER = 0ULL << 8,                      // Supervisor to User
-        IRQE = 1ULL << 1,                         // Interrupt Enable
-        TI = 1ULL << 5,                           // Timer Interrupt Enable
-        PIRQE = 1ULL << 5,                        // Previous Interrupt Enable
-        SUM = 1ULL << 18                          // Supervisor User Memory access
+        MACHINE2ME = 1ULL << 11, // Machine to Supervisor
+        ME2ME = 1ULL << 8,       // Supervisor to Supervisor
+        ME2USER = 0ULL << 8,     // Supervisor to User
+        IRQE = 1ULL << 1,        // Interrupt Enable
+        TI = 1ULL << 5,          // Timer Interrupt Enable
+        PIRQE = 1ULL << 5,       // Previous Interrupt Enable
+        SUM = 1ULL << 18         // Supervisor User Memory access
     };
 
     class IC {

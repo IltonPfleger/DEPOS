@@ -20,7 +20,8 @@ class Machine {
     };
 
     enum Bits : unsigned long {
-        ME2ME = 3ULL << 11,         // Machine to Machine
+        MACHINE2ME = 3ULL << 11,    // Machine to Machine
+        ME2ME = MACHINE2ME,         // Machine to Machine
         ME2SUPERVISOR = 1ULL << 11, // Machine to Supervisor
         ME2USER = 0ULL << 11,       // Machine to User
         TI = 1ULL << 7,             // Timer Interrupt Enable
@@ -29,11 +30,12 @@ class Machine {
     };
 
     enum Interruption : unsigned long {
+        IS_INTERRUPTION = 1ULL << (Traits<::Machine>::XLEN - 1),
         TIMER = 7,
     };
 
     enum Exception : unsigned long {
-        SUPERVISOR_SYSCALL = 9,
+        SYSCALL_FROM_SUPERVISOR = 9,
     };
 
     enum Syscall {
@@ -47,13 +49,12 @@ class Machine {
         static void handler(Context *c) {
             uintmax_t mcause = csrr<Machine::CAUSE>();
 
-            if (mcause >> (Traits<::Machine>::XLEN - 1)) {
-                Machine::Interruption code = static_cast<Machine::Interruption>((mcause << 1) >> 1);
-                interruption(code);
+            if (mcause & IS_INTERRUPTION) {
+                s_irqs.dispatch(mcause & ~IS_INTERRUPTION);
                 return;
             }
 
-            if (mcause == Machine::SUPERVISOR_SYSCALL) {
+            if (mcause == Machine::SYSCALL_FROM_SUPERVISOR) {
                 syscall(c);
                 return;
             }
@@ -61,12 +62,15 @@ class Machine {
             error();
         }
 
-        static void interruption(Machine::Interruption code) {
-            switch (code) {
-            case Machine::Interruption::TIMER:
-                csrc<Machine::IE>(Machine::TI);
-                csrs<Machine::IP>(Supervisor::TI);
-            }
+        static void reset_timer() {
+            int core = CPU::id();
+            CLINT::reset(core);
+            Timer::handler(core);
+        }
+
+        static void forward_timer() {
+            csrc<Machine::IE>(Machine::TI);
+            csrs<Machine::IP>(Supervisor::TI);
         }
 
         static void syscall(Context *c) {
@@ -89,35 +93,57 @@ class Machine {
         }
 
       public:
+        static void init() {
+            if (CPU::id() == Traits<::Machine>::BSP) {
+                if constexpr (Meta::SAME<KernelMode, Machine>::Result) {
+                    s_irqs.bind(Interruption::TIMER, reset_timer);
+                } else {
+                    s_irqs.bind(Interruption::TIMER, forward_timer);
+                }
+            }
+
+            CPU::barrier();
+        }
+
         __attribute__((naked, aligned(4))) static void entry() {
+            // handler(Context::push<Machine>());
+            // Context::pop<Machine>();
             handler(Context::push<Machine, true>());
             Context::pop<Machine, true>();
         }
+
+      private:
+        static inline DispatchTable<Traits<IRQ>::MinMachineModeIRQ, Traits<IRQ>::MaxMachineModeIRQ> s_irqs;
     };
 
   public:
-    static void init() {
-        csrc<Machine::STATUS>(Machine::IRQE);
+    __attribute__((noinline)) static void init() {
+        csrc<STATUS>(IRQE);
+        csrw<TVEC>(IC::entry);
+        csrw<SCRATCH>(s_stack[CPU::id()] + Traits<Memory>::PAGE_SIZE);
+        IC::init();
 
-        if (!(csrr<Machine::MISA>() & (1UL << ('S' - 'A')))) {
-            CPU::kill();
-            CPU::idle();
+        if constexpr (!Meta::SAME<KernelMode, Machine>::Result) {
+            if (!(csrr<Machine::MISA>() & (1UL << ('S' - 'A')))) {
+                CPU::kill();
+                CPU::idle();
+            }
+
+            csrw<Machine::MIDELEG>(0x222);
+            csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
+            csrw<Machine::PMPCFG0>(0b11111);
+            csrs<Machine::STATUS>(static_cast<unsigned long>(KernelMode::MACHINE2ME) | Machine::PIRQE);
+            csrc<Machine::STATUS>(KernelMode::PIRQE);
+            csrw<Machine::EPC>(__builtin_return_address(0));
         }
 
         if constexpr (Traits<Timer>::Enable) {
             csrs<Machine::IE>(Machine::TI);
         }
 
-        csrw<Machine::SCRATCH>(s_stack[CPU::id()]);
-
-        csrw<Machine::TVEC>(IC::entry);
-        csrw<Machine::MIDELEG>(0x222);
-        csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-        csrw<Machine::PMPCFG0>(0b11111);
-        csrs<Machine::STATUS>(Machine::ME2SUPERVISOR | Machine::PIRQE);
-        csrc<Machine::STATUS>(Supervisor::PIRQE);
-        csrw<Machine::EPC>(__builtin_return_address(0));
-        Machine::ret();
+        if constexpr (!Meta::SAME<KernelMode, Machine>::Result) {
+            Machine::ret();
+        }
     }
 
     static inline unsigned char s_stack[Traits<::Machine>::CPUS][Traits<Memory>::PAGE_SIZE];
