@@ -28,14 +28,14 @@ gdb:
 
 $(IMAGE): $(KERNEL).elf $(TOOLS)
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)
-	$(LD) -e main --just-symbols $(KERNEL).elf --image-base=$(PhysicalApplicationAddr) -o $(APP).elf $(APP).o
+	$(LD) -e main --just-symbols $(KERNEL).elf --section-start=.text=$(ApplicationAddr) --image-base=$(ApplicationAddr) -o $(APP).elf $(APP).o
 	$(EMAP) $(APP).elf $(MAP)
 	$(OBJCOPY) --update-section .__app_mm__=$(MAP) $(KERNEL).elf
 	$(OBJCOPY) -O binary $(APP).elf $(APP).bin
 	$(EMAP) $(KERNEL).elf $(MAP)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MAP) $(KERNEL).elf
 	$(OBJCOPY) -O binary $(KERNEL).elf $(IMAGE)
-	$(DD) bs=1 conv=notrunc if=$(APP).bin of=$(IMAGE) seek=$$(( $$(./tools/EPrint $(APP).elf -b) - $(PhysicalRamStart) ))
+	$(DD) bs=1 conv=notrunc if=$(APP).bin of=$(IMAGE) seek=$$(( $$(./tools/EPrint $(APP).elf -b) - $(RamStart) ))
 	$(TRUNCATE) -s %$(PAGE_SIZE) $(IMAGE)
 
 

@@ -32,6 +32,6 @@ extern "C" __attribute__((naked, used, aligned(4), section(".init"))) void _init
     CPU::setup();
     CPU::init();
     MMU::init();
-    BSS::init();
+    // BSS::init();
     Init::init();
 }

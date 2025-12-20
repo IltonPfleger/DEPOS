@@ -25,7 +25,7 @@
 // }
 
 int main(int, char *[]) {
-    Console::print("Application: \n");
+    // Console::print("Application: \n");
 
     // while(1);
 
@@ -42,6 +42,6 @@ int main(int, char *[]) {
     //// for (int i = 0; i < N; i++)
     ////     delete threads[i];
 
-    Console::print("\nApplication Done!\n");
+    // Console::print("\nApplication Done!\n");
     return 0;
 }
