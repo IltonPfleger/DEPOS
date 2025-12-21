@@ -1,6 +1,9 @@
 #pragma once
 
 class Machine {
+    using Stack = unsigned char[Traits<Memory>::PAGE_SIZE];
+    static constexpr bool Main = Meta::SAME<KernelMode, Machine>::Result;
+
   public:
     enum Registers : unsigned long {
         MHARTID = 0xF14,  // Core ID
@@ -46,17 +49,24 @@ class Machine {
 
   public:
     class IC {
+        __attribute__((naked, aligned(4))) static void entry() {
+            handler(Context::push<Machine, !Main>());
+            Context::pop<Machine, !Main>();
+        }
+
         static void handler(Context *c) {
-            uintmax_t mcause = csrr<Machine::CAUSE>();
+            unsigned long mcause = csrr<Machine::CAUSE>();
 
             if (mcause & IS_INTERRUPTION) {
                 s_irqs.dispatch(mcause & ~IS_INTERRUPTION);
                 return;
             }
 
-            if (mcause == Machine::SYSCALL_FROM_SUPERVISOR) {
-                syscall(c);
-                return;
+            if constexpr (!Meta::SAME<KernelMode, Machine>::Result) {
+                if (mcause == Machine::SYSCALL_FROM_SUPERVISOR) {
+                    syscall(c);
+                    return;
+                }
             }
 
             error();
@@ -94,8 +104,15 @@ class Machine {
 
       public:
         static void init() {
-            if (CPU::id() == Traits<::Machine>::BSP) {
-                if constexpr (Meta::SAME<KernelMode, Machine>::Result) {
+            csrw<TVEC>(entry);
+            if (CPU::id() != Traits<::Machine>::BSP) {
+                CPU::barrier();
+                return;
+            }
+
+            if constexpr (Traits<Timer>::Enable) {
+                csrs<IE>(TI);
+                if constexpr (Main) {
                     s_irqs.bind(Interruption::TIMER, reset_timer);
                 } else {
                     s_irqs.bind(Interruption::TIMER, forward_timer);
@@ -105,13 +122,6 @@ class Machine {
             CPU::barrier();
         }
 
-        __attribute__((naked, aligned(4))) static void entry() {
-            // handler(Context::push<Machine>());
-            // Context::pop<Machine>();
-            handler(Context::push<Machine, true>());
-            Context::pop<Machine, true>();
-        }
-
       private:
         static inline DispatchTable<Traits<IRQ>::MinMachineModeIRQ, Traits<IRQ>::MaxMachineModeIRQ> s_irqs;
     };
@@ -119,32 +129,29 @@ class Machine {
   public:
     __attribute__((noinline)) static void init() {
         csrc<STATUS>(IRQE);
-        csrw<TVEC>(IC::entry);
-        csrw<SCRATCH>(s_stack[CPU::id()] + Traits<Memory>::PAGE_SIZE);
+
         IC::init();
 
-        if constexpr (!Meta::SAME<KernelMode, Machine>::Result) {
-            if (!(csrr<Machine::MISA>() & (1UL << ('S' - 'A')))) {
+        if constexpr (!Main) {
+            Stack *stack = reinterpret_cast<Stack *>(&s_stack[CPU::id()].Result);
+            csrw<SCRATCH>(*stack + Traits<Memory>::PAGE_SIZE);
+            if (!(csrr<MISA>() & (1UL << ('S' - 'A')))) {
                 CPU::kill();
                 CPU::idle();
             }
 
-            csrw<Machine::MIDELEG>(0x222);
-            csrw<Machine::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-            csrw<Machine::PMPCFG0>(0b11111);
-            csrs<Machine::STATUS>(static_cast<unsigned long>(KernelMode::MACHINE2ME) | Machine::PIRQE);
-            csrc<Machine::STATUS>(KernelMode::PIRQE);
-            csrw<Machine::EPC>(__builtin_return_address(0));
+            csrw<MIDELEG>(0x222);
+            csrw<PMPADDR0>(0x3FFFFFFFFFFFFFULL);
+            csrw<PMPCFG0>(0b11111);
+            csrs<STATUS>(static_cast<unsigned long>(KernelMode::MACHINE2ME) | PIRQE);
+            csrc<STATUS>(KernelMode::PIRQE);
+            csrw<EPC>(__builtin_return_address(0));
         }
 
-        if constexpr (Traits<Timer>::Enable) {
-            csrs<Machine::IE>(Machine::TI);
-        }
-
-        if constexpr (!Meta::SAME<KernelMode, Machine>::Result) {
-            Machine::ret();
+        if constexpr (!Main) {
+            ret();
         }
     }
 
-    static inline unsigned char s_stack[Traits<::Machine>::CPUS][Traits<Memory>::PAGE_SIZE];
+    static inline Meta::ConditionalValue<Stack, !Main> s_stack[Traits<::Machine>::CPUS];
 };

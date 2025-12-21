@@ -27,39 +27,47 @@ class Supervisor {
     };
 
     class IC {
-        enum Interruption { TIMER = 5 };
+        enum Interruption {
+            IS_INTERRUPTION = 1ULL << (Traits<::Machine>::XLEN - 1),
+            TIMER = 5,
+        };
 
-        static void handler(Context *) {
-            uintmax_t scause = csrr<Supervisor::CAUSE>();
-
-            if (scause >> (Traits<::Machine>::XLEN - 1)) {
-                Interruption code = static_cast<Interruption>((scause << 1) >> 1);
-                interruption(code);
-                return;
-            }
-        }
-
-        static void interruption(Interruption code) {
-            switch (code) {
-            case Interruption::TIMER:
-                Timer::handler(CPU::id());
-                CPU::syscall(Machine::Syscall::TIME);
-                break;
-            }
-        }
-
-      public:
         __attribute__((naked, aligned(4))) static void entry() {
             handler(Context::push<Supervisor>());
             Context::pop<Supervisor>();
         }
+
+        static void handler(Context *) {
+            uintmax_t scause = csrr<Supervisor::CAUSE>();
+
+            if (scause & IS_INTERRUPTION) {
+                s_irqs.dispatch(scause & ~IS_INTERRUPTION);
+                return;
+            }
+        }
+
+        static void reset_timer() {
+            Timer::handler(CPU::id());
+            CPU::syscall(Machine::Syscall::TIME);
+        }
+
+      public:
+        static void init() {
+            csrw<TVEC>(entry);
+
+            if constexpr (Traits<Timer>::Enable) {
+                s_irqs.bind(Interruption::TIMER, reset_timer);
+                csrs<IE>(TI);
+            }
+        }
+
+        static inline DispatchTable<Traits<IRQ>::MinSupervisorModeIRQ, Traits<IRQ>::MaxSupervisorModeIRQ> s_irqs;
     };
 
     __attribute__((always_inline)) static inline void ret() { asm volatile("sret"); }
 
     static void init() {
         Machine::init();
-        csrw<Supervisor::TVEC>(Supervisor::IC::entry);
-        csrs<Supervisor::IE>(Supervisor::TI);
+        IC::init();
     }
 };
