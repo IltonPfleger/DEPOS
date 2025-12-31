@@ -1,14 +1,31 @@
 #pragma once
 
-class MIC {
-    using Context = RV64::Context<MachineMode>;
+template <typename Mode> class IC {
 
-    static void handler(void *args) {
+  public:
+    using Context = RV64::Context<Mode>;
+
+    enum {
+        IS_INTERRUPT = 1ULL << (Traits<CPUS>::XLEN - 1),
+    };
+
+    static void error() {
+        char p = Mode::PREFIX;
+        auto status = reinterpret_cast<void *>(csrr<Mode::STATUS>());
+        auto epc = reinterpret_cast<void *>(csrr<Mode::EPC>());
+        auto tval = reinterpret_cast<void *>(csrr<Mode::TVAL>());
+        auto cause = reinterpret_cast<void *>(csrr<Mode::CAUSE>());
+        ERROR(true, "Ohh it's a Trap!\n%ccause: %d\n%cepc: %p\n%ctval: %p\n%cstatus: %p\n", p, cause, p, epc, p, tval,
+              p, status);
+    }
+};
+
+class MIC : IC<MachineMode> {
+    static void handle(Context *context) {
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
-        bool is_interrupt = mcause >> (Traits<Machine>::XLEN - 1);
         int code = (mcause << 1) >> 1;
 
-        if (is_interrupt) {
+        if (mcause & IS_INTERRUPT) {
             switch (code) {
             case Interrupt::TIMER:
                 if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
@@ -22,21 +39,12 @@ class MIC {
             }
         } else {
             if (mcause == Exception::SYSCALL) {
-                Context *context = reinterpret_cast<Context *>(args);
                 context->pc += 4;
-                Syscall::handler(reinterpret_cast<void *>(context->a0));
+                Syscall::handle(reinterpret_cast<void *>(context->a0));
             } else {
                 error();
             }
         }
-    }
-
-    static void error() {
-        auto mstatus = reinterpret_cast<void *>(csrr<MachineMode::STATUS>());
-        auto mepc = reinterpret_cast<void *>(csrr<MachineMode::EPC>());
-        auto mtval = reinterpret_cast<void *>(csrr<MachineMode::TVAL>());
-        auto mcause = reinterpret_cast<void *>(csrr<MachineMode::CAUSE>());
-        ERROR(true, "Ohh it's a Trap!\nmcause: %d\nmepc: %p\nmtval: %p\nmstatus: %p\n", mcause, mepc, mtval, mstatus);
     }
 
     enum Interrupt { TIMER = 7 };
@@ -44,33 +52,21 @@ class MIC {
 
   public:
     __attribute__((naked, aligned(4))) static void entry() {
-        handler(Context::push());
+        handle(Context::push());
         Context::pop();
     }
 };
 
-class SIC {
-    using Context = RV64::Context<SupervisorMode>;
-
+class SIC : IC<SupervisorMode> {
     enum Interrupt { TIMER = 5 };
 
-    static void error() {
-        auto sepc = reinterpret_cast<void *>(csrr<SupervisorMode::EPC>());
-        auto sstatus = reinterpret_cast<void *>(csrr<SupervisorMode::STATUS>());
-        auto scause = reinterpret_cast<void *>(csrr<SupervisorMode::CAUSE>());
-        auto stval = reinterpret_cast<void *>(csrr<SupervisorMode::TVAL>());
-        ERROR(true, "Ohh it's a Trap!\nscause: %d\nsepc: %p\nstval: %p\nsstatus: %p\n", scause, sepc, stval, sstatus);
-    }
-
-    static void handler() {
+    static void handle(Context *) {
         uintmax_t scause = csrr<SupervisorMode::CAUSE>();
-        bool is_interrupt = scause >> (Traits<Machine>::XLEN - 1);
         int code = (scause << 1) >> 1;
         auto core = CPU::id();
-        if (is_interrupt) {
+        if (scause & IS_INTERRUPT) {
             switch (code) {
             case Interrupt::TIMER:
-                Console::out << "S";
                 CPU::syscall(CLINT::reset);
                 Timer::handler(core);
                 break;
@@ -82,8 +78,7 @@ class SIC {
 
   public:
     __attribute__((naked, aligned(4))) static void entry() {
-        Context::push();
-        SIC::handler();
+        handle(Context::push());
         Context::pop();
     }
 };
@@ -92,7 +87,7 @@ class Syscall {
     friend MIC;
 
   private:
-    static void handler(void *function) {
+    static void handle(void *function) {
         auto core = CPU::id();
         auto addr = reinterpret_cast<uintptr_t>(function);
         if (addr == reinterpret_cast<uintptr_t>(&CLINT::reset)) {
@@ -100,9 +95,7 @@ class Syscall {
             csrs<MachineMode::IE>(MachineMode::TI);
             csrc<MachineMode::IP>(SupervisorMode::TI);
         } else {
-            // TODO: THIS EXECUTE IN MACHINE MODE
             reinterpret_cast<void (*)()>(function)();
-            // ERROR(true, "Invalid Syscall!\n");
         }
     }
 };

@@ -5,6 +5,7 @@ class CPU {
     using Context = RV64::Context<KernelMode>;
     using Interruptions = RV64::Interruptions;
     using Atomic = ArchitectureCommon::Atomic;
+
     class TLB {
       public:
         static auto flush() { asm volatile("sfence.vma zero, zero"); }

@@ -4,23 +4,24 @@
 #include <Traits.hpp>
 #include <Types.hpp>
 #include <architecture/common/Atomic.hpp>
+#include <architecture/rv64/Context.hpp>
+#include <architecture/rv64/Modes.hpp>
+#include <architecture/rv64/csrs.hpp>
 #include <utils/Debug.hpp>
+
+using rv::csrc;
+using rv::csrr;
+using rv::csrs;
+using rv::csrw;
 
 class RV64 {
   public:
-    struct MachineMode;
-    struct SupervisorMode;
-    struct HypervisorMode;
-    struct UserMode;
+    using MachineMode = rv::MachineMode;
+    using SupervisorMode = rv::SupervisorMode;
     using KernelMode = Meta::TypeSelector<Traits<System>::MULTITASK, SupervisorMode, MachineMode>::Result;
+    template <typename T> using Context = rv64::Context<T>;
 
-#include "CSRS.hpp"
-/**/
 #include "CLINT.hpp"
-/**/
-#include "Modes.hpp"
-/**/
-#include "Context.hpp"
 /**/
 #include "Interruptions.hpp"
 /**/

@@ -1,5 +1,6 @@
 #pragma once
 
+namespace rv64 {
 template <typename T> class Context {
   public:
     uint64_t ra;
@@ -166,3 +167,4 @@ template <typename T> class Context {
         __builtin_unreachable();
     }
 };
+} // namespace rv64
