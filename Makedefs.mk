@@ -13,7 +13,7 @@ OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
 GET := ./Meta get $(TRAITS)
 
-CPUS=$(shell $(GET) "Traits<Machine>::CPUS")
+CPUS=$(shell $(GET) "Traits<CPUS>::COUNT")
 MACHINE=$(shell $(GET) "Traits<Machine>::NAME")
 MEMORY_SIZE=$(shell $(GET) "Traits<Memory>::SIZE")
 BOOT_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::BOOT_ADDR"))
