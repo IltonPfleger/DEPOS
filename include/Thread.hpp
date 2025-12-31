@@ -2,7 +2,7 @@
 
 #include <Scheduler.hpp>
 #include <Spin.hpp>
-#include <Task.hpp>
+// #include <Task.hpp>
 #include <Traits.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Segment.hpp>
@@ -15,6 +15,8 @@ class Thread {
     using Function = int (*)(Argument);
     using Queue = FIFO<Thread *>;
     using Element = Queue::Node;
+    using CPU = Machine::CPU;
+    using Context = CPU::Context;
 
     // Thread(Function f, Argument a, Criterion c, Task *t = nullptr)
     //     : // task_(t ? t : new(Heap::SYSTEM) Task()),
@@ -58,7 +60,7 @@ class Thread {
     Criterion m_criterion;
     volatile State m_state;
     Thread *volatile m_joining;
-    CPU::Context *volatile m_context;
+    Context *volatile m_context;
 
   private:
     static inline Scheduler<Thread> s_scheduler;

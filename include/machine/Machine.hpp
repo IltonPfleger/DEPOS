@@ -1,3 +1,4 @@
 #pragma once
 #include <machine/rv64/SiFive_U.hpp>
-using namespace SiFive_U;
+
+class Machine : public SiFive_U {};
