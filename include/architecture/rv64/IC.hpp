@@ -1,6 +1,8 @@
 #pragma once
 
 class MIC {
+    using Context = RV64::Context<MachineMode>;
+
     static void handler(void *args) {
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
         bool is_interrupt = mcause >> (Traits<Machine>::XLEN - 1);
@@ -42,12 +44,14 @@ class MIC {
 
   public:
     __attribute__((naked, aligned(4))) static void entry() {
-        handler(Context::push<MachineMode>());
-        Context::pop<MachineMode>();
+        handler(Context::push());
+        Context::pop();
     }
 };
 
 class SIC {
+    using Context = RV64::Context<SupervisorMode>;
+
     enum Interrupt { TIMER = 5 };
 
     static void error() {
@@ -78,9 +82,9 @@ class SIC {
 
   public:
     __attribute__((naked, aligned(4))) static void entry() {
-        Context::push<SupervisorMode>();
+        Context::push();
         SIC::handler();
-        Context::pop<SupervisorMode>();
+        Context::pop();
     }
 };
 

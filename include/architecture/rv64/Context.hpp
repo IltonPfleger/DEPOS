@@ -1,4 +1,6 @@
-class Context {
+#pragma once
+
+template <typename T> class Context {
   public:
     uint64_t ra;
     uint64_t tp;
@@ -14,13 +16,12 @@ class Context {
     Context(int (*entry)(void *), void *a0, void *sp, void (*exit)()) {
         this->ra = reinterpret_cast<uint64_t>(exit);
         this->pc = reinterpret_cast<uint64_t>(entry);
-        this->status = static_cast<uint64_t>(KernelMode::ME2ME | static_cast<uint64_t>(KernelMode::PIRQE));
+        this->status = static_cast<uint64_t>(T::ME2ME | T::PIRQE);
         this->a0 = reinterpret_cast<uint64_t>(a0);
         this->sp = reinterpret_cast<uint64_t>(sp);
     }
 
-    template <typename F, typename... Args, typename T = KernelMode>
-    __attribute__((naked)) void load(F f, Args... args) {
+    template <typename F, typename... Args> __attribute__((naked)) void load(F f, Args... args) {
         asm("ld sp, %[sp](a0)" ::[sp] "i"(offsetof(Context, sp)));
         asm("mv s0, a0");
         asm("addi sp, sp, %0" ::"i"(-sizeof(Context)));
@@ -58,7 +59,7 @@ class Context {
         __builtin_unreachable();
     }
 
-    template <typename T = KernelMode> __attribute__((naked)) bool save() {
+    __attribute__((naked)) bool save() {
         asm("sd ra, %[ra](a0)\n"
             "sd gp, %[gp](a0)\n"
             "sd sp, %[sp](a0)\n"
@@ -92,7 +93,7 @@ class Context {
             "ret\n");
     }
 
-    template <typename T = KernelMode> __attribute__((always_inline)) static inline Context *push() {
+    __attribute__((always_inline)) static inline Context *push() {
         asm("addi sp, sp, %[size]\n"
             "sd ra, %[ra](sp)\n"
             "sd gp, %[gp](sp)\n"
@@ -129,7 +130,7 @@ class Context {
         return sp;
     }
 
-    template <typename T = KernelMode> __attribute__((naked)) static void pop() {
+    __attribute__((naked)) static void pop() {
         asm("ld t0, %[statuso](sp)\n"
             "csrw %[statusr], t0\n"
             "ld t0, %[pc](sp)\n"
