@@ -1,3 +1,6 @@
+#pragma once
+
+namespace rv {
 struct MachineMode {
     enum : unsigned long {
         PMPADDR0 = 0x3B0,
@@ -13,15 +16,16 @@ struct MachineMode {
         PIRQE = 1ULL << 7,          // Previous Interrupt Enable
     };
 
-    static constexpr const int STATUS = 0x300;
-    static constexpr const int MISA = 0x301;
-    static constexpr const int IE = 0x304;
-    static constexpr const int TVEC = 0x305;
-    static constexpr const int SCRATCH = 0x340;
-    static constexpr const int EPC = 0x341;
-    static constexpr const int CAUSE = 0x342;
-    static constexpr const int IP = 0x344;
-    static constexpr const int TVAL = 0x343;
+    static constexpr int STATUS = 0x300;
+    static constexpr int MISA = 0x301;
+    static constexpr int IE = 0x304;
+    static constexpr int TVEC = 0x305;
+    static constexpr int SCRATCH = 0x340;
+    static constexpr int EPC = 0x341;
+    static constexpr int CAUSE = 0x342;
+    static constexpr int IP = 0x344;
+    static constexpr int TVAL = 0x343;
+    static constexpr char PREFIX = 'm';
 
     __attribute__((always_inline)) static inline void ret() { asm volatile("mret"); }
 };
@@ -45,5 +49,8 @@ struct SupervisorMode {
     static constexpr const int CAUSE = 0x142;
     static constexpr const int TVAL = 0x143;
     static constexpr const int IP = 0x144;
+    static constexpr char PREFIX = 's';
+
     __attribute__((always_inline)) static inline void ret() { asm volatile("sret"); }
 };
+} // namespace rv

@@ -28,6 +28,7 @@ template <> struct Traits<System> {
 };
 
 template <> struct Traits<CPUS> {
+    static constexpr int XLEN = 64;
     static constexpr int COUNT = Traits<Machine>::CPUS;
     static constexpr int ONLINE = Traits<System>::MULTITASK ? COUNT - 1 : COUNT;
     static constexpr int BSP = 1;
