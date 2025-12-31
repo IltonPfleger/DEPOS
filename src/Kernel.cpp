@@ -31,6 +31,7 @@ class Init {
 
 extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
     CPU::probe();
+    CPU::jmode();
     CPU::init();
     Init::init();
 }

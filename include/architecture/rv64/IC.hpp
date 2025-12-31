@@ -22,7 +22,7 @@ class MIC {
             if (mcause == Exception::SYSCALL) {
                 Context *context = reinterpret_cast<Context *>(args);
                 context->pc += 4;
-                // Syscall::handler(reinterpret_cast<void *>(context->a0));
+                Syscall::handler(reinterpret_cast<void *>(context->a0));
             } else {
                 error();
             }
@@ -34,10 +34,7 @@ class MIC {
         auto mepc = reinterpret_cast<void *>(csrr<MachineMode::EPC>());
         auto mtval = reinterpret_cast<void *>(csrr<MachineMode::TVAL>());
         auto mcause = reinterpret_cast<void *>(csrr<MachineMode::CAUSE>());
-        ERROR(
-            true,
-            "Ohh it's a Trap!\nmcause: %d\nmepc: %p\nmtval: %p\nmstatus: %p\n",
-            mcause, mepc, mtval, mstatus);
+        ERROR(true, "Ohh it's a Trap!\nmcause: %d\nmepc: %p\nmtval: %p\nmstatus: %p\n", mcause, mepc, mtval, mstatus);
     }
 
     enum Interrupt { TIMER = 7 };
@@ -58,10 +55,7 @@ class SIC {
         auto sstatus = reinterpret_cast<void *>(csrr<SupervisorMode::STATUS>());
         auto scause = reinterpret_cast<void *>(csrr<SupervisorMode::CAUSE>());
         auto stval = reinterpret_cast<void *>(csrr<SupervisorMode::TVAL>());
-        ERROR(
-            true,
-            "Ohh it's a Trap!\nscause: %d\nsepc: %p\nstval: %p\nsstatus: %p\n",
-            scause, sepc, stval, sstatus);
+        ERROR(true, "Ohh it's a Trap!\nscause: %d\nsepc: %p\nstval: %p\nsstatus: %p\n", scause, sepc, stval, sstatus);
     }
 
     static void handler() {
@@ -72,6 +66,7 @@ class SIC {
         if (is_interrupt) {
             switch (code) {
             case Interrupt::TIMER:
+                Console::out << "S";
                 CPU::syscall(CLINT::reset);
                 Timer::handler(core);
                 break;
@@ -93,7 +88,7 @@ class Syscall {
     friend MIC;
 
   private:
-    void handler(void *function) {
+    static void handler(void *function) {
         auto core = CPU::id();
         auto addr = reinterpret_cast<uintptr_t>(function);
         if (addr == reinterpret_cast<uintptr_t>(&CLINT::reset)) {

@@ -4,7 +4,7 @@ class CPU {
   public:
     using Context = RV64::Context;
     using Interruptions = RV64::Interruptions;
-    using Atomic = RV64::Atomic;
+    using Atomic = ArchitectureCommon::Atomic;
     class TLB {
       public:
         static auto flush() { asm volatile("sfence.vma zero, zero"); }
@@ -44,7 +44,7 @@ class CPU {
         asm volatile("ret");
     }
 
-    __attribute__((noinline)) static void init() {
+    __attribute__((noinline)) static void jmode() {
         static_assert(!Traits<System>::MULTITASK || Meta::SAME<KernelMode, SupervisorMode>::Result);
 
         if constexpr (Traits<System>::MULTITASK) {
@@ -56,7 +56,6 @@ class CPU {
 
         if constexpr (Traits<Timer>::Enable) {
             csrs<MachineMode::IE>(MachineMode::TI);
-            csrs<SupervisorMode::IE>(SupervisorMode::TI);
         }
 
         if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
@@ -76,6 +75,9 @@ class CPU {
         MachineMode::ret();
     }
 
-  private:
-    //   static volatile inline unsigned int s_alive = Traits<Machine>::CPUS;
+    static void init() {
+        if constexpr (Traits<Timer>::Enable && Traits<System>::MULTITASK) {
+            csrs<SupervisorMode::IE>(SupervisorMode::TI);
+        }
+    }
 };

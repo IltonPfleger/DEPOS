@@ -3,6 +3,7 @@
 #include <Timer.hpp>
 #include <Traits.hpp>
 #include <Types.hpp>
+#include <architecture/common/Atomic.hpp>
 #include <utils/Debug.hpp>
 
 class RV64 {
@@ -11,7 +12,7 @@ class RV64 {
     struct SupervisorMode;
     struct HypervisorMode;
     struct UserMode;
-    using KernelMode = SupervisorMode;
+    using KernelMode = Meta::TypeSelector<Traits<System>::MULTITASK, SupervisorMode, MachineMode>::Result;
 
 #include "CSRS.hpp"
 /**/
@@ -22,8 +23,6 @@ class RV64 {
 #include "Context.hpp"
 /**/
 #include "Interruptions.hpp"
-/**/
-#include "Atomic.hpp"
 /**/
 #include "CPU.hpp"
 /**/
