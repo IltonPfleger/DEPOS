@@ -8,7 +8,7 @@ template <typename T> struct Head {};
 
 template <> struct Head<Thread> {
     static constexpr unsigned long N = Traits<CPUS>::COUNT;
-    static auto id() { return CPU::id(); }
+    static auto id() { return Machine::CPU::id(); }
 };
 
 class Policy {

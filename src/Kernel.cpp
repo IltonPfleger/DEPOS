@@ -8,7 +8,7 @@
 class Init {
   public:
     static void init() {
-        bool BSP = CPU::id() == Traits<CPUS>::BSP;
+        bool BSP = Machine::CPU::id() == Traits<CPUS>::BSP;
         if (BSP) {
             Console::init();
             TraceIn();
@@ -19,15 +19,15 @@ class Init {
             TraceOut();
         }
 
-        CPU::barrier();
+        Machine::CPU::barrier();
         Thread::run();
-        CPU::halt();
+        Machine::CPU::halt();
     }
 };
 
 extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
-    CPU::probe();
-    CPU::jmode();
-    CPU::init();
+    Machine::CPU::probe();
+    Machine::CPU::jmode();
+    Machine::CPU::init();
     Init::init();
 }

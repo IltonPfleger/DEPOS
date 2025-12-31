@@ -8,8 +8,6 @@
 
 Thread *Thread::running() { return s_scheduler.current(); }
 
-// static void teste(Spin *lock) { lock->release(); }
-
 void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
     next->m_state = State::RUNNING;
     CPU::Context context;

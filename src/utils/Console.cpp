@@ -1,8 +1,8 @@
 #include <machine/Machine.hpp>
 #include <utils/Console.hpp>
 
-void Console::init() { IO::init(); }
-void Console::put(char c) { IO::put(c); }
+void Console::init() { Machine::IO::init(); }
+void Console::put(char c) { Machine::IO::put(c); }
 void Console::println(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
