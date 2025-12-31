@@ -10,6 +10,7 @@ class Application;
 class Debug;
 class Alarm;
 class MemoryMap;
+class CPUS;
 
 template <typename U> class Scheduler;
 
@@ -19,6 +20,16 @@ template <> struct Traits<Machine> {
     static constexpr const char *NAME = "sifive_u";
     static constexpr int XLEN = 64;
     static constexpr int CPUS = 5;
+    static constexpr int BSP = 1;
+};
+
+template <> struct Traits<System> {
+    static constexpr bool MULTITASK = true;
+};
+
+template <> struct Traits<CPUS> {
+    static constexpr int COUNT = 5;
+    static constexpr int ONLINE = Traits<System>::MULTITASK ? COUNT - 1 : COUNT;
     static constexpr int BSP = 1;
 };
 
@@ -49,10 +60,6 @@ template <> struct Traits<Timer> {
 template <> struct Traits<Alarm> {
     static constexpr bool Enable = true;
     static constexpr unsigned long Frequency = Traits<Timer>::MHz;
-};
-
-template <> struct Traits<System> {
-    static constexpr bool MULTITASK = false;
 };
 
 template <> struct Traits<Application> {

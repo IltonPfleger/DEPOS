@@ -11,6 +11,8 @@ class Application {
     static void init() {
         TraceIn();
         auto main = reinterpret_cast<int (*)(void *)>(__mm.main);
+        if (main)
+            new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL);
         // if constexpr (Traits<System>::MULTITASK) {
         //  uintptr_t TextStart = __mm.text.start;
         //  uintptr_t TextEnd = __mm.text.end;
@@ -38,7 +40,6 @@ class Application {
         // new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL,
         // task);
         //} else {
-        new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL);
         // }
         TraceOut();
     };
