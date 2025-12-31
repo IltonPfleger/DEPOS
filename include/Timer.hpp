@@ -4,7 +4,7 @@
 class Timer {
     struct Channel {
         unsigned long duration;
-        unsigned long current[Traits<Machine>::CPUS];
+        unsigned long current[Traits<CPUS>::COUNT];
     };
 
   public:

@@ -7,7 +7,7 @@
 template <typename T> struct Head {};
 
 template <> struct Head<Thread> {
-    static constexpr unsigned long N = Traits<Machine>::CPUS;
+    static constexpr unsigned long N = Traits<CPUS>::COUNT;
     static auto id() { return CPU::id(); }
 };
 
@@ -29,9 +29,7 @@ class RR : public Policy {
     RR(Rank r = NORMAL, ...) : Policy(r) {}
 };
 
-template <typename T>
-class Scheduler : private Traits<Scheduler<T>>::Criterion::template Queue<T *>,
-                  public Head<T> {
+template <typename T> class Scheduler : private Traits<Scheduler<T>>::Criterion::template Queue<T *>, public Head<T> {
 
   public:
     using Criterion = typename Traits<Scheduler<T>>::Criterion;

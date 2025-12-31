@@ -8,7 +8,7 @@
 class Init {
   public:
     static void init() {
-        bool BSP = CPU::id() == Traits<Machine>::BSP;
+        bool BSP = CPU::id() == Traits<CPUS>::BSP;
         if (BSP) {
             Console::init();
             TraceIn();
@@ -20,11 +20,7 @@ class Init {
         }
 
         CPU::barrier();
-
-        if (CPU::id() < Traits<Machine>::CPUS) {
-            Thread::run();
-        }
-
+        Thread::run();
         CPU::halt();
     }
 };
