@@ -2,7 +2,7 @@
 
 class CPU {
   public:
-    using Context = RV64::Context;
+    using Context = RV64::Context<KernelMode>;
     using Interruptions = RV64::Interruptions;
     using Atomic = ArchitectureCommon::Atomic;
     class TLB {
