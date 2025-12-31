@@ -25,12 +25,13 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
 }
 
 int Thread::idle(void *) {
-    while (s_count > Traits<Machine>::CPUS) {
+    while (s_count > Traits<CPUS>::ONLINE) {
         if (!s_scheduler.empty())
             yield();
     }
 
     CPU::Interruptions::disable();
+    CPU::barrier();
     if (CPU::id() == Traits<Machine>::BSP)
         Console::println("*** Shutdown! ***\n");
     for (;;)
@@ -115,7 +116,7 @@ void Thread::exit() {
 
 void Thread::init() {
     TraceIn();
-    for (int i = 0; i < Traits<Machine>::CPUS; ++i)
+    for (int i = 0; i < Traits<CPUS>::ONLINE; ++i)
         new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     TraceOut()
 }

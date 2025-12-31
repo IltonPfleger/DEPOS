@@ -1,4 +1,5 @@
 #pragma once
+
 class CPU {
   public:
     using Context = RV64::Context;
@@ -10,6 +11,7 @@ class CPU {
     };
 
     static auto idle() { asm volatile("wfi"); }
+    static auto halt() { asm volatile("j ."); }
     static auto syscall(auto f) { asm volatile("mv a0, %0\necall" ::"r"(f)); }
     static auto id() {
         unsigned long tp;
@@ -17,19 +19,24 @@ class CPU {
         return tp;
     }
 
-    static void kill() { Atomic::decf(s_alive); }
-    static void barrier() {
-        static volatile unsigned int counter = 0;
-        if (Atomic::incf(counter) == s_alive) {
-            Atomic::store(counter, 0);
+    static void barrier(unsigned int cores = Traits<CPUS>::ONLINE) {
+        static volatile bool gsense = true;
+        static volatile unsigned int ready[2] = {0};
+
+        bool sense = gsense;
+        unsigned int arrived = Atomic::finc(ready[sense]);
+
+        if (arrived == cores - 1) {
+            ready[sense] = 0;
+            gsense = !sense;
         } else {
-            while (Atomic::load(counter) != s_alive)
+            while (gsense == sense)
                 ;
         }
     }
 
     /* *** Boot Functions *** */
-    __attribute__((naked)) static void setup() {
+    __attribute__((naked)) static void probe() {
         unsigned long core;
         asm volatile("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
         uintptr_t addr = Traits<MemoryMap>::RAM_END - Traits<Memory>::PAGE_SIZE * core;
@@ -42,7 +49,6 @@ class CPU {
 
         if constexpr (Traits<System>::MULTITASK) {
             if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
-                kill();
                 for (;;)
                     CPU::idle();
             }
@@ -71,5 +77,5 @@ class CPU {
     }
 
   private:
-    static volatile inline unsigned int s_alive = Traits<Machine>::CPUS;
+    //   static volatile inline unsigned int s_alive = Traits<Machine>::CPUS;
 };

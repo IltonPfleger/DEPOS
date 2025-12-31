@@ -5,41 +5,32 @@
 #include <memory/Memory.hpp>
 #include <utils/Debug.hpp>
 
-static volatile bool booting = true;
-static volatile bool starting = true;
+class Init {
+  public:
+    static void init() {
+        bool BSP = CPU::id() == Traits<Machine>::BSP;
+        if (BSP) {
+            Console::init();
+            TraceIn();
+            Memory::init();
+            Timer::init();
+            Application::init();
+            Thread::init();
+            TraceOut();
+        }
 
-namespace Init {
-void init() {
-    bool BSP = CPU::id() == Traits<Machine>::BSP;
-    if (BSP) {
-        Console::init();
-        TraceIn();
-        Memory::init();
-        Timer::init();
-        Task::init();
-        Application::init();
-        booting = false;
-    }
-    while (booting)
-        ;
-    if (BSP) {
-        Thread::init();
-        TraceOut();
-        starting = false;
-    }
-    while (starting)
-        ;
-    if (CPU::id() < Traits<Machine>::CPUS) {
-        Thread::run();
-    }
-    for (;;)
-        ;
-}
-} // namespace Init
+        CPU::barrier();
 
-extern "C" __attribute__((naked, used, noinline, section(".init"))) void
-_init() {
-    CPU::setup();
+        if (CPU::id() < Traits<Machine>::CPUS) {
+            Thread::run();
+        }
+
+        CPU::halt();
+    }
+};
+
+extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
+    CPU::probe();
     CPU::init();
     Init::init();
 }
