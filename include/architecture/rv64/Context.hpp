@@ -1,7 +1,7 @@
 #pragma once
 
 namespace rv64 {
-template <typename T> class Context {
+template <typename T> class ContextBase {
   public:
     uint64_t ra;
     uint64_t tp;
@@ -13,8 +13,8 @@ template <typename T> class Context {
     uint64_t status;
     uint64_t pc;
 
-    Context() = default;
-    Context(int (*entry)(void *), void *a0, void *sp, void (*exit)()) {
+    ContextBase() = default;
+    ContextBase(int (*entry)(void *), void *a0, void *sp, void (*exit)()) {
         this->ra = reinterpret_cast<uint64_t>(exit);
         this->pc = reinterpret_cast<uint64_t>(entry);
         this->status = static_cast<uint64_t>(T::ME2ME | T::PIRQE);
@@ -23,11 +23,11 @@ template <typename T> class Context {
     }
 
     template <typename F, typename... Args> __attribute__((naked)) void load(F f, Args... args) {
-        asm("ld sp, %[sp](a0)" ::[sp] "i"(offsetof(Context, sp)));
+        asm("ld sp, %[sp](a0)" ::[sp] "i"(offsetof(ContextBase, sp)));
         asm("mv s0, a0");
-        asm("addi sp, sp, %0" ::"i"(-sizeof(Context)));
+        asm("addi sp, sp, %0" ::"i"(-sizeof(ContextBase)));
         f(args...);
-        asm("addi sp, sp, %0" ::"i"(sizeof(Context)));
+        asm("addi sp, sp, %0" ::"i"(sizeof(ContextBase)));
         asm("mv a1, s0");
         asm("ld ra, %[ra](a1)\n"
             "ld gp, %[gp](a1)\n"
@@ -49,13 +49,15 @@ template <typename T> class Context {
             "csrw %[csrepc], t0\n"
             "csrw %[csrstatus], t1\n"
             :
-            : [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)), [s0] "i"(offsetof(Context, s0)),
-              [s1] "i"(offsetof(Context, s1)), [a0] "i"(offsetof(Context, a0)), [s2] "i"(offsetof(Context, s2)),
-              [s3] "i"(offsetof(Context, s3)), [s4] "i"(offsetof(Context, s4)), [s5] "i"(offsetof(Context, s5)),
-              [s6] "i"(offsetof(Context, s6)), [s7] "i"(offsetof(Context, s7)), [s8] "i"(offsetof(Context, s8)),
-              [s9] "i"(offsetof(Context, s9)), [s10] "i"(offsetof(Context, s10)), [s11] "i"(offsetof(Context, s11)),
-              [pc] "i"(offsetof(Context, pc)), [status] "i"(offsetof(Context, status)), [csrepc] "i"(T::EPC),
-              [csrstatus] "i"(T::STATUS));
+            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
+              [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
+              [a0] "i"(offsetof(ContextBase, a0)), [s2] "i"(offsetof(ContextBase, s2)),
+              [s3] "i"(offsetof(ContextBase, s3)), [s4] "i"(offsetof(ContextBase, s4)),
+              [s5] "i"(offsetof(ContextBase, s5)), [s6] "i"(offsetof(ContextBase, s6)),
+              [s7] "i"(offsetof(ContextBase, s7)), [s8] "i"(offsetof(ContextBase, s8)),
+              [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)),
+              [s11] "i"(offsetof(ContextBase, s11)), [pc] "i"(offsetof(ContextBase, pc)),
+              [status] "i"(offsetof(ContextBase, status)), [csrepc] "i"(T::EPC), [csrstatus] "i"(T::STATUS));
         T::ret();
         __builtin_unreachable();
     }
@@ -82,19 +84,22 @@ template <typename T> class Context {
             "or t1, t1, %[me2me]\n"
             "sd t1, %[status](a0)\n"
             :
-            : [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)), [sp] "i"(offsetof(Context, sp)),
-              [a0] "i"(offsetof(Context, a0)), [s0] "i"(offsetof(Context, s0)), [s1] "i"(offsetof(Context, s1)),
-              [s2] "i"(offsetof(Context, s2)), [s3] "i"(offsetof(Context, s3)), [s4] "i"(offsetof(Context, s4)),
-              [s5] "i"(offsetof(Context, s5)), [s6] "i"(offsetof(Context, s6)), [s7] "i"(offsetof(Context, s7)),
-              [s8] "i"(offsetof(Context, s8)), [s9] "i"(offsetof(Context, s9)), [s10] "i"(offsetof(Context, s10)),
-              [s11] "i"(offsetof(Context, s11)), [pc] "i"(offsetof(Context, pc)), [csrstatus] "i"(T::STATUS),
-              [me2me] "r"(T::ME2ME), [status] "i"(offsetof(Context, status))
+            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
+              [sp] "i"(offsetof(ContextBase, sp)), [a0] "i"(offsetof(ContextBase, a0)),
+              [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
+              [s2] "i"(offsetof(ContextBase, s2)), [s3] "i"(offsetof(ContextBase, s3)),
+              [s4] "i"(offsetof(ContextBase, s4)), [s5] "i"(offsetof(ContextBase, s5)),
+              [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)),
+              [s8] "i"(offsetof(ContextBase, s8)), [s9] "i"(offsetof(ContextBase, s9)),
+              [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11)),
+              [pc] "i"(offsetof(ContextBase, pc)), [csrstatus] "i"(T::STATUS), [me2me] "r"(T::ME2ME),
+              [status] "i"(offsetof(ContextBase, status))
             : "memory");
         asm("li a0, 1\n"
             "ret\n");
     }
 
-    __attribute__((always_inline)) static inline Context *push() {
+    __attribute__((always_inline)) static inline ContextBase *push() {
         asm("addi sp, sp, %[size]\n"
             "sd ra, %[ra](sp)\n"
             "sd gp, %[gp](sp)\n"
@@ -114,20 +119,23 @@ template <typename T> class Context {
             "sd a6, %[a6](sp)\n"
             "sd a7, %[a7](sp)\n"
             :
-            : [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)), [t0] "i"(offsetof(Context, t0)),
-              [t1] "i"(offsetof(Context, t1)), [t2] "i"(offsetof(Context, t2)), [t3] "i"(offsetof(Context, t3)),
-              [t4] "i"(offsetof(Context, t4)), [t5] "i"(offsetof(Context, t5)), [t6] "i"(offsetof(Context, t6)),
-              [a0] "i"(offsetof(Context, a0)), [a1] "i"(offsetof(Context, a1)), [a2] "i"(offsetof(Context, a2)),
-              [a3] "i"(offsetof(Context, a3)), [a4] "i"(offsetof(Context, a4)), [a5] "i"(offsetof(Context, a5)),
-              [a6] "i"(offsetof(Context, a6)), [a7] "i"(offsetof(Context, a7)), [size] "i"(-sizeof(Context))
+            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
+              [t0] "i"(offsetof(ContextBase, t0)), [t1] "i"(offsetof(ContextBase, t1)),
+              [t2] "i"(offsetof(ContextBase, t2)), [t3] "i"(offsetof(ContextBase, t3)),
+              [t4] "i"(offsetof(ContextBase, t4)), [t5] "i"(offsetof(ContextBase, t5)),
+              [t6] "i"(offsetof(ContextBase, t6)), [a0] "i"(offsetof(ContextBase, a0)),
+              [a1] "i"(offsetof(ContextBase, a1)), [a2] "i"(offsetof(ContextBase, a2)),
+              [a3] "i"(offsetof(ContextBase, a3)), [a4] "i"(offsetof(ContextBase, a4)),
+              [a5] "i"(offsetof(ContextBase, a5)), [a6] "i"(offsetof(ContextBase, a6)),
+              [a7] "i"(offsetof(ContextBase, a7)), [size] "i"(-sizeof(ContextBase))
             : "memory");
 
         asm("csrr t0, %0\n"
             "sd t0, %c[status](sp)\n"
             "csrr t0, %1\n"
             "sd t0, %c[pc](sp)" ::"i"(T::STATUS),
-            "i"(T::EPC), [status] "i"(offsetof(Context, status)), [pc] "i"(offsetof(Context, pc)));
-        register Context *sp asm("sp");
+            "i"(T::EPC), [status] "i"(offsetof(ContextBase, status)), [pc] "i"(offsetof(ContextBase, pc)));
+        register ContextBase *sp asm("sp");
         return sp;
     }
 
@@ -136,7 +144,7 @@ template <typename T> class Context {
             "csrw %[statusr], t0\n"
             "ld t0, %[pc](sp)\n"
             "csrw %[epcr], t0" ::[statusr] "i"(T::STATUS),
-            [epcr] "i"(T::EPC), [pc] "i"(offsetof(Context, pc)), [statuso] "i"(offsetof(Context, status)));
+            [epcr] "i"(T::EPC), [pc] "i"(offsetof(ContextBase, pc)), [statuso] "i"(offsetof(ContextBase, status)));
         asm("ld ra, %[ra](sp)\n"
             "ld gp, %[gp](sp)\n"
             "ld t0, %[t0](sp)\n"
@@ -156,12 +164,15 @@ template <typename T> class Context {
             "ld a7, %[a7](sp)\n"
             "addi sp, sp, %[size]\n"
             :
-            : [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)), [t0] "i"(offsetof(Context, t0)),
-              [t1] "i"(offsetof(Context, t1)), [t2] "i"(offsetof(Context, t2)), [t3] "i"(offsetof(Context, t3)),
-              [t4] "i"(offsetof(Context, t4)), [t5] "i"(offsetof(Context, t5)), [t6] "i"(offsetof(Context, t6)),
-              [a0] "i"(offsetof(Context, a0)), [a1] "i"(offsetof(Context, a1)), [a2] "i"(offsetof(Context, a2)),
-              [a3] "i"(offsetof(Context, a3)), [a4] "i"(offsetof(Context, a4)), [a5] "i"(offsetof(Context, a5)),
-              [a6] "i"(offsetof(Context, a6)), [a7] "i"(offsetof(Context, a7)), [size] "i"(sizeof(Context))
+            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
+              [t0] "i"(offsetof(ContextBase, t0)), [t1] "i"(offsetof(ContextBase, t1)),
+              [t2] "i"(offsetof(ContextBase, t2)), [t3] "i"(offsetof(ContextBase, t3)),
+              [t4] "i"(offsetof(ContextBase, t4)), [t5] "i"(offsetof(ContextBase, t5)),
+              [t6] "i"(offsetof(ContextBase, t6)), [a0] "i"(offsetof(ContextBase, a0)),
+              [a1] "i"(offsetof(ContextBase, a1)), [a2] "i"(offsetof(ContextBase, a2)),
+              [a3] "i"(offsetof(ContextBase, a3)), [a4] "i"(offsetof(ContextBase, a4)),
+              [a5] "i"(offsetof(ContextBase, a5)), [a6] "i"(offsetof(ContextBase, a6)),
+              [a7] "i"(offsetof(ContextBase, a7)), [size] "i"(sizeof(ContextBase))
             : "memory");
         T::ret();
         __builtin_unreachable();
