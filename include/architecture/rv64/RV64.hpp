@@ -14,15 +14,13 @@ using rv::csrr;
 using rv::csrs;
 using rv::csrw;
 
-class RV64 {
+template <typename TimerDevice> class RV64 {
   public:
     using MachineMode = rv::MachineMode;
     using SupervisorMode = rv::SupervisorMode;
     using KernelMode = Meta::TypeSelector<Traits<System>::MULTITASK, SupervisorMode, MachineMode>::Result;
-    template <typename T> using Context = rv64::Context<T>;
+    template <typename T> using ContextBase = rv64::ContextBase<T>;
 
-#include "CLINT.hpp"
-/**/
 #include "Interruptions.hpp"
 /**/
 #include "CPU.hpp"

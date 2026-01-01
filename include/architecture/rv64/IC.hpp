@@ -3,7 +3,7 @@
 template <typename Mode> class IC {
 
   public:
-    using Context = RV64::Context<Mode>;
+    using Context = ContextBase<Mode>;
 
     enum {
         IS_INTERRUPT = 1ULL << (Traits<CPUS>::XLEN - 1),
@@ -20,12 +20,15 @@ template <typename Mode> class IC {
     }
 };
 
-class MIC : IC<MachineMode> {
+class MIC : public IC<MachineMode> {
+    using Base = IC<MachineMode>;
+    using Context = typename Base::Context;
+
     static void handle(Context *context) {
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
         int code = (mcause << 1) >> 1;
 
-        if (mcause & IS_INTERRUPT) {
+        if (mcause & Base::IS_INTERRUPT) {
             switch (code) {
             case Interrupt::TIMER:
                 if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
@@ -33,7 +36,7 @@ class MIC : IC<MachineMode> {
                     csrs<MachineMode::IP>(SupervisorMode::TI);
                 } else {
                     int core = CPU::id();
-                    CLINT::reset(core);
+                    TimerDevice::reset(core);
                     Timer::handler(core);
                 }
             }
@@ -42,7 +45,7 @@ class MIC : IC<MachineMode> {
                 context->pc += 4;
                 Syscall::handle(reinterpret_cast<void *>(context->a0));
             } else {
-                error();
+                Base::error();
             }
         }
     }
@@ -58,21 +61,24 @@ class MIC : IC<MachineMode> {
 };
 
 class SIC : IC<SupervisorMode> {
+    using Base = IC<SupervisorMode>;
+    using Context = typename Base::Context;
+
     enum Interrupt { TIMER = 5 };
 
     static void handle(Context *) {
         uintmax_t scause = csrr<SupervisorMode::CAUSE>();
         int code = (scause << 1) >> 1;
         auto core = CPU::id();
-        if (scause & IS_INTERRUPT) {
+        if (scause & Base::IS_INTERRUPT) {
             switch (code) {
             case Interrupt::TIMER:
-                CPU::syscall(CLINT::reset);
+                CPU::syscall(TimerDevice::reset);
                 Timer::handler(core);
                 break;
             }
         } else {
-            error();
+            Base::error();
         }
     }
 
@@ -90,8 +96,8 @@ class Syscall {
     static void handle(void *function) {
         auto core = CPU::id();
         auto addr = reinterpret_cast<uintptr_t>(function);
-        if (addr == reinterpret_cast<uintptr_t>(&CLINT::reset)) {
-            CLINT::reset(core);
+        if (addr == reinterpret_cast<uintptr_t>(&TimerDevice::reset)) {
+            TimerDevice::reset(core);
             csrs<MachineMode::IE>(MachineMode::TI);
             csrc<MachineMode::IP>(SupervisorMode::TI);
         } else {
