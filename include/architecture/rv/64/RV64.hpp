@@ -4,9 +4,9 @@
 #include <Traits.hpp>
 #include <Types.hpp>
 #include <architecture/common/Atomic.hpp>
-#include <architecture/rv64/Context.hpp>
-#include <architecture/rv64/Modes.hpp>
-#include <architecture/rv64/csrs.hpp>
+#include <architecture/rv/64/Context.hpp>
+#include <architecture/rv/64/Modes.hpp>
+#include <architecture/rv/csrs.hpp>
 #include <utils/Debug.hpp>
 
 using rv::csrc;

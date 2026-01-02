@@ -1,5 +1,5 @@
 #pragma once
-#include <architecture/rv64/RV64.hpp>
+#include <architecture/rv/64/RV64.hpp>
 #include <drivers/timing/clint/SiFiveCLINT.hpp>
 #include <drivers/uart/SiFiveUART.hpp>
 #include <memory/Memory.hpp>
