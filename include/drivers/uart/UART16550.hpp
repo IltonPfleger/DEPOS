@@ -1,9 +1,8 @@
-template <unsigned long A, unsigned long C, unsigned long B>
-struct UART16550 {
-    static constexpr unsigned long Addr     = A;
-    static constexpr unsigned long Clock    = C;
+template <unsigned long A, unsigned long C, unsigned long B> struct UART16550 {
+    static constexpr unsigned long Addr = A;
+    static constexpr unsigned long Clock = C;
     static constexpr unsigned long Baudrate = B;
-    static constexpr unsigned long DIVISOR  = (Clock) / (Baudrate * 16);
+    static constexpr unsigned long DIVISOR = (Clock) / (Baudrate * 16);
     static volatile inline char *BaseAddr() { return reinterpret_cast<volatile char *>(A); }
     static volatile char &THR() { return *reinterpret_cast<volatile char *>(BaseAddr() + 0); };
     static volatile char &IER() { return *reinterpret_cast<volatile char *>(BaseAddr() + 1); };
@@ -11,8 +10,8 @@ struct UART16550 {
     static volatile char &LCR() { return *reinterpret_cast<volatile char *>(BaseAddr() + 3); };
     static volatile char &MCR() { return *reinterpret_cast<volatile char *>(BaseAddr() + 4); };
     static volatile char &LSR() { return *reinterpret_cast<volatile char *>(BaseAddr() + 5); };
-    static volatile char &LSB() { return *reinterpret_cast<volatile char *>(BaseAddr() + 0); };  // Divisor Latch LSB
-    static volatile char &MSB() { return *reinterpret_cast<volatile char *>(BaseAddr() + 1); };  // Divisor Latch MSB
+    static volatile char &LSB() { return *reinterpret_cast<volatile char *>(BaseAddr() + 0); }; // Divisor Latch LSB
+    static volatile char &MSB() { return *reinterpret_cast<volatile char *>(BaseAddr() + 1); }; // Divisor Latch MSB
     static constexpr char LSR_TX_EMPTY = (1 << 5);
 
     static void init() {
@@ -23,11 +22,13 @@ struct UART16550 {
         LCR() = 0x03;
         FCR() = 0x07;
         IER() = 0x01;
-        while ((LSR() & LSR_TX_EMPTY) == 0);
+        while ((LSR() & LSR_TX_EMPTY) == 0)
+            ;
     }
 
     static void put(char c) {
-        while ((LSR() & LSR_TX_EMPTY) == 0);
+        while ((LSR() & LSR_TX_EMPTY) == 0)
+            ;
         THR() = c;
     }
 };

@@ -1,7 +1,7 @@
 include Makedefs.mk
 
 TARGET := $(KERNEL)
-_APPLICATION=$(APP)/$(BUILD)/$(APPLICATION)
+APPLICATION_TARGET=$(APPLICATIONS)/$(BUILD)/$(APPLICATION)
 
 TOOLS := $(patsubst tools/%.cpp,$(BUILD)/%,$(shell find tools -type f -name "*.cpp"))
 SRCS := $(shell find src -type f -name "*.cpp")
@@ -10,13 +10,15 @@ DEPS := $(OBJS:.o=.d)
 MEMORY_MAP := $(BUILD)/MemoryMap
 
 run: $(TARGET).elf $(TOOLS)
-	#make APPLICATION=$(APPLICATION) -C app
-	#$(LD) -e main --just-symbols $(TARGET).elf --image-base=$(APP_ADDR) -o $(_APPLICATION).elf $(_APPLICATION).o
-	#./$(BUILD)/ELFParser $(_APPLICATION).elf $(MEMORY_MAP)
-	#$(OBJCOPY) --update-section .__app_mm__=$(MEMORY_MAP) $(TARGET).elf
+	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)
+	$(LD) -e main --just-symbols $(TARGET).elf --image-base=$(ApplicationAddr) -o $(APPLICATION_TARGET).elf $(APPLICATION_TARGET).o
+	./$(BUILD)/ELFParser $(APPLICATION_TARGET).elf $(MEMORY_MAP)
+	$(OBJCOPY) --update-section .__app_mm__=$(MEMORY_MAP) $(TARGET).elf
 	./$(BUILD)/ELFParser $(TARGET).elf $(MEMORY_MAP)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MEMORY_MAP) $(TARGET).elf
+	$(OBJCOPY) -O binary $(APPLICATION_TARGET).elf $(APPLICATION_TARGET).bin
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
+	$(DD) bs=1 conv=notrunc if=$(APPLICATION_TARGET).bin of=$(TARGET).bin seek=$$(( $$(./tools/EPrint $(APPLICATION_TARGET).elf -b) - $(RamStart) ))
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(TARGET).bin
 
 debug: $(TARGET)
@@ -33,7 +35,7 @@ gdb:
 		-ex "file $(TARGET).elf"
 
 $(TARGET).elf: $(OBJS)
-	$(LD) -e _init --section-start=.init=$(BOOT_ADDR) --image-base=$(BOOT_ADDR) -o $@ $(OBJS)
+	$(LD) -e _init --section-start=.init=$(BootAddr) --image-base=$(BootAddr) -o $@ $(OBJS)
 
 $(BUILD)/%: tools/%.cpp 
 	mkdir -p $(dir $@)

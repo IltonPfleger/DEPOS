@@ -1,0 +1,59 @@
+#!/bin/sh
+
+if [ -z "$1" ]; then
+	echo "Usage: $0 <ELF> [options]"
+	exit 1
+fi
+
+ELF="$1"
+shift
+
+OUTPUT=$(readelf -SW $ELF | sed -E 's/^.*\] //' | awk '$1 ~ /^\./ { print }')
+
+while [ $# -gt 0 ]; do
+	case "$1" in 
+		-b|--begin)
+			echo "$OUTPUT" | awk '
+			{
+				addr = strtonum("0x"$3)
+				if (addr > 0) {
+					if (min == "" || addr < min) min = addr
+					}
+			}
+		END {
+			if (min != "")
+				printf "0x%x\n", min
+			}'
+		;;
+	-f|--final)
+		echo "$OUTPUT" | awk '
+		{
+			addr = strtonum("0x"$3)
+			size = strtonum("0x"$5)
+		end = addr + size
+		if (end > max) max = end
+	}
+END {
+	printf "0x%x\n", max
+}'
+;;
+esac
+shift
+done
+
+#-s|--section)
+#	if [ -z "$2" ]; then
+#		echo "-s|--section requires section name."
+#		exit 1
+#	fi
+#	echo "$OUTPUT" | awk -v section="$2" '
+#		$1 == section {
+#		    start = strtonum("0x"$3)
+#		    size  = strtonum("0x"$5)
+#		    end   = start + size
+#		    printf "0x%x 0x%x\n", start, end
+#		}
+#	'
+#	shift 2
+#;;
+

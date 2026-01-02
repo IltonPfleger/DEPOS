@@ -8,7 +8,7 @@ OBJS := $(patsubst $(APPLICATION)/%.cpp,$(BUILD)/$(APPLICATION)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 
 $(TARGET): $(OBJS)
-	$(LD) -r $(OBJS) -o $@
+	$(LD) -e main -r $(OBJS) -o $@
 
 $(BUILD)/$(APPLICATION)/%.o: ./$(APPLICATION)/%.cpp
 	@mkdir -p $(dir $@)
