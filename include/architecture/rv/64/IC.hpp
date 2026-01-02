@@ -21,37 +21,38 @@ template <typename Mode> class IC {
 };
 
 class MIC : public IC<MachineMode> {
-    using Base = IC<MachineMode>;
+    using Mode = MachineMode;
+    using Base = IC<Mode>;
     using Context = typename Base::Context;
 
     static void handle(Context *context) {
-        uintmax_t mcause = csrr<MachineMode::CAUSE>();
+        uintmax_t mcause = csrr<Mode::CAUSE>();
         int code = (mcause << 1) >> 1;
 
         if (mcause & Base::IS_INTERRUPT) {
             switch (code) {
-            case Interrupt::TIMER:
+            case TIMER:
                 if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
-                    csrc<MachineMode::IE>(MachineMode::TI);
-                    csrs<MachineMode::IP>(SupervisorMode::TI);
+                    csrc<Mode::IE>(Mode::TI);
+                    csrs<Mode::IP>(SupervisorMode::TI);
                 } else {
                     int core = CPU::id();
                     TimerDevice::reset(core);
                     Timer::handler(core);
                 }
             }
-        } else {
-            if (mcause == Exception::SYSCALL) {
-                context->pc += 4;
-                Syscall::handle(reinterpret_cast<void *>(context->a0));
-            } else {
-                Base::error();
-            }
+            return;
         }
+        if (mcause == SYSCALL_FROM_SUPERVISOR) {
+            context->pc += 4;
+            Syscall::handle(reinterpret_cast<void *>(context->a0));
+            return;
+        }
+
+        Base::error();
     }
 
-    enum Interrupt { TIMER = 7 };
-    enum Exception { SYSCALL = 9 };
+    enum { TIMER = 7, SYSCALL_FROM_SUPERVISOR = 9 };
 
   public:
     __attribute__((naked, aligned(4))) static void entry() {
@@ -69,17 +70,18 @@ class SIC : IC<SupervisorMode> {
     static void handle(Context *) {
         uintmax_t scause = csrr<SupervisorMode::CAUSE>();
         int code = (scause << 1) >> 1;
-        auto core = CPU::id();
         if (scause & Base::IS_INTERRUPT) {
             switch (code) {
             case Interrupt::TIMER:
+                auto core = CPU::id();
                 CPU::syscall(TimerDevice::reset);
                 Timer::handler(core);
                 break;
             }
-        } else {
-            Base::error();
+            return;
         }
+
+        Base::error();
     }
 
   public:
