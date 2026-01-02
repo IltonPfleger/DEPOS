@@ -3,8 +3,6 @@
 template <typename Mode> class IC {
 
   public:
-    using Context = ContextBase<Mode>;
-
     enum {
         IS_INTERRUPT = 1ULL << (Traits<CPUS>::XLEN - 1),
     };
@@ -23,7 +21,7 @@ template <typename Mode> class IC {
 class MIC : public IC<MachineMode> {
     using Mode = MachineMode;
     using Base = IC<Mode>;
-    using Context = typename Base::Context;
+    using Context = ContextBase<Mode>;
 
     static void handle(Context *context) {
         uintmax_t mcause = csrr<Mode::CAUSE>();
@@ -31,7 +29,7 @@ class MIC : public IC<MachineMode> {
 
         if (mcause & Base::IS_INTERRUPT) {
             switch (code) {
-            case TIMER:
+            case TIME:
                 if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
                     csrc<Mode::IE>(Mode::TI);
                     csrs<Mode::IP>(SupervisorMode::TI);
@@ -52,7 +50,7 @@ class MIC : public IC<MachineMode> {
         Base::error();
     }
 
-    enum { TIMER = 7, SYSCALL_FROM_SUPERVISOR = 9 };
+    enum { TIME = 7, SYSCALL_FROM_SUPERVISOR = 9 };
 
   public:
     __attribute__((naked, aligned(4))) static void entry() {
@@ -62,19 +60,20 @@ class MIC : public IC<MachineMode> {
 };
 
 class SIC : IC<SupervisorMode> {
-    using Base = IC<SupervisorMode>;
-    using Context = typename Base::Context;
+    using Mode = SupervisorMode;
+    using Base = IC<Mode>;
+    using Context = ContextBase<Mode>;
 
-    enum Interrupt { TIMER = 5 };
+    enum { TIME = 5 };
 
     static void handle(Context *) {
-        uintmax_t scause = csrr<SupervisorMode::CAUSE>();
+        uintmax_t scause = csrr<Mode::CAUSE>();
         int code = (scause << 1) >> 1;
         if (scause & Base::IS_INTERRUPT) {
             switch (code) {
-            case Interrupt::TIMER:
+            case TIME:
                 auto core = CPU::id();
-                CPU::syscall(TimerDevice::reset);
+                CPU::syscall(Syscall::TIME);
                 Timer::handler(core);
                 break;
             }
@@ -94,16 +93,17 @@ class SIC : IC<SupervisorMode> {
 class Syscall {
     friend MIC;
 
+  public:
+    enum : unsigned int { TIME = 'T' << 24 | 'I' << 16 | 'M' << 8 | 'E' };
+
   private:
     static void handle(void *function) {
         auto core = CPU::id();
-        auto addr = reinterpret_cast<uintptr_t>(function);
-        if (addr == reinterpret_cast<uintptr_t>(&TimerDevice::reset)) {
+        auto code = reinterpret_cast<uintptr_t>(function);
+        if (code == TIME) {
             TimerDevice::reset(core);
             csrs<MachineMode::IE>(MachineMode::TI);
             csrc<MachineMode::IP>(SupervisorMode::TI);
-        } else {
-            reinterpret_cast<void (*)()>(function)();
         }
     }
 };
