@@ -1,13 +1,18 @@
 #pragma once
 
-class SiFiveCLINT {
-    static constexpr const uintptr_t Addr = Traits<MemoryMap>::CLINT;
-    static volatile inline uintmax_t *MTIMECMP = reinterpret_cast<volatile uintmax_t *>(Addr + 0x4000);
-    static volatile inline uintmax_t *MTIME = reinterpret_cast<volatile uintmax_t *>(Addr + 0xBFF8);
+#include <drivers/Driver.hpp>
+
+class SiFiveCLINT : Driver {
+    static constexpr unsigned long Base = Traits<MemoryMap>::CLINT;
+
+    enum Register {
+        MTIMECMP = 0x4000,
+        MTIME = 0xBFF8,
+    };
 
   public:
     static void reset(unsigned long core) {
         static constexpr uintmax_t ticks = Traits<Timer>::Frequency;
-        MTIMECMP[core] = *MTIME + ticks;
+        Reg64(Base, MTIMECMP + core * sizeof(unsigned long)) = Reg64(Base, MTIME) + ticks;
     }
 };
