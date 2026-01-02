@@ -40,7 +40,7 @@ class CPU {
     __attribute__((naked)) static void probe() {
         unsigned long core;
         asm volatile("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
-        uintptr_t addr = Traits<MemoryMap>::RAM_END - Traits<Memory>::PAGE_SIZE * core;
+        uintptr_t addr = Traits<MemoryMap>::RamEnd - Traits<Memory>::PAGE_SIZE * core;
         asm("mv sp, %0" ::"r"(addr));
         asm volatile("ret");
     }

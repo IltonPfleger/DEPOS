@@ -39,9 +39,11 @@ template <> struct Traits<Memory> {
 };
 
 template <> struct Traits<MemoryMap> {
-    static constexpr unsigned long RAM_BASE = 0x80000000;
-    static constexpr unsigned long RAM_END = RAM_BASE + Traits<Memory>::SIZE;
-    static constexpr unsigned long BOOT_ADDR = RAM_BASE;
+    static constexpr unsigned long RamStart = 0x80000000;
+    static constexpr unsigned long RamEnd = RamStart + Traits<Memory>::SIZE;
+    static constexpr unsigned long BootAddr = RamStart;
+
+    static constexpr unsigned long ApplicationAddr = RamStart + 128 * 1024;
 
     /* *** Devices *** */
     static constexpr unsigned long UART = 0x10010000ULL;
@@ -58,10 +60,6 @@ template <> struct Traits<Timer> {
 template <> struct Traits<Alarm> {
     static constexpr bool Enable = true;
     static constexpr unsigned long Frequency = Traits<Timer>::MHz;
-};
-
-template <> struct Traits<Application> {
-    static constexpr unsigned long ADDR = 0xA0000000;
 };
 
 template <> struct Traits<Debug> {

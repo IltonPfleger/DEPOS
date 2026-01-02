@@ -1,9 +1,10 @@
 INCLUDE := include
 BUILD := build
-APP := app
+APPLICATIONS := app
 TRAITS := include/Traits.hpp
 KERNEL := $(BUILD)/DEPOS
 
+DD := dd
 TOOL := riscv64-linux-gnu
 CC := $(TOOL)-g++
 LD := $(TOOL)-ld
@@ -16,10 +17,13 @@ GET := ./Meta get $(TRAITS)
 CPUS=$(shell $(GET) "Traits<CPUS>::COUNT")
 MACHINE=$(shell $(GET) "Traits<Machine>::NAME")
 MEMORY_SIZE=$(shell $(GET) "Traits<Memory>::SIZE")
-BOOT_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::BOOT_ADDR"))
-APP_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<Application>::ADDR"))
-PAGE_SIZE=$(shell $(GET) "Traits<Memory>::PAGE_SIZE")
+#APP_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<Application>::ADDR"))
+#PAGE_SIZE=$(shell $(GET) "Traits<Memory>::PAGE_SIZE")
 MULTITASK=$(shell $(GET) "Traits<System>::MULTITASK")
+
+RamStart=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::RamStart"))
+BootAddr=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::BootAddr"))
+ApplicationAddr=$(shell printf "0x%x\n" $$($(GET) "Traits<MemoryMap>::ApplicationAddr"))
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -Wall -Wextra -Werror -pedantic
