@@ -103,7 +103,7 @@ void *operator new(unsigned long bytes, Heap &heap) {
     // void *ret =
     // Thread::running()->task->attach(reinterpret_cast<uintptr_t>(addr));
     //// return
-    ///Thread::running()->task->attach(reinterpret_cast<uintptr_t>(addr));
+    /// Thread::running()->task->attach(reinterpret_cast<uintptr_t>(addr));
     // TRACE("R:%p\n", ret);
     // return ret;
     //_lock.lock();

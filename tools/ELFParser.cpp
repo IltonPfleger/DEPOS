@@ -48,8 +48,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (fread(phdrs, sizeof(Elf64_Phdr), ehdr.e_phnum, f) !=
-        (size_t)ehdr.e_phnum) {
+    if (fread(phdrs, sizeof(Elf64_Phdr), ehdr.e_phnum, f) != (size_t)ehdr.e_phnum) {
         fprintf(stderr, "Error reading program headers.\n");
         free(phdrs);
         fclose(f);
@@ -81,8 +80,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (fread(shdrs, sizeof(Elf64_Shdr), ehdr.e_shnum, f) !=
-        (size_t)ehdr.e_shnum) {
+    if (fread(shdrs, sizeof(Elf64_Shdr), ehdr.e_shnum, f) != (size_t)ehdr.e_shnum) {
         fprintf(stderr, "Error reading section headers.\n");
         free(shdrs);
         fclose(f);

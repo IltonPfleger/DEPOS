@@ -4,7 +4,7 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 
-static constexpr int FILOSOFOS  = 5;
+static constexpr int FILOSOFOS = 5;
 static constexpr int ITERATIONS = 2;
 
 Thread *threads[FILOSOFOS];
@@ -15,7 +15,7 @@ int filosofo(void *arg) {
     int id = (int)(long long)arg;
     int p1 = (id < FILOSOFOS - 1) ? id : 0;
     int p2 = (id < FILOSOFOS - 1) ? (id + 1) : FILOSOFOS - 1;
-    int i  = ITERATIONS;
+    int i = ITERATIONS;
     while (i--) {
         lock->p();
         Console::println("Filósofo %d está pensando\n", id);
@@ -43,12 +43,13 @@ int main(void *) {
 
     lock->p();
     for (int i = 0; i < FILOSOFOS; i++) {
-        garfos[i]  = new (Memory::APPLICATION) Semaphore(1);
+        garfos[i] = new (Memory::APPLICATION) Semaphore(1);
         threads[i] = new (Memory::APPLICATION) Thread(filosofo, (void *)(long long)i, Thread::NORMAL);
     }
     lock->v();
 
-    for (int i = 0; i < FILOSOFOS; i++) Thread::join(threads[i]);
+    for (int i = 0; i < FILOSOFOS; i++)
+        Thread::join(threads[i]);
 
     for (int i = 0; i < FILOSOFOS; i++) {
         delete threads[i];

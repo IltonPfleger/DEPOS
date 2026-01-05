@@ -24,8 +24,8 @@ template <size_t MAX> class BuddyAllocator {
 
     void *remove(size_t size) {
         Node *node = nullptr;
-        size_t n   = level(size);
-        size_t i   = n;
+        size_t n = level(size);
+        size_t i = n;
         for (; i <= MAX; ++i) {
             node = free_[i].remove();
             if (node)
@@ -35,7 +35,7 @@ template <size_t MAX> class BuddyAllocator {
             return nullptr;
         while (i > n) {
             i--;
-            size_t half     = 1 << i;
+            size_t half = 1 << i;
             uintptr_t buddy = reinterpret_cast<uintptr_t>(node) + half;
             free_[i].insert(reinterpret_cast<Node *>(buddy));
         }
@@ -43,20 +43,20 @@ template <size_t MAX> class BuddyAllocator {
     }
 
     void insert(void *ptr, size_t size) {
-        size_t n       = level(size);
+        size_t n = level(size);
         uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
 
         while (n < MAX) {
             uintptr_t buddy = addr ^ (1U << n);
 
             Node *previous = nullptr;
-            Node *node     = free_[n].head();
+            Node *node = free_[n].head();
 
             while (node) {
                 if (reinterpret_cast<uintptr_t>(node) == buddy)
                     break;
                 previous = node;
-                node     = node->next;
+                node = node->next;
             }
 
             if (!node)

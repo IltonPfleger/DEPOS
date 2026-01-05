@@ -4,8 +4,7 @@
 
 void Timer::init() {
     if constexpr (Traits<Scheduler<Thread>>::Preemptive) {
-        scheduler_s.duration =
-            Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
+        scheduler_s.duration = Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
         for (auto &e : scheduler_s.current)
             e = scheduler_s.duration;
         // scheduler_s.current[Machine::CPU::core()] = scheduler_s.duration;

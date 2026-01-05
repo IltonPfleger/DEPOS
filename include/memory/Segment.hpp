@@ -6,8 +6,7 @@ class Segment {
     Segment(uintptr_t addr, size_t size, bool owned = true)
         : addr_(reinterpret_cast<char *>(addr)), size_(size), owned_(owned) {}
 
-    Segment(size_t size)
-        : Segment(reinterpret_cast<uintptr_t>(Memory::kmalloc(size)), size) {}
+    Segment(size_t size) : Segment(reinterpret_cast<uintptr_t>(Memory::kmalloc(size)), size) {}
 
     ~Segment() {
         if (owned_)
