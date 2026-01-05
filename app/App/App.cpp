@@ -29,7 +29,8 @@ int main(int, char *[]) {
 
     // mutex.p();
     // for (unsigned long i = 0; i < N; i++) {
-    //     threads[i] = new Thread(thread_function, (void *)(long long)i, Thread::Criterion::NORMAL);
+    //     threads[i] = new Thread(thread_function, (void *)(long long)i,
+    //     Thread::Criterion::NORMAL);
     // }
     // Console::out << "Created!\n";
     // mutex.v();

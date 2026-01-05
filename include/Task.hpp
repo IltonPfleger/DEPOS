@@ -16,11 +16,9 @@ class Task {
         s_system = new (Heap::SYSTEM) Task();
         AddressSpace *as = s_system->m_as;
 
-        as->map(Traits<MemoryMap>::RAM_BASE, Traits<MemoryMap>::RAM_BASE,
-                Traits<Memory>::SIZE, AddressSpace::KernelRW);
+        as->map(Traits<MemoryMap>::RAM_BASE, Traits<MemoryMap>::RAM_BASE, Traits<Memory>::SIZE, AddressSpace::KernelRW);
 
-        as->map(Traits<MemoryMap>::UART, Traits<MemoryMap>::UART,
-                AddressSpace::KernelRW);
+        as->map(Traits<MemoryMap>::UART, Traits<MemoryMap>::UART, AddressSpace::KernelRW);
 
         // as->load();
         TraceOut();

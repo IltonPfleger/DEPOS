@@ -18,12 +18,14 @@
 //     static inline Delay *delays = nullptr;
 //     static inline Spin lock;
 //
-//     static uintptr_t utime() { return (*Machine::CLINT::MTIME * 1'000'000) / Machine::CLINT::CLOCK; }
+//     static uintptr_t utime() { return (*Machine::CLINT::MTIME * 1'000'000) /
+//     Machine::CLINT::CLOCK; }
 //
 //     template <AlarmEnable T = Alarm, AlarmMHz U = T>
 //     static void usleep(auto useconds) {
 //         auto duration = useconds * Machine::CLINT::CLOCK / 1'000'000;
-//         Delay entry{Thread::Queue{}, *Machine::CLINT::MTIME + duration, nullptr};
+//         Delay entry{Thread::Queue{}, *Machine::CLINT::MTIME + duration,
+//         nullptr};
 //
 //         lock.lock();
 //         if (!delays || entry.clock < delays->clock) {
