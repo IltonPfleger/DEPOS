@@ -37,7 +37,7 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : m_stack_(Segment(Traits<Memory>::PAGE_SIZE)), m_waiting(0), m_link(Element(this, c())), m_criterion(c),
+    : m_stack_(Segment(Traits<Memory>::PageSize)), m_waiting(0), m_link(Element(this, c())), m_criterion(c),
       m_state(State::READY), m_joining(0),
       m_context(new(m_stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack_.end(), exit)) {
     TraceIn(this);
@@ -77,8 +77,8 @@ Thread::Thread(Function f, Argument a, Criterion c)
 
 void Thread::join(Thread &thread) {
     auto previous = running();
-    ERROR(&thread == previous, "[Thread::join] Join itself.");
-    ERROR(thread.m_joining, "[Thread::join] Already joined.");
+    ERROR(&thread == previous, "Join itself.");
+    ERROR(thread.m_joining, "Already joined.");
 
     s_lock.lock();
     if (thread.m_state == State::FINISHED) {
@@ -160,7 +160,7 @@ void Thread::sleep(Queue &m_waiting, Spin &lock) {
 
 void Thread::wakeup(Queue &waiting) {
     Element *awake = waiting.next();
-    ERROR(!awake, "[Thread::wakeup] Empty queue.");
+    ERROR(!awake, "Empty queue.");
     awake->value->m_state = State::READY;
     awake->value->m_waiting = nullptr;
 

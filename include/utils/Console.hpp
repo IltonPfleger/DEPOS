@@ -4,7 +4,6 @@
 #include <Variadic.hpp>
 
 struct Console {
-    static void init();
     static void put(char);
 
     class Stream {

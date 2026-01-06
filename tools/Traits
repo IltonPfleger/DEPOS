@@ -1,0 +1,21 @@
+#!/bin/sh
+
+FILE="$1"
+VAR="$2"
+INPUT=$(mktemp)
+OUT=$(mktemp)
+
+cat > "$INPUT" <<EOL
+
+#include <iostream>
+#include "$FILE"
+
+int main() {
+    std::cout << $VAR;
+    return 0;
+}
+EOL
+
+g++ -x c++ -I"$(pwd)" "$INPUT" -o "$OUT"
+"$OUT"
+rm -f "$INPUT" "$OUT"

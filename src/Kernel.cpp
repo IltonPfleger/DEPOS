@@ -10,7 +10,6 @@ class Init {
     static void init() {
         bool BSP = Machine::CPU::id() == Traits<CPUS>::BSP;
         if (BSP) {
-            Console::init();
             TraceIn();
             Memory::init();
             Timer::init();
@@ -26,8 +25,6 @@ class Init {
 };
 
 extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
-    Machine::CPU::probe();
-    Machine::CPU::jmode();
-    Machine::CPU::init();
+    Machine::init();
     Init::init();
 }
