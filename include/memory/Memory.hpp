@@ -16,4 +16,4 @@ class Memory {
     static inline Allocator s_allocator;
 };
 
-void *operator new(unsigned long, void *);
+void *operator new(size_t, void *);

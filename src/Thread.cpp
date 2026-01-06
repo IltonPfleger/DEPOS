@@ -3,7 +3,6 @@
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
 #include <memory/Segment.hpp>
-#include <proxys/Syscall.hpp>
 #include <utils/Debug.hpp>
 
 Thread *Thread::running() { return s_scheduler.current(); }

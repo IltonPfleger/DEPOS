@@ -117,7 +117,7 @@ void *operator new(unsigned long bytes, Heap &heap) {
     //  return addr;
 }
 
-void *operator new(unsigned long bytes) {
+void *operator new(size_t bytes) {
     if constexpr (Traits<System>::MULTITASK) {
         if (!Thread::running())
             return operator new(bytes, Heap::SYSTEM);
@@ -130,7 +130,6 @@ void *operator new(unsigned long bytes) {
     }
 }
 
-void *operator new(unsigned long, void *ptr) { return ptr; }
 
 // Static Allocation For System Heap
 Heap Heap::SYSTEM;

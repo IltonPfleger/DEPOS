@@ -83,5 +83,5 @@ struct Console {
     static void println(const char *, ...);
 
   public:
-    static inline Stream out{};
+    static inline Stream out;
 };
