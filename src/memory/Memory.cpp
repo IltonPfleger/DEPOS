@@ -6,7 +6,7 @@
 static Spin _lock;
 
 void Memory::init() {
-    constexpr size_t PageSize = Traits<Memory>::PAGE_SIZE;
+    constexpr size_t PageSize = Traits<Memory>::PageSize;
     constexpr uintptr_t RamStart = Traits<MemoryMap>::RamStart;
     constexpr uintptr_t RamEnd = Traits<MemoryMap>::RamEnd;
     uintptr_t KernelStart = __kmm.start;

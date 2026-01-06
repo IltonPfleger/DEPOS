@@ -13,4 +13,11 @@ class SiFive_U {
     using CPU = ISA::CPU;
     using MMU = typename ISA::SV39_MMU<Memory>;
     using IO = SiFiveUART<Traits<MemoryMap>::UART, 31250000, 115200>;
+
+    __attribute__((always_inline)) static inline void init() {
+        CPU::probe();
+        CPU::jmode();
+        CPU::init();
+        IO::init();
+    }
 };

@@ -8,15 +8,15 @@ class CPU {
 
     class TLB {
       public:
-        static auto flush() { asm volatile("sfence.vma zero, zero"); }
+        static auto flush() { asm("sfence.vma zero, zero"); }
     };
 
-    static auto idle() { asm volatile("wfi"); }
-    static auto halt() { asm volatile("j ."); }
-    static auto syscall(auto f) { asm volatile("mv a0, %0\necall" ::"r"(f)); }
+    static auto idle() { asm("wfi"); }
+    static auto halt() { asm("1: wfi\n j 1b"); }
+    static auto syscall(auto f) { asm("mv a0, %0\necall" ::"r"(f)); }
     static auto id() {
         unsigned long tp;
-        asm volatile("mv %0, tp" : "=r"(tp));
+        asm("mv %0, tp" : "=r"(tp));
         return tp;
     }
 
@@ -39,10 +39,9 @@ class CPU {
     /* *** Boot Functions *** */
     __attribute__((naked)) static void probe() {
         unsigned long core;
-        asm volatile("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
-        uintptr_t addr = Traits<MemoryMap>::RamEnd - Traits<Memory>::PAGE_SIZE * core;
-        asm("mv sp, %0" ::"r"(addr));
-        asm volatile("ret");
+        asm("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
+        asm("mv sp, %0" ::"r"(Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * core));
+        asm("ret");
     }
 
     __attribute__((noinline)) static void jmode() {

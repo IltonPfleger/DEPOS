@@ -1,6 +1,7 @@
 INCLUDE := include
 BUILD := build
 APPLICATIONS := app
+TOOLS := tools
 TRAITS := include/Traits.hpp
 KERNEL := $(BUILD)/DEPOS
 
@@ -12,19 +13,19 @@ NM := $(TOOL)-nm
 SIZE := $(TOOL)-size
 OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
-GET := ./Meta get $(TRAITS)
+GET := $(TOOLS)/Traits $(TRAITS)
 EPRINT := $(TOOLS)/EPrint
 EMAP := $(BUILD)/EMap
 
 CPUS=$(shell $(GET) "Traits<CPUS>::COUNT")
 MACHINE=$(shell $(GET) "Traits<Machine>::NAME")
-MEMORY_SIZE=$(shell $(GET) "Traits<Memory>::SIZE")
+MemorySize=$(shell $(GET) "Traits<Memory>::Size")
 #APP_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<Application>::ADDR"))
 #PAGE_SIZE=$(shell $(GET) "Traits<Memory>::PAGE_SIZE")
 MULTITASK=$(shell $(GET) "Traits<System>::MULTITASK")
 
-RamStart=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::RamStart"))
-BootAddr=0x$(shell printf "%x\n" $$($(GET) "Traits<MemoryMap>::BootAddr"))
+RamStart=$(shell printf "0x%x\n" $$($(GET) "Traits<MemoryMap>::RamStart"))
+BootAddr=$(shell printf "0x%x\n" $$($(GET) "Traits<MemoryMap>::BootAddr"))
 ApplicationAddr=$(shell printf "0x%x\n" $$($(GET) "Traits<MemoryMap>::ApplicationAddr"))
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
@@ -34,13 +35,3 @@ CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -
 CFLAGS += -msmall-data-limit=0
 CFLAGS += -march=rv64ima_zicsr -mabi=lp64
 CFLAGS += -g -std=c++2c
-
-#LDFLAGS =
-#
-#ifeq ($(MULTITASK), 1)
-#	LDFLAGS += --section-alignment=$(PAGE_SIZE)
-#endif
-
-
-
-

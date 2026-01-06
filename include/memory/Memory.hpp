@@ -5,7 +5,7 @@
 
 class Memory {
   private:
-    using Allocator = BuddyAllocator<Traits<Memory>::ORDER>;
+    using Allocator = BuddyAllocator<Traits<Memory>::Order>;
 
   public:
     static void init();
