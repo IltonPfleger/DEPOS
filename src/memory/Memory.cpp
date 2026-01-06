@@ -48,3 +48,5 @@ void Memory::kfree(void *addr, size_t size) {
     _lock.unlock();
     TraceOut();
 }
+
+void *operator new(size_t, void *ptr) { return ptr; }
