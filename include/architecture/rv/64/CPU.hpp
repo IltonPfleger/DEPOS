@@ -44,8 +44,9 @@ class CPU {
         asm("ret");
     }
 
-    __attribute__((noinline)) static void jmode() {
-        static_assert(!Traits<System>::MULTITASK || Meta::SAME<KernelMode, SupervisorMode>::Result);
+    __attribute__((naked)) static void jmode() {
+        uintptr_t ra;
+        asm volatile("mv %0, ra" : "=r"(ra));
 
         if constexpr (Traits<System>::MULTITASK) {
             if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
@@ -71,11 +72,13 @@ class CPU {
             csrw<MachineMode::TVEC>(MIC::entry);
         }
 
-        csrw<MachineMode::EPC>(__builtin_return_address(0));
+        csrw<MachineMode::EPC>(ra);
         MachineMode::ret();
+        __builtin_unreachable();
     }
 
-    static void init() {
+    __attribute__((noinline)) static void init() {
+        jmode();
         if constexpr (Traits<Timer>::Enable && Traits<System>::MULTITASK) {
             csrs<SupervisorMode::IE>(SupervisorMode::TI);
         }

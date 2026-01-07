@@ -15,10 +15,11 @@ class VisionFive2 {
 
     __attribute__((always_inline)) static inline void init() {
         CPU::probe();
+
         if (CPU::id() >= Traits<CPUS>::COUNT)
             CPU::halt();
+
         BSS::init();
-        CPU::jmode();
         CPU::init();
         IO::init();
     }
