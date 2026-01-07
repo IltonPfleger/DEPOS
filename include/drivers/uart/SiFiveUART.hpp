@@ -1,3 +1,5 @@
+#pragma once
+
 template <unsigned long A, unsigned long C, unsigned long B> struct SiFiveUART {
     static constexpr auto Addr = A;
     static constexpr auto Clock = C;

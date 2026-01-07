@@ -1,7 +1,11 @@
 #include <machine/Machine.hpp>
 #include <utils/Console.hpp>
 
-void Console::put(char c) { Machine::IO::put(c); }
+void Console::put(char c) {
+    if (c == '\n')
+        Machine::IO::put('\r');
+    Machine::IO::put(c);
+}
 
 void Console::println(const char *fmt, ...) {
     va_list args;
