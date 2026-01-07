@@ -17,18 +17,18 @@ template <typename U> class Scheduler;
 template <typename T> struct Traits;
 
 template <> struct Traits<Machine> {
-    static constexpr const char *NAME = "sifive_u";
+    static constexpr const char *NAME = "VisionFive2";
 };
 
 template <> struct Traits<System> {
-    static constexpr bool MULTITASK = true;
+    static constexpr bool MULTITASK = false;
 };
 
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
-    static constexpr int COUNT = 5;
-    static constexpr int ONLINE = Traits<System>::MULTITASK ? COUNT - 1 : COUNT;
-    static constexpr int BSP = 1;
+    static constexpr int COUNT = 1;
+    static constexpr int ONLINE = COUNT;
+    static constexpr int BSP = 0;
 };
 
 template <> struct Traits<Memory> {
@@ -39,15 +39,15 @@ template <> struct Traits<Memory> {
 };
 
 template <> struct Traits<MemoryMap> {
-    static constexpr unsigned long RamStart = 0x80000000;
+    static constexpr unsigned long RamStart = 0x40000000;
     static constexpr unsigned long RamEnd = RamStart + Traits<Memory>::Size;
     static constexpr unsigned long BootAddr = RamStart;
 
     static constexpr unsigned long ApplicationAddr = RamStart + 128 * 1024;
 
     /* *** MMIO *** */
-    static constexpr unsigned long UART = 0x10010000ULL;
-    static constexpr unsigned long CLINT = 0x02000000ULL;
+    static constexpr unsigned long UART = 0x10000000;
+    static constexpr unsigned long CLINT = 0x02000000;
     static constexpr unsigned long PLIC = 0;
 };
 

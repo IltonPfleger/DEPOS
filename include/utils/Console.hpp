@@ -13,7 +13,7 @@ struct Console {
         Stream &operator<<(Manipulator m) { return m(*this); }
 
         Stream &operator<<(char c) {
-            Console::put(c);
+            put(c);
             return *this;
         }
 
@@ -22,7 +22,7 @@ struct Console {
                 return *this;
 
             while (*str)
-                Console::put(*str++);
+                put(*str++);
             return *this;
         }
 
@@ -36,7 +36,7 @@ struct Console {
             } while (value);
 
             while (pos--)
-                Console::put(buffer[pos]);
+                put(buffer[pos]);
 
             return *this;
         }
@@ -44,7 +44,7 @@ struct Console {
         template <Meta::Integral T> Stream &operator<<(T value) {
             if constexpr (Meta::Signed<T>::Result) {
                 if (value < 0) {
-                    Console::put('-');
+                    put('-');
                     value = -value;
                 }
             }
@@ -71,7 +71,7 @@ struct Console {
         }
 
         static Stream &endl(Stream &s) {
-            Console::put('\n');
+            put('\n');
             return s;
         }
     };

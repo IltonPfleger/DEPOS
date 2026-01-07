@@ -10,7 +10,7 @@ DEPS := $(OBJS:.o=.d)
 MEMORY_MAP := $(BUILD)/MemoryMap
 
 run: $(TARGET).bin
-	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(TARGET).bin
+	-$(QEMU) -M $(QEMU_MACHINE) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(TARGET).bin
 
 $(TARGET).bin : $(TARGET).elf $(TOOLS)
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)
@@ -22,6 +22,7 @@ $(TARGET).bin : $(TARGET).elf $(TOOLS)
 	$(OBJCOPY) -O binary $(APPLICATION_TARGET).elf $(APPLICATION_TARGET).bin
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
 	$(DD) bs=1 conv=notrunc if=$(APPLICATION_TARGET).bin of=$(TARGET).bin seek=$$(( $$($(EPRINT) $(APPLICATION_TARGET).elf -b) - $(RamStart) ))
+	$(TRUNCATE) -s %$(PageSize) $(TARGET).bin
 
 debug: $(TARGET)
 	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -S -gdb tcp::1234
