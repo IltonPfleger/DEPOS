@@ -5,13 +5,15 @@
 #include <memory/Memory.hpp>
 #include <utils/BSS.hpp>
 
+#include "Traits.hpp"
+
 class VisionFive2 {
   public:
-    using CLINT = SiFiveCLINT;
+    using CLINT = SiFiveCLINT<Traits<MemoryMap>::CLINT>;
     using ISA = RV64<CLINT>;
     using CPU = ISA::CPU;
-    using MMU = typename ISA::SV39_MMU<Memory>;
-    using IO = DW8250<0x10000000, 1000000 / 2, 115200>;
+    using MMU = ISA::MMU;
+    using IO = DW8250<Traits<MemoryMap>::UART, 1000000 / 2, 115200>;
 
     __attribute__((always_inline)) static inline void init() {
         CPU::probe();

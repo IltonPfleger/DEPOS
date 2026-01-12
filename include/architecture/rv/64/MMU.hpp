@@ -1,9 +1,20 @@
-template <typename Allocator> class SV39_MMU {
+#pragma once
+
+#include <architecture/rv/64/Modes.hpp>
+#include <architecture/rv/csrs.hpp>
+#include <memory/Memory.hpp>
+
+class SV39_MMU {
   private:
     static constexpr unsigned long Mode = 8UL << 60;
     static constexpr unsigned long Giga = (1 << 30);
 
   public:
+    class TLB {
+      public:
+        static auto flush() { asm("sfence.vma zero, zero"); }
+    };
+
     class PageTable {
         friend SV39_MMU;
 
@@ -25,8 +36,8 @@ template <typename Allocator> class SV39_MMU {
         };
 
         void load() const {
-            csrw<SupervisorMode::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
-            CPU::TLB::flush();
+            rv::csrw<rv::SupervisorMode::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
+            TLB::flush();
         }
 
         bool map(uintptr_t va, uintptr_t pa, Flags flags) {
@@ -38,13 +49,13 @@ template <typename Allocator> class SV39_MMU {
             PageTable *l0;
 
             if (!entries[vpn2]) {
-                l1 = new (Allocator::kmalloc(Size)) PageTable();
+                l1 = new (Memory::kmalloc(Size)) PageTable();
                 set(vpn2, reinterpret_cast<uintptr_t>(l1), V);
             } else {
                 l1 = walk(vpn2);
             }
             if (!l1->entries[vpn1]) {
-                l0 = new (Allocator::kmalloc(Size)) PageTable();
+                l0 = new (Memory::kmalloc(Size)) PageTable();
                 l1->set(vpn1, reinterpret_cast<uintptr_t>(l0), V);
             } else {
                 l0 = l1->walk(vpn1);

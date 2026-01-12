@@ -5,8 +5,10 @@
 #include <Types.hpp>
 #include <architecture/common/Atomic.hpp>
 #include <architecture/rv/64/Context.hpp>
+#include <architecture/rv/64/MMU.hpp>
 #include <architecture/rv/64/Modes.hpp>
 #include <architecture/rv/csrs.hpp>
+#include <machine/Traits.hpp>
 #include <utils/Debug.hpp>
 
 using rv::csrc;
@@ -19,6 +21,7 @@ template <typename TimerDevice> class RV64 {
     using MachineMode = rv::MachineMode;
     using SupervisorMode = rv::SupervisorMode;
     using KernelMode = Meta::TypeSelector<Traits<System>::MULTITASK, SupervisorMode, MachineMode>::Result;
+    using MMU = SV39_MMU;
     template <typename T> using ContextBase = rv64::ContextBase<T>;
 
 #include "Interruptions.hpp"
@@ -26,6 +29,4 @@ template <typename TimerDevice> class RV64 {
 #include "CPU.hpp"
 /**/
 #include "IC.hpp"
-/**/
-#include "MMU.hpp"
 };

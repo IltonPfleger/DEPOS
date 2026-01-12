@@ -1,5 +1,7 @@
 #pragma once
-#include <machine/SiFive_U.hpp>
-#include <machine/VisionFive2.hpp>
 
-class Machine : public __MACHINE__ {};
+#include <Macros.hpp>
+
+#include __MACHINE_HEADER
+
+class Machine : public __MACHINE {};

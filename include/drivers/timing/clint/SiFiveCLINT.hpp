@@ -2,9 +2,7 @@
 
 #include <drivers/Driver.hpp>
 
-class SiFiveCLINT : Driver {
-    static constexpr unsigned long Base = Traits<MemoryMap>::CLINT;
-
+template <unsigned long Base> class SiFiveCLINT : Driver {
     enum Register {
         MTIMECMP = 0x4000,
         MTIME = 0xBFF8,
@@ -12,7 +10,7 @@ class SiFiveCLINT : Driver {
 
   public:
     static void reset(unsigned long core) {
-        static constexpr uintmax_t ticks = Traits<Timer>::Frequency;
-        Reg64(Base, MTIMECMP + core * sizeof(unsigned long)) = Reg64(Base, MTIME) + ticks;
+        static constexpr uintmax_t ticks = Traits<Clock>::CLINT / Traits<Timer>::Frequency;
+        Reg64(Base, MTIMECMP + core * 8) = Reg64(Base, MTIME) + ticks;
     }
 };
