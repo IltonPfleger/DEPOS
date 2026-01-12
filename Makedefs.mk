@@ -2,7 +2,6 @@ INCLUDE := include
 BUILD := build
 APPLICATIONS := app
 TOOLS := tools
-TRAITS := include/Traits.hpp
 KERNEL := $(BUILD)/DEPOS
 
 DD := dd
@@ -14,25 +13,20 @@ NM := $(TOOL)-nm
 SIZE := $(TOOL)-size
 OBJCOPY := $(TOOL)-objcopy
 QEMU := qemu-system-riscv64
-GET := $(TOOLS)/Traits $(TRAITS)
+TRAITS := $(TOOLS)/Traits
 EPRINT := $(TOOLS)/EPrint
 EMAP := $(BUILD)/EMap
 
-CPUS=$(shell $(GET) "Traits<CPUS>::COUNT")
-MACHINE=$(shell $(GET) "Traits<Machine>::NAME")
-QEMU_MACHINE := $(shell printf '%s\n' $(MACHINE) | tr A-Z a-z)
-MemorySize=$(shell $(GET) "Traits<Memory>::Size")
-PageSize=$(shell $(GET) "Traits<Memory>::PageSize")
-#APP_ADDR=0x$(shell printf "%x\n" $$($(GET) "Traits<Application>::ADDR"))
-#PAGE_SIZE=$(shell $(GET) "Traits<Memory>::PAGE_SIZE")
-MULTITASK=$(shell $(GET) "Traits<System>::MULTITASK")
-
-RamStart=$(shell printf "0x%x\n" $$($(GET) "Traits<MemoryMap>::RamStart"))
-BootAddr=$(shell printf "0x%x\n" $$($(GET) "Traits<MemoryMap>::BootAddr"))
-ApplicationAddr=$(shell printf "0x%x\n" $$($(GET) "Traits<MemoryMap>::ApplicationAddr"))
+MachineName=$(shell $(TRAITS) include/Traits.hpp "Traits<Machine>::NAME")
+CPUS=$(shell $(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<CPUS>::COUNT")
+MemorySize=$(shell $(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<Memory>::Size")
+PageSize=$(shell $(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<Memory>::PageSize")
+RamStart=$(shell printf "0x%x\n" $$($(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::RamStart"))
+BootAddr=$(shell printf "0x%x\n" $$($(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::BootAddr"))
+ApplicationAddr=$(shell printf "0x%x\n" $$($(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::ApplicationAddr"))
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
-CFLAGS += -D__MACHINE__=$(MACHINE)
+CFLAGS += -D__MACHINE=$(MachineName)
 CFLAGS += -Wall -Wextra -Werror -pedantic
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax

@@ -17,50 +17,23 @@ template <typename U> class Scheduler;
 template <typename T> struct Traits;
 
 template <> struct Traits<Machine> {
-    static constexpr const char *NAME = "VisionFive2";
+    static constexpr const char *NAME = "sifive_u";
 };
 
 template <> struct Traits<System> {
     static constexpr bool MULTITASK = false;
 };
 
-template <> struct Traits<CPUS> {
-    static constexpr int XLEN = 64;
-    static constexpr int COUNT = 1;
-    static constexpr int ONLINE = COUNT;
-    static constexpr int BSP = 0;
-};
-
-template <> struct Traits<Memory> {
-    static constexpr unsigned long Order = 30;
-    static constexpr unsigned long Size = (1 << Order);
-    static constexpr unsigned long PageOrder = 12;
-    static constexpr unsigned long PageSize = (1 << PageOrder);
-};
-
-template <> struct Traits<MemoryMap> {
-    static constexpr unsigned long RamStart = 0x40000000;
-    static constexpr unsigned long RamEnd = RamStart + Traits<Memory>::Size;
-    static constexpr unsigned long BootAddr = RamStart;
-
-    static constexpr unsigned long ApplicationAddr = RamStart + 128 * 1024;
-
-    /* *** MMIO *** */
-    static constexpr unsigned long UART = 0x10000000;
-    static constexpr unsigned long CLINT = 0x02000000;
-    static constexpr unsigned long PLIC = 0;
-};
-
 template <> struct Traits<Timer> {
     static constexpr bool Enable = true;
-    static constexpr unsigned long MHz = 1'000'000;
-    static constexpr unsigned long Frequency = MHz;
+    // static constexpr unsigned long MHz = 1'000'000;
+    static constexpr unsigned long Frequency = 10'000;
 };
 
-template <> struct Traits<Alarm> {
-    static constexpr bool Enable = true;
-    static constexpr unsigned long Frequency = Traits<Timer>::MHz;
-};
+// template <> struct Traits<Alarm> {
+//     static constexpr bool Enable = true;
+//     static constexpr unsigned long Frequency = Traits<Timer>::MHz;
+// };
 
 template <> struct Traits<Debug> {
     static constexpr bool Error = true;
@@ -68,7 +41,9 @@ template <> struct Traits<Debug> {
 };
 
 template <> struct Traits<Scheduler<Thread>> {
-    static constexpr unsigned long Frequency = Traits<Timer>::MHz / 10;
     static constexpr bool Preemptive = true;
+    static constexpr unsigned long Frequency = 1000;
     using Criterion = RR;
+
+    static_assert(Frequency <= Traits<Timer>::Frequency);
 };

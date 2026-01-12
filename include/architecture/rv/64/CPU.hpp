@@ -6,11 +6,6 @@ class CPU {
     using Interruptions = RV64::Interruptions;
     using Atomic = ArchitectureCommon::Atomic;
 
-    class TLB {
-      public:
-        static auto flush() { asm("sfence.vma zero, zero"); }
-    };
-
     static auto idle() { asm("wfi"); }
     static auto halt() { asm("1: wfi\n j 1b"); }
     static auto syscall(auto f) { asm("mv a0, %0\necall" ::"r"(f)); }
@@ -45,18 +40,11 @@ class CPU {
     }
 
     __attribute__((naked)) static void jmode() {
-        uintptr_t ra;
-        asm volatile("mv %0, ra" : "=r"(ra));
-
         if constexpr (Traits<System>::MULTITASK) {
             if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
                 for (;;)
                     CPU::idle();
             }
-        }
-
-        if constexpr (Traits<Timer>::Enable) {
-            csrs<MachineMode::IE>(MachineMode::TI);
         }
 
         if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
@@ -69,10 +57,15 @@ class CPU {
             csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
         } else {
             csrs<MachineMode::STATUS>(MachineMode::ME2ME);
+            csrc<MachineMode::STATUS>(MachineMode::PIRQE);
             csrw<MachineMode::TVEC>(MIC::entry);
         }
 
-        csrw<MachineMode::EPC>(ra);
+        if constexpr (Traits<Timer>::Enable) {
+            csrs<MachineMode::IE>(MachineMode::TI);
+        }
+
+        csrw<MachineMode::EPC>(__builtin_return_address(0));
         MachineMode::ret();
         __builtin_unreachable();
     }

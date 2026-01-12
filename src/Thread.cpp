@@ -123,6 +123,9 @@ void Thread::run() {
     s_lock.acquire();
     TraceIn();
     Thread *next = s_scheduler.pop();
+    s_lock.release();
+    CPU::barrier();
+    s_lock.acquire();
     dispatch(previous, next, &s_lock);
 }
 

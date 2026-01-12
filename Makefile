@@ -10,7 +10,7 @@ DEPS := $(OBJS:.o=.d)
 MEMORY_MAP := $(BUILD)/MemoryMap
 
 run: $(TARGET).bin
-	-$(QEMU) -M $(QEMU_MACHINE) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(TARGET).bin
+	-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(TARGET).bin
 
 $(TARGET).bin : $(TARGET).elf $(TOOLS)
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)

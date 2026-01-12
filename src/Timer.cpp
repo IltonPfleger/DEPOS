@@ -1,6 +1,7 @@
 #include <Thread.hpp>
 #include <Timer.hpp>
 #include <Traits.hpp>
+#include <machine/Traits.hpp>
 
 void Timer::init() {
     if constexpr (Traits<Scheduler<Thread>>::Preemptive) {

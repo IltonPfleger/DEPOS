@@ -1,0 +1,38 @@
+#pragma once
+
+template <typename T> struct Traits;
+class MemoryMap;
+class Memory;
+class Clock;
+class CPUS;
+
+template <> struct Traits<CPUS> {
+    static constexpr int XLEN = 64;
+    static constexpr int COUNT = 1;
+    static constexpr int ONLINE = COUNT;
+    static constexpr int BSP = 0;
+};
+
+template <> struct Traits<Memory> {
+    static constexpr unsigned long Order = 30;
+    static constexpr unsigned long Size = (1 << Order);
+    static constexpr unsigned long PageOrder = 12;
+    static constexpr unsigned long PageSize = (1 << PageOrder);
+};
+
+template <> struct Traits<MemoryMap> {
+    static constexpr unsigned long RamStart = 0x40000000;
+    static constexpr unsigned long RamEnd = RamStart + Traits<Memory>::Size;
+    static constexpr unsigned long BootAddr = RamStart;
+
+    static constexpr unsigned long ApplicationAddr = RamStart + 128 * 1024;
+
+    /* *** MMIO *** */
+    static constexpr unsigned long UART = 0x10000000;
+    static constexpr unsigned long CLINT = 0x02000000;
+    static constexpr unsigned long PLIC = 0;
+};
+
+template <> struct Traits<Clock> {
+    static constexpr unsigned long CLINT = 1000000;
+}
