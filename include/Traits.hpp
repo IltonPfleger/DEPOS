@@ -23,19 +23,19 @@ template <> struct Traits<System> {
 
 template <> struct Traits<Timer> {
     static constexpr bool Enable = true;
-    static constexpr unsigned long Frequency = 1'000;
+    static constexpr unsigned long Frequency = 100;
 };
 
 template <> struct Traits<Alarm> {
     static constexpr bool Enable = true;
-    static constexpr unsigned long Frequency = Traits<Timer>::Frequency;
+    static constexpr unsigned long Frequency = 10;
 
     static_assert(Frequency <= Traits<Timer>::Frequency);
 };
 
 template <> struct Traits<Scheduler<Thread>> {
     static constexpr bool Preemptive = true;
-    static constexpr unsigned long Frequency = 1000;
+    static constexpr unsigned long Frequency = 10;
     using Criterion = RR;
 
     static_assert(Frequency <= Traits<Timer>::Frequency);

@@ -6,9 +6,8 @@
 
 void Timer::init() {
     if constexpr (Traits<Alarm>::Enable) {
-		s_alarm.duration = Traits<Timer>::Frequency / Traits<Alarm>::Frequency;
-        for (auto &e : s_alarm.current)
-            e = s_alarm.duration;
+        s_alarm.duration = Traits<Timer>::Frequency / Traits<Alarm>::Frequency;
+        s_alarm.current[Traits<CPUS>::BSP] = s_alarm.duration;
     }
 
     if constexpr (Traits<Scheduler<Thread>>::Preemptive) {
@@ -21,7 +20,7 @@ void Timer::init() {
 void Timer::handler(unsigned long core) {
     if constexpr (Traits<Alarm>::Enable) {
         auto &counter = s_alarm;
-        if (--counter.current[core] == 0) {
+        if (core == Traits<CPUS>::BSP && --counter.current[core] == 0) {
             counter.current[core] = counter.duration;
             Alarm::handler();
         }

@@ -18,26 +18,6 @@ class Thread {
     using CPU = Machine::CPU;
     using Context = CPU::Context;
 
-    // Thread(Function f, Argument a, Criterion c, Task *t = nullptr)
-    //     : // task_(t ? t : new(Heap::SYSTEM) Task()),
-    //       m_stack_(Segment(Traits<Memory>::PAGE_SIZE)),
-    //       um_stack_(Segment(Traits<Memory>::PAGE_SIZE)), waiting(0),
-    //       m_link(Element(this, c())), criterion(c), state(State::RUNNING),
-    //       joining(0), context_(new(m_stack_.end() - sizeof(CPU::Context))
-    //                                CPU::Context(f, a, exit)) {
-    //     TraceIn(this);
-    //     (void)t;
-    //     // task_->attach(m_stack_, Task::AddressSpace::Flags::KernelRW);
-    //     // task_->attach(um_stack_, Task::AddressSpace::Flags::UserRW);
-    //     lock_s.lock();
-    //     scheduler_s.insert(&m_link);
-    //     count_s = count_s + 1;
-    //     lock_s.unlock();
-    //     TraceOut();
-    // }
-
-    // template <typename T = void>
-    //     requires(!Traits<System>::MULTITASK)
     Thread(Function, Argument, Criterion);
     ~Thread();
 
