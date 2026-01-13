@@ -33,15 +33,15 @@ template <> struct Traits<Alarm> {
     static_assert(Frequency <= Traits<Timer>::Frequency);
 };
 
-template <> struct Traits<Debug> {
-    static constexpr bool Error = true;
-    static constexpr bool Trace = true;
-};
-
 template <> struct Traits<Scheduler<Thread>> {
     static constexpr bool Preemptive = true;
     static constexpr unsigned long Frequency = 1000;
     using Criterion = RR;
 
     static_assert(Frequency <= Traits<Timer>::Frequency);
+};
+
+template <> struct Traits<Debug> {
+    static constexpr bool Error = true;
+    static constexpr bool Trace = true;
 };
