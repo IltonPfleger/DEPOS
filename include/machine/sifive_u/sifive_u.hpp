@@ -8,8 +8,8 @@
 
 class sifive_u {
   public:
-    using CLINT = SiFiveCLINT<Traits<MemoryMap>::CLINT>;
-    using ISA = RV64<CLINT>;
+    using Timer = SiFiveCLINT<Traits<MemoryMap>::CLINT>;
+    using ISA = RV64<Timer>;
     using CPU = ISA::CPU;
     using MMU = ISA::MMU;
     using IO = SiFiveUART<Traits<MemoryMap>::UART, 31250000, 115200>;

@@ -3,6 +3,7 @@
 // #include <Semaphore.hpp>
 // #include <Thread.hpp>
 // #include <memory/Memory.hpp>
+#include <Alarm.hpp>
 #include <utils/Console.hpp>
 //
 // static constexpr unsigned long N = 10;
@@ -25,22 +26,8 @@
 // }
 //
 int main(int, char *[]) {
-    Console::out << "Application JTAG: \n";
-
-    // mutex.p();
-    // for (unsigned long i = 0; i < N; i++) {
-    //     threads[i] = new Thread(thread_function, (void *)(long long)i,
-    //     Thread::Criterion::NORMAL);
-    // }
-    // Console::out << "Created!\n";
-    // mutex.v();
-
-    // for (unsigned long i = 0; i < N; i++)
-    //     Thread::join(*threads[i]);
-
-    // for (int i = 0; i < N; i++)
-    //     delete threads[i];
-
-    Console::out << "\nApplication Done!\n";
+    Console::out << "Application: \n";
+    Alarm::delay(1);
+    Console::out << "Application Done!\n";
     return 0;
 }

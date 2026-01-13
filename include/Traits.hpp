@@ -4,13 +4,10 @@ class Thread;
 class Machine;
 class Timer;
 class RR;
-class Memory;
 class System;
 class Application;
 class Debug;
 class Alarm;
-class MemoryMap;
-class CPUS;
 
 template <typename U> class Scheduler;
 
@@ -26,14 +23,15 @@ template <> struct Traits<System> {
 
 template <> struct Traits<Timer> {
     static constexpr bool Enable = true;
-    // static constexpr unsigned long MHz = 1'000'000;
-    static constexpr unsigned long Frequency = 10'000;
+    static constexpr unsigned long Frequency = 1'000;
 };
 
-// template <> struct Traits<Alarm> {
-//     static constexpr bool Enable = true;
-//     static constexpr unsigned long Frequency = Traits<Timer>::MHz;
-// };
+template <> struct Traits<Alarm> {
+    static constexpr bool Enable = true;
+    static constexpr unsigned long Frequency = Traits<Timer>::Frequency;
+
+    static_assert(Frequency <= Traits<Timer>::Frequency);
+};
 
 template <> struct Traits<Debug> {
     static constexpr bool Error = true;

@@ -1,30 +1,36 @@
+#include <Alarm.hpp>
 #include <Thread.hpp>
 #include <Timer.hpp>
 #include <Traits.hpp>
 #include <machine/Traits.hpp>
 
 void Timer::init() {
+    if constexpr (Traits<Alarm>::Enable) {
+		s_alarm.duration = Traits<Timer>::Frequency / Traits<Alarm>::Frequency;
+        for (auto &e : s_alarm.current)
+            e = s_alarm.duration;
+    }
+
     if constexpr (Traits<Scheduler<Thread>>::Preemptive) {
-        scheduler_s.duration = Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
-        for (auto &e : scheduler_s.current)
-            e = scheduler_s.duration;
-        // scheduler_s.current[Machine::CPU::core()] = scheduler_s.duration;
+        s_scheduler.duration = Traits<Timer>::Frequency / Traits<Scheduler<Thread>>::Frequency;
+        for (auto &e : s_scheduler.current)
+            e = s_scheduler.duration;
     }
 }
 
 void Timer::handler(unsigned long core) {
-    // auto core = Machine::CPU::core();
-    //  reset(core);
-    //     if constexpr (Traits<Alarm>::Enable) {
-    //         if (--_channels[ALARM].current[CPU::core()] == 0) {
-    //             _channels[ALARM].current[CPU::core()] =
-    //             _channels[ALARM].duration; Alarm::handler();
-    //         }
-    //     }
+    if constexpr (Traits<Alarm>::Enable) {
+        auto &counter = s_alarm;
+        if (--counter.current[core] == 0) {
+            counter.current[core] = counter.duration;
+            Alarm::handler();
+        }
+    }
 
     if constexpr (Traits<Scheduler<Thread>>::Preemptive) {
-        if (--scheduler_s.current[core] == 0) {
-            scheduler_s.current[core] = scheduler_s.duration;
+        auto &counter = s_scheduler;
+        if (--counter.current[core] == 0) {
+            counter.current[core] = counter.duration;
             Thread::reschedule();
         }
     }
