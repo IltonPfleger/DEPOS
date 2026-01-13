@@ -27,6 +27,13 @@
 //
 int main(int, char *[]) {
     Console::out << "Application: \n";
+    Console::out << "Waiting...: \n";
+    Alarm::delay(1);
+    Console::out << "1,";
+    Alarm::delay(1);
+    Console::out << "2,";
+    Alarm::delay(1);
+    Console::out << "3.\n";
     Alarm::delay(1);
     Console::out << "Application Done!\n";
     return 0;

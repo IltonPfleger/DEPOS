@@ -9,8 +9,8 @@ class Clock;
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
     static constexpr int COUNT = 2;
-    static constexpr int ONLINE = 1;
-    static constexpr int BSP = 0;
+    static constexpr int ONLINE = COUNT;
+    static constexpr int BSP = 1;
 };
 
 template <> struct Traits<Memory> {
@@ -33,5 +33,6 @@ template <> struct Traits<MemoryMap> {
 };
 
 template <> struct Traits<Clock> {
-    static constexpr unsigned long CLINT = 1'000'000'000;
+    static constexpr unsigned long CLINT = 1'000'000;
+    //static constexpr unsigned long CLINT = 1'000'000'000;
 };

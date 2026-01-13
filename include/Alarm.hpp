@@ -7,40 +7,51 @@
 class Alarm {
     struct Delay {
         Thread::Queue queue;
-        unsigned long end;
+        unsigned long ticks;
         Delay *next;
     };
 
   public:
     static void delay(unsigned int seconds) {
-        unsigned long value = seconds * Traits<Alarm>::Frequency;
-        unsigned long now = Machine::Timer::now();
-        unsigned long end = now + value;
+        unsigned long ticks = seconds * Traits<Alarm>::Frequency;
 
-        Delay delay{Thread::Queue{}, end, nullptr};
+        Delay d{Thread::Queue{}, ticks, nullptr};
 
         s_lock.lock();
-        if (!s_delays || delay.end < s_delays->end) {
-            delay.next = s_delays;
-            s_delays = &delay;
+        if (!s_delays || ticks < s_delays->ticks) {
+            if (s_delays)
+                s_delays->ticks -= ticks;
+
+            d.next = s_delays;
+            s_delays = &d;
         } else {
             Delay *current = s_delays;
+            unsigned long remaining = ticks;
 
-            while (current->next && current->next->end <= delay.end) {
+            while (current->next && remaining >= current->next->ticks) {
+                remaining -= current->next->ticks;
                 current = current->next;
             }
-            delay.next = current->next;
-            current->next = &delay;
+
+            d.ticks = remaining;
+
+            if (current->next)
+                current->next->ticks -= remaining;
+
+            d.next = current->next;
+            current->next = &d;
         }
 
-        Thread::sleep(delay.queue, s_lock);
+        Thread::sleep(d.queue, s_lock);
     }
 
     static void handler() {
-        if (s_delays && Machine::Timer::now() >= s_delays->end) {
+        s_lock.lock();
+        if (s_delays && --s_delays->ticks <= 0) {
             Thread::wakeup(s_delays->queue);
             s_delays = s_delays->next;
         }
+        s_lock.unlock();
     }
 
   private:

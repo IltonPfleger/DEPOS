@@ -17,10 +17,6 @@ class sifive_u {
     __attribute__((always_inline)) static inline void init() {
         CPU::probe();
         CPU::jmode();
-
-        if (CPU::id() >= Traits<CPUS>::ONLINE)
-            CPU::halt();
-
         CPU::init();
         IO::init();
     }
