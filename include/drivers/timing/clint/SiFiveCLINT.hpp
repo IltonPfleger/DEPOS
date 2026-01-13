@@ -9,8 +9,10 @@ template <unsigned long Base> class SiFiveCLINT : Driver {
     };
 
   public:
-    static void reset(unsigned long core) {
-        static constexpr uintmax_t ticks = Traits<Clock>::CLINT / Traits<Timer>::Frequency;
-        Reg64(Base, MTIMECMP + core * 8) = Reg64(Base, MTIME) + ticks;
+    static unsigned long now() { return Reg64(Base, MTIME); }
+
+    static void reset(unsigned int core) {
+        static constexpr unsigned long ticks = Traits<Clock>::CLINT / Traits<Timer>::Frequency;
+        Reg64(Base, MTIMECMP + core * 8) = now() + ticks;
     }
 };

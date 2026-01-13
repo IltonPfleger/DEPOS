@@ -1,29 +1,32 @@
-INCLUDE := include
-BUILD := build
-APPLICATIONS := app
-TOOLS := tools
-KERNEL := $(BUILD)/DEPOS
+HERE := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
-DD := dd
-TRUNCATE := truncate
-TOOL := riscv64-linux-gnu
-CC := $(TOOL)-g++
-LD := $(TOOL)-ld
-NM := $(TOOL)-nm
-SIZE := $(TOOL)-size
-OBJCOPY := $(TOOL)-objcopy
-QEMU := qemu-system-riscv64
+INCLUDE      := $(HERE)/include
+BUILD        := $(HERE)/build
+APPLICATIONS := $(HERE)/app
+TOOLS        := $(HERE)/tools
+KERNEL       := $(BUILD)/DEPOS
+
 TRAITS := $(TOOLS)/Traits
 EPRINT := $(TOOLS)/EPrint
-EMAP := $(BUILD)/EMap
+EMAP   := $(BUILD)/EMap
 
-MachineName=$(shell $(TRAITS) include/Traits.hpp "Traits<Machine>::NAME")
-CPUS=$(shell $(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<CPUS>::COUNT")
-MemorySize=$(shell $(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<Memory>::Size")
-PageSize=$(shell $(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<Memory>::PageSize")
-RamStart=$(shell printf "0x%x\n" $$($(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::RamStart"))
-BootAddr=$(shell printf "0x%x\n" $$($(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::BootAddr"))
-ApplicationAddr=$(shell printf "0x%x\n" $$($(TRAITS) include/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::ApplicationAddr"))
+TOOL    := riscv64-linux-gnu
+CC      := $(TOOL)-g++
+LD      := $(TOOL)-ld
+NM      := $(TOOL)-nm
+SIZE    := $(TOOL)-size
+OBJCOPY := $(TOOL)-objcopy
+DD      := dd
+TRUNCATE := truncate
+QEMU    := qemu-system-riscv64
+
+MachineName     := $(shell $(TRAITS) $(INCLUDE)/Traits.hpp "Traits<Machine>::NAME")
+CPUS            := $(shell $(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<CPUS>::COUNT")
+MemorySize      := $(shell $(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<Memory>::Size")
+PageSize        := $(shell $(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<Memory>::PageSize")
+RamStart        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::RamStart"))
+BootAddr        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::BootAddr"))
+ApplicationAddr := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::ApplicationAddr"))
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -D__MACHINE=$(MachineName)

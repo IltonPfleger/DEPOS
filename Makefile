@@ -1,7 +1,7 @@
 include Makedefs.mk
 
 TARGET := $(KERNEL)
-APPLICATION_TARGET=$(APPLICATIONS)/$(BUILD)/$(APPLICATION)
+APPLICATION_TARGET=$(BUILD)/$(APPLICATION)
 
 TOOLS := $(patsubst tools/%.cpp,$(BUILD)/%,$(shell find tools -type f -name "*.cpp"))
 SRCS := $(shell find src -type f -name "*.cpp")
