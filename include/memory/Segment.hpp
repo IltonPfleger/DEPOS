@@ -3,22 +3,22 @@
 
 class Segment {
   public:
-    Segment(uintptr_t addr, size_t size, bool owned = true)
-        : addr_(reinterpret_cast<char *>(addr)), size_(size), owned_(owned) {}
+    Segment(unsigned long addr, unsigned int size, bool owned = true)
+        : m_addr(reinterpret_cast<char *>(addr)), m_size(size), m_owned(owned) {}
 
-    Segment(size_t size) : Segment(reinterpret_cast<uintptr_t>(Memory::kmalloc(size)), size) {}
+    Segment(unsigned int size) : Segment(reinterpret_cast<unsigned long>(Memory::kmalloc(size)), size) {}
 
     ~Segment() {
-        if (owned_)
-            Memory::kfree(addr_, size_);
+        if (m_owned)
+            Memory::kfree(m_addr, m_size);
     }
 
-    char *base() const { return addr_; }
-    char *end() const { return addr_ + size_; }
-    size_t size() const { return size_; }
+    char *base() const { return m_addr; }
+    char *end() const { return m_addr + m_size; }
+    unsigned int size() const { return m_size; }
 
   private:
-    char *const addr_;
-    const size_t size_;
-    const bool owned_;
+    char *const m_addr;
+    const unsigned int m_size;
+    const bool m_owned;
 };
