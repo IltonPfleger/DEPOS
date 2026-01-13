@@ -8,7 +8,7 @@
 
 class sifive_u {
   public:
-    using Timer = SiFiveCLINT<Traits<MemoryMap>::CLINT>;
+    using Timer = SiFiveCLINT;
     using ISA = RV64<Timer>;
     using CPU = ISA::CPU;
     using MMU = ISA::MMU;
