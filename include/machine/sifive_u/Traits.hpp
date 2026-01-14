@@ -34,5 +34,4 @@ template <> struct Traits<MemoryMap> {
 
 template <> struct Traits<Clock> {
     static constexpr unsigned long CLINT = 1'000'000;
-    //static constexpr unsigned long CLINT = 1'000'000'000;
 };

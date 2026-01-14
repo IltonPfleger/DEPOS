@@ -14,7 +14,7 @@ template <typename U> class Scheduler;
 template <typename T> struct Traits;
 
 template <> struct Traits<Machine> {
-    static constexpr const char *NAME = "sifive_u";
+    static constexpr const char *NAME = "VisionFive2";
 };
 
 template <> struct Traits<System> {
@@ -30,6 +30,7 @@ template <> struct Traits<Alarm> {
     static constexpr bool Enable = true;
     static constexpr unsigned long Frequency = 10;
 
+    static_assert(Traits<Timer>::Enable || !Enable);
     static_assert(Frequency <= Traits<Timer>::Frequency);
 };
 
@@ -38,6 +39,7 @@ template <> struct Traits<Scheduler<Thread>> {
     static constexpr unsigned long Frequency = 10;
     using Criterion = RR;
 
+    static_assert(Traits<Timer>::Enable || !Preemptive);
     static_assert(Frequency <= Traits<Timer>::Frequency);
 };
 

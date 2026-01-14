@@ -1,5 +1,5 @@
 //// #include <Alarm.hpp>
-//// #include <Machine.hpp>
+#include <machine/Machine.hpp>
 // #include <Semaphore.hpp>
 // #include <Thread.hpp>
 // #include <memory/Memory.hpp>
@@ -27,14 +27,16 @@
 //
 int main(int, char *[]) {
     Console::out << "Application: \n";
-    Console::out << "Waiting...: \n";
-    Alarm::delay(1);
-    Console::out << "1,";
-    Alarm::delay(1);
-    Console::out << "2,";
-    Alarm::delay(1);
-    Console::out << "3.\n";
-    Alarm::delay(1);
+    // Console::out << "Waiting...: \n";
+    // Alarm::delay(1);
+    // Console::out << "1,";
+    // Alarm::delay(1);
+    // Console::out << "2,";
+    // Alarm::delay(1);
+    // Console::out << "3.\n";
+    // Alarm::delay(1);
+    Console::out << "Ethernet...\n";
+    Machine::Ethernet::init();
     Console::out << "Application Done!\n";
     return 0;
 }

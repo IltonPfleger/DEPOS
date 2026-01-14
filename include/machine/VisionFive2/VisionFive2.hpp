@@ -1,5 +1,6 @@
 #pragma once
 #include <architecture/rv/64/RV64.hpp>
+#include <drivers/ethernet/DWMAC.hpp>
 #include <drivers/timing/clint/SiFiveCLINT.hpp>
 #include <drivers/uart/DW8250.hpp>
 #include <memory/Memory.hpp>
@@ -9,19 +10,18 @@
 
 class VisionFive2 {
   public:
-    using CLINT = SiFiveCLINT<Traits<MemoryMap>::CLINT>;
+    using CLINT = SiFiveCLINT;
     using ISA = RV64<CLINT>;
     using CPU = ISA::CPU;
     using MMU = ISA::MMU;
+    using Ethernet = DWMAC;
     using IO = DW8250<Traits<MemoryMap>::UART, 1000000 / 2, 115200>;
 
     __attribute__((always_inline)) static inline void init() {
         CPU::probe();
-
-        if (CPU::id() >= Traits<CPUS>::COUNT)
-            CPU::halt();
-
         BSS::init();
+        CPU::barrier();
+        CLINT::reset(CPU::id());
         CPU::init();
         IO::init();
     }
