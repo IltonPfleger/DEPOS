@@ -84,6 +84,8 @@
 //     return nullptr;
 // }
 
+void *operator new[](unsigned long bytes, Heap &heap) { return operator new(bytes, heap); }
+
 void *operator new(unsigned long bytes, Heap &heap) {
     (void)heap;
     // void *addr = Memory::kmalloc();
@@ -129,7 +131,6 @@ void *operator new(size_t bytes) {
         return operator new(bytes, Heap::SYSTEM);
     }
 }
-
 
 // Static Allocation For System Heap
 Heap Heap::SYSTEM;

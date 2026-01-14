@@ -1,4 +1,5 @@
-extern "C" void *memcpy(void *dest, const void *src, unsigned long n) {
+extern "C" {
+void *memcpy(void *dest, const void *src, unsigned long n) {
     unsigned char *d = static_cast<unsigned char *>(dest);
     const unsigned char *s = static_cast<const unsigned char *>(src);
     while (n--) {
@@ -7,7 +8,7 @@ extern "C" void *memcpy(void *dest, const void *src, unsigned long n) {
     return dest;
 }
 
-extern "C" void *memset(void *dest, int c, unsigned long n) {
+void *memset(void *dest, int c, unsigned long n) {
     unsigned char *d = static_cast<unsigned char *>(dest);
 
     while (n--) {
@@ -15,4 +16,5 @@ extern "C" void *memset(void *dest, int c, unsigned long n) {
     }
 
     return dest;
+}
 }

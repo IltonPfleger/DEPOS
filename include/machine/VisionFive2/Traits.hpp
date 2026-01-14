@@ -29,10 +29,10 @@ template <> struct Traits<MemoryMap> {
 
     /* *** MMIO *** */
     static constexpr unsigned long UART = 0x10000000;
-    static constexpr unsigned long CLINT = 0x02000000;
+    static constexpr unsigned long CLINT = 0x2000000;
     static constexpr unsigned long PLIC = 0;
 };
 
 template <> struct Traits<Clock> {
-    static constexpr unsigned long CLINT = 1000000;
-}
+    static constexpr unsigned long CLINT = 4'000'000;
+};
