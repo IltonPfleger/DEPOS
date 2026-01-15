@@ -4,17 +4,13 @@
 #include <utils/Debug.hpp>
 #include <utils/string.hpp>
 
-static constexpr unsigned long gmac0_base = 0x16030000;
-static constexpr unsigned long gmac1_base = 0x16040000;
-static constexpr unsigned long gmac_base = gmac0_base;
-
 static constexpr unsigned long k_sys_crg_base = 0x13020000;
 static constexpr unsigned long k_aon_crg_base = 0x17000000;
 static constexpr unsigned long k_aon_syscon_base = 0x17010000;
 static constexpr unsigned long k_l2_controller_base = 0x2010000;
 static constexpr unsigned int k_cache_line_size = 64;
 
-class DWMAC : Driver {
+template <unsigned long Base> class DWMAC : Driver {
 
     class Cache {
         enum Register { L2_FLUSH = 0x200 };
@@ -133,7 +129,7 @@ class DWMAC : Driver {
 
       public:
         static void wait() {
-            while (Reg32(gmac_base, BASE) & GB)
+            while (Reg32(Base, BASE) & GB)
                 ;
         }
 
@@ -146,14 +142,14 @@ class DWMAC : Driver {
         }
 
         static void write(unsigned char phy, unsigned char dev, unsigned short data) {
-            Reg32(gmac_base, DATA) = data;
-            Reg32(gmac_base, BASE) = GB | GOC_WRITE | CR_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
+            Reg32(Base, DATA) = data;
+            Reg32(Base, BASE) = GB | GOC_WRITE | CR_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
             wait();
         }
         static unsigned short read(unsigned char phy, unsigned char dev) {
-            Reg32(gmac_base, BASE) = GB | GOC_READ | CR_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
+            Reg32(Base, BASE) = GB | GOC_READ | CR_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
             wait();
-            return static_cast<unsigned short>(Reg32(gmac_base, DATA) & 0xFFFF);
+            return static_cast<unsigned short>(Reg32(Base, DATA) & 0xFFFF);
         }
 
         static void write45(unsigned char phy, unsigned short reg, unsigned short data) {
@@ -282,9 +278,9 @@ class DWMAC : Driver {
 
             // TODO: Setup MAC Address
 
-            if (Reg32(gmac_base, PHY_CONTROL_STATUS) & PHY_CONTROL_STATUS_LINK_STATUS_UP) {
+            if (Reg32(Base, PHY_CONTROL_STATUS) & PHY_CONTROL_STATUS_LINK_STATUS_UP) {
                 Console::println("Link is Up!\n");
-                if (Reg32(gmac_base, PHY_CONTROL_STATUS) & PHY_CONTROL_STATUS_LINK_MODE_FULL_DUPLEX) {
+                if (Reg32(Base, PHY_CONTROL_STATUS) & PHY_CONTROL_STATUS_LINK_MODE_FULL_DUPLEX) {
                     Console::println("Link is Full Duplex!\n");
                 } else {
                     Console::println("Link is Half Duplex!\n");
@@ -295,10 +291,10 @@ class DWMAC : Driver {
 
             TraceOut();
 
-            Reg32(gmac_base, PACKET_FILTER) |= PACKET_FILTER_RECEIVE_ALL | PACKET_FILTER_PROMISCUOUS_MODE;
-            Reg32(gmac_base, RX_QUEUE_CONTROL0) = RX_QUEUE_CONTROL0_QUEUE0_ENABLE;
-            Reg32(gmac_base, CONFIGURATION) |= CONFIGURATION_RECEIVER_ENABLE | CONFIGURATION_TRANSMITTER_ENABLE;
-            Reg32(gmac_base, CONFIGURATION) |= CONFIGURATION_CST;
+            Reg32(Base, PACKET_FILTER) |= PACKET_FILTER_RECEIVE_ALL | PACKET_FILTER_PROMISCUOUS_MODE;
+            Reg32(Base, RX_QUEUE_CONTROL0) = RX_QUEUE_CONTROL0_QUEUE0_ENABLE;
+            Reg32(Base, CONFIGURATION) |= CONFIGURATION_RECEIVER_ENABLE | CONFIGURATION_TRANSMITTER_ENABLE;
+            Reg32(Base, CONFIGURATION) |= CONFIGURATION_CST;
         }
     };
 
@@ -336,17 +332,17 @@ class DWMAC : Driver {
       public:
         static void reset() {
             TraceIn();
-            Reg32(gmac_base, MODE) |= 1;
-            while (Reg32(gmac_base, MODE) & 1)
+            Reg32(Base, MODE) |= 1;
+            while (Reg32(Base, MODE) & 1)
                 ;
             TraceOut();
         }
         static void init() {
             TraceIn();
             descriptors();
-            Reg32(gmac_base, SYSBUS_MODE) |= 1 << 11;
-            Reg32(gmac_base, CH0_TX_CONTROL) |= 1;
-            Reg32(gmac_base, CH0_RX_CONTROL) |= 1;
+            Reg32(Base, SYSBUS_MODE) |= 1 << 11;
+            Reg32(Base, CH0_TX_CONTROL) |= 1;
+            Reg32(Base, CH0_RX_CONTROL) |= 1;
             TraceOut();
         }
 
@@ -367,19 +363,19 @@ class DWMAC : Driver {
                 Cache::flush(&descriptor, sizeof(Descriptor));
             }
 
-            Reg32(gmac_base, CH0_RX_DESCRIPTORS_LIST_ADDR) =
+            Reg32(Base, CH0_RX_DESCRIPTORS_LIST_ADDR) =
                 static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF);
-            Reg32(gmac_base, CH0_RX_DESCRIPTORS_LIST_HADDR) =
+            Reg32(Base, CH0_RX_DESCRIPTORS_LIST_HADDR) =
                 static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32);
-            Reg32(gmac_base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
-            Reg32(gmac_base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
+            Reg32(Base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
+            Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
                 reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors);
 
-            Reg32(gmac_base, CH0_TX_DESCRIPTORS_LIST_ADDR) =
+            Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) =
                 static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF);
-            Reg32(gmac_base, CH0_TX_DESCRIPTORS_LIST_HADDR) =
+            Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) =
                 static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32);
-            Reg32(gmac_base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
+            Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
         }
 
         static void receive() {
@@ -418,8 +414,7 @@ class DWMAC : Driver {
             descriptor.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
             descriptor.des2 = (length & 0x7FFF);
             Cache::flush(&descriptor, sizeof(Descriptor));
-            Reg32(gmac_base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) =
-                reinterpret_cast<unsigned long>(m_tx_descriptors + 1);
+            Reg32(Base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_tx_descriptors + 1);
 
             while (1) {
                 Cache::flush(&descriptor, sizeof(Descriptor));
@@ -449,7 +444,7 @@ class DWMAC : Driver {
       public:
         static void init() {
             TraceIn();
-            Reg32(gmac_base, TX_QUEUE0_OPERATION_MODE) |= TX_QUEUE0_OPERATION_MODE_TSF;
+            Reg32(Base, TX_QUEUE0_OPERATION_MODE) |= TX_QUEUE0_OPERATION_MODE_TSF;
             TraceOut();
         }
     };

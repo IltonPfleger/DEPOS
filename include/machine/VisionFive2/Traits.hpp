@@ -28,6 +28,9 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long ApplicationAddr = RamStart + 128 * 1024;
 
     /* *** MMIO *** */
+    static constexpr unsigned long CacheController = 0x2010000;
+    static constexpr unsigned long GMAC0 = 0x16030000;
+    static constexpr unsigned long GMAC1 = 0x16040000;
     static constexpr unsigned long UART = 0x10000000;
     static constexpr unsigned long CLINT = 0x2000000;
     static constexpr unsigned long PLIC = 0;

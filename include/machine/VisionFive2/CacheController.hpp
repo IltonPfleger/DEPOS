@@ -7,14 +7,15 @@ class CacheController : Driver {
 
     enum {
         L2_FLUSH = 0x200,
+        L2_CACHE_LINE_SIZE = 64,
     };
 
   public:
-    static void flush(const void *const ptr, unsigned long size) {
+    static void flush(const void *const ptr, unsigned int size) {
         unsigned long line = reinterpret_cast<unsigned long>(ptr);
         unsigned long end = line + size;
         barrier();
-        for (; line < end; line += 64) {
+        for (; line < end; line += L2_CACHE_LINE_SIZE) {
             Reg64(Base, L2_FLUSH) = line;
             barrier();
         }
