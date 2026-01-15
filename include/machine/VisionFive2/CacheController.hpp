@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Traits.hpp"
 #include <drivers/Driver.hpp>
 
 class CacheController : Driver {
