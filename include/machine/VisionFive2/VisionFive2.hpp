@@ -14,7 +14,7 @@ class VisionFive2 {
     using ISA = RV64<CLINT>;
     using CPU = ISA::CPU;
     using MMU = ISA::MMU;
-    using Ethernet = DWMAC;
+    using Ethernet = DWMAC::Ethernet;
     using IO = DW8250<Traits<MemoryMap>::UART, 1000000 / 2, 115200>;
 
     __attribute__((always_inline)) static inline void init() {
