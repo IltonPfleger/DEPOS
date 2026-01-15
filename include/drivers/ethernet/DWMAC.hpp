@@ -4,120 +4,7 @@
 #include <utils/Debug.hpp>
 #include <utils/string.hpp>
 
-static constexpr unsigned long k_sys_crg_base = 0x13020000;
-static constexpr unsigned long k_aon_crg_base = 0x17000000;
-static constexpr unsigned long k_aon_syscon_base = 0x17010000;
-static constexpr unsigned long k_l2_controller_base = 0x2010000;
-static constexpr unsigned int k_cache_line_size = 64;
-
 template <unsigned long Base> class DWMAC : Driver {
-
-    class Cache {
-        enum Register { L2_FLUSH = 0x200 };
-
-      public:
-        static void flush(const void *const ptr, unsigned long size) {
-            unsigned long line;
-            unsigned long start = reinterpret_cast<unsigned long>(ptr);
-            unsigned long end = start + size;
-            barrier();
-            for (line = start; line < end; line += k_cache_line_size) {
-                Reg64(k_l2_controller_base, L2_FLUSH) = line;
-                barrier();
-            }
-        }
-
-        static void barrier() { asm volatile("fence iorw, iorw" ::: "memory"); }
-    };
-
-    class Clock {
-        enum Bit {
-            CLOCK_ENABLE = 1 << 31,
-            TIMER_RSTN_APB = 1 << 21,
-            TIMER_RSTN_TIMER0 = 1 << 22,
-            TIMER_RSTN_TIMER1 = 1 << 23,
-            TIMER_RSTN_TIMER2 = 1 << 24,
-            TIMER_RSTN_TIMER3 = 1 << 25,
-
-        };
-
-        enum Register {
-            TIMER_CLK_APB_SHIFT = 0x1F0U,
-            TIMER_CLK_TIMER0_SHIFT = 0x1F4U,
-            TIMER_CLK_TIMER1_SHIFT = 0x1F8U,
-            TIMER_CLK_TIMER2_SHIFT = 0x1FCU,
-            TIMER_CLK_TIMER3_SHIFT = 0x200U,
-            SYS_CRG_RESET_ASSERT2 = 0x300U,
-            SYS_CRG_RESET_ASSERT3 = 0x304U,
-            AON_CRG_RESET_ASSERT = 0x38U,
-        };
-
-        static void enable() {
-            for (int offset = 0x184; offset <= 0x1BC; offset += 4) {
-                Reg32(k_sys_crg_base, offset) |= CLOCK_ENABLE;
-            }
-            for (int offset = 0x8; offset <= 0x20; offset += 4) {
-                Reg32(k_aon_crg_base, offset) |= CLOCK_ENABLE;
-            }
-
-            Reg32(k_sys_crg_base, TIMER_CLK_APB_SHIFT) |= CLOCK_ENABLE;
-            Reg32(k_sys_crg_base, TIMER_CLK_TIMER0_SHIFT) |= CLOCK_ENABLE;
-            Reg32(k_sys_crg_base, TIMER_CLK_TIMER1_SHIFT) |= CLOCK_ENABLE;
-            Reg32(k_sys_crg_base, TIMER_CLK_TIMER2_SHIFT) |= CLOCK_ENABLE;
-            Reg32(k_sys_crg_base, TIMER_CLK_TIMER3_SHIFT) |= CLOCK_ENABLE;
-        }
-
-      public:
-        static void reset() {
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT3) |= TIMER_RSTN_APB;
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT3) &= ~TIMER_RSTN_APB;
-
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT3) |= TIMER_RSTN_TIMER0;
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT3) &= ~TIMER_RSTN_TIMER0;
-
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT3) |= TIMER_RSTN_TIMER1;
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT3) &= ~TIMER_RSTN_TIMER1;
-
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT3) |= TIMER_RSTN_TIMER2;
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT3) &= ~TIMER_RSTN_TIMER2;
-
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT3) |= TIMER_RSTN_TIMER3;
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT3) &= ~TIMER_RSTN_TIMER3;
-
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT2) |= 0xc;
-            Reg32(k_sys_crg_base, SYS_CRG_RESET_ASSERT2) &= ~0xc;
-
-            Reg32(k_aon_crg_base, AON_CRG_RESET_ASSERT) |= 0x3;
-            Reg32(k_aon_crg_base, AON_CRG_RESET_ASSERT) &= ~0x3;
-        }
-
-        static void init() {
-            enable();
-            reset();
-        }
-    };
-
-    class GMAC {
-        enum Shift {
-            GMAC5_0_CLK_TX_CLK_MUX_SEL_SHIFT = 24,
-
-        };
-        enum Register {
-            GMAC5_0_CLK_TX = 0x14,
-        };
-
-        enum Mask {
-            GMAC5_0_CLK_TX_CLK_MUX_SEL_MASK = 0x1000000,
-        };
-
-      public:
-        static void init() {
-            Reg32(k_aon_crg_base, GMAC5_0_CLK_TX) &= ~GMAC5_0_CLK_TX_CLK_MUX_SEL_MASK;
-            Reg32(k_aon_crg_base, GMAC5_0_CLK_TX) |=
-                (1 << GMAC5_0_CLK_TX_CLK_MUX_SEL_SHIFT) & GMAC5_0_CLK_TX_CLK_MUX_SEL_MASK;
-        }
-    };
-
     class MDIO {
         enum Register { BASE = 0x200, DATA = 0x204 };
         enum Bit {
@@ -360,7 +247,7 @@ template <unsigned long Base> class DWMAC : Driver {
                 descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
                 descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
                 descriptor.des3 = Descriptor::OWN | Descriptor::VALID;
-                Cache::flush(&descriptor, sizeof(Descriptor));
+                CacheController::flush(&descriptor, sizeof(Descriptor));
             }
 
             Reg32(Base, CH0_RX_DESCRIPTORS_LIST_ADDR) =
@@ -383,13 +270,13 @@ template <unsigned long Base> class DWMAC : Driver {
             while (1) {
                 for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
                     Descriptor &descriptor = m_rx_descriptors[i];
-                    Cache::flush(&descriptor, sizeof(Descriptor));
+                    CacheController::flush(&descriptor, sizeof(Descriptor));
                     if (!(descriptor.des3 & Descriptor::OWN)) {
                         unsigned long addr64 = (static_cast<unsigned long>(descriptor.des1) << 32) | descriptor.des0;
                         unsigned short *addr = reinterpret_cast<unsigned short *>(addr64);
                         unsigned long size = descriptor.des3 & 0x3FFF;
                         Console::println("Receive: %d Bytes!\n", size);
-                        Cache::flush(addr, size);
+                        CacheController::flush(addr, size);
 
                         for (unsigned int i = 0; i < size / 2; i++) {
                             if ((i + 1) % 16 == 0)
@@ -407,17 +294,17 @@ template <unsigned long Base> class DWMAC : Driver {
         static void send(unsigned char *frame, unsigned int length) {
             TraceIn();
             unsigned long buffer = reinterpret_cast<unsigned long>(frame);
-            Cache::flush(frame, length);
+            CacheController::flush(frame, length);
             Descriptor &descriptor = m_tx_descriptors[0];
             descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
             descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
             descriptor.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
             descriptor.des2 = (length & 0x7FFF);
-            Cache::flush(&descriptor, sizeof(Descriptor));
+            CacheController::flush(&descriptor, sizeof(Descriptor));
             Reg32(Base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_tx_descriptors + 1);
 
             while (1) {
-                Cache::flush(&descriptor, sizeof(Descriptor));
+                CacheController::flush(&descriptor, sizeof(Descriptor));
                 if (!(descriptor.des3 & Descriptor::OWN)) {
                     Console::println("Sended!\n");
                     break;
@@ -454,8 +341,6 @@ template <unsigned long Base> class DWMAC : Driver {
       public:
         static void init() {
             TraceIn();
-            Clock::init();
-            GMAC::init();
             DMA::reset();
             MTL::init();
             PHY::init();
