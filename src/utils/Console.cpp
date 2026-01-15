@@ -35,10 +35,17 @@ void Console::println(const char *fmt, ...) {
                 break;
             }
             case 'p': {
+                out << "0x";
                 void *p = va_arg(args, void *);
                 out << p;
                 break;
             }
+            case 'x': {
+                void *x = va_arg(args, void *);
+                out << x;
+                break;
+            }
+
             case '%': {
                 out << '%';
                 break;
