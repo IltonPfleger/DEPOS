@@ -53,8 +53,6 @@ struct Console {
 
         Stream &operator<<(const void *ptr) {
             auto hex = reinterpret_cast<unsigned long>(ptr);
-            put('0');
-            put('x');
             bool started = false;
 
             for (int i = (sizeof(hex) * 8) - 4; i >= 0; i -= 4) {
