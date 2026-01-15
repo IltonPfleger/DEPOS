@@ -14,8 +14,8 @@ class VisionFive2 {
     using ISA = RV64<CLINT>;
     using CPU = ISA::CPU;
     using MMU = ISA::MMU;
-    using Ethernet = DWMAC::Ethernet;
-    using IO = DW8250<Traits<MemoryMap>::UART, 1000000 / 2, 115200>;
+    using Ethernet = DWMAC<Traits<MemoryMap>::GMAC0>::Ethernet;
+    using IO = DW8250<Traits<MemoryMap>::UART>;
 
     __attribute__((always_inline)) static inline void init() {
         CPU::probe();
