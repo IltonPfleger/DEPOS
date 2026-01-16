@@ -158,12 +158,24 @@ template <unsigned long Base> class DWMAC : Driver {
             PACKET_FILTER = 0x8,
             RX_QUEUE_CONTROL0 = 0xa0,
             PHY_CONTROL_STATUS = 0xf8,
+            ADDRESS0_LOW = 0x304,
+            ADDRESS0_HIGH = 0x300,
+
         };
+
+        struct Address {
+            unsigned int high;
+            unsigned int low;
+        };
+
+        static Address address() { return {Reg32(Base, ADDRESS0_HIGH) & 0xFFFF, Reg32(Base, ADDRESS0_LOW)}; }
+        static void address(unsigned int high, unsigned int low) {
+            Reg32(Base, ADDRESS0_HIGH) = (Reg32(Base, ADDRESS0_HIGH) & 0xFFFF0000) | (high & 0xFFFF);
+            Reg32(Base, ADDRESS0_LOW) = low;
+        }
 
         static void init() {
             TraceIn();
-
-            // TODO: Setup MAC Address
 
             if (Reg32(Base, PHY_CONTROL_STATUS) & PHY_CONTROL_STATUS_LINK_STATUS_UP) {
                 Console::println("Link is Up!\n");
@@ -172,6 +184,14 @@ template <unsigned long Base> class DWMAC : Driver {
                 } else {
                     Console::println("Link is Half Duplex!\n");
                 }
+                // auto [high, low] = address();
+                // Console::print("Address: ");
+                // Console::println("%x:", (high >> 8) & 0xFF);
+                // Console::println("%x:", high & 0xFF);
+                // Console::println("%x:", (low >> 24) & 0xFF);
+                // Console::println("%x:", (low >> 16) & 0xFF);
+                // Console::println("%x:", (low >> 8) & 0xFF);
+                // Console::println("%x\n", low & 0xFF);
             } else {
                 Console::println("Link is Down!\n");
             }
