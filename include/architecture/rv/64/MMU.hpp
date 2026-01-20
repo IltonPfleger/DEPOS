@@ -1,6 +1,6 @@
 #pragma once
 
-#include <architecture/rv/64/Modes.hpp>
+#include <architecture/rv/Modes.hpp>
 #include <architecture/rv/csrs.hpp>
 #include <memory/Memory.hpp>
 

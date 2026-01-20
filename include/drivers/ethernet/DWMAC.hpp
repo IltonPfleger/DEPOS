@@ -214,14 +214,15 @@ template <unsigned long Base> class DWMAC : Driver {
             unsigned int des3;
 
             enum Bits {
-                OWN = 1ULL << 31,
-                VALID = 1ULL << 24,
-                FIRST = 1ULL << 29,
-                LAST = 1ULL << 28,
+                OWN = 1 << 31,
+                IOC = 1 << 30,
+                VALID = 1 << 24,
+                FIRST = 1 << 29,
+                LAST = 1 << 28,
             };
         };
 
-        enum Register {
+        enum Registers {
             MODE = 0x1000,
             SYSBUS_MODE = 0x1004,
             CH0_TX_CONTROL = 0x1104,
@@ -234,6 +235,12 @@ template <unsigned long Base> class DWMAC : Driver {
             CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER = 0x1128,
             CH0_TX_DESCRIPTORS_RING_LENGTH = 0x112c,
             CH0_RX_DESCRIPTORS_RING_LENGTH = 0x1130,
+            CH0_INTERRUPT_ENABLE = 0x1134,
+        };
+
+        enum Bits {
+            CH0_INTERRUPT_ENABLE_NIE = 1 << 15,
+            CH0_INTERRUPT_ENABLE_RIE = 1 << 6,
         };
 
       public:
@@ -248,17 +255,18 @@ template <unsigned long Base> class DWMAC : Driver {
             TraceIn();
             descriptors();
             Reg32(Base, SYSBUS_MODE) |= 1 << 11;
-            Reg32(Base, CH0_TX_CONTROL) |= 1;
+            // Reg32(Base, CH0_TX_CONTROL) |= 1;
             Reg32(Base, CH0_RX_CONTROL) |= 1;
+            Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_RIE;
             TraceOut();
         }
 
         static void descriptors() {
             Buffer *buffers = new (Heap::SYSTEM) Buffer[k_number_of_descriptors];
-            m_tx_descriptors = new (Heap::SYSTEM) Descriptor[k_number_of_descriptors];
+            // m_tx_descriptors = new (Heap::SYSTEM) Descriptor[k_number_of_descriptors];
             m_rx_descriptors = new (Heap::SYSTEM) Descriptor[k_number_of_descriptors];
 
-            memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
+            // memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
             memset(m_rx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
 
             for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
@@ -266,75 +274,81 @@ template <unsigned long Base> class DWMAC : Driver {
                 unsigned long buffer = reinterpret_cast<unsigned long>(buffers + i);
                 descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
                 descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
-                descriptor.des3 = Descriptor::OWN | Descriptor::VALID;
+                descriptor.des3 = Descriptor::OWN | Descriptor::VALID | Descriptor::IOC;
                 CacheController::flush(&descriptor, sizeof(Descriptor));
             }
 
-            Reg32(Base, CH0_RX_DESCRIPTORS_LIST_ADDR) =
-                static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF);
-            Reg32(Base, CH0_RX_DESCRIPTORS_LIST_HADDR) =
-                static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32);
+            Reg32(Base, CH0_RX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF;
+            Reg32(Base, CH0_RX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32;
             Reg32(Base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
             Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
                 reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors);
 
-            Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) =
-                static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF);
-            Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) =
-                static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32);
-            Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
+            // Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) =
+            //     static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF);
+            // Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) =
+            //     static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32);
+            // Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
         }
 
         static void receive() {
             TraceIn();
+            auto &i = m_current_rx_descriptor;
             while (1) {
-                for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
-                    Descriptor &descriptor = m_rx_descriptors[i];
-                    CacheController::flush(&descriptor, sizeof(Descriptor));
-                    if (!(descriptor.des3 & Descriptor::OWN)) {
-                        unsigned long addr64 = (static_cast<unsigned long>(descriptor.des1) << 32) | descriptor.des0;
-                        unsigned short *addr = reinterpret_cast<unsigned short *>(addr64);
-                        unsigned long size = descriptor.des3 & 0x3FFF;
-                        Console::println("Receive: %d Bytes!\n", size);
-                        CacheController::flush(addr, size);
-
-                        for (unsigned int i = 0; i < size / 2; i++) {
-                            if ((i + 1) % 16 == 0)
-                                Console::print('\n');
-                            Console::println("0x%x ", __builtin_bswap16(addr[i]));
-                        }
-                        Console::print('\n');
-                        return;
-                    }
-                }
-            }
-            TraceOut();
-        }
-
-        static void send(unsigned char *frame, unsigned int length) {
-            TraceIn();
-            unsigned long buffer = reinterpret_cast<unsigned long>(frame);
-            CacheController::flush(frame, length);
-            Descriptor &descriptor = m_tx_descriptors[0];
-            descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
-            descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
-            descriptor.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
-            descriptor.des2 = (length & 0x7FFF);
-            CacheController::flush(&descriptor, sizeof(Descriptor));
-            Reg32(Base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_tx_descriptors + 1);
-
-            while (1) {
-                CacheController::flush(&descriptor, sizeof(Descriptor));
-                if (!(descriptor.des3 & Descriptor::OWN)) {
-                    Console::println("Sended!\n");
+                Descriptor &d = m_rx_descriptors[i];
+                CacheController::flush(&d, sizeof(Descriptor));
+                if (!(d.des3 & Descriptor::OWN))
                     break;
-                }
+                i = (i + 1) % k_number_of_descriptors;
             }
+
+            Descriptor &d = m_rx_descriptors[i];
+            unsigned long addr64 = (static_cast<unsigned long>(d.des1) << 32) | d.des0;
+            unsigned short *addr = reinterpret_cast<unsigned short *>(addr64);
+            unsigned long size = d.des3 & 0x3FFF;
+            CacheController::flush(addr, size);
+
+            Console::println("Receive: %d Bytes!\n", size);
+
+            for (unsigned int i = 0; i < size / 2; i++) {
+                if ((i + 1) % 16 == 0)
+                    Console::print('\n');
+                Console::println("0x%x ", __builtin_bswap16(addr[i]));
+            }
+
+            Console::print('\n');
+
+            d.des3 = Descriptor::OWN | Descriptor::VALID | Descriptor::IOC;
+
             TraceOut();
         }
+
+        // static void send(unsigned char *frame, unsigned int length) {
+        //     TraceIn();
+        //     unsigned long buffer = reinterpret_cast<unsigned long>(frame);
+        //     CacheController::flush(frame, length);
+        //     Descriptor &descriptor = m_tx_descriptors[0];
+        //     descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
+        //     descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
+        //     descriptor.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
+        //     descriptor.des2 = (length & 0x7FFF);
+        //     CacheController::flush(&descriptor, sizeof(Descriptor));
+        //     Reg32(Base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_tx_descriptors +
+        //     1);
+
+        //    while (1) {
+        //        CacheController::flush(&descriptor, sizeof(Descriptor));
+        //        if (!(descriptor.des3 & Descriptor::OWN)) {
+        //            Console::println("Sended!\n");
+        //            break;
+        //        }
+        //    }
+        //    TraceOut();
+        //}
 
       private:
         static constexpr unsigned int k_number_of_descriptors = 10;
+        static inline unsigned int m_current_rx_descriptor;
         static inline Descriptor *m_tx_descriptors;
         static inline Descriptor *m_rx_descriptors;
     };
@@ -357,7 +371,7 @@ template <unsigned long Base> class DWMAC : Driver {
     };
 
   public:
-    class Ethernet {
+    class Ethernet : public DMA {
       public:
         static void init() {
             TraceIn();
@@ -369,10 +383,10 @@ template <unsigned long Base> class DWMAC : Driver {
             TraceOut();
         }
 
-        static void send(void *frame, unsigned int length) {
-            return DMA::send(reinterpret_cast<unsigned char *>(frame), length);
-        }
+        // static void send(void *frame, unsigned int length) {
+        //     return DMA::send(reinterpret_cast<unsigned char *>(frame), length);
+        // }
 
-        static void receive() { DMA::receive(); }
+        // static void receive() { DMA::receive(); }
     };
 };

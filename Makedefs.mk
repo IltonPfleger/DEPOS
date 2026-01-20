@@ -20,13 +20,13 @@ DD      := dd
 TRUNCATE := truncate
 QEMU    := qemu-system-riscv64
 
-MachineName     := $(shell $(TRAITS) $(INCLUDE)/Traits.hpp "Traits<Machine>::NAME")
-CPUS            := $(shell $(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<CPUS>::COUNT")
-MemorySize      := $(shell $(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<Memory>::Size")
-PageSize        := $(shell $(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<Memory>::PageSize")
-RamStart        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::RamStart"))
-BootAddr        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::BootAddr"))
-ApplicationAddr := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE)/machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::ApplicationAddr"))
+MachineName     := $(shell $(TRAITS) $(INCLUDE) Traits.hpp "Traits<Machine>::NAME")
+CPUS            := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<CPUS>::COUNT")
+MemorySize      := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<Memory>::Size")
+PageSize        := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<Memory>::PageSize")
+RamStart        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::RamStart"))
+BootAddr        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::BootAddr"))
+ApplicationAddr := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::ApplicationAddr"))
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -D__MACHINE=$(MachineName)

@@ -1,4 +1,11 @@
-struct Interruptions {
+#pragma once
+
+#include <architecture/rv/Modes.hpp>
+#include <architecture/rv/csrs.hpp>
+
+namespace rv {
+class Interruptions {
+  public:
     static void disable() { csrc<KernelMode::STATUS>(KernelMode::IRQE); }
     static void enable() { csrs<KernelMode::STATUS>(KernelMode::IRQE); }
 
@@ -9,3 +16,4 @@ struct Interruptions {
         return (status & KernelMode::IRQE) != 0;
     }
 };
+} // namespace rv

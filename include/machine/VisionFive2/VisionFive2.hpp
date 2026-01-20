@@ -6,7 +6,6 @@
 #include <architecture/rv/64/RV64.hpp>
 #include <drivers/Driver.hpp>
 #include <drivers/ethernet/DWMAC.hpp>
-#include <drivers/timing/clint/SiFiveCLINT.hpp>
 #include <drivers/uart/DW8250.hpp>
 #include <memory/Memory.hpp>
 #include <utils/BSS.hpp>
@@ -95,15 +94,13 @@ class VisionFive2 {
     };
 
   public:
-    using CLINT = SiFiveCLINT;
-    using ISA = RV64<CLINT>;
-    using CPU = ISA::CPU;
-    using MMU = ISA::MMU;
+    using CPU = rv64::CPU;
+    using Boot = rv64::Boot;
     using Ethernet = DWMAC<Traits<MemoryMap>::GMAC0>::Ethernet;
     using IO = DW8250<Traits<MemoryMap>::UART>;
 
     __attribute__((always_inline)) static inline void init() {
-        CPU::probe();
+        Boot::probe();
 
         if (CPU::id() == Traits<CPUS>::BSP) {
             BSS::init();
@@ -111,8 +108,7 @@ class VisionFive2 {
         }
 
         CPU::barrier();
-        CLINT::reset(CPU::id());
-        CPU::init();
+        Boot::init();
         IO::init();
     }
 };
