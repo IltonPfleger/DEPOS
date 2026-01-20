@@ -1,7 +1,8 @@
 #!/bin/sh
 
-FILE="$1"
-VARIABLE="$2"
+INCLUDE="$1"
+FILE="$2"
+VARIABLE="$3"
 
 if [ -z "$FILE" ] || [ -z "$VARIABLE" ]; then
 	echo "Use: $0 <FILE.hpp> <VARIABLE>"
@@ -10,7 +11,7 @@ fi
 
 BINARY=$(mktemp /tmp/temp.XXXXXX)
 
-g++ -o "$BINARY" -x c++ -I"$(pwd)" \
+g++ -o "$BINARY" -x c++ -I"$INCLUDE" \
     -DFILE_INCLUDE=\""$FILE"\" \
     -DVARIABLE="$VARIABLE" \
     - <<'EOF'

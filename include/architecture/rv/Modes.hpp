@@ -2,7 +2,7 @@
 
 namespace rv {
 struct MachineMode {
-    enum : unsigned long {
+    enum {
         PMPADDR0 = 0x3B0,
         PMPCFG0 = 0x3A0,
         MHARTID = 0xF14,            // Core Number/ID
@@ -12,6 +12,7 @@ struct MachineMode {
         ME2SUPERVISOR = 1ULL << 11, // Machine to Supervisor
         ME2USER = 0ULL << 11,       // Machine to User
         TI = 1ULL << 7,             // Timer Interrupt Enable
+        EI = 1ULL << 11,            // External Interrupt Enable
         IRQE = 1ULL << 3,           // Interrupt Enable
         PIRQE = 1ULL << 7,          // Previous Interrupt Enable
     };
@@ -53,4 +54,12 @@ struct SupervisorMode {
 
     __attribute__((always_inline)) static inline void ret() { asm volatile("sret"); }
 };
+
+using KernelMode = Meta::TypeSelector<Traits<System>::MULTITASK, SupervisorMode, MachineMode>::Result;
 } // namespace rv
+
+namespace rv64 {
+using rv::KernelMode;
+using rv::MachineMode;
+using rv::SupervisorMode;
+} // namespace rv64
