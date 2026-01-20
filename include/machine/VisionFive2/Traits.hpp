@@ -48,4 +48,7 @@ template <> struct Traits<CLINT> {
 template <> struct Traits<PLIC> {
     static constexpr bool Enable = true;
     static constexpr unsigned long Addr = Traits<MemoryMap>::PLIC;
+    static constexpr unsigned int First = 12;
+    static constexpr unsigned int Count = 10;
+    static constexpr unsigned int Last = First + Count;
 };

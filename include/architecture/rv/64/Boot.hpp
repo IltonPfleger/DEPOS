@@ -1,8 +1,10 @@
 #pragma once
 
 #include <architecture/rv/CPU.hpp>
-#include <architecture/rv/IC.hpp>
 #include <architecture/rv/PLIC.hpp>
+#include <architecture/rv/ic/IC.hpp>
+#include <architecture/rv/ic/MIC.hpp>
+#include <architecture/rv/ic/SIC.hpp>
 
 namespace rv64 {
 class Boot {
