@@ -51,11 +51,13 @@ static unsigned char *frame(unsigned char *frame, unsigned int length) {
 int main(int, char *[]) {
     Machine::Ethernet::init();
 
+    auto nic = Machine::Ethernet::instance();
+
     unsigned int length = 100;
     unsigned char *ethernet = new (Heap::SYSTEM) unsigned char[length];
 
     while (1) {
-        unsigned int size = Machine::Ethernet::receive(ethernet, length);
+        unsigned int size = nic->receive(ethernet, length);
 
         if (size == 0)
             continue;
@@ -69,7 +71,7 @@ int main(int, char *[]) {
         Console::print('\n');
 
         frame(ethernet, length);
-        Machine::Ethernet::send(ethernet, length);
+        nic->send(ethernet, length);
     }
 
     return 0;
