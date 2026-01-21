@@ -176,32 +176,11 @@ template <unsigned long Base> class DWMAC : Driver {
 
         static void init() {
             TraceIn();
-
-            if (Reg32(Base, PHY_CONTROL_STATUS) & PHY_CONTROL_STATUS_LINK_STATUS_UP) {
-                Console::println("Link is Up!\n");
-                if (Reg32(Base, PHY_CONTROL_STATUS) & PHY_CONTROL_STATUS_LINK_MODE_FULL_DUPLEX) {
-                    Console::println("Link is Full Duplex!\n");
-                } else {
-                    Console::println("Link is Half Duplex!\n");
-                }
-                // auto [high, low] = address();
-                // Console::print("Address: ");
-                // Console::println("%x:", (high >> 8) & 0xFF);
-                // Console::println("%x:", high & 0xFF);
-                // Console::println("%x:", (low >> 24) & 0xFF);
-                // Console::println("%x:", (low >> 16) & 0xFF);
-                // Console::println("%x:", (low >> 8) & 0xFF);
-                // Console::println("%x\n", low & 0xFF);
-            } else {
-                Console::println("Link is Down!\n");
-            }
-
-            TraceOut();
-
             Reg32(Base, PACKET_FILTER) |= PACKET_FILTER_RECEIVE_ALL | PACKET_FILTER_PROMISCUOUS_MODE;
             Reg32(Base, RX_QUEUE_CONTROL0) = RX_QUEUE_CONTROL0_QUEUE0_ENABLE;
             Reg32(Base, CONFIGURATION) |= CONFIGURATION_RECEIVER_ENABLE | CONFIGURATION_TRANSMITTER_ENABLE;
             Reg32(Base, CONFIGURATION) |= CONFIGURATION_CST;
+            TraceOut();
         }
     };
 
@@ -263,18 +242,6 @@ template <unsigned long Base> class DWMAC : Driver {
             TraceOut();
         }
 
-        static void init() {
-            TraceIn();
-            descriptors();
-            Reg32(Base, SYSBUS_MODE) |= 1 << 11;
-            Reg32(Base, CH0_TX_CONTROL) |= 1;
-            Reg32(Base, CH0_RX_CONTROL) |= 1;
-            Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_RIE |
-                                                 CH0_INTERRUPT_ENABLE_AIE | CH0_INTERRUPT_ENABLE_RBUE;
-            IC::bind(Traits<GMAC0>::IRQs[0], interrupt);
-            TraceOut();
-        }
-
         static void interrupt(unsigned int) {
             unsigned int status = Reg32(Base, CH0_INTERRUPT_STATUS);
 
@@ -292,7 +259,19 @@ template <unsigned long Base> class DWMAC : Driver {
             Reg32(Base, CH0_INTERRUPT_STATUS) = ~0U;
         }
 
-        static void descriptors() {
+        DMA() {
+            TraceIn();
+            descriptors();
+            Reg32(Base, SYSBUS_MODE) |= 1 << 11;
+            Reg32(Base, CH0_TX_CONTROL) |= 1;
+            Reg32(Base, CH0_RX_CONTROL) |= 1;
+            Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_RIE |
+                                                 CH0_INTERRUPT_ENABLE_AIE | CH0_INTERRUPT_ENABLE_RBUE;
+            IC::bind(Traits<GMAC0>::IRQs[0], interrupt);
+            TraceOut();
+        }
+
+        void descriptors() {
             Buffer *buffers = new (Heap::SYSTEM) Buffer[k_number_of_descriptors];
 
             memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
@@ -303,7 +282,7 @@ template <unsigned long Base> class DWMAC : Driver {
                 unsigned long buffer = reinterpret_cast<unsigned long>(buffers + i);
                 descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
                 descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
-                descriptor.des3 = Descriptor::OWN | Descriptor::VALID | Descriptor::IOC;
+                descriptor.des3 = Descriptor::RX_AVAILABLE;
                 CacheController::flush(&descriptor, sizeof(Descriptor));
             }
 
@@ -320,7 +299,7 @@ template <unsigned long Base> class DWMAC : Driver {
             Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
         }
 
-        static int receive(void *frame, unsigned int length) {
+        int receive(void *frame, unsigned int length) {
 
             Reg32(Base, CH0_INTERRUPT_ENABLE) &= ~CH0_INTERRUPT_ENABLE_AIE;
 
@@ -348,14 +327,14 @@ template <unsigned long Base> class DWMAC : Driver {
 
             memcpy(frame, addr, size);
 
-            d.des3 = Descriptor::OWN | Descriptor::VALID | Descriptor::IOC;
+            d.des3 = Descriptor::RX_AVAILABLE;
 
             Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_AIE;
 
             return size;
         }
 
-        static int send(void *frame, unsigned int length) {
+        int send(void *frame, unsigned int length) {
             unsigned long buffer = reinterpret_cast<unsigned long>(frame);
             CacheController::flush(frame, length);
 
@@ -380,8 +359,8 @@ template <unsigned long Base> class DWMAC : Driver {
 
       private:
         static constexpr unsigned int k_number_of_descriptors = 10;
-        static inline Descriptor m_tx_descriptors[k_number_of_descriptors];
-        static inline Descriptor m_rx_descriptors[k_number_of_descriptors];
+        Descriptor m_tx_descriptors[k_number_of_descriptors];
+        Descriptor m_rx_descriptors[k_number_of_descriptors];
     };
 
     class MTL {
@@ -404,20 +383,21 @@ template <unsigned long Base> class DWMAC : Driver {
   public:
     class Ethernet : public DMA {
       public:
+        Ethernet() : DMA() {}
+
         static void init() {
             TraceIn();
             DMA::reset();
             MTL::init();
             PHY::init();
             MAC::init();
-            DMA::init();
+            m_device = new (Heap::SYSTEM) Ethernet();
             TraceOut();
         }
 
-        // static void send(void *frame, unsigned int length) {
-        //     return DMA::send(reinterpret_cast<unsigned char *>(frame), length);
-        // }
+        static Ethernet *instance() { return m_device; }
 
-        // static void receive() { DMA::receive(); }
+      private:
+        static inline Ethernet *m_device;
     };
 };
