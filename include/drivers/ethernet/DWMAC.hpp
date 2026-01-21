@@ -272,14 +272,12 @@ template <unsigned long Base> class DWMAC : Driver {
         }
 
         void descriptors() {
-            Buffer *buffers = new (Heap::SYSTEM) Buffer[k_number_of_descriptors];
-
             memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
             memset(m_rx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
 
             for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
                 auto &descriptor = m_rx_descriptors[i];
-                unsigned long buffer = reinterpret_cast<unsigned long>(buffers + i);
+                unsigned long buffer = reinterpret_cast<unsigned long>(m_rx_buffers[i]);
                 descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
                 descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
                 descriptor.des3 = Descriptor::RX_AVAILABLE;
@@ -300,7 +298,6 @@ template <unsigned long Base> class DWMAC : Driver {
         }
 
         int receive(void *frame, unsigned int length) {
-
             Reg32(Base, CH0_INTERRUPT_ENABLE) &= ~CH0_INTERRUPT_ENABLE_AIE;
 
             unsigned long zero = reinterpret_cast<unsigned long>(m_rx_descriptors);
@@ -359,6 +356,7 @@ template <unsigned long Base> class DWMAC : Driver {
 
       private:
         static constexpr unsigned int k_number_of_descriptors = 10;
+        Buffer m_rx_buffers[k_number_of_descriptors];
         Descriptor m_tx_descriptors[k_number_of_descriptors];
         Descriptor m_rx_descriptors[k_number_of_descriptors];
     };
