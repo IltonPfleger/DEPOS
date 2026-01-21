@@ -321,14 +321,22 @@ template <unsigned long Base> class DWMAC : Driver {
         }
 
         static int receive(void *frame, unsigned int length) {
-            Reg32(Base, CH0_INTERRUPT_ENABLE) &= ~CH0_INTERRUPT_ENABLE_RBUE;
 
-            Descriptor &d = *reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR));
+            Reg32(Base, CH0_INTERRUPT_ENABLE) &= ~CH0_INTERRUPT_ENABLE_AIE;
+
+            unsigned long zero = reinterpret_cast<unsigned long>(m_rx_descriptors);
+            unsigned long current = Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR);
+            unsigned int i = (current - zero - 1) % k_number_of_descriptors;
+
             while (1) {
+                Descriptor &d = m_rx_descriptors[i];
                 CacheController::flush(&d, sizeof(Descriptor));
                 if (!(d.des3 & Descriptor::OWN))
                     break;
+                i = (i + 1) % k_number_of_descriptors;
             }
+
+            Descriptor &d = m_rx_descriptors[i];
 
             unsigned long addr64 = (static_cast<unsigned long>(d.des1) << 32) | d.des0;
             unsigned short *addr = reinterpret_cast<unsigned short *>(addr64);
@@ -336,21 +344,13 @@ template <unsigned long Base> class DWMAC : Driver {
             CacheController::flush(addr, size);
 
             if (size > length)
-                return 0;
+                size = length;
 
             memcpy(frame, addr, size);
 
-            for (unsigned int i = 0; i < size / 2; i++) {
-                if ((i + 1) % 16 == 0)
-                    Console::print('\n');
-                Console::println("0x%x ", __builtin_bswap16(addr[i]));
-            }
-
-            Console::print('\n');
-
             d.des3 = Descriptor::OWN | Descriptor::VALID | Descriptor::IOC;
 
-            Reg32(Base, CH0_INTERRUPT_ENABLE) |= ~CH0_INTERRUPT_ENABLE_RBUE;
+            Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_AIE;
 
             return size;
         }
