@@ -5,10 +5,13 @@
 
 #include <architecture/rv/64/RV64.hpp>
 #include <drivers/Driver.hpp>
-#include <drivers/ethernet/DWMAC.hpp>
 #include <drivers/uart/DW8250.hpp>
 #include <memory/Memory.hpp>
 #include <utils/BSS.hpp>
+
+using IC = rv::IC;
+
+#include <drivers/ethernet/DWMAC.hpp>
 
 class VisionFive2 {
 

@@ -26,44 +26,47 @@
 // }
 //
 
-// static unsigned char *frame(unsigned int length) {
-//     unsigned char *frame = new (Heap::SYSTEM) unsigned char[length];
-//     unsigned int offset = 0;
-//
-//     for (int i = 0; i < 6; i++)
-//         frame[offset++] = 0xFF;
-//
-//     unsigned char src[6] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
-//     for (int i = 0; i < 6; i++)
-//         frame[offset++] = src[i];
-//
-//     frame[offset++] = 0x08;
-//     frame[offset++] = 0x00;
-//
-//     const char payload[] = "Hello World!";
-//     for (unsigned int i = 0; i < sizeof(payload) - 1; i++)
-//         frame[offset++] = payload[i];
-//
-//     for (; offset < length; offset++)
-//         frame[offset] = 0;
-//     return frame;
-// }
+static unsigned char *frame(unsigned char *frame, unsigned int length) {
+    unsigned int offset = 0;
+
+    for (int i = 0; i < 6; i++)
+        frame[offset++] = 0xFF;
+
+    unsigned char src[6] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
+    for (int i = 0; i < 6; i++)
+        frame[offset++] = src[i];
+
+    frame[offset++] = 0x08;
+    frame[offset++] = 0x00;
+
+    const char payload[] = "Hello World!";
+    for (unsigned int i = 0; i < sizeof(payload) - 1; i++)
+        frame[offset++] = payload[i];
+
+    for (; offset < length; offset++)
+        frame[offset] = 0;
+    return frame;
+}
 
 int main(int, char *[]) {
-    Console::out << "Application: \n";
-    // Console::out << "Waiting...: \n";
-    // Alarm::delay(1);
-    // Console::out << "1,";
-    // Alarm::delay(1);
-    // Console::out << "2,";
-    // Alarm::delay(1);
-    // Console::out << "3.\n";
-    // Alarm::delay(1);
-    Console::out << "Ethernet...\n";
     Machine::Ethernet::init();
-    while (1)
-        ;
-    // Machine::Ethernet::receive();
-    // Console::out << "Application Done!\n";
+
+    unsigned int length = 300;
+    unsigned char *ethernet = new (Heap::SYSTEM) unsigned char[length];
+
+    while (1) {
+        unsigned int size = Machine::Ethernet::receive(ethernet, length);
+
+        for (unsigned int i = 0; i < size / 2; i++) {
+            if ((i + 1) % 16 == 0)
+                Console::print('\n');
+            Console::println("0x%x ", __builtin_bswap16(ethernet[i]));
+        }
+
+        Console::print('\n');
+
+        Machine::Ethernet::send(frame(ethernet, length), length);
+    }
+
     return 0;
 }

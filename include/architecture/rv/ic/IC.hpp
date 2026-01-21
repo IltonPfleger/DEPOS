@@ -1,25 +1,22 @@
 #pragma once
 
+#include <architecture/rv/PLIC.hpp>
 #include <utils/Debug.hpp>
+#include <utils/DispatchTable.hpp>
 
 namespace rv {
-class IC {
+class IC : public DispatchTable<0, 11, IC> {
+    using Base = DispatchTable<0, 11, IC>;
 
   public:
-    static constexpr unsigned long INTERRUPT = 1UL << 63;
-    typedef void (*Handler)(unsigned int);
-
-    static void bind(unsigned int id, Handler handler) { s_handlers[id] = handler; }
-
-    static void dispatch(unsigned int id) {
-        if (s_handlers[id])
-            s_handlers[id](id);
+    static void bind(unsigned int id, Base::Handler handler) {
+        if (id > 11)
+            PLIC::bind(id - 12, handler);
         else
-            ERROR(true, "Invalid Interrupt: %d\n", id);
+            Base::bind(id, handler);
     }
 
-  private:
-    static inline Handler s_handlers[Traits<PLIC>::Last];
+    static constexpr unsigned long INTERRUPT = 1UL << 63;
 };
 
 // class Syscall {
