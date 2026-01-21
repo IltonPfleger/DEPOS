@@ -271,11 +271,11 @@ template <unsigned long Base> class DWMAC : Driver {
             Reg32(Base, CH0_RX_CONTROL) |= 1;
             Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_RIE |
                                                  CH0_INTERRUPT_ENABLE_AIE | CH0_INTERRUPT_ENABLE_RBUE;
-            IC::bind(Traits<GMAC0>::IRQs[0], irq);
+            IC::bind(Traits<GMAC0>::IRQs[0], interrupt);
             TraceOut();
         }
 
-        static void irq(unsigned int id) {
+        static void interrupt(unsigned int) {
             unsigned int status = Reg32(Base, CH0_INTERRUPT_STATUS);
 
             if (status & CH0_INTERRUPT_STATUS_RI) {
