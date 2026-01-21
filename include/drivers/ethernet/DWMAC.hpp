@@ -219,6 +219,9 @@ template <unsigned long Base> class DWMAC : Driver {
                 VALID = 1 << 24,
                 FIRST = 1 << 29,
                 LAST = 1 << 28,
+                TX_ERROR = 1 << 15,
+
+                RX_AVAILABLE = OWN | IOC | VALID,
             };
         };
 
@@ -235,12 +238,20 @@ template <unsigned long Base> class DWMAC : Driver {
             CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER = 0x1128,
             CH0_TX_DESCRIPTORS_RING_LENGTH = 0x112c,
             CH0_RX_DESCRIPTORS_RING_LENGTH = 0x1130,
+            CH0_CURRENT_APP_RX_DESCRIPTOR = 0x114c,
+            CH0_CURRENT_APP_TX_DESCRIPTOR = 0x1144,
             CH0_INTERRUPT_ENABLE = 0x1134,
+            CH0_INTERRUPT_STATUS = 0x1160,
         };
 
         enum Bits {
             CH0_INTERRUPT_ENABLE_NIE = 1 << 15,
+            CH0_INTERRUPT_ENABLE_AIE = 1 << 14,
             CH0_INTERRUPT_ENABLE_RIE = 1 << 6,
+            CH0_INTERRUPT_ENABLE_RBUE = 1 << 6,
+
+            CH0_INTERRUPT_STATUS_RI = 1 << 6,
+            CH0_INTERRUPT_STATUS_RBU = 1 << 7,
         };
 
       public:
@@ -251,22 +262,40 @@ template <unsigned long Base> class DWMAC : Driver {
                 ;
             TraceOut();
         }
+
         static void init() {
             TraceIn();
             descriptors();
             Reg32(Base, SYSBUS_MODE) |= 1 << 11;
-            // Reg32(Base, CH0_TX_CONTROL) |= 1;
+            Reg32(Base, CH0_TX_CONTROL) |= 1;
             Reg32(Base, CH0_RX_CONTROL) |= 1;
-            Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_RIE;
+            Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_RIE |
+                                                 CH0_INTERRUPT_ENABLE_AIE | CH0_INTERRUPT_ENABLE_RBUE;
+            IC::bind(Traits<GMAC0>::IRQs[0], irq);
             TraceOut();
+        }
+
+        static void irq(unsigned int id) {
+            unsigned int status = Reg32(Base, CH0_INTERRUPT_STATUS);
+
+            if (status & CH0_INTERRUPT_STATUS_RI) {
+                Console::out << "Receive Packet!\n";
+            }
+
+            if (status & CH0_INTERRUPT_STATUS_RBU) {
+                Console::out << "Receive Buffer Unavailable!\n";
+                Descriptor *next = reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR));
+                next->des3 = Descriptor::RX_AVAILABLE;
+                Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(next);
+            }
+
+            Reg32(Base, CH0_INTERRUPT_STATUS) = ~0U;
         }
 
         static void descriptors() {
             Buffer *buffers = new (Heap::SYSTEM) Buffer[k_number_of_descriptors];
-            // m_tx_descriptors = new (Heap::SYSTEM) Descriptor[k_number_of_descriptors];
-            m_rx_descriptors = new (Heap::SYSTEM) Descriptor[k_number_of_descriptors];
 
-            // memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
+            memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
             memset(m_rx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
 
             for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
@@ -284,31 +313,32 @@ template <unsigned long Base> class DWMAC : Driver {
             Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
                 reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors);
 
-            // Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) =
-            //     static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF);
-            // Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) =
-            //     static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32);
-            // Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
+            Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) =
+                static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF);
+            Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) =
+                static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32);
+            Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
         }
 
-        static void receive() {
-            TraceIn();
-            auto &i = m_current_rx_descriptor;
+        static int receive(void *frame, unsigned int length) {
+            Reg32(Base, CH0_INTERRUPT_ENABLE) &= ~CH0_INTERRUPT_ENABLE_RBUE;
+
+            Descriptor &d = *reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR));
             while (1) {
-                Descriptor &d = m_rx_descriptors[i];
                 CacheController::flush(&d, sizeof(Descriptor));
                 if (!(d.des3 & Descriptor::OWN))
                     break;
-                i = (i + 1) % k_number_of_descriptors;
             }
 
-            Descriptor &d = m_rx_descriptors[i];
             unsigned long addr64 = (static_cast<unsigned long>(d.des1) << 32) | d.des0;
             unsigned short *addr = reinterpret_cast<unsigned short *>(addr64);
             unsigned long size = d.des3 & 0x3FFF;
             CacheController::flush(addr, size);
 
-            Console::println("Receive: %d Bytes!\n", size);
+            if (size > length)
+                return 0;
+
+            memcpy(frame, addr, size);
 
             for (unsigned int i = 0; i < size / 2; i++) {
                 if ((i + 1) % 16 == 0)
@@ -320,37 +350,38 @@ template <unsigned long Base> class DWMAC : Driver {
 
             d.des3 = Descriptor::OWN | Descriptor::VALID | Descriptor::IOC;
 
-            TraceOut();
+            Reg32(Base, CH0_INTERRUPT_ENABLE) |= ~CH0_INTERRUPT_ENABLE_RBUE;
+
+            return size;
         }
 
-        // static void send(unsigned char *frame, unsigned int length) {
-        //     TraceIn();
-        //     unsigned long buffer = reinterpret_cast<unsigned long>(frame);
-        //     CacheController::flush(frame, length);
-        //     Descriptor &descriptor = m_tx_descriptors[0];
-        //     descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
-        //     descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
-        //     descriptor.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
-        //     descriptor.des2 = (length & 0x7FFF);
-        //     CacheController::flush(&descriptor, sizeof(Descriptor));
-        //     Reg32(Base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_tx_descriptors +
-        //     1);
+        static int send(void *frame, unsigned int length) {
+            unsigned long buffer = reinterpret_cast<unsigned long>(frame);
+            CacheController::flush(frame, length);
 
-        //    while (1) {
-        //        CacheController::flush(&descriptor, sizeof(Descriptor));
-        //        if (!(descriptor.des3 & Descriptor::OWN)) {
-        //            Console::println("Sended!\n");
-        //            break;
-        //        }
-        //    }
-        //    TraceOut();
-        //}
+            Descriptor &d = *reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_TX_DESCRIPTOR));
+
+            d.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
+            d.des1 = static_cast<unsigned int>(buffer >> 32);
+            d.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
+            d.des2 = (length & 0x7FFF);
+            CacheController::flush(&d, sizeof(Descriptor));
+            Reg32(Base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(&d);
+
+            while (1) {
+                CacheController::flush(&d, sizeof(Descriptor));
+                if (!(d.des3 & Descriptor::OWN)) {
+                    if (d.des3 & Descriptor::TX_ERROR)
+                        return 0;
+                    return length;
+                }
+            }
+        }
 
       private:
         static constexpr unsigned int k_number_of_descriptors = 10;
-        static inline unsigned int m_current_rx_descriptor;
-        static inline Descriptor *m_tx_descriptors;
-        static inline Descriptor *m_rx_descriptors;
+        static inline Descriptor m_tx_descriptors[k_number_of_descriptors];
+        static inline Descriptor m_rx_descriptors[k_number_of_descriptors];
     };
 
     class MTL {

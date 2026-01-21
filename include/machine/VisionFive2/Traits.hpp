@@ -8,6 +8,7 @@ class Clock;
 class CPUS;
 class CLINT;
 class PLIC;
+class GMAC0;
 
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
@@ -39,6 +40,10 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long PLIC = 0x0C000000;
 };
 
+template <> struct Traits<GMAC0> {
+    static constexpr unsigned int IRQs[] = {19};
+};
+
 template <> struct Traits<CLINT> {
     static constexpr bool Enable = Traits<Timer>::Enable;
     static constexpr unsigned long Addr = Traits<MemoryMap>::CLINT;
@@ -48,7 +53,7 @@ template <> struct Traits<CLINT> {
 template <> struct Traits<PLIC> {
     static constexpr bool Enable = true;
     static constexpr unsigned long Addr = Traits<MemoryMap>::PLIC;
-    static constexpr unsigned int First = 12;
-    static constexpr unsigned int Count = 10;
-    static constexpr unsigned int Last = First + Count;
+    static constexpr unsigned int First = 5;
+    static constexpr unsigned int Last = 9;
+    static constexpr unsigned int Count = Last - First + 1;
 };

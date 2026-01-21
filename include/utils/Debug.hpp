@@ -4,6 +4,7 @@
     if constexpr (Traits<Debug>::Error) {                                                                              \
         if (expr) {                                                                                                    \
             Console::println("[ERROR] %s\n", __PRETTY_FUNCTION__);                                                     \
+            Console::println("%s\n", #expr);                                                                           \
             __VA_OPT__(Console::println(__VA_ARGS__));                                                                 \
             __VA_OPT__(Console::println("\n"));                                                                        \
             for (;;) {                                                                                                 \
@@ -20,7 +21,7 @@
 
 #define TraceOut(...)                                                                                                  \
     if constexpr (Traits<Debug>::Trace) {                                                                              \
-        __VA_OPT__(Console::print("return="));                                                                       \
+        __VA_OPT__(Console::print("return="));                                                                         \
         __VA_OPT__(Console::out << __VA_ARGS__);                                                                       \
         __VA_OPT__(Console::out << "\n");                                                                              \
         Console::println("%s}\n", __func__);                                                                           \

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <architecture/rv/CLINT.hpp>
+#include <architecture/rv/PLIC.hpp>
 #include <architecture/rv/ic/Exception.hpp>
 
 namespace rv {
