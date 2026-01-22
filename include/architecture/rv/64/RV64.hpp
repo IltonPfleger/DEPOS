@@ -8,7 +8,7 @@
 #include <architecture/rv/CPU.hpp>
 #include <architecture/rv/64/Context.hpp>
 #include <architecture/rv/64/MMU.hpp>
-#include <architecture/rv/64/Boot.hpp>
+#include <architecture/rv/64/Initializer.hpp>
 #include <architecture/rv/Modes.hpp>
 #include <architecture/rv/csrs.hpp>
 #include <machine/Traits.hpp>

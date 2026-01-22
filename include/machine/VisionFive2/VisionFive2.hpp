@@ -101,14 +101,16 @@ class VisionFive2 {
     using Initializer = rv64::Initializer;
 
     __attribute__((always_inline)) static inline void init() {
-        Initializer::prepare();
+        CPU::init();
 
         if (CPU::id() == Traits<CPUS>::BSP) {
-            BSS::init();
             Clock::init();
+            BSS::init();
         }
 
         CPU::barrier();
+
         Initializer::init();
+        Console::print(CPU::id());
     }
 };
