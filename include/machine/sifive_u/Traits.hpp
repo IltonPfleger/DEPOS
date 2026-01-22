@@ -1,10 +1,12 @@
 #pragma once
 
-template <typename T> struct Traits;
+#include <Traits.hpp>
+
 class MemoryMap;
 class Memory;
 class CPUS;
-class Clock;
+class CLINT;
+class PLIC;
 
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
@@ -32,6 +34,12 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long PLIC = 0;
 };
 
-template <> struct Traits<Clock> {
-    static constexpr unsigned long CLINT = 1'000'000;
+template <> struct Traits<CLINT> {
+    static constexpr bool Enable = Traits<Timer>::Enable;
+    static constexpr unsigned long Addr = Traits<MemoryMap>::CLINT;
+    static constexpr unsigned long Clock = 1'000'000;
+};
+
+template <> struct Traits<PLIC> {
+    static constexpr bool Enable = false;
 };

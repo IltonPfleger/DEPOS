@@ -7,9 +7,9 @@
 #include <architecture/rv/ic/SIC.hpp>
 
 namespace rv64 {
-class Boot {
+class Initializer {
 
-    __attribute__((naked)) static void jmode() {
+    __attribute__((naked)) static void change_to_main_mode() {
         if constexpr (Traits<System>::MULTITASK) {
             if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
                 for (;;)
@@ -38,15 +38,16 @@ class Boot {
     }
 
   public:
-    __attribute__((naked)) static void probe() {
+    __attribute__((naked)) static void prepare() {
         unsigned long core;
+        asm("csrc mstatus, 0x8");
         asm("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
         asm("mv sp, %0" ::"r"(Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * core));
         asm("ret");
     }
 
     __attribute__((noinline)) static void init() {
-        jmode();
+        change_to_main_mode();
         if constexpr (Traits<Timer>::Enable && Traits<System>::MULTITASK) {
             csrs<SupervisorMode::IE>(SupervisorMode::TI);
         }
