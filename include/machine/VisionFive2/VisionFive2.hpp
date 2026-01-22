@@ -11,7 +11,7 @@
 
 using IC = rv::IC;
 
-#include <drivers/ethernet/DWMAC.hpp>
+#include <drivers/ethernet/DWC_Ether_QoS.hpp>
 
 class VisionFive2 {
 
