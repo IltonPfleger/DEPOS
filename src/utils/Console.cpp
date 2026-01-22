@@ -34,37 +34,29 @@ void Console::println(const char *fmt, ...) {
         if (*fmt == '%') {
             ++fmt;
             switch (*fmt) {
-            case 'c': {
-                char c = static_cast<char>(va_arg(args, int));
-                print(c);
+            case 'c':
+                print(static_cast<char>(va_arg(args, int)));
                 break;
-            }
-            case 's': {
-                const char *s = va_arg(args, const char *);
-                print(s);
+            case 's':
+                print(va_arg(args, const char *));
                 break;
-            }
-            case 'd': {
-                int d = va_arg(args, int);
-                print(d);
+            case 'd':
+                print(va_arg(args, int));
                 break;
-            }
-            case 'u': {
-                unsigned int u = va_arg(args, unsigned int);
-                print(u);
+            case 'u':
+                print(va_arg(args, unsigned int));
                 break;
-            }
-            case 'p': {
+            case 'p':
                 print("0x");
-                void *p = va_arg(args, void *);
-                print(p);
+                print(va_arg(args, void *));
                 break;
-            }
-            case 'x': {
-                unsigned long x = va_arg(args, unsigned long);
-                print(Hex(x));
+            case 'x':
+                print(Hex(va_arg(args, unsigned int)));
+				break;
+            default:
+                print('%');
+                print(*fmt);
                 break;
-            }
             }
         } else {
             print(*fmt);
