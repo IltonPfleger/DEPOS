@@ -3,83 +3,55 @@
 #include <Meta.hpp>
 #include <Variadic.hpp>
 
-struct Console {
+class Console {
     static void put(char);
 
-    class Stream {
-        using Manipulator = Stream &(*)(Stream &);
-
+  public:
+    template <typename T> struct Hex {
       public:
-        Stream &operator<<(Manipulator m) { return m(*this); }
+        explicit Hex(T x) : m_x(x) {}
+        operator T() const { return m_x; }
 
-        Stream &operator<<(char c) {
-            put(c);
-            return *this;
-        }
-
-        Stream &operator<<(const char *str) {
-            if (!str)
-                return *this;
-
-            while (*str)
-                put(*str++);
-            return *this;
-        }
-
-        Stream &operator<<(unsigned long value) {
-            char buffer[32];
-            int pos = 0;
-
-            do {
-                buffer[pos++] = char('0' + (value % 10));
-                value /= 10;
-            } while (value);
-
-            while (pos--)
-                put(buffer[pos]);
-
-            return *this;
-        }
-
-        template <Meta::Integral T> Stream &operator<<(T value) {
-            if constexpr (Meta::Signed<T>::Result) {
-                if (value < 0) {
-                    put('-');
-                    value = -value;
-                }
-            }
-            return *this << static_cast<unsigned long>(value);
-        }
-
-        Stream &operator<<(const void *ptr) {
-            auto hex = reinterpret_cast<unsigned long>(ptr);
-            bool started = false;
-
-            for (int i = (sizeof(hex) * 8) - 4; i >= 0; i -= 4) {
-                unsigned int current = (hex >> i) & 0xF;
-                if (current != 0 || started) {
-                    put(current < 10 ? current + '0' : current - 10 + 'a');
-                    started = true;
-                }
-            }
-            if (!started) {
-                put('0');
-            }
-            return *this;
-        }
-
-        static Stream &endl(Stream &s) {
-            put('\n');
-            return s;
-        }
+      private:
+        T m_x;
     };
-    template <typename... Args> static void print(Args &&...args) {
-        bool first = true;
-        ((Console::out << (first ? (first = false, "") : ", ") << static_cast<Args &&>(args)), ...);
-    }
 
     static void println(const char *, ...);
+    static void print(char);
+    static void print(const char *);
+    static void print(unsigned long);
+    template <typename T> static void print(Hex<T> x) {
+        bool started = false;
 
-  public:
-    static inline Stream out;
+        for (int i = (sizeof(x) * 8) - 4; i >= 0; i -= 4) {
+            unsigned int current = (x >> i) & 0xF;
+            if (current != 0 || started) {
+                put(current < 10 ? current + '0' : current - 10 + 'a');
+                started = true;
+            }
+        }
+        if (!started) {
+            put('0');
+        }
+    }
+
+    template <Meta::Integer T> static void print(T t) {
+        if constexpr (Meta::Signed<T>::Result) {
+            if (t < 0) {
+                put('-');
+                t = -t;
+            }
+        }
+        print(static_cast<unsigned long>(t));
+    }
+
+    template <Meta::Pointer T> static void print(T t) {
+        Console::print("0x");
+        Console::print(Hex(reinterpret_cast<unsigned long>(t)));
+    }
+
+    template <typename First, typename... Args> static void print(First &&first, Args &&...args) {
+        Console::print(first);
+        ((Console::print(", "), Console::print(args)), ...);
+    }
 };

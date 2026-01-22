@@ -55,10 +55,21 @@ template <typename T, long unsigned int N> struct ArrayType<T[N]> {
 };
 
 template <typename T>
-concept Integral = requires(T a) { a % 2; };
+concept Integer = requires(T a) {
+    a % 10;
+    a / 10;
+};
+
+template <typename T> struct _Pointer {
+    static constexpr bool Result = false;
+};
+
+template <typename T> struct _Pointer<T *> {
+    static constexpr bool Result = true;
+};
 
 template <typename T>
-concept POINTER = requires(T a) { *a; };
+concept Pointer = _Pointer<T>::Result;
 
 template <typename T>
 concept IsArray = __is_array(T);
