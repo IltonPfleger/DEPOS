@@ -4,6 +4,8 @@
 #include <Variadic.hpp>
 
 class Console {
+    using IO = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
+
     static void put(char);
 
   public:

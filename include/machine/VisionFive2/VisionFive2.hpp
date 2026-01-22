@@ -99,8 +99,6 @@ class VisionFive2 {
   public:
     using CPU = rv64::CPU;
     using Initializer = rv64::Initializer;
-    // using Ethernet = DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>::Ethernet;
-    using IO = DW8250<Traits<MemoryMap>::UART>;
 
     __attribute__((always_inline)) static inline void init() {
         Initializer::prepare();
@@ -112,6 +110,5 @@ class VisionFive2 {
 
         CPU::barrier();
         Initializer::init();
-        IO::init();
     }
 };

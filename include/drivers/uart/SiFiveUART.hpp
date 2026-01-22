@@ -1,36 +1,23 @@
 #pragma once
 
-template <unsigned long A, unsigned long C, unsigned long B> struct SiFiveUART {
-    static constexpr auto Addr = A;
-    static constexpr auto Clock = C;
-    static constexpr auto Baudrate = B;
+#include <drivers/Driver.hpp>
 
-    static constexpr int Divisor = Clock / Baudrate;
-
-    static volatile unsigned int *base() { return reinterpret_cast<volatile unsigned int *>(Addr); }
-
-    static volatile unsigned int &TXDATA() { return *(base() + 0); }
-    static volatile unsigned int &RXDATA() { return *(base() + 1); }
-    static volatile unsigned int &TXCTRL() { return *(base() + 2); }
-    static volatile unsigned int &RXCTRL() { return *(base() + 3); }
-    static volatile unsigned int &IE() { return *(base() + 4); }
-    static volatile unsigned int &IP() { return *(base() + 5); }
-    static volatile unsigned int &DIV() { return *(base() + 6); }
+template <unsigned long Addr> struct SiFiveUART : Driver {
+    // static volatile unsigned int &TXDATA() { return *(Addr + 0); }
+    // static volatile unsigned int &RXDATA() { return *(Addr + 1); }
+    // static volatile unsigned int &TXCTRL() { return *(Addr + 2); }
+    // static volatile unsigned int &RXCTRL() { return *(Addr + 3); }
+    // static volatile unsigned int &IE() { return *(Addr + 4); }
+    // static volatile unsigned int &IP() { return *(Addr + 5); }
+    // static volatile unsigned int &DIV() { return *(Addr + 6); }
+    // static constexpr unsigned int RX_EMPTY_MASK = 0x80000000;
     static constexpr unsigned int TX_EMPTY_MASK = (1 << 31);
-    static constexpr unsigned int RX_EMPTY_MASK = 0x80000000;
 
-    static void init() {
-        DIV() = Divisor;
-        TXCTRL() = 1;
-        RXCTRL() = 1;
-        IE() = 0;
-    }
+    enum Registers { TXDATA = 0 };
 
     static void put(char c) {
-        while (TXDATA() & TX_EMPTY_MASK)
+        while (Reg32(Addr, TXDATA) & TX_EMPTY_MASK)
             ;
-        TXDATA() = c;
-        while (TXDATA() & TX_EMPTY_MASK)
-            ;
+        Reg32(Addr, TXDATA) = c;
     }
 };

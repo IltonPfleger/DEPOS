@@ -3,8 +3,8 @@
 
 void Console::put(char c) {
     if (c == '\n')
-        Machine::IO::put('\r');
-    Machine::IO::put(c);
+        IO::put('\r');
+    IO::put(c);
 }
 
 void Console::print(char c) { put(c); }
