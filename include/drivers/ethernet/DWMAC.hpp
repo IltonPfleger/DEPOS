@@ -8,35 +8,35 @@ template <unsigned long Base> class DWMAC : Driver {
     class MDIO {
         enum Register { BASE = 0x200, DATA = 0x204 };
         enum Bit {
-            CR_250_300 = 0x5 << 8,
-            GOC_WRITE = 0x1 << 2,
-            GOC_READ = 0x3 << 2,
-            GB = 1,
+            CLOCK_250_300 = 0x5 << 8,
+            WRITE = 0x1 << 2,
+            READ = 0x3 << 2,
+            BUSY = 1,
         };
 
       public:
         static void wait() {
-            while (Reg32(Base, BASE) & GB)
+            while (Reg32(Base, BASE) & BUSY)
                 ;
         }
 
         static void set(unsigned char phy, unsigned char dev, unsigned short data) {
-            MDIO::write(phy, dev, MDIO::read(phy, dev) | data);
+            write(phy, dev, read(phy, dev) | data);
         }
 
         static void clear(unsigned char phy, unsigned char dev, unsigned short data) {
-            MDIO::write(phy, dev, MDIO::read(phy, dev) & ~data);
+            write(phy, dev, read(phy, dev) & ~data);
         }
 
         static void write(unsigned char phy, unsigned char dev, unsigned short data) {
             Reg32(Base, DATA) = data;
-            Reg32(Base, BASE) = GB | GOC_WRITE | CR_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
+            Reg32(Base, BASE) = BUSY | WRITE | CLOCK_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
             wait();
         }
         static unsigned short read(unsigned char phy, unsigned char dev) {
-            Reg32(Base, BASE) = GB | GOC_READ | CR_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
+            Reg32(Base, BASE) = BUSY | READ | CLOCK_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
             wait();
-            return static_cast<unsigned short>(Reg32(Base, DATA) & 0xFFFF);
+            return Reg32(Base, DATA) & 0xFFFF;
         }
 
         static void write45(unsigned char phy, unsigned short reg, unsigned short data) {
@@ -45,16 +45,15 @@ template <unsigned long Base> class DWMAC : Driver {
         }
 
         static void set45(unsigned char phy, unsigned short reg, unsigned short data) {
-            MDIO::write45(phy, reg, MDIO::read45(phy, reg) | data);
+            write45(phy, reg, read45(phy, reg) | data);
         }
 
         static void clear45(unsigned char phy, unsigned short reg, unsigned short data) {
-            MDIO::write45(phy, reg, MDIO::read45(phy, reg) & ~data);
+            write45(phy, reg, read45(phy, reg) & ~data);
         }
 
         static unsigned short read45(unsigned char phy, unsigned short reg) {
-            write(phy, 0x1E, reg);
-            return read(phy, 0x1F);
+            return write(phy, 0x1E, reg), read(phy, 0x1F);
         }
     };
 
@@ -267,7 +266,8 @@ template <unsigned long Base> class DWMAC : Driver {
             Reg32(Base, CH0_RX_CONTROL) |= 1;
             Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_RIE |
                                                  CH0_INTERRUPT_ENABLE_AIE | CH0_INTERRUPT_ENABLE_RBUE;
-            IC::bind(Traits<GMAC0>::IRQs[0], interrupt);
+            for (auto i : Traits<GMAC0>::IRQs)
+                IC::bind(i, interrupt);
             TraceOut();
         }
 
