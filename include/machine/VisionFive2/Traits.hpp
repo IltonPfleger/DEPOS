@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Meta.hpp>
 #include <Traits.hpp>
 
 class MemoryMap;
@@ -8,7 +9,8 @@ class Clock;
 class CPUS;
 class CLINT;
 class PLIC;
-class GMAC0;
+
+template <unsigned long> class DWC_Ether_QoS;
 
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
@@ -40,10 +42,6 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long PLIC = 0x0C000000;
 };
 
-template <> struct Traits<GMAC0> {
-    static constexpr unsigned int IRQs[] = {19};
-};
-
 template <> struct Traits<CLINT> {
     static constexpr bool Enable = Traits<Timer>::Enable;
     static constexpr unsigned long Addr = Traits<MemoryMap>::CLINT;
@@ -56,4 +54,14 @@ template <> struct Traits<PLIC> {
     static constexpr unsigned int First = 0;
     static constexpr unsigned int Last = 136;
     static constexpr unsigned int Count = Last - First + 1;
+};
+
+template <> struct Traits<DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>> {
+    static constexpr unsigned int IRQs[] = {19};
+};
+
+template <> struct Traits<Ethernet> {
+    static constexpr bool Enable = true;
+    typedef Meta::TypeList<DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>> Devices;
+    static constexpr unsigned int NumberOfDevices = Devices::Length;
 };

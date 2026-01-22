@@ -98,12 +98,12 @@ class VisionFive2 {
 
   public:
     using CPU = rv64::CPU;
-    using Boot = rv64::Boot;
-    using Ethernet = DWMAC<Traits<MemoryMap>::GMAC0>::Ethernet;
+    using Initializer = rv64::Initializer;
+    // using Ethernet = DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>::Ethernet;
     using IO = DW8250<Traits<MemoryMap>::UART>;
 
     __attribute__((always_inline)) static inline void init() {
-        Boot::probe();
+        Initializer::prepare();
 
         if (CPU::id() == Traits<CPUS>::BSP) {
             BSS::init();
@@ -111,7 +111,7 @@ class VisionFive2 {
         }
 
         CPU::barrier();
-        Boot::init();
+        Initializer::init();
         IO::init();
     }
 };

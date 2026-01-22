@@ -52,7 +52,7 @@ void Console::println(const char *fmt, ...) {
                 break;
             case 'x':
                 print(Hex(va_arg(args, unsigned int)));
-				break;
+                break;
             default:
                 print('%');
                 print(*fmt);
