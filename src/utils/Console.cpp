@@ -7,6 +7,26 @@ void Console::put(char c) {
     Machine::IO::put(c);
 }
 
+void Console::print(char c) { put(c); }
+
+void Console::print(const char *c) {
+    while (*c)
+        print(*c++);
+}
+
+void Console::print(unsigned long lu) {
+    char buffer[24];
+    unsigned int i = 0;
+
+    do {
+        buffer[i++] = char('0' + (lu % 10));
+        lu /= 10;
+    } while (lu);
+
+    while (i--)
+        print(buffer[i]);
+}
+
 void Console::println(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -16,46 +36,38 @@ void Console::println(const char *fmt, ...) {
             switch (*fmt) {
             case 'c': {
                 char c = static_cast<char>(va_arg(args, int));
-                out << c;
+                print(c);
                 break;
             }
             case 's': {
                 const char *s = va_arg(args, const char *);
-                out << s;
+                print(s);
                 break;
             }
             case 'd': {
-                int i = va_arg(args, int);
-                out << i;
+                int d = va_arg(args, int);
+                print(d);
                 break;
             }
             case 'u': {
                 unsigned int u = va_arg(args, unsigned int);
-                out << u;
+                print(u);
                 break;
             }
             case 'p': {
-                out << "0x";
+                print("0x");
                 void *p = va_arg(args, void *);
-                out << p;
+                print(p);
                 break;
             }
             case 'x': {
-                void *x = va_arg(args, void *);
-                out << x;
+                unsigned long x = va_arg(args, unsigned long);
+                print(Hex(x));
                 break;
             }
-
-            case '%': {
-                out << '%';
-                break;
-            }
-            default:
-                out << '%' << *fmt;
-                break;
             }
         } else {
-            out << *fmt;
+            print(*fmt);
         }
         ++fmt;
     }
