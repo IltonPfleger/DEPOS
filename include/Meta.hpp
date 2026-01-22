@@ -46,12 +46,26 @@ template <typename T> struct Signed {
     static constexpr bool Result = T(-1) < T(0);
 };
 
-template <typename T> struct ArrayType {
-    using Result = void;
+// template <typename T> struct ArrayType {
+//     using Result = void;
+// };
+//
+// template <typename T, long unsigned int N> struct ArrayType<T[N]> {
+//     using Result = T;
+// };
+
+template <typename... Tn> struct TypeList {
+    static constexpr unsigned int Length = sizeof...(Tn);
 };
 
-template <typename T, long unsigned int N> struct ArrayType<T[N]> {
-    using Result = T;
+template <typename List, unsigned int Index> struct GetFromTypeList;
+
+template <typename Head, typename... Tail> struct GetFromTypeList<TypeList<Head, Tail...>, 0> {
+    using Result = Head;
+};
+
+template <typename Head, typename... Tail, unsigned int Index> struct GetFromTypeList<TypeList<Head, Tail...>, Index> {
+    using Result = typename GetFromTypeList<TypeList<Tail...>, Index - 1>::Result;
 };
 
 template <typename T>
@@ -71,8 +85,8 @@ template <typename T> struct _Pointer<T *> {
 template <typename T>
 concept Pointer = _Pointer<T>::Result;
 
-template <typename T>
-concept IsArray = __is_array(T);
+// template <typename T>
+// concept IsArray = __is_array(T);
 
 // template <typename T>
 // struct REMOVE_POINTER {

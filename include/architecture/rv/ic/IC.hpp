@@ -6,6 +6,7 @@
 
 namespace rv {
 
+class IC;
 using IC_DispatchTable = DispatchTable<0, 11, IC>;
 
 class IC : public IC_DispatchTable {
