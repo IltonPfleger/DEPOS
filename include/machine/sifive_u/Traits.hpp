@@ -1,12 +1,16 @@
 #pragma once
 
 #include <Traits.hpp>
+#include <Meta.hpp>
 
 class MemoryMap;
 class Memory;
 class CPUS;
 class CLINT;
 class PLIC;
+class UART;
+
+template <unsigned long> class SiFiveUART;
 
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
@@ -29,9 +33,14 @@ template <> struct Traits<MemoryMap> {
 
     static constexpr unsigned long ApplicationAddr = RamStart + 128 * 1024;
 
-    static constexpr unsigned long UART = 0x10010000;
+    static constexpr unsigned long UART0 = 0x10010000;
     static constexpr unsigned long CLINT = 0x02000000;
     static constexpr unsigned long PLIC = 0;
+};
+
+template <> struct Traits<UART> {
+    typedef Meta::TypeList<SiFiveUART<Traits<MemoryMap>::UART0>> Devices;
+    static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 
 template <> struct Traits<CLINT> {

@@ -49,29 +49,30 @@
 // }
 
 int main(int, char *[]) {
-    using NIC = Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result;
+    Console::println("OI\n");
+    // using NIC = Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result;
 
-    NIC::init();
+    // NIC::init();
 
-    auto nic = NIC::instance();
+    // auto nic = NIC::instance();
 
-    unsigned int length = 100;
-    unsigned char *frame = new (Heap::SYSTEM) unsigned char[length];
-    while (1) {
-        nic->send(frame, length);
+    // unsigned int length = 100;
+    // unsigned char *frame = new (Heap::SYSTEM) unsigned char[length];
+    // while (1) {
+    //     nic->send(frame, length);
 
-        unsigned int received = nic->receive(frame, length);
+    //    unsigned int received = nic->receive(frame, length);
 
-        if (received == 0)
-            continue;
+    //    if (received == 0)
+    //        continue;
 
-        for (unsigned int i = 0; i < received / 2; i++) {
-            if ((i + 1) % 16 == 0)
-                Console::print('\n');
-            Console::println("0x%x ", __builtin_bswap16(frame[i]));
-        }
+    //    for (unsigned int i = 0; i < received / 2; i++) {
+    //        if ((i + 1) % 16 == 0)
+    //            Console::print('\n');
+    //        Console::println("0x%x ", __builtin_bswap16(frame[i]));
+    //    }
 
-        Console::print('\n');
-    }
+    //    Console::print('\n');
+    //}
     return 0;
 }

@@ -15,7 +15,7 @@ template <typename U> class Scheduler;
 template <typename T> struct Traits;
 
 template <> struct Traits<Machine> {
-    static constexpr const char *NAME = "VisionFive2";
+    static constexpr const char *NAME = "sifive_u";
 };
 
 template <> struct Traits<System> {
