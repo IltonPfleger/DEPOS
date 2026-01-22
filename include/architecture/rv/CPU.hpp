@@ -4,6 +4,7 @@
 #include <architecture/rv/Context.hpp>
 #include <architecture/rv/Interruptions.hpp>
 #include <architecture/rv/Modes.hpp>
+#include <utils/Console.hpp>
 
 namespace rv {
 class CPU {
@@ -21,9 +22,17 @@ class CPU {
         return tp;
     }
 
+    __attribute__((naked)) static void init() {
+        unsigned long core;
+        asm("csrc mstatus, 0x8");
+        asm("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
+        asm("mv sp, %0" ::"r"(Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * core));
+        asm("ret");
+    }
+
     static void barrier(unsigned int cores = Traits<CPUS>::ONLINE) {
         static volatile bool gsense = true;
-        static volatile unsigned int ready[2] = {0};
+        __attribute__((section(".data"))) static volatile unsigned int ready[2] = {0};
 
         bool sense = gsense;
         unsigned int arrived = Atomic::finc(ready[sense]);

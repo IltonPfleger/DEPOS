@@ -11,7 +11,7 @@ class sifive_u {
     using Initializer = rv64::Initializer;
 
     __attribute__((always_inline)) static inline void init() {
-        Initializer::prepare();
+        CPU::init();
         Initializer::init();
     }
 };

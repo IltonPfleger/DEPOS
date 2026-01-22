@@ -8,7 +8,6 @@
 
 namespace rv64 {
 class Initializer {
-
     __attribute__((naked)) static void change_to_main_mode() {
         if constexpr (Traits<System>::MULTITASK) {
             if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
@@ -38,14 +37,6 @@ class Initializer {
     }
 
   public:
-    __attribute__((naked)) static void prepare() {
-        unsigned long core;
-        asm("csrc mstatus, 0x8");
-        asm("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
-        asm("mv sp, %0" ::"r"(Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * core));
-        asm("ret");
-    }
-
     __attribute__((noinline)) static void init() {
         change_to_main_mode();
         if constexpr (Traits<Timer>::Enable && Traits<System>::MULTITASK) {
