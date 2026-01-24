@@ -4,6 +4,8 @@
 
 class Segment {
   public:
+    Segment() = default;
+
     Segment(unsigned long addr, unsigned int size, bool owned = true)
         : m_addr(reinterpret_cast<char *>(addr)), m_size(size), m_owned(owned) {}
 
@@ -19,7 +21,7 @@ class Segment {
     unsigned int size() const { return m_size; }
 
   private:
-    char *const m_addr;
-    const unsigned int m_size;
-    const bool m_owned;
+    char *const m_addr = 0;
+    const unsigned int m_size = 0;
+    const bool m_owned = false;
 };

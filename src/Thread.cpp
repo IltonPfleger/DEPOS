@@ -36,9 +36,9 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : m_stack_(Segment(Traits<Memory>::PageSize)), m_waiting(0), m_link(Element(this, c())), m_criterion(c),
+    : m_stack(Segment(Traits<Memory>::PageSize)), m_waiting(0), m_link(Element(this, c)), m_criterion(c),
       m_state(State::READY), m_joining(0),
-      m_context(new(m_stack_.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack_.end(), exit)) {
+      m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
     TraceIn(this);
     s_lock.lock();
     s_scheduler.insert(&m_link);
@@ -47,32 +47,10 @@ Thread::Thread(Function f, Argument a, Criterion c)
     TraceOut();
 }
 
-// Thread::Thread(Task *t, Function f, Argument a, Criterion c) : task_(t),
-// Thread(f, a, c) {}
-
-// Thread::~Thread() {
-//     s_lock.lock();
-//     switch (m_state) {
-//         case (State::READY):
-//             s_scheduler.remove(&m_link);
-//             s_count = s_count - 1;
-//             break;
-//         case (State::WAITING):
-//             m_waiting->remove(&m_link);
-//             s_count = s_count - 1;
-//             break;
-//         default:
-//             break;
-//     }
-//
-//     if (m_joining) {
-//         m_joining->m_state = State::READY;
-//         s_scheduler.insert(&m_joining->m_link);
-//     }
-//
-//     s_lock.release();
-//     Memory::kfree(stack);
-// }
+Thread::~Thread() {
+    join(*this);
+    Memory::kfree(m_stack.base(), m_stack.size());
+}
 
 void Thread::join(Thread &thread) {
     auto previous = running();
@@ -118,16 +96,10 @@ void Thread::init() {
 }
 
 void Thread::run() {
-    char buffer[sizeof(Thread)];
-    Thread *previous = reinterpret_cast<Thread *>(buffer);
+    Thread previous;
     s_lock.acquire();
     Thread *next = s_scheduler.pop();
-    TraceIn(next);
-    s_lock.release();
-    CPU::barrier();
-    s_lock.acquire();
-    TraceOut();
-    dispatch(previous, next, &s_lock);
+    dispatch(&previous, next, &s_lock);
 }
 
 void Thread::reschedule() {
