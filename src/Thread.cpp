@@ -49,7 +49,6 @@ Thread::Thread(Function f, Argument a, Criterion c)
 
 Thread::~Thread() {
     join(*this);
-    Memory::kfree(m_stack.base(), m_stack.size());
 }
 
 void Thread::join(Thread &thread) {

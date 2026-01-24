@@ -11,8 +11,8 @@ class Memory {
 
   public:
     static void init();
-    static void *kmalloc(size_t);
-    static void kfree(void *, size_t);
+    static void *alloc(size_t);
+    static void free(void *, size_t);
 
   private:
     static inline Allocator s_allocator;
