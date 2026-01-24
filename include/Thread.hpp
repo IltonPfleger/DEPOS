@@ -17,6 +17,7 @@ class Thread {
     using Element = Queue::Node;
     using Context = CPU::Context;
 
+    Thread() = default;
     Thread(Function, Argument, Criterion);
     ~Thread();
 
@@ -33,7 +34,7 @@ class Thread {
     static int idle(void *);
 
   private:
-    Segment m_stack_;
+    Segment m_stack;
     Queue *m_waiting;
     Queue::Node m_link;
     Criterion m_criterion;

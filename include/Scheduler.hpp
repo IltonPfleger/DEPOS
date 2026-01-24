@@ -15,7 +15,7 @@ class Policy {
   public:
     using Rank = unsigned long;
     Policy(Rank r, ...) : rank_(r) {}
-    Rank operator()() const { return rank_; }
+    operator Rank() const { return rank_; }
 
   private:
     Rank rank_;
