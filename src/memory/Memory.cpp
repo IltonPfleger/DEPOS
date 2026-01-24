@@ -1,9 +1,6 @@
-#include <Spin.hpp>
 #include <memory/Memory.hpp>
 #include <memory/MemoryMap.hpp>
 #include <utils/Debug.hpp>
-
-static Spin _lock;
 
 void Memory::init() {
     constexpr size_t PageSize = Traits<Memory>::PageSize;
@@ -18,7 +15,7 @@ void Memory::init() {
     TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize);
     new (&s_allocator) Allocator();
 
-    uintptr_t c = RamEnd - (PageSize * 10);
+    uintptr_t c = RamEnd - (PageSize * Traits<CPUS>::ONLINE);
     for (; c > RamStart; c -= PageSize) {
         if (c + PageSize >= KernelStart && c < KernelEnd)
             continue;
@@ -32,20 +29,20 @@ void Memory::init() {
 
 void *Memory::kmalloc(size_t size) {
     TraceIn(size);
-    _lock.lock();
-    void *page = s_allocator.remove(size);
-    _lock.unlock();
-    ERROR(!page, "Out of pages.");
-    TraceOut(page);
-    return page;
+    s_spin.lock();
+    void *block = s_allocator.remove(size);
+    s_spin.unlock();
+    ERROR(!block, "Out of Memory.");
+    TraceOut(block);
+    return block;
 }
 
 void Memory::kfree(void *addr, size_t size) {
     TraceIn(addr, size);
     ERROR(addr == nullptr, "}\n");
-    _lock.lock();
+    s_spin.lock();
     s_allocator.insert(addr, size);
-    _lock.unlock();
+    s_spin.unlock();
     TraceOut();
 }
 
