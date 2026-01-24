@@ -1,6 +1,6 @@
 include Makedefs.mk
 
-TARGET := $(KERNEL)
+SYSTEM := $(KERNEL)
 APPLICATION_TARGET=$(BUILD)/$(APPLICATION)
 
 TOOLS := $(patsubst tools/%.cpp,$(BUILD)/%,$(shell find tools -type f -name "*.cpp"))
@@ -16,7 +16,6 @@ run: $(TARGET).bin
 
 $(TARGET).bin : $(TARGET).elf $(TOOLS)
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)
-	$(LD) -e main --just-symbols $(TARGET).elf --image-base=$(ApplicationAddr) -o $(APPLICATION_TARGET).elf $(APPLICATION_TARGET).o
 	$(ELFMAP) $(APPLICATION_TARGET).elf $(MEMORY_MAP)
 	$(OBJCOPY) --update-section .__app_mm__=$(MEMORY_MAP) $(TARGET).elf
 	$(ELFMAP) $(TARGET).elf $(MEMORY_MAP)

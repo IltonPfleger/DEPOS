@@ -4,7 +4,7 @@ INCLUDE      := $(HERE)/include
 BUILD        := $(HERE)/build
 APPLICATIONS := $(HERE)/app
 TOOLS        := $(HERE)/tools
-KERNEL       := $(BUILD)/DEPOS
+SYSTEM       := $(BUILD)/DEPOS
 
 TRAITS := $(TOOLS)/Traits
 ELFPRINT := $(TOOLS)/ElfPrint

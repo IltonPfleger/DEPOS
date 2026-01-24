@@ -1,14 +1,16 @@
 include ../Makedefs.mk
 
-TARGET := $(BUILD)/$(APPLICATION).o
-APPLICATION ?=
+TARGET := $(BUILD)/$(APPLICATION).elf
 
-SRCS := $(if $(APPLICATION),$(shell find $(APPLICATION) -type f -name "*.cpp"))
-OBJS := $(patsubst $(APPLICATION)/%.cpp,$(BUILD)/$(APPLICATION)/%.o,$(SRCS))
-DEPS := $(OBJS:.o=.d)
+SOURCES := $(if $(APPLICATION),$(shell find $(APPLICATION) -type f -name "*.cpp"))
+OBJECTS := $(patsubst $(APPLICATION)/%.cpp,$(BUILD)/$(APPLICATION)/%.o,$(SOURCES))
+DEPENDENCIES := $(OBJECTS:.o=.d)
 
-$(TARGET): $(OBJS)
-	$(LD) -e main -r $(OBJS) -o $@
+$(TARGET): $(BUILD)/$(APPLICATION).o
+	$(LD) -e main --just-symbols $(SYSTEM).elf --image-base=$(ApplicationAddr) -o $(APPLICATION_SYSTEM).elf $(APPLICATION_SYSTEM).o
+
+$(BUILD)/$(APPLICATION).o: $(OBJECTS)
+	$(LD) -e main -r $(OBJECTS) -o $@
 
 $(BUILD)/$(APPLICATION)/%.o: ./$(APPLICATION)/%.cpp
 	@mkdir -p $(dir $@)
@@ -17,4 +19,4 @@ $(BUILD)/$(APPLICATION)/%.o: ./$(APPLICATION)/%.cpp
 clean:
 	rm -rf build
 
--include $(DEPS)
+-include $(DEPENDENCIES)
