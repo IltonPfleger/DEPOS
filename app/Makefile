@@ -7,7 +7,7 @@ OBJECTS := $(patsubst $(APPLICATION)/%.cpp,$(BUILD)/$(APPLICATION)/%.o,$(SOURCES
 DEPENDENCIES := $(OBJECTS:.o=.d)
 
 $(TARGET): $(BUILD)/$(APPLICATION).o
-	$(LD) -e main --just-symbols $(SYSTEM).elf --image-base=$(ApplicationAddr) -o $(APPLICATION_SYSTEM).elf $(APPLICATION_SYSTEM).o
+	$(LD) -e main --just-symbols $(SYSTEM).elf --image-base=$(ApplicationAddr) -o $@ $<
 
 $(BUILD)/$(APPLICATION).o: $(OBJECTS)
 	$(LD) -e main -r $(OBJECTS) -o $@
