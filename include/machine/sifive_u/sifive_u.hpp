@@ -5,13 +5,11 @@
 #include <architecture/rv/64/RV64.hpp>
 #include <drivers/uart/SiFiveUART.hpp>
 
+typedef rv64::CPU CPU;
+
 class sifive_u {
   public:
-    using CPU = rv64::CPU;
     using Initializer = rv64::Initializer;
 
-    __attribute__((always_inline)) static inline void init() {
-        CPU::init();
-        Initializer::init();
-    }
+    static void init() { Initializer::init(); }
 };

@@ -121,11 +121,12 @@ void Thread::run() {
     char buffer[sizeof(Thread)];
     Thread *previous = reinterpret_cast<Thread *>(buffer);
     s_lock.acquire();
-    TraceIn();
     Thread *next = s_scheduler.pop();
+    TraceIn(next);
     s_lock.release();
     CPU::barrier();
     s_lock.acquire();
+    TraceOut();
     dispatch(previous, next, &s_lock);
 }
 

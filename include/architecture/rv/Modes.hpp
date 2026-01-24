@@ -41,6 +41,7 @@ struct SupervisorMode {
         TI = 1ULL << 5,      // Timer Interrupt Enable
         PIRQE = 1ULL << 5,   // Previous Interrupt Enable
         SUM = 1ULL << 18,    // Supervisor User Memory
+        EI = 1ULL << 9,      // External Interrupt Enable
     };
 
     static constexpr const int SATP = 0x180;
