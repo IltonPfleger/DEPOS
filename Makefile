@@ -17,13 +17,13 @@ run: $(TARGET).bin
 $(TARGET).bin : $(TARGET).elf $(TOOLS)
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)
 	$(LD) -e main --just-symbols $(TARGET).elf --image-base=$(ApplicationAddr) -o $(APPLICATION_TARGET).elf $(APPLICATION_TARGET).o
-	$(EMAP) $(APPLICATION_TARGET).elf $(MEMORY_MAP)
+	$(ELFMAP) $(APPLICATION_TARGET).elf $(MEMORY_MAP)
 	$(OBJCOPY) --update-section .__app_mm__=$(MEMORY_MAP) $(TARGET).elf
-	$(EMAP) $(TARGET).elf $(MEMORY_MAP)
+	$(ELFMAP) $(TARGET).elf $(MEMORY_MAP)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MEMORY_MAP) $(TARGET).elf
 	$(OBJCOPY) -O binary $(APPLICATION_TARGET).elf $(APPLICATION_TARGET).bin
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
-	$(DD) bs=1 conv=notrunc if=$(APPLICATION_TARGET).bin of=$(TARGET).bin seek=$$(( $$($(EPRINT) $(APPLICATION_TARGET).elf -b) - $(RamStart) ))
+	$(DD) bs=1 conv=notrunc if=$(APPLICATION_TARGET).bin of=$(TARGET).bin seek=$$(( $$($(ELFPRINT) $(APPLICATION_TARGET).elf -b) - $(RamStart) ))
 	$(TRUNCATE) -s %$(PageSize) $(TARGET).bin
 
 debug: $(TARGET)

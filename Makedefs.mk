@@ -7,8 +7,8 @@ TOOLS        := $(HERE)/tools
 KERNEL       := $(BUILD)/DEPOS
 
 TRAITS := $(TOOLS)/Traits
-EPRINT := $(TOOLS)/EPrint
-EMAP   := $(BUILD)/EMap
+ELFPRINT := $(TOOLS)/ElfPrint
+ELFMAP   := $(BUILD)/ElfMap
 
 TOOL    := riscv64-linux-gnu
 CC      := $(TOOL)-g++
