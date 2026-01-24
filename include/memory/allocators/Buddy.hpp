@@ -1,7 +1,8 @@
 #pragma once
 #include <utils/Lists.hpp>
 
-template <size_t MAX> class BuddyAllocator {
+namespace Allocators {
+template <size_t MAX> class Buddy {
     using List = LIFO<void>;
     using Node = typename List::Node;
 
@@ -14,7 +15,13 @@ template <size_t MAX> class BuddyAllocator {
     }
 
   public:
-    BuddyAllocator() = default;
+    bool empty() {
+        for (unsigned int i = 0; i < MAX + 1; i++) {
+            if (!free_[i].empty())
+                return false;
+        }
+        return true;
+    }
 
     void *remove(size_t size) {
         Node *node = nullptr;
@@ -69,5 +76,6 @@ template <size_t MAX> class BuddyAllocator {
     };
 
   private:
-    List free_[MAX + 1] = {};
+    List free_[MAX + 1];
 };
+} // namespace Allocators
