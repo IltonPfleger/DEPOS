@@ -7,7 +7,6 @@ TOOLS        := $(HERE)/tools
 SYSTEM       := $(BUILD)/DEPOS
 
 TRAITS := $(TOOLS)/Traits
-ELFPRINT := $(TOOLS)/ElfPrint
 ELFMAP   := $(BUILD)/ElfMap
 
 TOOL    := riscv64-linux-gnu
