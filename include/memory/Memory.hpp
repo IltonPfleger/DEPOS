@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Spin.hpp>
 #include <Traits.hpp>
 #include <machine/Traits.hpp>
 #include <memory/allocators/Buddy.hpp>
@@ -15,6 +16,7 @@ class Memory {
 
   private:
     static inline Allocator s_allocator;
+    static inline Spin s_spin;
 };
 
 void *operator new(size_t, void *);
