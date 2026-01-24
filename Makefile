@@ -14,14 +14,15 @@ norun: $(TARGET).bin
 run: $(TARGET).bin
 	-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(TARGET).bin
 
-$(TARGET).bin : $(TARGET).elf $(APPDIR).elf $(TOOLS)
+$(TARGET).bin : $(TARGET).elf $(TOOLS)
+	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)
 	$(ELFMAP) $(APPDIR).elf $(MEMORY_MAP)
 	$(OBJCOPY) --update-section .__app_mm__=$(MEMORY_MAP) $(TARGET).elf
 	$(ELFMAP) $(TARGET).elf $(MEMORY_MAP)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MEMORY_MAP) $(TARGET).elf
 	$(OBJCOPY) -O binary $(APPDIR).elf $(APPDIR).bin
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
-	$(DD) bs=1 conv=notrunc if=$(APPDIR).bin of=$(TARGET).bin seek=$$(( $$($(ELFPRINT) $(APPDIR).elf -b) - $(RamStart) ))
+	$(DD) bs=1 conv=notrunc if=$(APPDIR).bin of=$(TARGET).bin seek=$$(( $(ApplicationAddr) - $(RamStart) ))
 	$(TRUNCATE) -s %$(PageSize) $(TARGET).bin
 
 #debug: $(TARGET)
@@ -37,8 +38,6 @@ $(TARGET).bin : $(TARGET).elf $(APPDIR).elf $(TOOLS)
 #		-ex "set confirm off"\
 #		-ex "file $(TARGET).elf"
 #
-$(APPDIR).elf: $(TARGET).elf
-	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)
 
 $(TARGET).elf: $(OBJS)
 	$(LD) -e _init --section-start=.init=$(BootAddr) --image-base=$(BootAddr) -o $@ $(OBJS)
