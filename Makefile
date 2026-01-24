@@ -1,6 +1,6 @@
 include Makedefs.mk
 
-SYSTEM := $(KERNEL)
+TARGET := $(SYSTEM)
 APPDIR=$(BUILD)/$(APPLICATION)
 
 TOOLS := $(patsubst tools/%.cpp,$(BUILD)/%,$(shell find tools -type f -name "*.cpp"))
