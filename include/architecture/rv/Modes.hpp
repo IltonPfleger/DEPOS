@@ -1,5 +1,7 @@
 #pragma once
 
+#include <architecture/rv/64/rv.hpp>
+
 namespace rv {
 struct MachineMode {
     enum {
@@ -55,11 +57,5 @@ struct SupervisorMode {
     __attribute__((always_inline)) static inline void ret() { asm volatile("sret"); }
 };
 
-using KernelMode = Meta::TypeSelector<Traits<System>::MULTITASK, SupervisorMode, MachineMode>::Result;
+using KernelMode = Meta::TypeSelector<Traits<System>::Multitask, SupervisorMode, MachineMode>::Result;
 } // namespace rv
-
-namespace rv64 {
-using rv::KernelMode;
-using rv::MachineMode;
-using rv::SupervisorMode;
-} // namespace rv64

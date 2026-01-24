@@ -9,7 +9,7 @@
 namespace rv64 {
 class Initializer {
     __attribute__((naked)) static void change_to_main_mode() {
-        if constexpr (Traits<System>::MULTITASK) {
+        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
             if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
                 for (;;)
                     CPU::idle();
@@ -39,7 +39,7 @@ class Initializer {
   public:
     __attribute__((noinline)) static void init() {
         change_to_main_mode();
-        if constexpr (Traits<Timer>::Enable && Traits<System>::MULTITASK) {
+        if constexpr (Traits<Timer>::Enable && Meta::SAME<KernelMode, SupervisorMode>::Result) {
             csrs<SupervisorMode::IE>(SupervisorMode::TI);
         }
     }
