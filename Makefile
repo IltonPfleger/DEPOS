@@ -9,6 +9,8 @@ OBJS := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 MEMORY_MAP := $(BUILD)/MemoryMap
 
+norun: $(TARGET).bin
+
 run: $(TARGET).bin
 	-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(TARGET).bin
 

@@ -4,6 +4,7 @@
 // #include <Thread.hpp>
 // #include <memory/Memory.hpp>
 #include <Alarm.hpp>
+#include <network/ethernet/ip/UDP.hpp>
 #include <utils/Console.hpp>
 //
 // static constexpr unsigned long N = 10;
@@ -26,7 +27,7 @@
 // }
 //
 
-// static unsigned char *frame(unsigned char *frame, unsigned int length) {
+// static unsigned char *create_frame(unsigned char *frame, unsigned int length) {
 //     unsigned int offset = 0;
 //
 //     for (int i = 0; i < 6; i++)
@@ -49,12 +50,19 @@
 // }
 
 int main(int, char *[]) {
-    Console::println("OI\n");
-    // using NIC = Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result;
+    //using NIC = Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result;
+    //NIC::init();
+    Alarm::delay(1);
 
-    // NIC::init();
+    //constexpr unsigned int N = 300;
+    //unsigned char data[N];
+    //Ethernet::Address destination({0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF});
+    //Ethernet::Address source({0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    //Ethernet::Frame frame(destination, source, 0, data, N);
 
-    // auto nic = NIC::instance();
+    //auto nic = NIC::instance();
+
+    //nic->send(frame, N);
 
     // unsigned int length = 100;
     // unsigned char *frame = new (Heap::SYSTEM) unsigned char[length];
