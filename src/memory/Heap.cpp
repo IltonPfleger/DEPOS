@@ -84,6 +84,8 @@
 //     return nullptr;
 // }
 
+void *operator new[](unsigned long bytes) { return operator new(bytes); }
+
 void *operator new[](unsigned long bytes, Heap &heap) { return operator new(bytes, heap); }
 
 void *operator new(unsigned long bytes, Heap &heap) {
@@ -131,6 +133,9 @@ void *operator new(size_t bytes) {
         return operator new(bytes, Heap::SYSTEM);
     }
 }
+
+void operator delete[](void*) {}
+void operator delete[](void*, unsigned long) {}
 
 // Static Allocation For System Heap
 Heap Heap::SYSTEM;

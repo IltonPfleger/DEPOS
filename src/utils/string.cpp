@@ -17,4 +17,16 @@ void *memset(void *dest, int c, unsigned long n) {
 
     return dest;
 }
+
+int memcmp(const void *ptr1, const void *ptr2, unsigned long n) {
+    const unsigned char *p1 = (const unsigned char *)ptr1;
+    const unsigned char *p2 = (const unsigned char *)ptr2;
+
+    for (unsigned long i = 0; i < n; i++) {
+        if (p1[i] != p2[i]) {
+            return (int)(p1[i] - p2[i]);
+        }
+    }
+    return 0;
+}
 }

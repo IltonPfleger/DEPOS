@@ -85,6 +85,7 @@ template <unsigned long Base> class _PHY {
         BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE = 1 << 5,
         RGMII_CONFIG1_TX_CLK_SEL = 1 << 14,
         CHIP_CONFIG_RXC_DELAY_ENABLE = 1 << 8,
+        CHIP_CONFIG_SOFTWARE_RESET = 1 << 15,
     };
 
   public:
@@ -93,6 +94,10 @@ template <unsigned long Base> class _PHY {
 
         unsigned short id1 = MDIO::read(phy, _PHY_ID_1);
         unsigned short id2 = MDIO::read(phy, _PHY_ID_2);
+
+        MDIO::clear45(phy, CHIP_CONFIG, CHIP_CONFIG_SOFTWARE_RESET);
+        while (!(MDIO::read45(phy, CHIP_CONFIG) & CHIP_CONFIG_SOFTWARE_RESET))
+            ;
 
         MDIO::set(phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE | BASIC_CONTROL_RE_AUTO_NEGOTIATION);
         while (!(MDIO::read(phy, BASIC_STATUS) & BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE))
@@ -277,6 +282,8 @@ template <unsigned long Base> class _DMA : Driver {
 
     void descriptors() {
         memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
+        CacheController::flush(m_tx_descriptors, sizeof(Descriptor) * k_number_of_descriptors);
+
         memset(m_rx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
 
         for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
@@ -335,7 +342,7 @@ template <unsigned long Base> class _DMA : Driver {
         return size;
     }
 
-    int send(void *frame, unsigned int length) {
+    int send(const void *frame, unsigned int length) {
         unsigned long buffer = reinterpret_cast<unsigned long>(frame);
         CacheController::flush(frame, length);
 
@@ -398,8 +405,8 @@ template <unsigned long Base> class DWC_Ether_QoS : public _DMA<Base> {
         DMA::reset();
         MTL::init();
         PHY::init();
-        MAC::init();
         m_device = new (Heap::SYSTEM) DWC_Ether_QoS();
+        MAC::init();
         TraceOut();
     }
 
