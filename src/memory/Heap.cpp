@@ -6,7 +6,7 @@ void *operator new(unsigned long size, Heap::Location location) {
     using Header = Heap::Header;
     (void)location;
 
-    Header *header = reinterpret_cast<Header *>(Memory::kmalloc(size + sizeof(Header)));
+    Header *header = reinterpret_cast<Header *>(Memory::alloc(size + sizeof(Header)));
     header->m_size = size;
     return header + 1;
 }
@@ -19,7 +19,7 @@ void operator delete(void *p) {
     ERROR(!p, "Invalid Pointer Deleted!");
     using Header = Heap::Header;
     Header *header = reinterpret_cast<Header *>(p) - 1;
-    Memory::kfree(header, header->m_size);
+    Memory::free(header, header->m_size);
 }
 
 void operator delete(void *p, unsigned long) { ::operator delete(p); }

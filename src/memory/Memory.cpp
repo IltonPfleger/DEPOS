@@ -27,7 +27,7 @@ void Memory::init() {
     TraceOut();
 }
 
-void *Memory::kmalloc(size_t size) {
+void *Memory::alloc(size_t size) {
     TraceIn(size);
     s_spin.lock();
     void *block = s_allocator.remove(size);
@@ -37,7 +37,7 @@ void *Memory::kmalloc(size_t size) {
     return block;
 }
 
-void Memory::kfree(void *addr, size_t size) {
+void Memory::free(void *addr, size_t size) {
     TraceIn(addr, size);
     ERROR(addr == nullptr, "}\n");
     s_spin.lock();
