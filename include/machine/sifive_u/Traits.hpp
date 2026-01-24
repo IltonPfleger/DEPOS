@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Traits.hpp>
 #include <Meta.hpp>
+#include <Traits.hpp>
 
 class MemoryMap;
 class Memory;
@@ -15,7 +15,7 @@ template <unsigned long> class SiFiveUART;
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
     static constexpr int COUNT = 2;
-    static constexpr int ONLINE = COUNT;
+    static constexpr int ONLINE = Traits<System>::Multitask ? COUNT - 1 : COUNT;
     static constexpr int BSP = 1;
 };
 

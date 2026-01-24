@@ -15,7 +15,6 @@ class Thread {
     using Function = int (*)(Argument);
     using Queue = FIFO<Thread *>;
     using Element = Queue::Node;
-    using CPU = Machine::CPU;
     using Context = CPU::Context;
 
     Thread(Function, Argument, Criterion);

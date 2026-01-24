@@ -23,6 +23,12 @@ class CLINT : Driver {
         }
     }
 
+    static void syscall() {
+		reset();
+        csrs<MachineMode::IE>(MachineMode::TI);
+        csrc<MachineMode::IP>(KernelMode::TI);
+    }
+
     static void reset(unsigned int core = CPU::id()) {
         static constexpr unsigned long ticks = Clock / Traits<Timer>::Frequency;
         Reg64(Base, MTIMECMP + core * 8) = Reg64(Base, MTIME) + ticks;

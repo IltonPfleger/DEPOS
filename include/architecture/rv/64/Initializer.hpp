@@ -8,19 +8,17 @@
 
 namespace rv64 {
 class Initializer {
-    __attribute__((naked)) static void change_to_main_mode() {
+    __attribute__((naked)) static void mode() {
+        MIC::init();
+
         if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
             if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
-                for (;;)
-                    CPU::idle();
+                CPU::halt();
             }
         }
 
-        MIC::init();
-        csrw<MachineMode::TVEC>(MIC::entry);
-
         if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
-            csrw<SupervisorMode::TVEC>(SIC::entry);
+            csrw<SupervisorMode::SATP>(0);
             csrw<MachineMode::MIDELEG>(0x222);
             csrw<MachineMode::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
             csrw<MachineMode::PMPCFG0>(0b11111);
@@ -33,14 +31,13 @@ class Initializer {
 
         csrw<MachineMode::EPC>(__builtin_return_address(0));
         MachineMode::ret();
-        __builtin_unreachable();
     }
 
   public:
-    __attribute__((noinline)) static void init() {
-        change_to_main_mode();
-        if constexpr (Traits<Timer>::Enable && Meta::SAME<KernelMode, SupervisorMode>::Result) {
-            csrs<SupervisorMode::IE>(SupervisorMode::TI);
+    static void init() {
+        mode();
+        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
+            SIC::init();
         }
     }
 };

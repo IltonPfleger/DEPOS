@@ -47,7 +47,6 @@ void Console::println(const char *fmt, ...) {
                 print(va_arg(args, unsigned int));
                 break;
             case 'p':
-                print("0x");
                 print(va_arg(args, void *));
                 break;
             case 'x':
