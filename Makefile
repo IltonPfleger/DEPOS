@@ -7,7 +7,7 @@ TOOLS := $(patsubst tools/%.cpp,$(BUILD)/%,$(shell find tools -type f -name "*.c
 SRCS := $(shell find src -type f -name "*.cpp")
 OBJS := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
-MEMORY_MAP := $(BUILD)/MemoryMap
+MAP := $(BUILD)/MemoryMap
 
 norun: $(TARGET).bin
 
@@ -16,10 +16,10 @@ run: $(TARGET).bin
 
 $(TARGET).bin : $(TARGET).elf $(TOOLS)
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)
-	$(ELFMAP) $(APPDIR).elf $(MEMORY_MAP)
-	$(OBJCOPY) --update-section .__app_mm__=$(MEMORY_MAP) $(TARGET).elf
-	$(ELFMAP) $(TARGET).elf $(MEMORY_MAP)
-	$(OBJCOPY) --update-section .__kernel_mm__=$(MEMORY_MAP) $(TARGET).elf
+	$(ELFMAP) $(APPDIR).elf $(MAP)
+	$(OBJCOPY) --update-section .__app_mm__=$(MAP) $(TARGET).elf
+	$(ELFMAP) $(TARGET).elf $(MAP)
+	$(OBJCOPY) --update-section .__kernel_mm__=$(MAP) $(TARGET).elf
 	$(OBJCOPY) -O binary $(APPDIR).elf $(APPDIR).bin
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
 	$(DD) bs=1 conv=notrunc if=$(APPDIR).bin of=$(TARGET).bin seek=$$(( $(ApplicationAddr) - $(RamStart) ))
