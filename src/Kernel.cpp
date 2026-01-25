@@ -9,13 +9,17 @@ class Init {
   public:
     static void init() {
         bool BSP = CPU::id() == Traits<CPUS>::BSP;
-        if (BSP) Memory::init();
+        if (BSP) TraceIn();
+
+        if (BSP) MemoryMap::init();
+
         CPU::barrier();
 
         Machine::init();
 
         if (BSP) {
             TraceIn();
+            Memory::init();
             Timer::init();
             Application::init();
             Thread::init();

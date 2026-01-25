@@ -24,7 +24,7 @@ CPUS            := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hp
 MemorySize      := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<Memory>::Size")
 PageSize        := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<Memory>::PageSize")
 RamStart        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::RamStart"))
-BootAddr        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::BootAddr"))
+SystemAddr        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::SystemAddr"))
 ApplicationAddr := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::ApplicationAddr"))
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64

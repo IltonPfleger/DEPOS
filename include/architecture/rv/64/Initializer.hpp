@@ -1,5 +1,6 @@
 #pragma once
 
+#include <architecture/rv/64/MMU.hpp>
 #include <architecture/rv/CPU.hpp>
 #include <architecture/rv/PLIC.hpp>
 #include <architecture/rv/ic/IC.hpp>
@@ -12,12 +13,16 @@ class Initializer {
         MIC::init();
 
         if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
-            csrw<SupervisorMode::SATP>(0);
             csrw<MachineMode::MIDELEG>(0x222);
             csrw<MachineMode::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
             csrw<MachineMode::PMPCFG0>(0b11111);
             csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
             csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
+
+            if constexpr (Traits<System>::Multitask) {
+                SV39_MMU::init();
+            }
+
         } else {
             csrs<MachineMode::STATUS>(MachineMode::ME2ME);
             csrc<MachineMode::STATUS>(MachineMode::PIRQE);

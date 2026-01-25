@@ -27,10 +27,17 @@ template <> struct Traits<Memory> {
 };
 
 template <> struct Traits<MemoryMap> {
-    static constexpr unsigned long RamStart = 0x80000000;
-    static constexpr unsigned long RamEnd = RamStart + Traits<Memory>::Size;
-    static constexpr unsigned long BootAddr = RamStart;
+    static constexpr unsigned long PhysicalRamStart = 0x80000000;
+    static constexpr unsigned long PhysicalRamEnd = PhysicalRamStart + Traits<Memory>::Size;
 
+    // static constexpr unsigned long VirtualRamStart = 0x80000000; // 0xffffffff80000000;
+    static constexpr unsigned long VirtualRamStart = 0xffffffff80000000;
+    static constexpr unsigned long VirtualRamEnd = VirtualRamStart + Traits<Memory>::Size;
+
+    static constexpr unsigned long RamStart = Traits<System>::Multitask ? VirtualRamStart : PhysicalRamStart;
+    static constexpr unsigned long RamEnd = Traits<System>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
+
+    static constexpr unsigned long SystemAddr = RamStart;
     static constexpr unsigned long ApplicationAddr = RamStart + 128 * 1024;
 
     static constexpr unsigned long UART0 = 0x10010000;
