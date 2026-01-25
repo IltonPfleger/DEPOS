@@ -23,8 +23,20 @@ class CPU {
     }
 
     __attribute__((naked)) static void init() {
-        unsigned long core;
+        unsigned int core;
+
+        // Disable Interruptions
         asm("csrc mstatus, 0x8");
+
+        // Kill Cores That Don't Support Supervisor Mode If Enabled
+        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
+            asm("csrr a0, misa\n"
+                "and a0, a0, %0\n"
+                "bnez a0, 1f\n"
+                "wfi\n"
+                "1:" ::"r"(1ULL << ('S' - 'A')));
+        }
+
         asm("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
         asm("mv sp, %0" ::"r"(Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * core));
         asm("ret");

@@ -12,12 +12,6 @@ class Initializer {
         MIC::init();
 
         if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
-            if (!(csrr<MachineMode::MISA>() & (1UL << ('S' - 'A')))) {
-                CPU::halt();
-            }
-        }
-
-        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
             csrw<SupervisorMode::SATP>(0);
             csrw<MachineMode::MIDELEG>(0x222);
             csrw<MachineMode::PMPADDR0>(0x3FFFFFFFFFFFFFULL);

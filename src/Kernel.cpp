@@ -9,9 +9,13 @@ class Init {
   public:
     static void init() {
         bool BSP = CPU::id() == Traits<CPUS>::BSP;
+        if (BSP) Memory::init();
+        CPU::barrier();
+
+        Machine::init();
+
         if (BSP) {
             TraceIn();
-            Memory::init();
             Timer::init();
             Application::init();
             Thread::init();
@@ -26,6 +30,5 @@ class Init {
 
 extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
     CPU::init();
-    Machine::init();
     Init::init();
 }
