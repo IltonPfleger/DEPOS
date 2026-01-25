@@ -42,7 +42,7 @@ class CPU {
         asm("ret");
     }
 
-    static void barrier(unsigned int cores = Traits<CPUS>::ONLINE) {
+    static void barrier(unsigned int cores = Traits<CPUS>::ACTIVE) {
         static volatile bool gsense = true;
         __attribute__((section(".data"))) static volatile unsigned int ready[2] = {0};
 

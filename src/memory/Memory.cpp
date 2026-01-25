@@ -15,10 +15,9 @@ void Memory::init() {
     TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize);
     new (&s_allocator) Allocator();
 
-    uintptr_t c = RamEnd - (PageSize * Traits<CPUS>::ONLINE);
+    uintptr_t c = RamEnd - (PageSize * Traits<CPUS>::ACTIVE);
     for (; c > RamStart; c -= PageSize) {
-        if (c + PageSize >= KernelStart && c < KernelEnd)
-            continue;
+        if (c + PageSize >= KernelStart && c < KernelEnd) continue;
         if (c + PageSize >= ApplicationStart && c < ApplicationEnd) {
             continue;
         }

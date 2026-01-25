@@ -24,7 +24,6 @@ class Init {
 
         CPU::barrier();
         Thread::run();
-        CPU::halt();
     }
 };
 
