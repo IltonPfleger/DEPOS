@@ -28,7 +28,7 @@ class CPU {
         // Disable Interruptions
         asm("csrc mstatus, 0x8");
 
-        // Kill Cores That Don't Support Supervisor Mode If Enabled
+        // Halt Cores That Don't Support Supervisor Mode If Enabled
         if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
             asm("csrr a0, misa\n"
                 "and a0, a0, %0\n"
@@ -37,7 +37,11 @@ class CPU {
                 "1:" ::"r"(1ULL << ('S' - 'A')));
         }
 
-        asm("csrr tp, mhartid\nmv %0, tp" : "=r"(core));
+        // Use TP as MHARTID
+        asm("csrr tp, mhartid\n"
+            "mv %0, tp"
+            : "=r"(core));
+
         asm("mv sp, %0" ::"r"(Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * core));
         asm("ret");
     }
@@ -59,7 +63,3 @@ class CPU {
     }
 };
 } // namespace rv
-
-namespace rv64 {
-using CPU = rv::CPU;
-}

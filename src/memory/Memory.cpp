@@ -3,24 +3,24 @@
 #include <utils/Debug.hpp>
 
 void Memory::init() {
-    constexpr size_t PageSize = Traits<Memory>::PageSize;
-    constexpr uintptr_t RamStart = Traits<MemoryMap>::RamStart;
-    constexpr uintptr_t RamEnd = Traits<MemoryMap>::RamEnd;
-    uintptr_t KernelStart = __kmm.start;
-    uintptr_t KernelEnd = __kmm.end;
-    uintptr_t KernelSize = KernelEnd - KernelStart;
-    uintptr_t ApplicationStart = __mm.start;
-    uintptr_t ApplicationEnd = __mm.end;
-    uintptr_t ApplicationSize = ApplicationEnd - ApplicationStart;
+    unsigned int PageSize = Traits<Memory>::PageSize;
+    unsigned long RamStart = Traits<MemoryMap>::RamStart;
+    unsigned long RamEnd = Traits<MemoryMap>::RamEnd;
+    unsigned long KernelStart = __kmm.start;
+    unsigned long KernelEnd = __kmm.end;
+    unsigned long KernelSize = KernelEnd - KernelStart;
+    unsigned long ApplicationStart = __mm.start;
+    unsigned long ApplicationEnd = __mm.end;
+    unsigned long ApplicationSize = ApplicationEnd - ApplicationStart;
+
     TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize);
     new (&s_allocator) Allocator();
 
-    uintptr_t c = RamEnd - (PageSize * Traits<CPUS>::ACTIVE);
+    unsigned long c = RamEnd - (PageSize * Traits<CPUS>::ACTIVE);
+
     for (; c > RamStart; c -= PageSize) {
         if (c + PageSize >= KernelStart && c < KernelEnd) continue;
-        if (c + PageSize >= ApplicationStart && c < ApplicationEnd) {
-            continue;
-        }
+        if (c + PageSize >= ApplicationStart && c < ApplicationEnd) continue;
         s_allocator.insert(reinterpret_cast<void *>(c), PageSize);
     }
     TraceOut();
