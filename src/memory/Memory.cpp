@@ -1,5 +1,5 @@
+#include <machine/Machine.hpp>
 #include <memory/Memory.hpp>
-#include <memory/MemoryMap.hpp>
 #include <utils/Debug.hpp>
 
 void Memory::init() {
@@ -12,8 +12,13 @@ void Memory::init() {
     unsigned long ApplicationStart = __mm.start;
     unsigned long ApplicationEnd = __mm.end;
     unsigned long ApplicationSize = ApplicationEnd - ApplicationStart;
+    unsigned long BootStart = MemoryMap::__bmm.start;
+    unsigned long BootEnd = MemoryMap::__bmm.end;
+    unsigned long BootSize = BootEnd - BootStart;
 
-    TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize);
+    TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize, BootStart, BootEnd,
+            BootSize);
+
     new (&s_allocator) Allocator();
 
     unsigned long c = RamEnd - (PageSize * Traits<CPUS>::ACTIVE);
@@ -21,16 +26,33 @@ void Memory::init() {
     for (; c > RamStart; c -= PageSize) {
         if (c + PageSize >= KernelStart && c < KernelEnd) continue;
         if (c + PageSize >= ApplicationStart && c < ApplicationEnd) continue;
+        if (c + PageSize >= BootStart && c < BootEnd) continue;
         s_allocator.insert(reinterpret_cast<void *>(c), PageSize);
     }
+
+    s_init = true;
     TraceOut();
+}
+
+size_t Memory::max() { return s_allocator.max(); }
+
+uintptr_t Memory::virt2phys(uintptr_t va) {
+    if constexpr (Traits<System>::Multitask)
+        return va - Traits<MemoryMap>::VirtualRamStart + Traits<MemoryMap>::PhysicalRamStart;
+    else
+        return va;
 }
 
 void *Memory::alloc(size_t size) {
     TraceIn(size);
-    s_spin.lock();
-    void *block = s_allocator.remove(size);
-    s_spin.unlock();
+    void *block;
+    if (!s_init) {
+        block = reinterpret_cast<void *>(virt2phys(CPU::Atomic::fdec(MemoryMap::__bmm.start, size)));
+    } else {
+        s_spin.lock();
+        block = s_allocator.remove(size);
+        s_spin.unlock();
+    }
     ERROR(!block, "Out of Memory.");
     TraceOut(block);
     return block;

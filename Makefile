@@ -40,11 +40,11 @@ $(TARGET).bin : $(TARGET).elf $(TOOLS)
 #
 
 $(TARGET).elf: $(OBJS)
-	$(LD) -e _init --section-start=.init=$(BootAddr) --image-base=$(BootAddr) -o $@ $(OBJS)
+	$(LD) -e _init --section-start=.init=$(SystemAddr) --image-base=$(SystemAddr) -o $@ $(OBJS)
 
 $(BUILD)/%: tools/%.cpp 
 	mkdir -p $(dir $@)
-	g++ -Iinclude -o $@ $<
+	g++ -std=c++20 -D__MACHINE=$(MachineName) -Iinclude -o $@ $<
 
 $(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)

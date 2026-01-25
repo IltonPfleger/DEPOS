@@ -11,17 +11,6 @@ template <typename True, typename False> struct TypeSelector<false, True, False>
     using Result = False;
 };
 
-static consteval bool StringCompare(const char *a, const char *b) {
-    if (!a || !b)
-        return false;
-    for (int i = 0;; ++i) {
-        if (a[i] != b[i])
-            return false;
-        if (a[i] == '\0')
-            return true;
-    }
-}
-
 template <typename T, auto Method, typename... Args> struct Caller {
     static auto Result(T *obj, Args &&...args) { (obj->*Method)(args...); }
 };

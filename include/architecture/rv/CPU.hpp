@@ -42,7 +42,7 @@ class CPU {
             "mv %0, tp"
             : "=r"(core));
 
-        asm("mv sp, %0" ::"r"(Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * core));
+        asm("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * core));
         asm("ret");
     }
 

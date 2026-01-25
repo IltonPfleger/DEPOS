@@ -3,6 +3,7 @@
 #include <architecture/rv/CLINT.hpp>
 #include <architecture/rv/PLIC.hpp>
 #include <architecture/rv/ic/Exception.hpp>
+#include <memory/Memory.hpp>
 
 namespace rv {
 class MIC {
@@ -47,7 +48,7 @@ class MIC {
         csrw<MachineMode::TVEC>(MIC::entry);
 
         if constexpr (ChangeStack) {
-            csrw<Mode::SCRATCH>(new unsigned char[Traits<Memory>::PageSize]);
+            csrw<Mode::SCRATCH>(reinterpret_cast<unsigned long>(Memory::alloc(4096)));
         }
 
         if constexpr (CLINT::Enable) {
