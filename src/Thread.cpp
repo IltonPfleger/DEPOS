@@ -22,23 +22,20 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *lock) {
 }
 
 int Thread::idle(void *) {
-    while (s_count > Traits<CPUS>::ONLINE) {
-        if (!s_scheduler.empty())
-            yield();
+    while (s_count > Traits<CPUS>::ACTIVE) {
+        if (!s_scheduler.empty()) yield();
     }
 
     CPU::Interruptions::disable();
     CPU::barrier();
-    if (CPU::id() == Traits<CPUS>::BSP)
-        Console::println("*** Shutdown! ***\n");
+    if (CPU::id() == Traits<CPUS>::BSP) Console::println("*** Shutdown! ***\n");
     CPU::halt();
     return 0;
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : m_stack(Segment(Traits<Memory>::PageSize)), m_waiting(0), m_link(Element(this, c)), m_criterion(c),
-      m_state(State::READY), m_joining(0),
-      m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
+    : m_stack(Segment(Traits<Memory>::PageSize)), m_waiting(0), m_link(Element(this, c)), m_criterion(c), m_state(State::READY),
+      m_joining(0), m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
     TraceIn(this);
     s_lock.lock();
     s_scheduler.insert(&m_link);
@@ -47,9 +44,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
     TraceOut();
 }
 
-Thread::~Thread() {
-    join(*this);
-}
+Thread::~Thread() { join(*this); }
 
 void Thread::join(Thread &thread) {
     auto previous = running();
@@ -89,7 +84,7 @@ void Thread::exit() {
 
 void Thread::init() {
     TraceIn();
-    for (int i = 0; i < Traits<CPUS>::ONLINE; ++i)
+    for (int i = 0; i < Traits<CPUS>::ACTIVE; ++i)
         new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
     TraceOut()
 }
@@ -102,8 +97,7 @@ void Thread::run() {
 }
 
 void Thread::reschedule() {
-    if (s_scheduler.empty())
-        return;
+    if (s_scheduler.empty()) return;
 
     auto previous = running();
     previous->m_state = State::READY;
