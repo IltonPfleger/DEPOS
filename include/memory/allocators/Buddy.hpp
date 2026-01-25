@@ -15,23 +15,6 @@ template <size_t Max> class Buddy {
     }
 
   public:
-    bool empty() const {
-        for (unsigned int i = 0; i < Max + 1; i++) {
-            if (!m_free[i].empty()) return false;
-        }
-        return true;
-    }
-
-    size_t max() const {
-        for (size_t i = Max;; --i) {
-            if (!m_free[i].empty()) {
-                return 1 << i;
-            }
-            if (i == 0) break;
-        }
-        return 0;
-    }
-
     void *remove(size_t size) {
         Node *node = nullptr;
         size_t n = level(size);

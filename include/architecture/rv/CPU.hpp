@@ -4,6 +4,7 @@
 #include <architecture/rv/Context.hpp>
 #include <architecture/rv/Interruptions.hpp>
 #include <architecture/rv/Modes.hpp>
+#include <memory/Memory.hpp>
 #include <utils/Console.hpp>
 
 namespace rv {
@@ -25,6 +26,8 @@ class CPU {
     __attribute__((naked)) static void init() {
         unsigned int core;
 
+        asm("csrw mscratch, ra");
+
         // Disable Interruptions
         asm("csrc mstatus, 0x8");
 
@@ -42,8 +45,14 @@ class CPU {
             "mv %0, tp"
             : "=r"(core));
 
+        static constexpr unsigned long BootMemory = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<CPUS>::ACTIVE;
+
         asm("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * core));
-        asm("ret");
+
+        __bmm.start = BootMemory;
+
+        asm("csrr ra, mscratch\n"
+            "ret");
     }
 
     static void barrier(unsigned int cores = Traits<CPUS>::ACTIVE) {

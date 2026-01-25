@@ -20,17 +20,16 @@ template <> struct Traits<CPUS> {
 };
 
 template <> struct Traits<Memory> {
-    static constexpr unsigned long Order = 30;
-    static constexpr unsigned long Size = (1 << Order);
-    static constexpr unsigned long PageOrder = 12;
-    static constexpr unsigned long PageSize = (1 << PageOrder);
+    static constexpr unsigned Order = 30;
+    static constexpr unsigned Size = (1 << Order);
+    static constexpr unsigned PageOrder = 12;
+    static constexpr unsigned PageSize = (1 << PageOrder);
 };
 
 template <> struct Traits<MemoryMap> {
     static constexpr unsigned long PhysicalRamStart = 0x80000000;
     static constexpr unsigned long PhysicalRamEnd = PhysicalRamStart + Traits<Memory>::Size;
 
-    // static constexpr unsigned long VirtualRamStart = 0x80000000; // 0xffffffff80000000;
     static constexpr unsigned long VirtualRamStart = 0xffffffff80000000;
     static constexpr unsigned long VirtualRamEnd = VirtualRamStart + Traits<Memory>::Size;
 

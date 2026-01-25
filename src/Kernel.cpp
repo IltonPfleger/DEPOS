@@ -11,8 +11,6 @@ class Init {
         bool BSP = CPU::id() == Traits<CPUS>::BSP;
         if (BSP) TraceIn();
 
-        if (BSP) MemoryMap::init();
-
         CPU::barrier();
 
         Machine::init();

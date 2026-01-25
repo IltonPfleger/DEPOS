@@ -48,7 +48,7 @@ class MIC {
         csrw<MachineMode::TVEC>(MIC::entry);
 
         if constexpr (ChangeStack) {
-            csrw<Mode::SCRATCH>(reinterpret_cast<unsigned long>(Memory::alloc(4096)));
+            csrw<Mode::SCRATCH>(reinterpret_cast<unsigned long>(Memory::alloc(4096)) + 4096);
         }
 
         if constexpr (CLINT::Enable) {

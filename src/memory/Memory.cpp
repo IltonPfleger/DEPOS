@@ -5,15 +5,15 @@
 void Memory::init() {
     unsigned int PageSize = Traits<Memory>::PageSize;
     unsigned long RamStart = Traits<MemoryMap>::RamStart;
-    unsigned long RamEnd = Traits<MemoryMap>::RamEnd;
+    // unsigned long RamEnd = Traits<MemoryMap>::RamEnd;
     unsigned long KernelStart = __kmm.start;
     unsigned long KernelEnd = __kmm.end;
     unsigned long KernelSize = KernelEnd - KernelStart;
     unsigned long ApplicationStart = __mm.start;
     unsigned long ApplicationEnd = __mm.end;
     unsigned long ApplicationSize = ApplicationEnd - ApplicationStart;
-    unsigned long BootStart = MemoryMap::__bmm.start;
-    unsigned long BootEnd = MemoryMap::__bmm.end;
+    unsigned long BootStart = __bmm.start;
+    unsigned long BootEnd = __bmm.end;
     unsigned long BootSize = BootEnd - BootStart;
 
     TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize, BootStart, BootEnd,
@@ -21,33 +21,30 @@ void Memory::init() {
 
     new (&s_allocator) Allocator();
 
-    unsigned long c = RamEnd - (PageSize * Traits<CPUS>::ACTIVE);
+    unsigned long c = BootStart;
 
     for (; c > RamStart; c -= PageSize) {
         if (c + PageSize >= KernelStart && c < KernelEnd) continue;
         if (c + PageSize >= ApplicationStart && c < ApplicationEnd) continue;
-        if (c + PageSize >= BootStart && c < BootEnd) continue;
         s_allocator.insert(reinterpret_cast<void *>(c), PageSize);
     }
 
-    s_init = true;
+    __bmm.start = 0;
     TraceOut();
 }
 
-size_t Memory::max() { return s_allocator.max(); }
-
-uintptr_t Memory::virt2phys(uintptr_t va) {
+uintptr_t Memory::virt2phys(uintptr_t address) {
     if constexpr (Traits<System>::Multitask)
-        return va - Traits<MemoryMap>::VirtualRamStart + Traits<MemoryMap>::PhysicalRamStart;
+        return address - Traits<MemoryMap>::VirtualRamStart + Traits<MemoryMap>::PhysicalRamStart;
     else
-        return va;
+        return address;
 }
 
 void *Memory::alloc(size_t size) {
     TraceIn(size);
     void *block;
-    if (!s_init) {
-        block = reinterpret_cast<void *>(virt2phys(CPU::Atomic::fdec(MemoryMap::__bmm.start, size)));
+    if (__bmm.start) {
+        block = reinterpret_cast<void *>(virt2phys(CPU::Atomic::fdec(__bmm.start, size)));
     } else {
         s_spin.lock();
         block = s_allocator.remove(size);
