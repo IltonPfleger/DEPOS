@@ -14,11 +14,9 @@ class Memory {
     static void init();
     static void *alloc(size_t);
     static void free(void *, size_t);
-    static size_t max();
     static uintptr_t virt2phys(uintptr_t);
 
   private:
-    static inline bool s_init;
     static inline Allocator s_allocator;
     static inline Spin s_spin;
 };

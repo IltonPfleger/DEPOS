@@ -64,7 +64,6 @@ class SV39_MMU {
         bool map(uintptr_t va, Flags flags) { return map(va, va, flags); }
 
         void map(uintptr_t va, uintptr_t pa, size_t size, Flags flags) {
-            Console::print(Console::Hex(va), Console::Hex(pa), Console::Hex(size), '\n');
             if ((size % Giga == 0) && ((va % Giga == 0) && (pa % Giga == 0))) {
                 uintptr_t vpn2 = (va >> 30) & 0x1FF;
                 this->set(vpn2, pa, flags);
