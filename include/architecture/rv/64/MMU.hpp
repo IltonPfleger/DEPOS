@@ -118,20 +118,21 @@ class SV39_MMU {
   public:
     static void init() {
         if (CPU::id() == Traits<CPUS>::BSP) {
-            s_pt.map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart, Traits<Memory>::Size,
-                     PageTable::KernelRW);
-            s_pt.map(Traits<MemoryMap>::PhysicalRamStart, Traits<MemoryMap>::PhysicalRamStart, Traits<Memory>::Size,
-                     PageTable::KernelRW);
-            s_pt.map(Traits<MemoryMap>::UART0, Traits<MemoryMap>::UART0, PageTable::KernelRW);
+            s_kernel_page_table = reinterpret_cast<PageTable *>(Memory::alloc(sizeof(PageTable)));
+            s_kernel_page_table->map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart,
+                                     Traits<Memory>::Size, PageTable::KernelRW);
+            s_kernel_page_table->map(Traits<MemoryMap>::PhysicalRamStart, Traits<MemoryMap>::PhysicalRamStart,
+                                     Traits<Memory>::Size, PageTable::KernelRW);
+            s_kernel_page_table->map(Traits<MemoryMap>::UART0, Traits<MemoryMap>::UART0, PageTable::KernelRW);
         }
 
         CPU::barrier();
-        s_pt.load();
+        s_kernel_page_table->load();
     }
 
   private:
     static constexpr unsigned long Mode = 8UL << 60;
     static constexpr unsigned long Giga = (1 << 30);
-    static inline PageTable s_pt;
+    static inline PageTable *s_kernel_page_table;
 };
 } // namespace rv64

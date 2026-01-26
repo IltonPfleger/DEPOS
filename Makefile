@@ -25,19 +25,18 @@ $(TARGET).bin : $(TARGET).elf $(TOOLS)
 	$(DD) bs=1 conv=notrunc if=$(APPDIR).bin of=$(TARGET).bin seek=$$(( $(ApplicationAddr) - $(RamStart) ))
 	$(TRUNCATE) -s %$(PageSize) $(TARGET).bin
 
-#debug: $(TARGET)
-#	$(QEMU) -M $(MACHINE) -smp $(CPUS) -bios none -kernel $(TARGET) -nographic -m 1024 -S -gdb tcp::1234
-#
-#gdb:
-#	riscv64-linux-gnu-gdb\
-#		-ex "target extended-remote:1234"\
-#		-ex "set confirm off"\
-#		-ex "add-inferior"\
-#		-ex "inferior 2"\
-#		-ex "attach 2"\
-#		-ex "set confirm off"\
-#		-ex "file $(TARGET).elf"
-#
+debug: $(TARGET).bin
+	-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(TARGET).bin -S -gdb tcp::1234
+
+gdb:
+	riscv64-linux-gnu-gdb\
+		-ex "target extended-remote:1234"\
+		-ex "set confirm off"\
+		-ex "add-inferior"\
+		-ex "inferior 2"\
+		-ex "attach 2"\
+		-ex "set confirm off"\
+		-ex "file $(TARGET).elf"
 
 $(TARGET).elf: $(OBJS)
 	$(LD) -e _init --section-start=.init=$(SystemAddr) --image-base=$(SystemAddr) -o $@ $(OBJS)

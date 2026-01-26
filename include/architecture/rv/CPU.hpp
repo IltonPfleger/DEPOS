@@ -45,7 +45,7 @@ class CPU {
             "mv %0, tp"
             : "=r"(core));
 
-        static constexpr unsigned long BootMemory = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<CPUS>::ACTIVE;
+        static constexpr unsigned long BootMemory = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<CPUS>::COUNT;
 
         asm("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * core));
 
