@@ -5,6 +5,7 @@
 #include <machine/Traits.hpp>
 
 void Timer::init() {
+    TraceIn();
     if constexpr (Traits<Alarm>::Enable) {
         s_alarm.duration = Traits<Timer>::Frequency / Traits<Alarm>::Frequency;
         s_alarm.current[Traits<CPUS>::BSP] = s_alarm.duration;
@@ -15,6 +16,7 @@ void Timer::init() {
         for (auto &e : s_scheduler.current)
             e = s_scheduler.duration;
     }
+    TraceOut();
 }
 
 void Timer::handler(unsigned long core) {

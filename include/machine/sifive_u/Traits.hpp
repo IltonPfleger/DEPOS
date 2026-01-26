@@ -14,7 +14,7 @@ template <unsigned long> class SiFiveUART;
 
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
-    static constexpr int COUNT = 2;
+    static constexpr int COUNT = 3;
     static constexpr int ACTIVE = Traits<System>::Multitask ? COUNT - 1 : COUNT;
     static constexpr int BSP = 1;
 };

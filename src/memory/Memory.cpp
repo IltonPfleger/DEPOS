@@ -13,11 +13,8 @@ void Memory::init() {
     unsigned long ApplicationEnd = __mm.end;
     unsigned long ApplicationSize = ApplicationEnd - ApplicationStart;
     unsigned long BootStart = __bmm.start;
-    unsigned long BootEnd = __bmm.end;
-    unsigned long BootSize = BootEnd - BootStart;
 
-    TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize, BootStart, BootEnd,
-            BootSize);
+    TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize, BootStart);
 
     new (&s_allocator) Allocator();
 
@@ -30,6 +27,7 @@ void Memory::init() {
     }
 
     __bmm.start = 0;
+
     TraceOut();
 }
 
@@ -41,17 +39,18 @@ uintptr_t Memory::virt2phys(uintptr_t address) {
 }
 
 void *Memory::alloc(size_t size) {
+    s_spin.lock();
     TraceIn(size);
     void *block;
     if (__bmm.start) {
-        block = reinterpret_cast<void *>(virt2phys(CPU::Atomic::fdec(__bmm.start, size)));
+        __bmm.start -= size;
+        block = reinterpret_cast<void *>(virt2phys(__bmm.start));
     } else {
-        s_spin.lock();
         block = s_allocator.remove(size);
-        s_spin.unlock();
     }
     ERROR(!block, "Out of Memory.");
     TraceOut(block);
+    s_spin.unlock();
     return block;
 }
 

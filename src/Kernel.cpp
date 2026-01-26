@@ -5,7 +5,7 @@
 #include <memory/Memory.hpp>
 #include <utils/Debug.hpp>
 
-class Init {
+class System {
   public:
     static void init() {
         bool BSP = CPU::id() == Traits<CPUS>::BSP;
@@ -16,14 +16,12 @@ class Init {
         Machine::init();
 
         if (BSP) {
-            TraceIn();
             Memory::init();
             Timer::init();
             Application::init();
             Thread::init();
             TraceOut();
         }
-
         CPU::barrier();
         Thread::run();
     }
@@ -31,5 +29,5 @@ class Init {
 
 extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
     CPU::init();
-    Init::init();
+    System::init();
 }

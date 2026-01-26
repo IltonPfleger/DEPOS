@@ -5,7 +5,6 @@
 
 class Console {
     using IO = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
-
     static void put(char);
 
   public:
@@ -18,6 +17,7 @@ class Console {
         T m_x;
     };
 
+    static void panic();
     static void println(const char *, ...);
     static void print(char);
     static void print(const char *);
@@ -56,4 +56,7 @@ class Console {
         Console::print(first);
         ((Console::print(", "), Console::print(args)), ...);
     }
+
+  private:
+    static inline int s_panic = -1;
 };
