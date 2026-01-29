@@ -1,15 +1,11 @@
 #pragma once
 
 #include <architecture/rv/64/rv.hpp>
+#include <architecture/rv/Traits.hpp>
 
 namespace rv {
 struct MachineMode {
     enum {
-        PMPADDR0 = 0x3B0,
-        PMPCFG0 = 0x3A0,
-        HARTID = 0xF14,            // Core Number/ID
-        MEDELEG = 0x302,            // Machine Exception Delegation
-        MIDELEG = 0x303,            // Machine Interrupt Delegation
         ME2ME = 3ULL << 11,         // Machine to Machine
         ME2SUPERVISOR = 1ULL << 11, // Machine to Supervisor
         ME2USER = 0ULL << 11,       // Machine to User
@@ -19,6 +15,13 @@ struct MachineMode {
         PIRQE = 1ULL << 7,          // Previous Interrupt Enable
     };
 
+    static constexpr int HARTID = 0xF14;
+    static constexpr int MEDELEG = 0x302;
+    static constexpr int MIDELEG = 0x303;
+    static constexpr int PMPADDR0 = 0x3B0;
+    static constexpr int PMPCFG0 = 0x3A0;
+    static constexpr int PMPADDR1 = 0x3B1;
+    static constexpr int PMPCFG1 = 0x3A1;
     static constexpr int STATUS = 0x300;
     static constexpr int MISA = 0x301;
     static constexpr int IE = 0x304;
@@ -28,6 +31,10 @@ struct MachineMode {
     static constexpr int CAUSE = 0x342;
     static constexpr int IP = 0x344;
     static constexpr int TVAL = 0x343;
+    static constexpr int VENDORID = 0xF11;
+    static constexpr int ARCHID = 0xF12;
+    static constexpr int IMPID = 0xF13;
+
     static constexpr char PREFIX = 'm';
 
     __attribute__((always_inline)) static inline void ret() { asm volatile("mret"); }
@@ -58,5 +65,5 @@ struct SupervisorMode {
     __attribute__((always_inline)) static inline void ret() { asm volatile("sret"); }
 };
 
-using KernelMode = Meta::TypeSelector<Traits<System>::Multitask, SupervisorMode, MachineMode>::Result;
+using KernelMode = Meta::TypeSelector<Traits<RISCV>::Supervisor, SupervisorMode, MachineMode>::Result;
 } // namespace rv

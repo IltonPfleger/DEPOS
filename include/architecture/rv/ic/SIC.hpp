@@ -8,7 +8,7 @@ class SIC {
     using Context = ContextBase<Mode>;
 
     static void timer(unsigned int) {
-        CPU::syscall(MIC::Syscall::TIME);
+        CPU::syscall(MIC::SupervisorSyscall::TIME);
         Timer::handler(CPU::id());
     }
 
