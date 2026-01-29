@@ -7,7 +7,7 @@ struct MachineMode {
     enum {
         PMPADDR0 = 0x3B0,
         PMPCFG0 = 0x3A0,
-        MHARTID = 0xF14,            // Core Number/ID
+        HARTID = 0xF14,            // Core Number/ID
         MEDELEG = 0x302,            // Machine Exception Delegation
         MIDELEG = 0x303,            // Machine Interrupt Delegation
         ME2ME = 3ULL << 11,         // Machine to Machine
