@@ -12,10 +12,12 @@ class Initializer {
     __attribute__((naked)) static void mode() {
         MIC::init();
 
-        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
-            csrw<MachineMode::MIDELEG>(0x222);
-            csrw<MachineMode::PMPADDR0>(0x3FFFFFFFFFFFFFULL);
-            csrw<MachineMode::PMPCFG0>(0b11111);
+        if constexpr (Traits<RISCV>::Supervisor) {
+            csrw<SupervisorMode::SATP>(0);
+            csrw<MachineMode::MIDELEG>(0x1666);
+            csrw<MachineMode::MEDELEG>(0xf4b509);
+            csrw<MachineMode::PMPADDR0>(~0ULL);
+            csrw<MachineMode::PMPCFG0>(0x1f);
             csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
             csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
 
@@ -35,9 +37,9 @@ class Initializer {
   public:
     static void init() {
         mode();
-        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
-            SIC::init();
-        }
+        // if constexpr (Traits<RISCV>::Supervisor && !Traits<System>::Hypervisor) {
+        //     SIC::init();
+        // }
     }
 };
 

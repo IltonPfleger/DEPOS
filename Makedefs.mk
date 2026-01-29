@@ -26,6 +26,7 @@ PageSize        := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hp
 RamStart        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::RamStart"))
 SystemAddr        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::SystemAddr"))
 ApplicationAddr := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::ApplicationAddr"))
+Hypervisor     := $(shell $(TRAITS) $(INCLUDE) Traits.hpp "Traits<System>::Hypervisor")
 
 CFLAGS = -march=rv64imac_zicsr -mabi=lp64
 CFLAGS += -D__MACHINE=$(MachineName)

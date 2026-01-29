@@ -4,6 +4,7 @@
 #include <architecture/rv/Modes.hpp>
 #include <architecture/rv/Traits.hpp>
 #include <drivers/Driver.hpp>
+#include <utils/Debug.hpp>
 
 namespace rv64 {
 class CLINT : Driver {
@@ -22,21 +23,21 @@ class CLINT : Driver {
     static void handler(unsigned int) {
         if constexpr (Traits<RISCV>::Supervisor) {
             csrc<MachineMode::IE>(MachineMode::TI);
-            csrs<MachineMode::IP>(KernelMode::TI);
+            csrs<MachineMode::IP>(SupervisorMode::TI);
         } else {
             CLINT::write();
             Timer::handler(CPU::id());
         }
     }
 
-    static void syscall() {
-        write();
+    static void syscall(uint64_t delta = Ticks + read()) {
+        write(delta);
         csrs<MachineMode::IE>(MachineMode::TI);
-        csrc<MachineMode::IP>(KernelMode::TI);
+        csrc<MachineMode::IP>(SupervisorMode::TI);
     }
 
     static void init() {
-        write();
+        // write(~0ULL);
         csrs<MachineMode::IE>(MachineMode::TI);
     }
     static constexpr unsigned long Base = Traits<::CLINT>::Addr;

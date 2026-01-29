@@ -3,15 +3,13 @@
 namespace rv64 {
 template <typename T> class ContextBase {
   public:
-    uint64_t ra;
-    uint64_t tp;
-    uint64_t gp;
-    uint64_t sp;
-    uint64_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
+    uint64_t ra, sp, gp, tp;
+    uint64_t t0, t1, t2;
+    uint64_t s0, s1;
     uint64_t a0, a1, a2, a3, a4, a5, a6, a7;
-    uint64_t t0, t1, t2, t3, t4, t5, t6;
-    uint64_t status;
-    uint64_t pc;
+    uint64_t s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
+    uint64_t t3, t4, t5, t6;
+    uint64_t status, pc;
 
     uint64_t &operator[](size_t i) { return (reinterpret_cast<uint64_t *>(&ra))[i - 1]; }
 

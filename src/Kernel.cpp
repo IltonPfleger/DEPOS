@@ -34,9 +34,11 @@ class Hypervisor {
     static void init() {
         TraceIn();
 
+        CPU::barrier();
+
         Machine::init();
 
-        reinterpret_cast<void (*)(unsigned int, uintptr_t)>(Traits<MemoryMap>::ApplicationAddr)(CPU::id(), 0x82200000ULL);
+        reinterpret_cast<void (*)(unsigned int, uintptr_t)>(Traits<MemoryMap>::ApplicationAddr)(0, 0x82200000ULL);
 
         CPU::halt();
     }

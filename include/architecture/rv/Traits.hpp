@@ -5,5 +5,5 @@
 class RISCV;
 
 template <> struct Traits<RISCV> {
-    static constexpr bool Supervisor = Traits<System>::Multitask || Traits<System>::Hypervisor;
+    static constexpr bool Supervisor = true; // Traits<System>::Multitask || Traits<System>::Hypervisor;
 };

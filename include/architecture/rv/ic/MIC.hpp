@@ -14,7 +14,7 @@ class MIC {
     using Mode = MachineMode;
     using Syscall = Meta::TypeSelector<Traits<System>::Hypervisor, sbi::SBI, MachineSyscall>::Result;
 
-    static constexpr bool ChangeStack = Meta::SAME<KernelMode, SupervisorMode>::Result;
+    static constexpr bool ChangeStack = Traits<RISCV>::Supervisor;
 
     static void dispatch(MachineContext *c) {
         uintmax_t mcause = csrr<Mode::CAUSE>();
