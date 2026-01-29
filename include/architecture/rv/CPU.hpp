@@ -4,8 +4,8 @@
 #include <architecture/rv/Context.hpp>
 #include <architecture/rv/Interruptions.hpp>
 #include <architecture/rv/Modes.hpp>
-#include <memory/Memory.hpp>
-#include <utils/Console.hpp>
+#include <architecture/rv/Traits.hpp>
+#include <memory/MemoryMap.hpp>
 
 namespace rv {
 class CPU {
@@ -32,7 +32,7 @@ class CPU {
         asm("csrc mstatus, 0x8");
 
         // Halt Cores That Don't Support Supervisor Mode If Enabled
-        if constexpr (Meta::SAME<KernelMode, SupervisorMode>::Result) {
+        if constexpr (Traits<RISCV>::Supervisor) {
             asm("csrr a0, misa\n"
                 "and a0, a0, %0\n"
                 "bnez a0, 1f\n"
