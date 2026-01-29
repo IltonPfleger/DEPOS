@@ -53,7 +53,7 @@ template <> struct Traits<UART> {
 template <> struct Traits<CLINT> {
     static constexpr bool Enable = Traits<Timer>::Enable;
     static constexpr unsigned long Addr = Traits<MemoryMap>::CLINT;
-    static constexpr unsigned long Clock = 10'000'000;
+    static constexpr unsigned long Clock = 1'000'000;
 };
 
 template <> struct Traits<PLIC> {
