@@ -34,8 +34,8 @@ class SV39_MMU {
         };
 
         void load() const {
-            rv::csrw<rv::SupervisorMode::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
             TLB::flush();
+            rv::csrw<rv::SupervisorMode::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
         }
 
         bool map(uintptr_t va, uintptr_t pa, Flags flags) {
