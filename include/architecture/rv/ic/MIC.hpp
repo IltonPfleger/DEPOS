@@ -1,49 +1,54 @@
 #pragma once
 
+#include <Traits.hpp>
 #include <architecture/rv/CLINT.hpp>
 #include <architecture/rv/PLIC.hpp>
 #include <architecture/rv/ic/Exception.hpp>
+#include <architecture/rv/ic/sbi/SBI.hpp>
 #include <memory/Memory.hpp>
 
 namespace rv {
 class MIC {
+  public:
+    class SupervisorSyscall {
+      public:
+        enum { TIME = 0 };
+
+        static bool dispatch(MachineContext *c) {
+            bool handle = true;
+            if (c->a0 == TIME) {
+                CLINT::syscall();
+            } else {
+                handle = false;
+            }
+            c->pc += 4;
+            return handle;
+        }
+    };
+
+  private:
     using Mode = MachineMode;
-    using Context = ContextBase<Mode>;
+    using Syscall = Meta::TypeSelector<Traits<System>::Hypervisor, sbi::SBI, SupervisorSyscall>::Result;
+
     static constexpr bool ChangeStack = Meta::SAME<KernelMode, SupervisorMode>::Result;
 
-    static void dispatch(Context *c) {
+    static void dispatch(MachineContext *c) {
         uintmax_t mcause = csrr<Mode::CAUSE>();
         int code = (mcause << 1) >> 1;
 
         if (mcause & IC::INTERRUPT) {
             IC::dispatch(code);
         } else {
-            if ((mcause == 8) | (mcause == 9) || (mcause == 10) | (mcause == 11)) {
-                Syscall::dispatch(c->a0);
-                c->pc += 4;
-            } else {
-                Exception<MachineMode>::dispatch();
-            }
+            if (!Syscall::dispatch(c)) Exception<MachineMode>::dispatch();
         }
     }
 
     __attribute__((naked, aligned(4))) static void entry() {
-        dispatch(Context::push<ChangeStack>());
-        Context::pop<ChangeStack>();
+        dispatch(MachineContext::push<ChangeStack>());
+        MachineContext::pop<ChangeStack>();
     }
 
   public:
-    class Syscall {
-      public:
-        enum { TIME = 'T' << 24 | 'I' << 16 | 'M' << 8 | 'E' };
-
-        static void dispatch(unsigned int id) {
-            if (id == TIME) {
-                CLINT::syscall();
-            }
-        }
-    };
-
     static void init() {
         csrw<MachineMode::TVEC>(MIC::entry);
 

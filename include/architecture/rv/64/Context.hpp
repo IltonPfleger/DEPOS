@@ -13,6 +13,8 @@ template <typename T> class ContextBase {
     uint64_t status;
     uint64_t pc;
 
+    uint64_t &operator[](size_t i) { return (reinterpret_cast<uint64_t *>(&ra))[i - 1]; }
+
     ContextBase() = default;
     ContextBase(int (*entry)(void *), void *a0, void *sp, void (*exit)()) {
         this->ra = reinterpret_cast<uint64_t>(exit);
