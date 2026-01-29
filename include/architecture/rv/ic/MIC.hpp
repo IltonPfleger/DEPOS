@@ -4,31 +4,15 @@
 #include <architecture/rv/CLINT.hpp>
 #include <architecture/rv/PLIC.hpp>
 #include <architecture/rv/ic/Exception.hpp>
+#include <architecture/rv/ic/MachineSyscall.hpp>
 #include <architecture/rv/ic/sbi/SBI.hpp>
 #include <memory/Memory.hpp>
 
 namespace rv {
 class MIC {
-  public:
-    class SupervisorSyscall {
-      public:
-        enum { TIME = 0 };
-
-        static bool dispatch(MachineContext *c) {
-            bool handle = true;
-            if (c->a0 == TIME) {
-                CLINT::syscall();
-            } else {
-                handle = false;
-            }
-            c->pc += 4;
-            return handle;
-        }
-    };
-
   private:
     using Mode = MachineMode;
-    using Syscall = Meta::TypeSelector<Traits<System>::Hypervisor, sbi::SBI, SupervisorSyscall>::Result;
+    using Syscall = Meta::TypeSelector<Traits<System>::Hypervisor, sbi::SBI, MachineSyscall>::Result;
 
     static constexpr bool ChangeStack = Meta::SAME<KernelMode, SupervisorMode>::Result;
 
