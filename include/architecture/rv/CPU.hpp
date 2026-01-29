@@ -45,11 +45,12 @@ class CPU {
             "mv %0, tp"
             : "=r"(core));
 
-        static constexpr unsigned long BootMemory = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<CPUS>::COUNT;
-
         asm("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * core));
 
-        __bmm.start = BootMemory;
+        if (id() == Traits<CPUS>::BSP) {
+            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<CPUS>::COUNT;
+            __bmm.end = Traits<MemoryMap>::RamEnd;
+        }
 
         asm("csrr ra, mscratch\n"
             "ret");
