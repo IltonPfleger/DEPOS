@@ -5,7 +5,7 @@
 void Memory::init() {
     unsigned int PageSize = Traits<Memory>::PageSize;
     unsigned long RamStart = Traits<MemoryMap>::RamStart;
-    // unsigned long RamEnd = Traits<MemoryMap>::RamEnd;
+    unsigned long RamEnd = Traits<MemoryMap>::RamEnd;
     unsigned long KernelStart = __kmm.start;
     unsigned long KernelEnd = __kmm.end;
     unsigned long KernelSize = KernelEnd - KernelStart;
@@ -13,22 +13,26 @@ void Memory::init() {
     unsigned long ApplicationEnd = __mm.end;
     unsigned long ApplicationSize = ApplicationEnd - ApplicationStart;
     unsigned long BootStart = __bmm.start;
+    unsigned long BootEnd = __bmm.end;
+
+    s_spin.lock();
 
     TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize, BootStart);
 
     new (&s_allocator) Allocator();
 
-    unsigned long c = BootStart;
-
-    for (; c > RamStart; c -= PageSize) {
+    for (unsigned long c = RamEnd - PageSize; c + PageSize > RamStart; c -= PageSize) {
         if (c + PageSize >= KernelStart && c < KernelEnd) continue;
         if (c + PageSize >= ApplicationStart && c < ApplicationEnd) continue;
+        if (c + PageSize >= BootStart && c < BootEnd) continue;
         s_allocator.insert(reinterpret_cast<void *>(c), PageSize);
     }
 
     __bmm.start = 0;
 
     TraceOut();
+
+    s_spin.unlock();
 }
 
 uintptr_t Memory::virt2phys(uintptr_t address) {
@@ -55,12 +59,12 @@ void *Memory::alloc(size_t size) {
 }
 
 void Memory::free(void *addr, size_t size) {
+    s_spin.lock();
     TraceIn(addr, size);
     ERROR(addr == nullptr, "}\n");
-    s_spin.lock();
     s_allocator.insert(addr, size);
-    s_spin.unlock();
     TraceOut();
+    s_spin.unlock();
 }
 
 void *operator new(size_t, void *ptr) { return ptr; }
