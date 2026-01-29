@@ -40,15 +40,19 @@ class CPU {
                 "1:" ::"r"(1ULL << ('S' - 'A')));
         }
 
-        // Use TP as MHARTID
+        // Use TP as Core ID
         asm("csrr tp, mhartid\n"
-            "mv %0, tp"
-            : "=r"(core));
+            "addi tp, tp, %[offset]\n"
+            "mv %[core], tp"
+            : [core] "=r"(core)
+            : [offset] "i"(Traits<CPUS>::ACTIVE - Traits<CPUS>::COUNT));
 
+        // Get A Stack
         asm("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * core));
 
+        // Setup Boot Memory
         if (id() == Traits<CPUS>::BSP) {
-            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<CPUS>::COUNT;
+            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<CPUS>::ACTIVE;
             __bmm.end = Traits<MemoryMap>::RamEnd;
         }
 
