@@ -43,12 +43,15 @@ class IPv4 {
     enum Protocol : unsigned char { ICMP = 1, TCP = 6, UDP = 0x11 };
     typedef GenericAddress<4> Address;
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NIC;
+
     struct PendingPacket {
-        uint8_t *buffer;
-        size_t received;
-        size_t length;
+        uint8_t *m_buffer;
+        size_t m_received;
+        size_t m_id;
     };
+
     enum { MF = 0x2000 };
+
     struct Header {
         uint8_t m_version;
         uint8_t m_tos;
@@ -92,6 +95,42 @@ class IPv4 {
 
     } __attribute__((packed));
 
+    class Assembler {
+
+      public:
+        Assembler() = default;
+        Assembler(uint8_t *buffer, size_t buffer_length) : m_buffer(buffer), m_buffer_length(buffer_length) {}
+
+        void add(Header *header) {
+            uint16_t fragment = CPU::be16toh(header->m_fragment);
+            uint16_t offset = (fragment & 0x1FFF) * 8;
+            bool more_fragments = (fragment & MF);
+            uint16_t id = header->m_identification;
+            uint8_t ihl = (header->m_version & 0x0F) * 4;
+            uint16_t payload_length = CPU::be16toh(header->m_length) - ihl;
+            uint8_t *payload = (uint8_t *)header + ihl;
+
+            if (m_received == 0) m_id = id;
+            if (m_id != id || offset + payload_length > m_buffer_length) return;
+
+            memcpy(m_buffer + offset, payload, payload_length);
+
+            m_received += payload_length;
+
+            if (!more_fragments) m_expected = offset + payload_length;
+        }
+
+        bool completed() const { return m_expected > 0 && m_received >= m_expected; }
+        size_t length() { return m_received; }
+
+      private:
+        uint8_t *m_buffer = nullptr;
+        size_t m_buffer_length = 0;
+        uint16_t m_id = 0;
+        size_t m_received = 0;
+        size_t m_expected = 0;
+    };
+
   public:
     IPv4() { m_nic = NIC::instance(); }
 
@@ -129,95 +168,23 @@ class IPv4 {
     //}
 
     size_t receive(unsigned char *destination, unsigned int length) {
-        bool done = false;
         uint8_t *buffer = new unsigned char[Ethernet::MTU];
+        Assembler assembler(destination, length);
 
-        // Variáveis de estado para remontagem
-        uint16_t target_id = 0;
-        bool assembling = false;
-        size_t total_bytes_copied = 0;
-        size_t expected_total_size = 0;
-        bool seen_last_fragment = false;
-
-        while (!done) {
+        while (!assembler.completed()) {
             size_t received = m_nic->receive(buffer, Ethernet::MTU);
             if (received) {
                 Ethernet::Frame *frame = reinterpret_cast<Ethernet::Frame *>(buffer);
 
-                // Verifica se é IPv4
                 if (frame->m_header.m_type == CPU::be16toh(Ethernet::IPv4)) {
                     Header *header = reinterpret_cast<Header *>(frame->data());
-
-                    // Dados do cabeçalho IP
-                    uint16_t fragment_field = CPU::be16toh(header->m_fragment);
-                    uint16_t offset = (fragment_field & 0x1FFF) * 8;
-                    bool more_fragments = (fragment_field & MF);
-                    uint16_t ip_id = header->m_identification;
-
-                    // Cálculo do tamanho do cabeçalho IP (IHL * 4) e do Payload
-                    uint8_t ihl = (header->m_version & 0x0F) * 4;
-                    uint16_t total_len = CPU::be16toh(header->m_length);
-                    size_t payload_len = total_len - ihl;
-                    uint8_t *payload_ptr = (uint8_t *)header + ihl;
-
-                    // CASO 1: Pacote não fragmentado (Caminho feliz existente)
-                    if (offset == 0 && !more_fragments && !assembling) {
-                        // Verificação de segurança de buffer
-                        if (payload_len <= length) {
-                            memcpy(destination, payload_ptr, payload_len);
-                            delete[] buffer; // IMPORTANTE: Evitar memory leak
-                            return payload_len;
-                        }
-                        // Se buffer for pequeno demais, drop ou erro
-                        break;
-                    }
-
-                    // CASO 2: Pacote Fragmentado
-                    // Se ainda não estamos montando nada, começamos agora com este ID
-                    if (!assembling) {
-                        target_id = ip_id;
-                        assembling = true;
-                    }
-
-                    // Se estamos montando, verificamos se o pacote atual pertence ao mesmo ID
-                    // Se não for o mesmo ID, ignoramos (drop) nesta implementação simples de busy-wait
-                    if (ip_id == target_id) {
-
-                        // Verificação de Overflow do buffer de destino
-                        if (offset + payload_len > length) {
-                            // Erro: Pacote maior que o buffer fornecido
-                            // Abortar ou lidar com erro
-                            delete[] buffer;
-                            return 0;
-                        }
-
-                        // Copia o pedaço para a posição correta
-                        memcpy(destination + offset, payload_ptr, payload_len);
-                        total_bytes_copied += payload_len;
-
-                        // Se a flag MF for 0, este é o último fragmento
-                        if (!more_fragments) {
-                            seen_last_fragment = true;
-                            expected_total_size = offset + payload_len;
-                        }
-
-                        // Verifica condição de término:
-                        // Vimos o último fragmento E temos todos os bytes esperados?
-                        if (seen_last_fragment && total_bytes_copied >= expected_total_size) {
-                            done = true;
-                            // Retorna o tamanho total remontado
-                            delete[] buffer;
-                            return expected_total_size;
-                        }
-                    } else {
-                        Console::print("OI");
-                    }
+                    assembler.add(header);
                 }
             }
         }
 
         delete[] buffer;
-        return 0;
+        return assembler.length();
     }
 
   private:

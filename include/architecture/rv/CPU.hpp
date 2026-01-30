@@ -38,10 +38,10 @@ class CPU {
     __attribute__((naked)) static void init() {
         unsigned int core;
 
-        asm("csrw mscratch, ra");
-
         // Disable Interruptions
         asm("csrc mstatus, 0x8");
+
+        asm("csrw mscratch, ra");
 
         // Halt Cores That Don't Support Supervisor Mode If Enabled
         if constexpr (Traits<RISCV>::Supervisor) {
