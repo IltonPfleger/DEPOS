@@ -16,7 +16,6 @@ template <typename T> struct Traits;
 
 template <> struct Traits<System> {
     static constexpr bool Multitask = false;
-    static constexpr bool Hypervisor = true;
 };
 
 template <> struct Traits<Timer> {
