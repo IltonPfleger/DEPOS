@@ -34,7 +34,7 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : m_stack(Segment(Traits<Memory>::PageSize)), m_waiting(0), m_link(Element(this, c)), m_criterion(c), m_state(State::READY),
+    : m_stack(Segment(Traits<Memory>::PageSize)), m_waiting(0), m_link(Link(this, c)), m_criterion(c), m_state(State::READY),
       m_joining(0), m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
     TraceIn(this);
     s_lock.lock();
@@ -90,10 +90,11 @@ void Thread::init() {
 }
 
 void Thread::run() {
-    Thread previous;
+    unsigned char previous[sizeof(Thread)];
     s_lock.acquire();
     Thread *next = s_scheduler.pop();
-    dispatch(&previous, next, &s_lock);
+    TraceIn(next, next->m_context);
+    dispatch(reinterpret_cast<Thread *>(previous), next, &s_lock);
 }
 
 void Thread::reschedule() {
@@ -127,7 +128,7 @@ void Thread::sleep(Queue &m_waiting, Spin &lock) {
 }
 
 void Thread::wakeup(Queue &waiting) {
-    Element *awake = waiting.next();
+    Link *awake = waiting.remove();
     ERROR(!awake, "Empty queue.");
     awake->value->m_state = State::READY;
     awake->value->m_waiting = nullptr;

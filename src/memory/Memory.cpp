@@ -1,33 +1,27 @@
 #include <memory/Memory.hpp>
 #include <utils/Debug.hpp>
+#include <utils/string.hpp>
 
 void Memory::init() {
-    unsigned int PageSize = Traits<Memory>::PageSize;
-    unsigned long RamStart = Traits<MemoryMap>::RamStart;
-    unsigned long RamEnd = Traits<MemoryMap>::RamEnd;
-    unsigned long KernelStart = __kmm.start;
-    unsigned long KernelEnd = __kmm.end;
-    unsigned long KernelSize = KernelEnd - KernelStart;
-    unsigned long ApplicationStart = __mm.start;
-    unsigned long ApplicationEnd = __mm.end;
-    unsigned long ApplicationSize = ApplicationEnd - ApplicationStart;
-    unsigned long BootStart = __bmm.start;
-    unsigned long BootEnd = __bmm.end;
+    const auto PageSize = Traits<Memory>::PageSize;
+    const auto RamStart = Traits<MemoryMap>::RamStart;
+    const auto RamEnd = Traits<MemoryMap>::RamEnd;
+    const auto KernelSize = __kmm.end - __kmm.start;
+    const auto ApplicationSize = __mm.end - __mm.start;
+    const auto BootMemorySize = __bmm.end - __bmm.start;
+
+    s_allocator = new (alloc(sizeof(Allocator))) Allocator();
 
     s_spin.lock();
 
-    TraceIn(KernelStart, KernelEnd, KernelSize, ApplicationStart, ApplicationEnd, ApplicationSize, BootStart);
-
-    new (&s_allocator) Allocator();
+    TraceIn(__kmm.start, __kmm.end, KernelSize, __mm.start, __mm.end, ApplicationSize, __bmm.start, __bmm.end, BootMemorySize);
 
     for (unsigned long c = RamEnd - PageSize; c + PageSize > RamStart; c -= PageSize) {
-        if (c + PageSize >= KernelStart && c < KernelEnd) continue;
-        if (c + PageSize >= ApplicationStart && c < ApplicationEnd) continue;
-        if (c + PageSize >= BootStart && c < BootEnd) continue;
-        s_allocator.insert(reinterpret_cast<void *>(c), PageSize);
+        if (c + PageSize >= __kmm.start && c < __kmm.end) continue;
+        if (c + PageSize >= __mm.start && c < __mm.end) continue;
+        if (c + PageSize >= __bmm.start && c < __bmm.end) continue;
+        s_allocator->insert(reinterpret_cast<void *>(c), PageSize);
     }
-
-    __bmm.start = 0;
 
     TraceOut();
 
@@ -43,16 +37,22 @@ uintptr_t Memory::virt2phys(uintptr_t address) {
 
 void *Memory::alloc(size_t size) {
     s_spin.lock();
+
     TraceIn(size);
-    void *block;
-    if (__bmm.start) {
+
+    void *block = nullptr;
+
+    if (!s_allocator) {
         __bmm.start -= size;
         block = reinterpret_cast<void *>(virt2phys(__bmm.start));
     } else {
-        block = s_allocator.remove(size);
+        block = s_allocator->remove(size);
     }
+
     ERROR(!block, "Out of Memory.");
+
     TraceOut(block);
+
     s_spin.unlock();
     return block;
 }
@@ -61,7 +61,7 @@ void Memory::free(void *addr, size_t size) {
     s_spin.lock();
     TraceIn(addr, size);
     ERROR(addr == nullptr, "}\n");
-    s_allocator.insert(addr, size);
+    s_allocator->insert(addr, size);
     TraceOut();
     s_spin.unlock();
 }

@@ -4,8 +4,6 @@
 
 class Segment {
   public:
-    Segment() = default;
-
     Segment(unsigned long addr, unsigned int size, bool owned = true)
         : m_addr(reinterpret_cast<char *>(addr)), m_size(size), m_owned(owned) {}
 

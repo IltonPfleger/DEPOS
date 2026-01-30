@@ -38,7 +38,7 @@ class Initializer {
     static void init() {
         mode();
         if constexpr (Traits<RISCV>::Supervisor && !Traits<Application>::Virtualized) {
-            SIC::init();
+            // SIC::init();
         }
     }
 };

@@ -12,8 +12,8 @@ class Thread {
     using Criterion = typename Scheduler<Thread>::Criterion;
     using Argument = void *;
     using Function = int (*)(Argument);
-    using Queue = FIFO<Thread *>;
-    using Element = Queue::Node;
+    using Link = Node<Thread *, Criterion>;
+    using Queue = FIFO<Link>;
     using Context = CPU::Context;
 
     Thread() = default;
@@ -35,7 +35,7 @@ class Thread {
   private:
     Segment m_stack;
     Queue *m_waiting;
-    Queue::Node m_link;
+    Link m_link;
     Criterion m_criterion;
     volatile State m_state;
     Thread *volatile m_joining;
