@@ -202,9 +202,35 @@ template <unsigned long Base> class _DMA : Driver {
             FIRST = 1 << 29,
             LAST = 1 << 28,
             TX_ERROR = 1 << 15,
-
-            RX_AVAILABLE = OWN | IOC | VALID,
         };
+
+        void buffer(void *pointer) {
+            uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
+            des0 = static_cast<unsigned int>(addr & 0xFFFFFFFF);
+            des1 = static_cast<unsigned int>(addr >> 32);
+        }
+    };
+
+    struct RXDescriptor : Descriptor {
+        static RXDescriptor *current() { return (RXDescriptor *)((uintptr_t)Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR)); }
+
+        void free(void *pointer = 0) {
+            if (pointer) this->buffer(pointer);
+            this->des2 = 0;
+            this->des3 = this->OWN | this->IOC | this->VALID;
+            CacheController::flush(this, sizeof(*this));
+            Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = (unsigned int)(unsigned long)this;
+        }
+    };
+
+    struct TXDescriptor : Descriptor {
+        void send(void *pointer, size_t length) {
+            if (pointer) this->buffer(pointer);
+            this->des3 = this->OWN | this->FIRST | this->LAST | (length & 0x3FFF);
+            this->des2 = (length & 0x7FFF);
+            CacheController::flush(this, sizeof(*this));
+            Reg32(Base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = (unsigned int)(unsigned long)this;
+        }
     };
 
     enum Registers {
@@ -247,7 +273,9 @@ template <unsigned long Base> class _DMA : Driver {
         TraceOut();
     }
 
-    static void interrupt(unsigned int) {
+    static void interrupt(unsigned int) { s_instance->interrupt(); }
+
+    void interrupt() {
         unsigned int status = Reg32(Base, CH0_INTERRUPT_STATUS);
 
         if (status & CH0_INTERRUPT_STATUS_RI) {
@@ -256,9 +284,12 @@ template <unsigned long Base> class _DMA : Driver {
 
         if (status & CH0_INTERRUPT_STATUS_RBU) {
             Console::print("Receive Buffer Unavailable!\n");
-            Descriptor *next = reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR));
-            next->des3 = Descriptor::RX_AVAILABLE;
-            Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(next);
+            m_rx_descriptors[m_current_rx_descriptor].free();
+        }
+
+        if (status & CH0_INTERRUPT_STATUS_RI || status & CH0_INTERRUPT_STATUS_RBU) {
+            m_current_rx_descriptor++;
+            m_current_rx_descriptor %= k_number_of_descriptors;
         }
 
         if (status & CH0_INTERRUPT_STATUS_RPS) {
@@ -269,7 +300,8 @@ template <unsigned long Base> class _DMA : Driver {
     }
 
     _DMA() {
-        TraceIn();
+        TraceIn(this);
+        s_instance = this;
         reset();
         descriptors();
         Reg32(Base, SYSBUS_MODE) |= 1 << 11;
@@ -286,45 +318,44 @@ template <unsigned long Base> class _DMA : Driver {
         memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
         CacheController::flush(m_tx_descriptors, sizeof(Descriptor) * k_number_of_descriptors);
 
-        memset(m_rx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
-
-        for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
-            auto &descriptor = m_rx_descriptors[i];
-            unsigned long buffer = reinterpret_cast<unsigned long>(m_rx_buffers[i]);
-            descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
-            descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
-            descriptor.des3 = Descriptor::RX_AVAILABLE;
-            CacheController::flush(&descriptor, sizeof(Descriptor));
-        }
+        for (unsigned int i = 0; i < k_number_of_descriptors; i++)
+            m_rx_descriptors[i].free(m_rx_buffers[i]);
 
         Reg32(Base, CH0_RX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF;
         Reg32(Base, CH0_RX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32;
         Reg32(Base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
-        Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
-            reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors);
-
-        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) =
-            static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF);
-        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) =
-            static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32);
+        m_rx_descriptors[k_number_of_descriptors - 1].free();
+        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF;
+        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32;
         Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
+    }
+
+    auto &rx_descriptor() {
+        unsigned int &i = m_current_rx_descriptor;
+
+        while (true) {
+            RXDescriptor &d = m_rx_descriptors[i];
+            CacheController::flush(&d, sizeof(Descriptor));
+            if (!(d.des3 & Descriptor::OWN)) return d;
+            i = (i + 1) % k_number_of_descriptors;
+        }
+    }
+
+    auto &tx_descriptor() {
+        unsigned int &i = m_current_tx_descriptor;
+
+        while (true) {
+            TXDescriptor &d = m_tx_descriptors[i];
+            CacheController::flush(&d, sizeof(Descriptor));
+            if (!(d.des3 & Descriptor::OWN)) return d;
+            i = (i + 1) % k_number_of_descriptors;
+        }
     }
 
     int receive(void *frame, unsigned int length) {
         Reg32(Base, CH0_INTERRUPT_ENABLE) &= ~CH0_INTERRUPT_ENABLE_AIE;
 
-        unsigned long zero = reinterpret_cast<unsigned long>(m_rx_descriptors);
-        unsigned long current = Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR);
-        unsigned int i = (current - zero - 1) % k_number_of_descriptors;
-
-        while (1) {
-            Descriptor &d = m_rx_descriptors[i];
-            CacheController::flush(&d, sizeof(Descriptor));
-            if (!(d.des3 & Descriptor::OWN)) break;
-            i = (i + 1) % k_number_of_descriptors;
-        }
-
-        Descriptor &d = m_rx_descriptors[i];
+        RXDescriptor &d = rx_descriptor();
 
         unsigned long addr64 = (static_cast<unsigned long>(d.des1) << 32) | d.des0;
         unsigned short *addr = reinterpret_cast<unsigned short *>(addr64);
@@ -335,7 +366,7 @@ template <unsigned long Base> class _DMA : Driver {
 
         memcpy(frame, addr, size);
 
-        d.des3 = Descriptor::RX_AVAILABLE;
+        d.free();
 
         Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_AIE;
 
@@ -343,17 +374,10 @@ template <unsigned long Base> class _DMA : Driver {
     }
 
     int send(const void *frame, unsigned int length) {
-        unsigned long buffer = reinterpret_cast<unsigned long>(frame);
         CacheController::flush(frame, length);
 
-        Descriptor &d = *reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_TX_DESCRIPTOR));
-
-        d.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
-        d.des1 = static_cast<unsigned int>(buffer >> 32);
-        d.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
-        d.des2 = (length & 0x7FFF);
-        CacheController::flush(&d, sizeof(Descriptor));
-        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(&d);
+        auto &d = tx_descriptor();
+        d.send(frame, length);
 
         while (1) {
             CacheController::flush(&d, sizeof(Descriptor));
@@ -367,9 +391,12 @@ template <unsigned long Base> class _DMA : Driver {
 
   private:
     static constexpr unsigned int k_number_of_descriptors = 10;
+    static inline _DMA *s_instance;
+    unsigned int m_current_rx_descriptor;
+    unsigned int m_current_tx_descriptor;
     Buffer m_rx_buffers[k_number_of_descriptors];
     Descriptor m_tx_descriptors[k_number_of_descriptors];
-    Descriptor m_rx_descriptors[k_number_of_descriptors];
+    RXDescriptor m_rx_descriptors[k_number_of_descriptors];
 };
 
 template <unsigned long Base> class _MTL : Driver {
