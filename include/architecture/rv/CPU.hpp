@@ -14,6 +14,14 @@ class CPU {
     using Interruptions = rv::Interruptions;
     using Atomic = ArchitectureCommon::Atomic;
 
+    static unsigned int be32toh(unsigned int x) {
+        return ((x & 0xFF000000) >> 24) | ((x & 0x00FF0000) >> 8) | ((x & 0x0000FF00) << 8) | ((x & 0x000000FF) << 24);
+    }
+
+    static unsigned int htobe32(unsigned int x) {
+        return ((x & 0xFF000000) >> 24) | ((x & 0x00FF0000) >> 8) | ((x & 0x0000FF00) << 8) | ((x & 0x000000FF) << 24);
+    }
+
     static auto idle() { asm("wfi"); }
     static auto halt() { asm("1: wfi\n j 1b"); }
     static auto syscall(auto f) { asm("mv a0, %0\necall" ::"r"(f)); }

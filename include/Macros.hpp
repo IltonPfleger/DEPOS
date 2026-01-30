@@ -1,4 +1,9 @@
 #pragma once
 
+#define ___STR(X) #X
+#define __STR(X) ___STR(X)
+
 #define __MACHINE_HEADER <machine/__MACHINE/__MACHINE.hpp>
 #define __MACHINE_TRAITS <machine/__MACHINE/Traits.hpp>
+
+#define __APPLICATION_TRAITS <app/__APPLICATION/Traits.hpp>

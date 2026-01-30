@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Meta.hpp>
-#include <Traits.hpp>
 
+class Machine;
 class MemoryMap;
 class Memory;
 class CPUS;
@@ -11,7 +11,13 @@ class PLIC;
 class UART;
 class RISCV;
 
+template <typename T> struct Traits;
+
 template <unsigned long> class UART16550;
+
+template <> struct Traits<Machine> {
+    static constexpr const char NAME[] = "virt";
+};
 
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
@@ -38,7 +44,7 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long RamEnd = Traits<System>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
 
     static constexpr unsigned long SystemAddr = RamStart;
-    static constexpr unsigned long ApplicationAddr = RamStart + 0x00200000;
+    // static constexpr unsigned long ApplicationAddr = RamStart + 0x00200000;
 
     static constexpr unsigned long UART0 = 0x10000000;
     static constexpr unsigned long CLINT = 0x02000000;
@@ -53,7 +59,7 @@ template <> struct Traits<UART> {
 template <> struct Traits<CLINT> {
     static constexpr bool Enable = Traits<Timer>::Enable;
     static constexpr unsigned long Addr = Traits<MemoryMap>::CLINT;
-    static constexpr unsigned long Clock = 1'000'000;
+    static constexpr unsigned long Clock = 10'000'000;
 };
 
 template <> struct Traits<PLIC> {

@@ -29,4 +29,19 @@ int memcmp(const void *ptr1, const void *ptr2, unsigned long n) {
     }
     return 0;
 }
+
+unsigned long strlen(const char *str) {
+    unsigned long n = 0;
+    while (*str++)
+        n++;
+    return n;
+}
+
+int strcmp(const char *s1, const char *s2) {
+    while (*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+    }
+    return (unsigned char)(*s1) - (unsigned char)(*s2);
+}
 }

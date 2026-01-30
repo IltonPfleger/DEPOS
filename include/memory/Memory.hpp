@@ -2,7 +2,6 @@
 
 #include <Spin.hpp>
 #include <Traits.hpp>
-#include <machine/Traits.hpp>
 #include <memory/MemoryMap.hpp>
 #include <memory/allocators/Buddy.hpp>
 

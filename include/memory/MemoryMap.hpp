@@ -1,7 +1,5 @@
 #pragma once
 
-#include <machine/Traits.hpp>
-
 class MemoryMap {
   public:
     struct Entry {

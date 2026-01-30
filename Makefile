@@ -1,75 +1,67 @@
 include Makedefs.mk
 
-IMAGE := $(BUILD)/Image
+TOOLS_OBJECTS := $(patsubst $(TOOLS)/%.cpp,$(BUILD)/%, $(wildcard $(TOOLS)/*.cpp))
+SOURCES       := $(shell find src -name '*.cpp')
+OBJECTS       := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SOURCES))
+DEPENDENCIES  := $(OBJECTS:.o=.d)
+MAP           := $(BUILD)/MemoryMap
 
-ifeq ($(Hypervisor),0)
-PAYLOAD=$(BUILD)/$(APPLICATION).bin
-else
-PAYLOAD=$(APPLICATION)
-endif
-
-TOOLS := $(patsubst tools/%.cpp,$(BUILD)/%,$(shell find tools -type f -name "*.cpp"))
-SRCS := $(shell find src -type f -name "*.cpp")
-OBJS := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SRCS))
-DEPS := $(OBJS:.o=.d)
-MAP := $(BUILD)/MemoryMap
+PAYLOAD_INFO       := $(BUILD)/$(APPLICATION).info
+PAYLOAD_BIN       := $(BUILD)/$(APPLICATION).bin
 
 norun: $(IMAGE)
 
 run: $(IMAGE)
-	-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(IMAGE) \
-		-device loader,file=guest.dtb,addr=0x82200000,force-raw=on \
-		-device loader,file=initramfs.cpio,addr=0x84000000,force-raw=on
-	#-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(IMAGE)
-
+	-$(QEMU) -M $(MACHINE_NAME) -smp $(CPUS_COUNT) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(IMAGE)
+	
+			#-device loader,file=guest.dtb,addr=0x82200000,force-raw=on \
+			#-device loader,file=initramfs.cpio,addr=0x84000000,force-raw=on
+#	#-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(IMAGE)
+#
 debug: $(IMAGE)
-	-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(IMAGE) -device loader,file=guest.dtb,addr=0x82200000,force-raw=on -S -gdb tcp::1234
-	#-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(SYSTEM).bin -S -gdb tcp::1234
+	-$(QEMU) -M $(MACHINE_NAME) -smp $(CPUS_COUNT) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(IMAGE) -S -gdb tcp::1234
 
+#	-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(IMAGE) -device loader,file=guest.dtb,addr=0x82200000,force-raw=on -S -gdb tcp::1234
+#	#-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(SYSTEM).bin -S -gdb tcp::1234
+#
 gdb:
-	riscv64-linux-gnu-gdb\
-		-ex "target extended-remote:1234"\
+	riscv64-linux-gnu-gdb -ex "file build/DEPOS.elf"\
 		-ex "file ../linux/vmlinux"\
-		-ex "file build/DEPOS.elf"
-		#-ex "set confirm off"\
-		#-ex "add-inferior"\
-		#-ex "inferior 2"\
-		#-ex "attach 2"\
-		#-ex "set confirm off"
-		#-ex "file $(SYSTEM).elf"
+		-ex "target extended-remote:1234"
 
+#		#-ex "set confirm off"\
+	#		#-ex "add-inferior"\
+	#		#-ex "inferior 2"\
+	#		#-ex "attach 2"\
+	#		#-ex "set confirm off"
+#		#-ex "file $(SYSTEM).elf"
+#
 $(IMAGE): $(SYSTEM).bin $(PAYLOAD)
 	$(DD) bs=1M conv=notrunc if=$(SYSTEM).bin of=$(IMAGE)
-	$(DD) bs=1M conv=notrunc if=$(PAYLOAD) of=$(IMAGE) oflag=seek_bytes seek=$$(( $(ApplicationAddr) - $(RamStart) ))
-	$(TRUNCATE) -s %$(PageSize) $(SYSTEM).bin
+	$(DD) bs=1M conv=notrunc if=$(PAYLOAD_BIN) of=$(IMAGE) oflag=seek_bytes seek=$$(( $(APPLICATION_ADDR) - $(RAM_START) ))
+	$(TRUNCATE) -s %$(PAGE_SIZE) $(IMAGE)
 
-$(SYSTEM).bin : $(SYSTEM).elf $(TOOLS)
-ifeq ($(Hypervisor),0)
-ifdef APPLICATION
-	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS)
-	$(ELFMAP) $(BUILD)/$(APPLICATION).elf $(MAP)
+$(SYSTEM).bin : $(SYSTEM).elf $(TOOLS_OBJECTS)
+	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS) all
+	$(MAPPER) $(PAYLOAD_INFO) $(MAP)
 	$(OBJCOPY) --update-section .__app_mm__=$(MAP) $(SYSTEM).elf
-	$(OBJCOPY) -O binary $(BUILD)/$(APPLICATION).elf $(PAYLOAD)
-endif
-else
-endif
-	$(ELFMAP) $(SYSTEM).elf $(MAP)
+	$(MAPPER) $(SYSTEM).elf $(MAP)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MAP) $(SYSTEM).elf
 	$(OBJCOPY) -O binary $(SYSTEM).elf $(SYSTEM).bin
 
-$(SYSTEM).elf: $(OBJS)
-	$(LD) -e _init --section-start=.init=$(SystemAddr) --image-base=$(SystemAddr) -o $@ $(OBJS)
+$(SYSTEM).elf: $(OBJECTS)
+	$(LD) -e _init --section-start=.init=$(SYSTEM_ADDR) --image-base=$(SYSTEM_ADDR) -o $@ $(OBJECTS)
 
 $(BUILD)/%: tools/%.cpp 
 	mkdir -p $(dir $@)
-	g++ -std=c++20 -D__MACHINE=$(MachineName) -Iinclude -o $@ $<
+	g++ $(CCFLAGS) -o $@ $<
 
 $(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -I$(INCLUDE) -MMD -MP -c $< -o $@
+	$(CC) $(MARCH_CCFLAGS) -MMD -MP -c $< -o $@
 
 clean:
+	rm -rf $(APPLICATIONS)/build
 	rm -rf build
-	(cd app && make clean)
 
--include $(DEPS)
+-include $(DEPENDENCIES)

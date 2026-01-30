@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Meta.hpp>
+#include <Traits.hpp>
 #include <Variadic.hpp>
 
 class Console {

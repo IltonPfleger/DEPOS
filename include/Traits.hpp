@@ -14,10 +14,6 @@ template <typename U> class Scheduler;
 
 template <typename T> struct Traits;
 
-template <> struct Traits<Machine> {
-    static constexpr const char *NAME = "virt";
-};
-
 template <> struct Traits<System> {
     static constexpr bool Multitask = false;
     static constexpr bool Hypervisor = true;
@@ -49,3 +45,7 @@ template <> struct Traits<Debug> {
     static constexpr bool Error = true;
     static constexpr bool Trace = true;
 };
+
+#include <machine/Traits.hpp>
+/**/
+#include <application/Traits.hpp>

@@ -1,22 +1,35 @@
 include ../Makedefs.mk
 
-TARGET := $(BUILD)/$(APPLICATION).elf
+INFO := $(BUILD)/$(APPLICATION).info
+BIN := $(BUILD)/$(APPLICATION).bin
+BUILD := build
 
-SOURCES := $(if $(APPLICATION),$(shell find $(APPLICATION) -type f -name "*.cpp"))
+ifneq ($(wildcard $(APPLICATION)/Makefile),)
+all:
+	$(MAKE) -C $(APPLICATION) all
+else
+
+SOURCES := $(wildcard $(APPLICATION)/*.cpp)
 OBJECTS := $(patsubst $(APPLICATION)/%.cpp,$(BUILD)/$(APPLICATION)/%.o,$(SOURCES))
 DEPENDENCIES := $(OBJECTS:.o=.d)
 
-$(TARGET): $(BUILD)/$(APPLICATION).o
-	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(ApplicationAddr) --image-base=$(ApplicationAddr) -o $@ $<
+all: $(BIN) $(INFO)
+
+$(BIN): $(INFO)
+	$(OBJCOPY) -O binary $< $@
+
+$(INFO): $(BUILD)/$(APPLICATION).o
+	@mkdir -p $(dir $@)
+	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(APPLICATION_ADDR) --image-base=$(APPLICATION_ADDR) -o $@ $<
 
 $(BUILD)/$(APPLICATION).o: $(OBJECTS)
+	@mkdir -p $(dir $@)
 	$(LD) -e main -r $(OBJECTS) -o $@
 
-$(BUILD)/$(APPLICATION)/%.o: ./$(APPLICATION)/%.cpp
+$(BUILD)/$(APPLICATION)/%.o: $(APPLICATION)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -I../include -MMD -MP -c $< -o $@
-
-clean:
-	rm -rf build
+	@echo $@
+	$(CC) $(MARCH_CCFLAGS) -I../include -MMD -MP -c $< -o $@
 
 -include $(DEPENDENCIES)
+endif
