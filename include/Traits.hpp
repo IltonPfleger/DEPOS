@@ -45,6 +45,5 @@ template <> struct Traits<Debug> {
     static constexpr bool Trace = true;
 };
 
-#include <machine/Traits.hpp>
-/**/
 #include <application/Traits.hpp>
+#include <machine/Traits.hpp>

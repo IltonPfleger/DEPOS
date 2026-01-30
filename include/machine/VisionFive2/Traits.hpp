@@ -14,10 +14,14 @@ class UART;
 template <unsigned long> class DW8250;
 template <unsigned long> class DWC_Ether_QoS;
 
+template <> struct Traits<Machine> {
+    static constexpr const char NAME[] = "VisionFive2";
+};
+
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
     static constexpr int COUNT = 1;
-    static constexpr int ONLINE = COUNT;
+    static constexpr int ACTIVE = COUNT;
     static constexpr int BSP = 0;
 };
 
@@ -29,11 +33,16 @@ template <> struct Traits<Memory> {
 };
 
 template <> struct Traits<MemoryMap> {
-    static constexpr unsigned long RamStart = 0x40000000;
-    static constexpr unsigned long RamEnd = RamStart + Traits<Memory>::Size;
-    static constexpr unsigned long BootAddr = RamStart;
+    static constexpr unsigned long PhysicalRamStart = 0x40000000;
+    static constexpr unsigned long PhysicalRamEnd = PhysicalRamStart + Traits<Memory>::Size;
 
-    static constexpr unsigned long ApplicationAddr = RamStart + 128 * 1024;
+    static constexpr unsigned long VirtualRamStart = 0xffffffff80000000;
+    static constexpr unsigned long VirtualRamEnd = VirtualRamStart + Traits<Memory>::Size;
+
+    static constexpr unsigned long RamStart = Traits<System>::Multitask ? VirtualRamStart : PhysicalRamStart;
+    static constexpr unsigned long RamEnd = Traits<System>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
+
+    static constexpr unsigned long SystemAddr = RamStart;
 
     /* *** MMIO *** */
     static constexpr unsigned long CacheController = 0x2010000;
