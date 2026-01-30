@@ -37,10 +37,9 @@ class Initializer {
   public:
     static void init() {
         mode();
-        if constexpr (Traits<RISCV>::Supervisor && !Traits<System>::Hypervisor) {
+        if constexpr (Traits<RISCV>::Supervisor && !Traits<Application>::Virtualized) {
             SIC::init();
         }
     }
 };
-
 } // namespace rv64
