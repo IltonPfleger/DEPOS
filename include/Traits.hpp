@@ -32,8 +32,8 @@ template <> struct Traits<Alarm> {
 };
 
 template <> struct Traits<Scheduler<Thread>> {
-    static constexpr bool Preemptive = true;
     static constexpr unsigned long Frequency = 10;
+    static constexpr bool Preemptive = true;
     using Criterion = RR;
 
     static_assert(Traits<Timer>::Enable || !Preemptive);

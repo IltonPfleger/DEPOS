@@ -1,3 +1,4 @@
+// #include <Alarm.hpp>
 #include <drivers/Driver.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
@@ -21,13 +22,9 @@ template <unsigned long Base> class _MDIO : Driver {
             ;
     }
 
-    static void set(unsigned char phy, unsigned char dev, unsigned short data) {
-        write(phy, dev, read(phy, dev) | data);
-    }
+    static void set(unsigned char phy, unsigned char dev, unsigned short data) { write(phy, dev, read(phy, dev) | data); }
 
-    static void clear(unsigned char phy, unsigned char dev, unsigned short data) {
-        write(phy, dev, read(phy, dev) & ~data);
-    }
+    static void clear(unsigned char phy, unsigned char dev, unsigned short data) { write(phy, dev, read(phy, dev) & ~data); }
 
     static void write(unsigned char phy, unsigned char dev, unsigned short data) {
         Reg32(Base, DATA) = data;
@@ -53,9 +50,7 @@ template <unsigned long Base> class _MDIO : Driver {
         write45(phy, reg, read45(phy, reg) & ~data);
     }
 
-    static unsigned short read45(unsigned char phy, unsigned short reg) {
-        return write(phy, 0x1E, reg), read(phy, 0x1F);
-    }
+    static unsigned short read45(unsigned char phy, unsigned short reg) { return write(phy, 0x1E, reg), read(phy, 0x1F); }
 };
 
 template <unsigned long Base> class _PHY {
@@ -318,8 +313,7 @@ template <unsigned long Base> class _DMA : Driver {
         while (1) {
             Descriptor &d = m_rx_descriptors[i];
             CacheController::flush(&d, sizeof(Descriptor));
-            if (!(d.des3 & Descriptor::OWN))
-                break;
+            if (!(d.des3 & Descriptor::OWN)) break;
             i = (i + 1) % k_number_of_descriptors;
         }
 
@@ -330,8 +324,7 @@ template <unsigned long Base> class _DMA : Driver {
         unsigned long size = d.des3 & 0x3FFF;
         CacheController::flush(addr, size);
 
-        if (size > length)
-            size = length;
+        if (size > length) size = length;
 
         memcpy(frame, addr, size);
 
@@ -358,8 +351,7 @@ template <unsigned long Base> class _DMA : Driver {
         while (1) {
             CacheController::flush(&d, sizeof(Descriptor));
             if (!(d.des3 & Descriptor::OWN)) {
-                if (d.des3 & Descriptor::TX_ERROR)
-                    return 0;
+                if (d.des3 & Descriptor::TX_ERROR) return 0;
                 return length;
             }
         }
@@ -405,8 +397,9 @@ template <unsigned long Base> class DWC_Ether_QoS : public _DMA<Base> {
         DMA::reset();
         MTL::init();
         PHY::init();
-        m_device = new (Heap::SYSTEM) DWC_Ether_QoS();
         MAC::init();
+        m_device = new (Heap::SYSTEM) DWC_Ether_QoS();
+        // Alarm::delay(1);
         TraceOut();
     }
 

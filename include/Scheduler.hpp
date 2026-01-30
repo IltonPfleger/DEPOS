@@ -13,45 +13,65 @@ template <> struct Head<Thread> {
 
 class Policy {
   public:
-    using Rank = unsigned long;
-    Policy(Rank r, ...) : rank_(r) {}
-    operator Rank() const { return rank_; }
+    using Rank = unsigned int;
+    Policy(Rank r, ...) : m_rank(r) {}
+    operator Rank() const { return m_rank; }
 
   private:
-    Rank rank_;
+    Rank m_rank;
 };
 
 class RR : public Policy {
   public:
     static constexpr bool Preemptive = true;
-    template <typename T> using Queue = POFO<T>;
-    enum : Rank { NORMAL, IDLE = ~0ULL };
+    template <typename T> using Queue = LIFO<T>;
+    enum : Rank {
+        NORMAL,
+        IDLE,
+        Levels,
+    };
     RR(Rank r = NORMAL, ...) : Policy(r) {}
 };
 
-template <typename T> class Scheduler : private Traits<Scheduler<T>>::Criterion::template Queue<T *>, public Head<T> {
+template <typename T> class Scheduler : private Head<T> {
 
   public:
     using Criterion = typename Traits<Scheduler<T>>::Criterion;
-    using Queue = typename Criterion::template Queue<T *>;
-    using Node = typename Queue::Node;
-    using Queue::empty;
-    using Queue::insert;
+    using Entry = Node<Thread *, Criterion>;
+    using Queue = typename Criterion::template Queue<Entry>;
 
-    static_assert(Traits<Scheduler<T>>::Preemptive == Criterion::Preemptive);
-
-    T *pop() {
-        auto e = this->next();
-        ERROR(!e);
-        heads_[this->id()] = e;
-        return e->value;
+    bool empty() const {
+        for (unsigned int i = 0; i < Criterion::Levels; i++) {
+            if (!m_levels[i].empty()) return false;
+        }
+        return true;
     }
 
-    T *current() {
-        ERROR(!heads_[this->id()]);
-        return heads_[this->id()]->value;
+    T *pop() {
+        T *next = nullptr;
+        for (unsigned int i = 0; i < Criterion::Levels; i++) {
+            if (!m_levels[i].empty()) {
+                Entry *node = m_levels[i].remove();
+                next = node->value;
+                break;
+            }
+        }
+        ERROR(!next);
+        m_heads[this->id()] = next;
+        return next;
+    }
+
+    void insert(Entry *node) {
+        ERROR(node->priority >= Criterion::Levels);
+        m_levels[node->priority].insert(node);
+    }
+
+    T *current() const {
+        ERROR(!m_heads[this->id()]);
+        return m_heads[this->id()];
     }
 
   private:
-    Node *heads_[Head<T>::N];
+    T *m_heads[Head<T>::N];
+    Queue m_levels[Criterion::Levels];
 };

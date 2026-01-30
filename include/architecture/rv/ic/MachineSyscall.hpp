@@ -12,7 +12,6 @@ class MachineSyscall {
         bool handle = false;
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
 
-        TraceIn();
         if (mcause == 9) {
             if (c->a0 == TIME) {
                 CLINT::syscall();
