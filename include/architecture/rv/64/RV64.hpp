@@ -12,5 +12,4 @@
 #include <architecture/rv/CPU.hpp>
 #include <architecture/rv/Modes.hpp>
 #include <architecture/rv/csrs.hpp>
-#include <machine/Traits.hpp>
 #include <utils/Debug.hpp>

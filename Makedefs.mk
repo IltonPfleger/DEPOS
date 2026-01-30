@@ -4,10 +4,12 @@ INCLUDE      := $(HERE)/include
 BUILD        := $(HERE)/build
 APPLICATIONS := $(HERE)/app
 TOOLS        := $(HERE)/tools
-SYSTEM       := $(BUILD)/DEPOS
 
-TRAITS := $(TOOLS)/Traits
-ELFMAP   := $(BUILD)/ElfMap
+SYSTEM       := $(BUILD)/DEPOS
+IMAGE       := $(BUILD)/Image
+
+TRAITS := $(BUILD)/Traits
+MAPPER   := $(BUILD)/Mapper
 
 TOOL    := riscv64-linux-gnu
 CC      := $(TOOL)-g++
@@ -19,20 +21,34 @@ DD      := dd
 TRUNCATE := truncate
 QEMU    := qemu-system-riscv64
 
-MachineName     := $(shell $(TRAITS) $(INCLUDE) Traits.hpp "Traits<Machine>::NAME")
-CPUS            := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<CPUS>::COUNT")
-MemorySize      := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<Memory>::Size")
-PageSize        := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<Memory>::PageSize")
-RamStart        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::RamStart"))
-SystemAddr        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::SystemAddr"))
-ApplicationAddr := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::ApplicationAddr"))
-Hypervisor     := $(shell $(TRAITS) $(INCLUDE) Traits.hpp "Traits<System>::Hypervisor")
+MACHINE ?= virt
+APPLICATION ?= HelloWorld
 
-CFLAGS = -march=rv64imac_zicsr -mabi=lp64
-CFLAGS += -D__MACHINE=$(MachineName)
-CFLAGS += -Wall -Wextra -Werror -pedantic
-CFLAGS += -mcmodel=medany
-CFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
-CFLAGS += -msmall-data-limit=0
-CFLAGS += -march=rv64ima_zicsr -mabi=lp64
-CFLAGS += -g -std=c++2c
+CCFLAGS = -std=c++2c -I$(HERE) -I$(INCLUDE) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -Wall -Wextra -Werror -pedantic
+
+$(BUILD):
+	mkdir -p $(BUILD)
+
+$(TRAITS).mk: $(TRAITS)
+	$< > $@
+
+$(TRAITS): tools/Traits.cpp $(BUILD)
+	g++ $(CCFLAGS) $< -o $@
+
+-include $(TRAITS).mk
+
+#MachineName     := $(shell $(TRAITS) $(INCLUDE) Traits.hpp "Traits<Machine>::NAME")
+#CPUS            := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<CPUS>::COUNT")
+#MemorySize      := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<Memory>::Size")
+#PageSize        := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<Memory>::PageSize")
+#RamStart        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::RamStart"))
+#SystemAddr        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::SystemAddr"))
+#ApplicationAddr := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::ApplicationAddr"))
+#Hypervisor     := $(shell $(TRAITS) $(INCLUDE) Traits.hpp "Traits<System>::Hypervisor")
+
+MARCH_CCFLAGS = $(CCFLAGS)
+MARCH_CCFLAGS += -mcmodel=medany
+MARCH_CCFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
+MARCH_CCFLAGS += -msmall-data-limit=0
+MARCH_CCFLAGS += -march=rv64ima_zicsr -mabi=lp64
+MARCH_CCFLAGS += -g 

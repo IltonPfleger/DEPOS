@@ -2,7 +2,6 @@
 #include <Thread.hpp>
 #include <Timer.hpp>
 #include <Traits.hpp>
-#include <machine/Traits.hpp>
 
 void Timer::init() {
     TraceIn();

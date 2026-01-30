@@ -14,6 +14,11 @@
         }                                                                                                                      \
     }
 
+#define Trace(...)                                                                                                             \
+    if constexpr (Traits<Debug>::Trace) {                                                                                      \
+        __VA_OPT__(Console::print(__VA_ARGS__));                                                                               \
+    }
+
 #define TraceIn(...)                                                                                                           \
     if constexpr (Traits<Debug>::Trace) {                                                                                      \
         Console::println("%s(", __PRETTY_FUNCTION__);                                                                          \

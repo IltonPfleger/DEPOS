@@ -1,5 +1,6 @@
 #pragma once
-#include <machine/Traits.hpp>
+
+#include <Traits.hpp>
 
 class Timer {
     struct Channel {
