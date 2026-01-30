@@ -37,7 +37,7 @@ class CLINT : Driver {
     }
 
     static void init() {
-        // write(~0ULL);
+        write();
         csrs<MachineMode::IE>(MachineMode::TI);
     }
     static constexpr unsigned long Base = Traits<::CLINT>::Addr;
