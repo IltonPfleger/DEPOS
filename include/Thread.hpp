@@ -2,7 +2,6 @@
 
 #include <Scheduler.hpp>
 #include <Spin.hpp>
-// #include <Task.hpp>
 #include <Traits.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Segment.hpp>
@@ -47,14 +46,3 @@ class Thread {
     static inline volatile unsigned int s_count;
     static inline Spin s_lock;
 };
-
-// struct RT_Thread : Thread {
-//     const Function function;
-//     const Microsecond deadline;
-//     const Microsecond period;
-//     const Microsecond duration;
-//     Microsecond start;
-//
-//     RT_Thread(Function, Argument, Microsecond, Microsecond, Microsecond,
-//     Microsecond);
-// };

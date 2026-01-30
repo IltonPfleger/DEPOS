@@ -5,7 +5,7 @@
 class Heap {
   public:
     struct Header {
-        unsigned int m_size;
+        unsigned long m_size;
     };
 
     enum Location { SYSTEM };

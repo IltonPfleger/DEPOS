@@ -6,7 +6,7 @@ APPLICATIONS := $(HERE)/app
 TOOLS        := $(HERE)/tools
 
 SYSTEM       := $(BUILD)/DEPOS
-IMAGE       := $(BUILD)/Image
+IMAGE       := $(BUILD)/Image.bin
 
 TRAITS := $(BUILD)/Traits
 MAPPER   := $(BUILD)/Mapper

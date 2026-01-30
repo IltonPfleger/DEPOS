@@ -9,7 +9,8 @@
 #include <memory/Memory.hpp>
 #include <utils/BSS.hpp>
 
-using IC = rv::IC;
+typedef rv::IC IC;
+typedef rv::CPU CPU;
 
 #include <drivers/ethernet/DWC_Ether_QoS.hpp>
 
@@ -91,18 +92,14 @@ class VisionFive2 {
             reset();
 
             Reg32(k_aon_crg_base, GMAC5_0_CLK_TX) &= ~GMAC5_0_CLK_TX_CLK_MUX_SEL_MASK;
-            Reg32(k_aon_crg_base, GMAC5_0_CLK_TX) |=
-                (1 << GMAC5_0_CLK_TX_CLK_MUX_SEL_SHIFT) & GMAC5_0_CLK_TX_CLK_MUX_SEL_MASK;
+            Reg32(k_aon_crg_base, GMAC5_0_CLK_TX) |= (1 << GMAC5_0_CLK_TX_CLK_MUX_SEL_SHIFT) & GMAC5_0_CLK_TX_CLK_MUX_SEL_MASK;
         }
     };
 
   public:
-    using CPU = rv64::CPU;
     using Initializer = rv64::Initializer;
 
     __attribute__((always_inline)) static inline void init() {
-        CPU::init();
-
         if (CPU::id() == Traits<CPUS>::BSP) {
             Clock::init();
             BSS::init();
@@ -111,6 +108,5 @@ class VisionFive2 {
         CPU::barrier();
 
         Initializer::init();
-        Console::print(CPU::id());
     }
 };
