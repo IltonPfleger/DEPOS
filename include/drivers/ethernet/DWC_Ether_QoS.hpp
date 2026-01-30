@@ -230,10 +230,12 @@ template <unsigned long Base> class _DMA : Driver {
         CH0_INTERRUPT_ENABLE_NIE = 1 << 15,
         CH0_INTERRUPT_ENABLE_AIE = 1 << 14,
         CH0_INTERRUPT_ENABLE_RIE = 1 << 6,
-        CH0_INTERRUPT_ENABLE_RBUE = 1 << 6,
+        CH0_INTERRUPT_ENABLE_RBUE = 1 << 7,
+        CH0_INTERRUPT_ENABLE_RSE = 1 << 8,
 
         CH0_INTERRUPT_STATUS_RI = 1 << 6,
         CH0_INTERRUPT_STATUS_RBU = 1 << 7,
+        CH0_INTERRUPT_STATUS_RPS = 1 << 8,
     };
 
   public:
@@ -259,11 +261,16 @@ template <unsigned long Base> class _DMA : Driver {
             Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(next);
         }
 
+        if (status & CH0_INTERRUPT_STATUS_RPS) {
+            Console::print("Receive Process Stopped!\n");
+        }
+
         Reg32(Base, CH0_INTERRUPT_STATUS) = ~0U;
     }
 
     _DMA() {
         TraceIn();
+        reset();
         descriptors();
         Reg32(Base, SYSBUS_MODE) |= 1 << 11;
         Reg32(Base, CH0_TX_CONTROL) |= 1;
@@ -351,10 +358,11 @@ template <unsigned long Base> class _DMA : Driver {
         while (1) {
             CacheController::flush(&d, sizeof(Descriptor));
             if (!(d.des3 & Descriptor::OWN)) {
-                if (d.des3 & Descriptor::TX_ERROR) return 0;
+                if (d.des3 & Descriptor::TX_ERROR) break;
                 return length;
             }
         }
+        return 0;
     }
 
   private:
@@ -394,12 +402,10 @@ template <unsigned long Base> class DWC_Ether_QoS : public _DMA<Base> {
 
     static void init() {
         TraceIn();
-        DMA::reset();
         MTL::init();
         PHY::init();
-        MAC::init();
         m_device = new (Heap::SYSTEM) DWC_Ether_QoS();
-        // Alarm::delay(1);
+        MAC::init();
         TraceOut();
     }
 
