@@ -41,28 +41,18 @@ template <size_t Max> class Buddy {
 
         while (n < Max) {
             uintptr_t buddy = addr ^ (1U << n);
+            Entry *node = reinterpret_cast<Entry *>(buddy);
 
-            Entry *previous = nullptr;
-            Entry *node = m_free[n].head();
-
-            while (node) {
-                if (reinterpret_cast<uintptr_t>(node) == buddy) break;
-                previous = node;
-                node = node->next;
+            if (m_free[n].remove(node)) {
+                if (buddy < addr) addr = buddy;
+                ++n;
+            } else {
+                break;
             }
-
-            if (!node) break;
-
-            if (previous)
-                previous->next = node->next;
-            else
-                m_free[n].remove();
-
-            if (buddy < addr) addr = buddy;
-            ++n;
         }
+
         m_free[n].insert(reinterpret_cast<Entry *>(addr));
-    };
+    }
 
   private:
     List m_free[Max + 1];

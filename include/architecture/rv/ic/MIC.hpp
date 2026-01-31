@@ -12,7 +12,7 @@ namespace rv {
 class MIC {
   private:
     using Mode = MachineMode;
-    using Syscall = Meta::TypeSelector<Traits<Application>::Virtualized, sbi::SBI, MachineSyscall>::Result;
+    using Syscall = Meta::IF<Traits<Application>::Virtualized, sbi::SBI, MachineSyscall>::Result;
 
     static constexpr bool ChangeStack = Traits<RISCV>::Supervisor;
 

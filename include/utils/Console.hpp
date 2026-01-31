@@ -53,9 +53,11 @@ class Console {
         Console::print(Hex(reinterpret_cast<unsigned long>(t)));
     }
 
-    template <typename First, typename... Args> static void print(First &&first, Args &&...args) {
-        Console::print(first);
-        ((Console::print(", "), Console::print(args)), ...);
+    template <typename First, typename Second, typename... Args>
+    static void print(First &&first, Second &&second, Args &&...args) {
+        Console::print(static_cast<First &&>(first));
+        Console::print(", ");
+        Console::print(static_cast<Second &&>(second), static_cast<Args &&>(args)...);
     }
 
   private:

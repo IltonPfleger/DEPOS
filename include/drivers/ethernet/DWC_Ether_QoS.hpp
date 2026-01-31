@@ -1,13 +1,13 @@
-// #include <Alarm.hpp>
 #include <drivers/Driver.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
+#include <network/ethernet/Ethernet.hpp>
 #include <utils/Debug.hpp>
 #include <utils/string.hpp>
 
 template <unsigned long Base> class DWC_Ether_QoS;
 
-template <unsigned long Base> class _MDIO : Driver {
+template <unsigned long Base> class DWC_Ether_QoS_MDIO : Driver {
     enum Register { BASE = 0x200, DATA = 0x204 };
     enum Bit {
         CLOCK_250_300 = 0x5 << 8,
@@ -53,8 +53,8 @@ template <unsigned long Base> class _MDIO : Driver {
     static unsigned short read45(unsigned char phy, unsigned short reg) { return write(phy, 0x1E, reg), read(phy, 0x1F); }
 };
 
-template <unsigned long Base> class _PHY {
-    using MDIO = _MDIO<Base>;
+template <unsigned long Base> class DWC_Ether_QoS_PHY {
+    using MDIO = DWC_Ether_QoS_MDIO<Base>;
 
     enum Register {
         BASIC_CONTROL = 0x0,
@@ -64,8 +64,8 @@ template <unsigned long Base> class _PHY {
         PAD_DRIVE_STRENGTH_CFG = 0xA010,
         SYNC_E_CFG = 0xA012,
         STATUS = 0x11,
-        _PHY_ID_1 = 0x2,
-        _PHY_ID_2 = 0x3,
+        DWC_Ether_QoS_PHY_ID_1 = 0x2,
+        DWC_Ether_QoS_PHY_ID_2 = 0x3,
     };
     enum Bit {
         BASIC_CONTROL_RESET = 1 << 15,
@@ -87,8 +87,8 @@ template <unsigned long Base> class _PHY {
     static void init() {
         TraceIn();
 
-        unsigned short id1 = MDIO::read(phy, _PHY_ID_1);
-        unsigned short id2 = MDIO::read(phy, _PHY_ID_2);
+        unsigned short id1 = MDIO::read(phy, DWC_Ether_QoS_PHY_ID_1);
+        unsigned short id2 = MDIO::read(phy, DWC_Ether_QoS_PHY_ID_2);
 
         MDIO::clear45(phy, CHIP_CONFIG, CHIP_CONFIG_SOFTWARE_RESET);
         while (!(MDIO::read45(phy, CHIP_CONFIG) & CHIP_CONFIG_SOFTWARE_RESET))
@@ -141,7 +141,7 @@ template <unsigned long Base> class _PHY {
     static constexpr unsigned int phy = 0;
 };
 
-template <unsigned long Base> class _MAC : Driver {
+template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
 
     enum Bit {
         PACKET_FILTER_RECEIVE_ALL = 1 << 31,
@@ -149,8 +149,8 @@ template <unsigned long Base> class _MAC : Driver {
         CONFIGURATION_TRANSMITTER_ENABLE = 1 << 1,
         CONFIGURATION_RECEIVER_ENABLE = 1,
         RX_QUEUE_CONTROL0_QUEUE0_ENABLE = 2,
-        _PHY_CONTROL_STATUS_LINK_STATUS_UP = 1 << 19,
-        _PHY_CONTROL_STATUS_LINK_MODE_FULL_DUPLEX = 1 << 16,
+        DWC_Ether_QoS_PHY_CONTROL_STATUS_LINK_STATUS_UP = 1 << 19,
+        DWC_Ether_QoS_PHY_CONTROL_STATUS_LINK_MODE_FULL_DUPLEX = 1 << 16,
         CONFIGURATION_CST = 1 << 21,
 
     };
@@ -159,7 +159,7 @@ template <unsigned long Base> class _MAC : Driver {
         CONFIGURATION = 0x0,
         PACKET_FILTER = 0x8,
         RX_QUEUE_CONTROL0 = 0xa0,
-        _PHY_CONTROL_STATUS = 0xf8,
+        DWC_Ether_QoS_PHY_CONTROL_STATUS = 0xf8,
         ADDRESS0_LOW = 0x304,
         ADDRESS0_HIGH = 0x300,
 
@@ -187,7 +187,7 @@ template <unsigned long Base> class _MAC : Driver {
     }
 };
 
-template <unsigned long Base> class _DMA : Driver {
+template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet {
     using Buffer = unsigned char[2048];
     struct Descriptor {
         unsigned int des0;
@@ -279,11 +279,11 @@ template <unsigned long Base> class _DMA : Driver {
         unsigned int status = Reg32(Base, CH0_INTERRUPT_STATUS);
 
         if (status & CH0_INTERRUPT_STATUS_RI) {
+            Ethernet::notify();
             Console::print("Receive Packet!\n");
         }
 
         if (status & CH0_INTERRUPT_STATUS_RBU) {
-            Console::print("Receive Buffer Unavailable!\n");
             m_rx_descriptors[m_current_rx_descriptor].free();
         }
 
@@ -292,14 +292,10 @@ template <unsigned long Base> class _DMA : Driver {
             m_current_rx_descriptor %= k_number_of_descriptors;
         }
 
-        if (status & CH0_INTERRUPT_STATUS_RPS) {
-            Console::print("Receive Process Stopped!\n");
-        }
-
         Reg32(Base, CH0_INTERRUPT_STATUS) = ~0U;
     }
 
-    _DMA() {
+    DWC_Ether_QoS_DMA() {
         TraceIn(this);
         s_instance = this;
         reset();
@@ -391,7 +387,7 @@ template <unsigned long Base> class _DMA : Driver {
 
   private:
     static constexpr unsigned int k_number_of_descriptors = 10;
-    static inline _DMA *s_instance;
+    static inline DWC_Ether_QoS_DMA *s_instance;
     unsigned int m_current_rx_descriptor;
     unsigned int m_current_tx_descriptor;
     Buffer m_rx_buffers[k_number_of_descriptors];
@@ -399,7 +395,7 @@ template <unsigned long Base> class _DMA : Driver {
     RXDescriptor m_rx_descriptors[k_number_of_descriptors];
 };
 
-template <unsigned long Base> class _MTL : Driver {
+template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     enum Bit {
         TX_QUEUE0_OPERATION_MODE_TSF = 2,
     };
@@ -416,11 +412,11 @@ template <unsigned long Base> class _MTL : Driver {
     }
 };
 
-template <unsigned long Base> class DWC_Ether_QoS : public _DMA<Base> {
-    using DMA = _DMA<Base>;
-    using MTL = _MTL<Base>;
-    using PHY = _PHY<Base>;
-    using MAC = _MAC<Base>;
+template <unsigned long Base> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<Base> {
+    using DMA = DWC_Ether_QoS_DMA<Base>;
+    using MTL = DWC_Ether_QoS_MTL<Base>;
+    using PHY = DWC_Ether_QoS_PHY<Base>;
+    using MAC = DWC_Ether_QoS_MAC<Base>;
 
   public:
     DWC_Ether_QoS() : DMA() {}
