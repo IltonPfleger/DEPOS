@@ -65,5 +65,5 @@ struct SupervisorMode {
     __attribute__((always_inline)) static inline void ret() { asm volatile("sret"); }
 };
 
-using KernelMode = Meta::TypeSelector<Traits<RISCV>::Supervisor, SupervisorMode, MachineMode>::Result;
+using KernelMode = Meta::IF<Traits<RISCV>::Supervisor, SupervisorMode, MachineMode>::Result;
 } // namespace rv

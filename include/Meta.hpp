@@ -3,11 +3,14 @@
 #define offsetof(type, member) ((unsigned long)&(((type *)0)->member))
 
 namespace Meta {
-template <bool B, typename True, typename False> struct TypeSelector {
+
+struct Empty {};
+
+template <bool B, typename True, typename False> struct IF {
     using Result = True;
 };
 
-template <typename True, typename False> struct TypeSelector<false, True, False> {
+template <typename True, typename False> struct IF<false, True, False> {
     using Result = False;
 };
 
@@ -15,19 +18,19 @@ template <typename T, auto Method, typename... Args> struct Caller {
     static auto Result(T *obj, Args &&...args) { (obj->*Method)(args...); }
 };
 
-template <typename T, typename U> struct SAME {
+// template <typename T, typename U> struct SAME {
+//     static constexpr bool Result = false;
+// };
+//
+// template <typename T> struct SAME<T, T> {
+//     static constexpr bool Result = true;
+// };
+
+template <typename T> struct Void {
     static constexpr bool Result = false;
 };
 
-template <typename T> struct SAME<T, T> {
-    static constexpr bool Result = true;
-};
-
-template <typename T> struct VOID {
-    static constexpr bool Result = false;
-};
-
-template <> struct VOID<void> {
+template <> struct Void<void> {
     static constexpr bool Result = true;
 };
 
@@ -63,16 +66,19 @@ concept Integer = requires(T a) {
     a / 10;
 };
 
-template <typename T> struct _Pointer {
-    static constexpr bool Result = false;
-};
-
-template <typename T> struct _Pointer<T *> {
-    static constexpr bool Result = true;
-};
-
 template <typename T>
-concept Pointer = _Pointer<T>::Result;
+concept Pointer = requires(T t) { []<typename U>(U *) {}(t); };
+
+// template <typename T> struct _Pointer {
+//     static constexpr bool Result = false;
+// };
+//
+// template <typename T> struct _Pointer<T *> {
+//     static constexpr bool Result = true;
+// };
+//
+// template <typename T>
+// concept Pointer = _Pointer<T>::Result;
 
 // template <typename T>
 // concept IsArray = __is_array(T);

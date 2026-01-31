@@ -40,7 +40,8 @@ class Ethernet {
 };
 
 class IPv4 {
-    enum Protocol : unsigned char { ICMP = 1, TCP = 6, UDP = 0x11 };
+  public:
+    enum Protocol : unsigned char { ICMP = 1, TCP = 6, UDP = 17 };
     typedef GenericAddress<4> Address;
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NIC;
 
@@ -121,7 +122,7 @@ class IPv4 {
         }
 
         bool completed() const { return m_expected > 0 && m_received >= m_expected; }
-        size_t length() { return m_received; }
+        size_t length() const { return m_received; }
 
       private:
         uint8_t *m_buffer = nullptr;
@@ -134,40 +135,7 @@ class IPv4 {
   public:
     IPv4() { m_nic = NIC::instance(); }
 
-    // void send() {
-    //     Address destination({0xFF, 0xFF, 0xFF, 0xFF});
-    //     Address source({0xFF, 0xFF, 0xFF, 0xFF});
-    //     Protocol protocol = UDP;
-
-    //    constexpr unsigned int k_max_frame_payload_size = 1480;
-
-    //    constexpr unsigned int length = 4000;
-
-    //    uint16_t sent = 0;
-    //    while (sent < length) {
-    //        size_t remaining = length - sent;
-    //        size_t current = (remaining > k_max_frame_payload_size) ? k_max_frame_payload_size : remaining;
-
-    //        uint16_t offset = (sent / 8);
-    //        offset |= (sent + current) < length ? 0x2000 : 0;
-
-    //        unsigned int total = sizeof(Ethernet::Frame) + sizeof(IPv4::Header) + current;
-    //        uint8_t *buffer = new unsigned char[total];
-    //        new (buffer + sizeof(Ethernet::Frame)) Header(destination, source, protocol, current, 0, m_id, offset);
-
-    //        Ethernet::Address dest_mac({0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF});
-    //        Ethernet::Address src_mac({0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF});
-    //        new (buffer) Ethernet::Frame(dest_mac, src_mac, Ethernet::IPv4);
-
-    //        NIC::instance()->send(buffer, total);
-
-    //        sent += current;
-
-    //        delete[] buffer;
-    //    }
-    //}
-
-    size_t receive(unsigned char *destination, unsigned int length) {
+    size_t receive(unsigned char *destination, unsigned int length, Protocol protocol) {
         uint8_t *buffer = new unsigned char[Ethernet::MTU];
         Assembler assembler(destination, length);
 
@@ -178,6 +146,7 @@ class IPv4 {
 
                 if (frame->m_header.m_type == CPU::be16toh(Ethernet::IPv4)) {
                     Header *header = reinterpret_cast<Header *>(frame->data());
+                    if (header->m_protocol != protocol) continue;
                     assembler.add(header);
                 }
             }
@@ -188,6 +157,101 @@ class IPv4 {
     }
 
   private:
-    uint16_t m_id;
     NIC *m_nic;
 };
+
+class UDP {
+    struct Header {
+        uint16_t m_source;
+        uint16_t m_destination;
+        uint16_t m_length; 
+        uint16_t m_checksum;
+    } __attribute__((packed));
+
+  public:
+    UDP() {}
+
+    size_t receive(unsigned char *destination, unsigned int length) {
+        uint8_t *ip_payload_buffer = new uint8_t[length + sizeof(Header)];
+
+        while (true) {
+            size_t ip_payload_size = m_ipv4.receive(ip_payload_buffer, length + sizeof(Header), IPv4::UDP);
+
+            if (ip_payload_size < sizeof(Header)) continue;
+
+            Header *udp_header = reinterpret_cast<Header *>(ip_payload_buffer);
+
+            uint16_t udp_total_len = CPU::be16toh(udp_header->m_length);
+            size_t data_len = udp_total_len - sizeof(Header);
+
+            size_t final_size = (data_len > length) ? length : data_len;
+
+            memcpy(destination, ip_payload_buffer + sizeof(Header), final_size);
+
+            delete[] ip_payload_buffer;
+            return final_size;
+        }
+    }
+
+  private:
+    IPv4 m_ipv4;
+};
+
+// class UDP {
+//     struct Header {
+//         uint16_t m_source;
+//         uint16_t m_destination;
+//         uint16_t m_length;
+//         uint16_t m_checksum;
+//     } __attribute__((packed));
+//
+//   public:
+//     UDP() {}
+//
+//     size_t receive(unsigned char *destination, unsigned int length) {
+//         while (1) {
+//             unsigned int received = m_ipv4.receive(destination, length);
+//             auto *header =
+//                 reinterpret_cast<IPv4::Header *>(destination + sizeof(Ethernet::Frame::Header) + sizeof(IPv4::Header));
+//             if (header->m_protocol == IPv4::UDP) {
+//                 return received;
+//             }
+//         }
+//     }
+//
+//   private:
+//     IPv4 m_ipv4;
+// };
+
+// void send() {
+//     Address destination({0xFF, 0xFF, 0xFF, 0xFF});
+//     Address source({0xFF, 0xFF, 0xFF, 0xFF});
+//     Protocol protocol = UDP;
+
+//    constexpr unsigned int k_max_frame_payload_size = 1480;
+
+//    constexpr unsigned int length = 4000;
+
+//    uint16_t sent = 0;
+//    while (sent < length) {
+//        size_t remaining = length - sent;
+//        size_t current = (remaining > k_max_frame_payload_size) ? k_max_frame_payload_size : remaining;
+
+//        uint16_t offset = (sent / 8);
+//        offset |= (sent + current) < length ? 0x2000 : 0;
+
+//        unsigned int total = sizeof(Ethernet::Frame) + sizeof(IPv4::Header) + current;
+//        uint8_t *buffer = new unsigned char[total];
+//        new (buffer + sizeof(Ethernet::Frame)) Header(destination, source, protocol, current, 0, m_id, offset);
+
+//        Ethernet::Address dest_mac({0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF});
+//        Ethernet::Address src_mac({0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF});
+//        new (buffer) Ethernet::Frame(dest_mac, src_mac, Ethernet::IPv4);
+
+//        NIC::instance()->send(buffer, total);
+
+//        sent += current;
+
+//        delete[] buffer;
+//    }
+//}

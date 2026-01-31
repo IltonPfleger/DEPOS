@@ -52,7 +52,7 @@ template <typename T> class Scheduler : private Head<T> {
         for (unsigned int i = 0; i < Criterion::Levels; i++) {
             if (!m_levels[i].empty()) {
                 Entry *node = m_levels[i].remove();
-                next = node->value;
+                next = node->value();
                 break;
             }
         }
@@ -62,8 +62,8 @@ template <typename T> class Scheduler : private Head<T> {
     }
 
     void insert(Entry *node) {
-        ERROR(node->priority >= Criterion::Levels);
-        m_levels[node->priority].insert(node);
+        ERROR(node->priority() >= Criterion::Levels);
+        m_levels[node->priority()].insert(node);
     }
 
     T *current() const {

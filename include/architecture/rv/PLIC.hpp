@@ -14,7 +14,7 @@ struct PLIC_Dummy {
     static constexpr unsigned long Addr = 0;
 };
 
-using PLIC_Traits = Meta::TypeSelector<Traits<PLIC>::Enable, Traits<PLIC>, PLIC_Dummy>::Result;
+using PLIC_Traits = Meta::IF<Traits<PLIC>::Enable, Traits<PLIC>, PLIC_Dummy>::Result;
 using PLIC_DispatchTable = DispatchTable<PLIC_Traits::First, PLIC_Traits::Last, PLIC>;
 
 class PLIC : public PLIC_DispatchTable, public PLIC_Traits, Driver {
@@ -29,9 +29,7 @@ class PLIC : public PLIC_DispatchTable, public PLIC_Traits, Driver {
 
     static void priority(unsigned int source, unsigned int value) { Reg32(Addr, PRIORITY + source * 4) = value; }
 
-    static void threshold(unsigned int context, unsigned int value) {
-        Reg32(Addr, THRESHOLD + (context * 0x1000)) = value;
-    }
+    static void threshold(unsigned int context, unsigned int value) { Reg32(Addr, THRESHOLD + (context * 0x1000)) = value; }
 
     static unsigned int claim(unsigned int context) { return Reg32(Addr, CLAIM + (context * 0x1000)); }
     static void complete(unsigned int context, unsigned int id) { Reg32(Addr, CLAIM + (context * 0x1000)) = id; }
