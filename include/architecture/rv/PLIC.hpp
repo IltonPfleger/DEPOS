@@ -34,7 +34,14 @@ class PLIC : public PLIC_DispatchTable, public PLIC_Traits, Driver {
     static unsigned int claim(unsigned int context) { return Reg32(Addr, CLAIM + (context * 0x1000)); }
     static void complete(unsigned int context, unsigned int id) { Reg32(Addr, CLAIM + (context * 0x1000)) = id; }
 
-    static unsigned int context() { return 0; }
+    static unsigned int context() {
+        unsigned int core = csrr<MachineMode::HARTID>();
+        if constexpr (Traits<RISCV>::Supervisor) {
+            return core * 2 + 1;
+        } else {
+            return core * 2;
+        }
+    }
 
     static void enable(unsigned int context, unsigned int source) {
         unsigned int bank = source / 32;
