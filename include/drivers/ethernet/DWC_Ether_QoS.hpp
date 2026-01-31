@@ -189,7 +189,6 @@ template <unsigned long Base> class _MAC : Driver {
 
 template <unsigned long Base> class _DMA : Driver, public Ethernet {
     using Buffer = unsigned char[2048];
-
     struct Descriptor {
         unsigned int des0;
         unsigned int des1;
@@ -207,8 +206,6 @@ template <unsigned long Base> class _DMA : Driver, public Ethernet {
             RX_AVAILABLE = OWN | IOC | VALID,
         };
     };
-
-	struct 
 
     enum Registers {
         MODE = 0x1000,
@@ -233,7 +230,7 @@ template <unsigned long Base> class _DMA : Driver, public Ethernet {
         CH0_INTERRUPT_ENABLE_NIE = 1 << 15,
         CH0_INTERRUPT_ENABLE_AIE = 1 << 14,
         CH0_INTERRUPT_ENABLE_RIE = 1 << 6,
-        CH0_INTERRUPT_ENABLE_RBUE = 1 << 7,
+        CH0_INTERRUPT_ENABLE_RBUE = 1 << 6,
 
         CH0_INTERRUPT_STATUS_RI = 1 << 6,
         CH0_INTERRUPT_STATUS_RBU = 1 << 7,
