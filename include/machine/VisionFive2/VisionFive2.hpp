@@ -93,6 +93,9 @@ class VisionFive2 {
 
             Reg32(k_aon_crg_base, GMAC5_0_CLK_TX) &= ~GMAC5_0_CLK_TX_CLK_MUX_SEL_MASK;
             Reg32(k_aon_crg_base, GMAC5_0_CLK_TX) |= (1 << GMAC5_0_CLK_TX_CLK_MUX_SEL_SHIFT) & GMAC5_0_CLK_TX_CLK_MUX_SEL_MASK;
+
+            for (volatile int i = 0; i < 1000000;)
+                i = i + 1;
         }
     };
 
@@ -106,7 +109,6 @@ class VisionFive2 {
         }
 
         CPU::barrier();
-
         Initializer::init();
     }
 };

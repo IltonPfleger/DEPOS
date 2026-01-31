@@ -298,7 +298,8 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
             CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_RIE | CH0_INTERRUPT_ENABLE_AIE | CH0_INTERRUPT_ENABLE_RBUE;
         for (auto i : Traits<DWC_Ether_QoS<Base>>::IRQs)
             IC::bind(i, interrupt);
-        // free(m_rx_descriptors[k_number_of_descriptors - 1]);
+        Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
+            reinterpret_cast<unsigned long>(&m_rx_descriptors[k_number_of_descriptors - 1]);
         TraceOut();
     }
 
@@ -307,7 +308,7 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
         CacheController::flush(m_tx_descriptors, sizeof(Descriptor) * k_number_of_descriptors);
 
         for (unsigned int i = 0; i < k_number_of_descriptors; i++)
-            free_rx(m_rx_descriptors[i], m_rx_buffers[i]);
+            free_rx(m_rx_descriptors[i], m_rx_buffers[i], false);
 
         Reg32(Base, CH0_RX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF;
         Reg32(Base, CH0_RX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32;
@@ -317,15 +318,15 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
         Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
     }
 
-    void free_rx(Descriptor &d, void *pointer = 0) {
+    void free_rx(Descriptor &d, void *pointer = 0, bool tail = true) {
         if (pointer) d.buffer(pointer);
         d.des2 = 0;
         d.des3 = RXDescriptor::OWN | RXDescriptor::IOC | RXDescriptor::VALID;
         CacheController::flush(&d, sizeof(d));
-        for (unsigned int i = 0; i < k_number_of_descriptors; i++)
-            if (&m_rx_descriptors[i] == &d)
-                Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(&d);
-        // Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_rx_descriptors + i);
+        if (tail)
+            for (unsigned int i = 0; i < k_number_of_descriptors; i++)
+                if (&m_rx_descriptors[i] == &d)
+                    Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(&d);
     }
 
     auto &rx_descriptor() {
