@@ -205,6 +205,12 @@ template <unsigned long Base> class _DMA : Driver, public Ethernet {
 
             RX_AVAILABLE = OWN | IOC | VALID,
         };
+
+        void buffer(void *pointer) {
+            uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
+            des0 = static_cast<unsigned int>(addr & 0xFFFFFFFF);
+            des1 = static_cast<unsigned int>(addr >> 32);
+        }
     };
 
     enum Registers {
@@ -251,16 +257,16 @@ template <unsigned long Base> class _DMA : Driver, public Ethernet {
         unsigned int status = Reg32(Base, CH0_INTERRUPT_STATUS);
 
         if (status & CH0_INTERRUPT_STATUS_RI) {
+            Reg32(Base, CH0_INTERRUPT_STATUS) |= CH0_INTERRUPT_STATUS_RI;
             notify();
         }
 
         if (status & CH0_INTERRUPT_STATUS_RBU) {
+            Reg32(Base, CH0_INTERRUPT_STATUS) |= CH0_INTERRUPT_STATUS_RBU;
             Descriptor *next = reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR));
             next->des3 = Descriptor::RX_AVAILABLE;
             Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(next);
         }
-
-        Reg32(Base, CH0_INTERRUPT_STATUS) = ~0U;
     }
 
     _DMA() {
@@ -268,12 +274,14 @@ template <unsigned long Base> class _DMA : Driver, public Ethernet {
         s_instance = this;
         descriptors();
         Reg32(Base, SYSBUS_MODE) |= 1 << 11;
-        Reg32(Base, CH0_TX_CONTROL) |= 1;
-        Reg32(Base, CH0_RX_CONTROL) |= 1;
         Reg32(Base, CH0_INTERRUPT_ENABLE) |=
             CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_RIE | CH0_INTERRUPT_ENABLE_AIE | CH0_INTERRUPT_ENABLE_RBUE;
         for (auto i : Traits<DWC_Ether_QoS<Base>>::IRQs)
             IC::bind(i, interrupt);
+        Reg32(Base, CH0_TX_CONTROL) |= 1;
+        Reg32(Base, CH0_RX_CONTROL) |= 1;
+        Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
+            reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors);
         TraceOut();
     }
 
@@ -281,13 +289,10 @@ template <unsigned long Base> class _DMA : Driver, public Ethernet {
         memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
         CacheController::flush(m_tx_descriptors, sizeof(Descriptor) * k_number_of_descriptors);
 
-        memset(m_rx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
-
         for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
             auto &descriptor = m_rx_descriptors[i];
-            unsigned long buffer = reinterpret_cast<unsigned long>(m_rx_buffers[i]);
-            descriptor.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
-            descriptor.des1 = static_cast<unsigned int>(buffer >> 32);
+            descriptor.buffer(m_rx_buffers[i]);
+            descriptor.des2 = 0;
             descriptor.des3 = Descriptor::RX_AVAILABLE;
             CacheController::flush(&descriptor, sizeof(Descriptor));
         }
@@ -295,13 +300,8 @@ template <unsigned long Base> class _DMA : Driver, public Ethernet {
         Reg32(Base, CH0_RX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF;
         Reg32(Base, CH0_RX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32;
         Reg32(Base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
-        Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
-            reinterpret_cast<unsigned long>(m_rx_descriptors + k_number_of_descriptors);
-
-        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) =
-            static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF);
-        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) =
-            static_cast<unsigned int>(reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32);
+        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF;
+        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32;
         Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
     }
 
@@ -338,13 +338,11 @@ template <unsigned long Base> class _DMA : Driver, public Ethernet {
     }
 
     int send(const void *frame, unsigned int length) {
-        unsigned long buffer = reinterpret_cast<unsigned long>(frame);
         CacheController::flush(frame, length);
 
         Descriptor &d = *reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_TX_DESCRIPTOR));
 
-        d.des0 = static_cast<unsigned int>(buffer & 0xFFFFFFFF);
-        d.des1 = static_cast<unsigned int>(buffer >> 32);
+        d.buffer(frame);
         d.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
         d.des2 = (length & 0x7FFF);
         CacheController::flush(&d, sizeof(Descriptor));
