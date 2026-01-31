@@ -22,8 +22,5 @@ class Ethernet : public Observed {
 
     } __attribute__((packed));
 
-    void notify() {
-        Observed::notify();
-        TraceIn();
-    }
+    void notify() { Observed::notify(); }
 };

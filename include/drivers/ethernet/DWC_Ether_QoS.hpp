@@ -211,17 +211,7 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
         }
     };
 
-    struct RXDescriptor : Descriptor {
-        static RXDescriptor *current() { return (RXDescriptor *)((uintptr_t)Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR)); }
-
-        void free(void *pointer = 0) {
-            if (pointer) this->buffer(pointer);
-            this->des2 = 0;
-            this->des3 = this->OWN | this->IOC | this->VALID;
-            CacheController::flush(this, sizeof(*this));
-            Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = (unsigned int)(unsigned long)this;
-        }
-    };
+    struct RXDescriptor : Descriptor {};
 
     struct TXDescriptor : Descriptor {
         void send(void *pointer, size_t length) {
@@ -280,11 +270,12 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
 
         if (status & CH0_INTERRUPT_STATUS_RI) {
             Ethernet::notify();
-            Console::print("Receive Packet!\n");
         }
 
         if (status & CH0_INTERRUPT_STATUS_RBU) {
-            m_rx_descriptors[m_current_rx_descriptor].free();
+            Console::print("Receive Buffer List Empty!\n");
+            for (unsigned int i = 0; i < k_number_of_descriptors; i++)
+                free_rx(m_rx_descriptors[i]);
         }
 
         if (status & CH0_INTERRUPT_STATUS_RI || status & CH0_INTERRUPT_STATUS_RBU) {
@@ -307,6 +298,7 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
             CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_RIE | CH0_INTERRUPT_ENABLE_AIE | CH0_INTERRUPT_ENABLE_RBUE;
         for (auto i : Traits<DWC_Ether_QoS<Base>>::IRQs)
             IC::bind(i, interrupt);
+        // free(m_rx_descriptors[k_number_of_descriptors - 1]);
         TraceOut();
     }
 
@@ -315,15 +307,25 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
         CacheController::flush(m_tx_descriptors, sizeof(Descriptor) * k_number_of_descriptors);
 
         for (unsigned int i = 0; i < k_number_of_descriptors; i++)
-            m_rx_descriptors[i].free(m_rx_buffers[i]);
+            free_rx(m_rx_descriptors[i], m_rx_buffers[i]);
 
         Reg32(Base, CH0_RX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF;
         Reg32(Base, CH0_RX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32;
         Reg32(Base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
-        m_rx_descriptors[k_number_of_descriptors - 1].free();
         Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF;
         Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32;
         Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
+    }
+
+    void free_rx(Descriptor &d, void *pointer = 0) {
+        if (pointer) d.buffer(pointer);
+        d.des2 = 0;
+        d.des3 = RXDescriptor::OWN | RXDescriptor::IOC | RXDescriptor::VALID;
+        CacheController::flush(&d, sizeof(d));
+        for (unsigned int i = 0; i < k_number_of_descriptors; i++)
+            if (&m_rx_descriptors[i] == &d)
+                Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(&d);
+        // Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(m_rx_descriptors + i);
     }
 
     auto &rx_descriptor() {
@@ -362,7 +364,7 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
 
         memcpy(frame, addr, size);
 
-        d.free();
+        free_rx(d);
 
         Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_AIE;
 
