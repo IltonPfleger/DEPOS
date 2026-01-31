@@ -54,8 +54,11 @@ int main(int, char *[]) {
 
     nic->attach(&arp);
 
-    Alarm::delay(1000);
+    //nic->debug();
+
+    Alarm::delay(10000);
 
     TraceOut();
+
     return 0;
 }
