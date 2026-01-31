@@ -308,18 +308,14 @@ template <unsigned long Base> class _DMA : Driver, public Ethernet {
     int receive(void *frame, unsigned int length) {
         Reg32(Base, CH0_INTERRUPT_ENABLE) &= ~CH0_INTERRUPT_ENABLE_AIE;
 
-        unsigned long zero = reinterpret_cast<unsigned long>(m_rx_descriptors);
-        unsigned long current = Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR);
-        unsigned int i = (current - zero - 1) % k_number_of_descriptors;
+        auto d = reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_RX_DESCRIPTOR));
 
         while (1) {
-            Descriptor &d = m_rx_descriptors[i];
-            CacheController::flush(&d, sizeof(Descriptor));
+            CacheController::flush(&d, sizeof(*d));
             if (!(d.des3 & Descriptor::OWN)) break;
-            i = (i + 1) % k_number_of_descriptors;
+            d++;
+            if (d > m_rx_descriptors + k_number_of_descriptors) d = m_rx_descriptors;
         }
-
-        Descriptor &d = m_rx_descriptors[i];
 
         unsigned long addr64 = (static_cast<unsigned long>(d.des1) << 32) | d.des0;
         unsigned short *addr = reinterpret_cast<unsigned short *>(addr64);
