@@ -64,8 +64,8 @@ class PLIC : public PLIC_DispatchTable, public PLIC_Traits, Driver {
 
     static void handler(unsigned int) {
         unsigned int id = claim(context());
-        dispatch(id);
         complete(context(), id);
+        dispatch(id);
     }
 
     static void init() {
