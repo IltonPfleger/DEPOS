@@ -4,7 +4,7 @@
 namespace Allocators {
 template <size_t Max> class Buddy {
     using Entry = Node<void>;
-    using List = LIFO<Entry>;
+    using List = FIFO<Entry>;
 
     static size_t level(size_t size) {
         size_t level = 0;

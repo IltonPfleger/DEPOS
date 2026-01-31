@@ -3,23 +3,25 @@
 #include <Thread.hpp>
 
 class Semaphore {
-    int _value = 1;
-    Thread::Queue waiting;
-    Spin _lock;
-
   public:
+    Semaphore(unsigned int value = 1) : m_value(value) {}
+
     void p() {
-        _lock.lock();
-        if (_value-- < 1)
-            Thread::sleep(waiting, _lock);
+        m_lock.lock();
+        if (m_value-- < 1)
+            Thread::sleep(m_waiting, m_lock);
         else
-            _lock.unlock();
+            m_lock.unlock();
     }
 
     void v() {
-        _lock.lock();
-        if (_value++ < 0)
-            Thread::wakeup(waiting);
-        _lock.unlock();
+        m_lock.lock();
+        if (m_value++ < 0) Thread::wakeup(m_waiting);
+        m_lock.unlock();
     }
+
+  private:
+    int m_value;
+    Thread::Queue m_waiting;
+    Spin m_lock;
 };

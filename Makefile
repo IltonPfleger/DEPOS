@@ -13,17 +13,10 @@ norun: $(IMAGE)
 
 run: $(IMAGE)
 	-$(QEMU) -M $(MACHINE_NAME) -smp $(CPUS_COUNT) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(IMAGE)
-	
-			#-device loader,file=guest.dtb,addr=0x82200000,force-raw=on \
-			#-device loader,file=initramfs.cpio,addr=0x84000000,force-raw=on
-#	#-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(IMAGE)
-#
+
 debug: $(IMAGE)
 	-$(QEMU) -M $(MACHINE_NAME) -smp $(CPUS_COUNT) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(IMAGE) -S -gdb tcp::1234
 
-#	-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(IMAGE) -device loader,file=guest.dtb,addr=0x82200000,force-raw=on -S -gdb tcp::1234
-#	#-$(QEMU) -M $(MachineName) -smp $(CPUS) -bios none -nographic -m $(MemorySize)b -kernel $(SYSTEM).bin -S -gdb tcp::1234
-#
 gdb:
 	riscv64-linux-gnu-gdb -ex "file build/DEPOS.elf"\
 		-ex "file ../linux/vmlinux"\

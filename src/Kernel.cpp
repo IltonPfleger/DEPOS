@@ -11,6 +11,8 @@ class System {
         bool BSP = CPU::id() == Traits<CPUS>::BSP;
         if (BSP) TraceIn();
 
+        Trace(CPU::id());
+
         CPU::barrier();
 
         Machine::init();

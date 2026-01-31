@@ -18,7 +18,7 @@ class MIC {
 
     static void dispatch(MachineContext *c) {
         uintmax_t mcause = csrr<Mode::CAUSE>();
-        int code = (mcause << 1) >> 1;
+        int code = mcause & ~IC::INTERRUPT;
 
         if (mcause & IC::INTERRUPT) {
             IC::dispatch(code);

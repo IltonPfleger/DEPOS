@@ -51,4 +51,4 @@ MARCH_CCFLAGS += -mcmodel=medany
 MARCH_CCFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
 MARCH_CCFLAGS += -msmall-data-limit=0
 MARCH_CCFLAGS += -march=rv64ima_zicsr -mabi=lp64
-MARCH_CCFLAGS += -g 
+MARCH_CCFLAGS += -O2 -g

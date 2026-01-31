@@ -21,7 +21,7 @@ class Thread {
     ~Thread();
 
     static Thread *running();
-    static void join(Thread &);
+    static void join(Thread *);
     static void exit();
     static void init();
     static void run();
