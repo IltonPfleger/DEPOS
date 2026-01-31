@@ -2,33 +2,32 @@
 
 #include <Types.hpp>
 
-template <typename T> class LinkedList;
-template <typename T> class LIFO;
-template <typename T> class FIFO;
+template <typename V, typename P> using ValueType = typename Meta::IF<Meta::Void<V>::Result, Meta::Empty, V>::Result;
+
+template <typename V, typename P> using PriorityType = typename Meta::IF<Meta::Void<P>::Result, Meta::Empty, P>::Result;
 
 template <typename Value = void, typename Priority = void> struct Node {
-    friend LinkedList<Node<Value, Priority>>;
-    friend LIFO<Node<Value, Priority>>;
-    friend FIFO<Node<Value, Priority>>;
+    template <typename T> friend class LinkedList;
+    template <typename T> friend class LIFO;
+    template <typename T> friend class FIFO;
 
     Node *next() const { return m_next; }
-    Priority priority() const { return m_priority; }
-    Value value() const { return m_value; }
+    auto priority() const { return m_priority; }
+    auto value() const { return m_value; }
 
     Node(auto v) : m_value(v) {}
     Node(auto v, auto p) : m_value(v), m_priority(p) {}
 
   private:
-    Meta::IF<Meta::Void<Value>::Result, Meta::Empty, Value>::Result m_value;
-    Meta::IF<Meta::Void<Priority>::Result, Meta::Empty, Priority>::Result m_priority;
+    ValueType<Value, Priority> m_value;
+    PriorityType<Value, Priority> m_priority;
     Node *m_next = nullptr;
 };
 
 template <typename T> class LinkedList {
   public:
-    LinkedList() = default;
-    bool empty() const { return m_head == nullptr; }
-    T *head() { return m_head; }
+    bool empty() const { return !m_head; }
+    T *head() const { return m_head; }
 
   protected:
     T *m_head = nullptr;
@@ -36,16 +35,12 @@ template <typename T> class LinkedList {
 
 template <typename T> class LIFO : public LinkedList<T> {
   public:
-    // using Base = LinkedList<T>;
-    // using T = typename Base::T;
-    LIFO() = default;
-
     void insert(T *node) {
         node->m_next = this->m_head;
         this->m_head = node;
     }
 
-    T *remove() {
+    T *remove()  {
         if (!this->m_head) return nullptr;
         T *node = this->m_head;
         this->m_head = node->m_next;
@@ -53,74 +48,53 @@ template <typename T> class LIFO : public LinkedList<T> {
     }
 
     bool remove(T *node) {
-        if (!this->m_head || !node) return false;
-
-        T *previous = nullptr;
-        T *current = this->m_head;
-
-        while (current) {
-            if (current == node) {
-                if (previous) {
-                    previous->m_next = current->m_next;
-                } else {
-                    this->m_head = current->m_next;
-                }
-                return true;
-            }
+        T *previous = nullptr, *current = this->m_head;
+        while (current && current != node) {
             previous = current;
             current = current->m_next;
         }
-        return false;
+        if (!current) return false;
+        if (previous)
+            previous->m_next = current->m_next;
+        else
+            this->m_head = current->m_next;
+        return true;
     }
 };
 
 template <typename T> class FIFO : public LinkedList<T> {
   public:
-    FIFO() = default;
-
     void insert(T *node) {
         node->m_next = nullptr;
-        if (!this->m_head) {
-            this->m_head = node;
-            this->m_tail = node;
-        } else {
-            this->m_tail->m_next = node;
-            this->m_tail = node;
-        }
+        if (!this->m_head)
+            this->m_head = m_tail = node;
+        else
+            m_tail = (m_tail->m_next = node);
     }
 
     T *remove() {
         if (!this->m_head) return nullptr;
-
         T *node = this->m_head;
         this->m_head = this->m_head->m_next;
-
+        if (!this->m_head) m_tail = nullptr;
         return node;
     }
 
     bool remove(T *node) {
-        if (!this->m_head || !node) return false;
-
-        T *previous = nullptr;
-        T *current = this->m_head;
-
-        while (current) {
-            if (current == node) {
-                if (previous) {
-                    previous->m_next = current->m_next;
-                } else {
-                    this->m_head = current->m_next;
-                }
-
-                if (current == this->m_tail) {
-                    this->m_tail = previous;
-                }
-                return true;
-            }
+        T *previous = nullptr, *current = this->m_head;
+        while (current && current != node) {
             previous = current;
             current = current->m_next;
         }
-        return false;
+        if (!current) return false;
+
+        if (previous)
+            previous->m_next = current->m_next;
+        else
+            this->m_head = current->m_next;
+
+        if (node == m_tail) m_tail = previous;
+        return true;
     }
 
   protected:

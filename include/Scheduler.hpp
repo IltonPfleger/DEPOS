@@ -24,7 +24,7 @@ class Policy {
 class RR : public Policy {
   public:
     static constexpr bool Preemptive = true;
-    template <typename T> using Queue = LIFO<T>;
+    template <typename T> using Queue = FIFO<T>;
     enum : Rank {
         NORMAL,
         IDLE,
@@ -62,6 +62,7 @@ template <typename T> class Scheduler : private Head<T> {
     }
 
     void insert(Entry *node) {
+        ERROR(!node);
         ERROR(node->priority() >= Criterion::Levels);
         m_levels[node->priority()].insert(node);
     }

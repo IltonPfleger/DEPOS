@@ -20,7 +20,7 @@ template <> struct Traits<System> {
 
 template <> struct Traits<Timer> {
     static constexpr bool Enable = true;
-    static constexpr unsigned long Frequency = 100;
+    static constexpr unsigned long Frequency = 1'000;
 };
 
 template <> struct Traits<Alarm> {
@@ -31,7 +31,7 @@ template <> struct Traits<Alarm> {
 };
 
 template <> struct Traits<Scheduler<Thread>> {
-    static constexpr unsigned long Frequency = 10;
+    static constexpr unsigned long Frequency = Traits<Timer>::Frequency;
     static constexpr bool Preemptive = true;
     using Criterion = RR;
 

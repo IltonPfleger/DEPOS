@@ -44,21 +44,20 @@ Thread::Thread(Function f, Argument a, Criterion c)
     TraceOut();
 }
 
-Thread::~Thread() { join(*this); }
-
-void Thread::join(Thread &thread) {
-    auto previous = running();
-    ERROR(&thread == previous, "Join itself.");
-    ERROR(thread.m_joining, "Already joined.");
-
+void Thread::join(Thread *thread) {
     s_lock.lock();
-    if (thread.m_state == State::FINISHED) {
+
+    auto previous = running();
+    ERROR(thread == previous, "Join itself.");
+    ERROR(thread->m_joining, "Already joined.");
+
+    if (thread->m_state == State::FINISHED) {
         s_lock.unlock();
         return;
     }
 
     previous->m_state = State::WAITING;
-    thread.m_joining = previous;
+    thread->m_joining = previous;
 
     dispatch(previous, s_scheduler.pop(), &s_lock);
     CPU::Interruptions::enable();
@@ -66,9 +65,11 @@ void Thread::join(Thread &thread) {
 
 void Thread::exit() {
     s_lock.lock();
-    TraceIn();
 
-    auto previous = running();
+    Thread *previous = running();
+
+    TraceIn(previous);
+
     previous->m_state = State::FINISHED;
 
     if (previous->m_joining) {
@@ -78,7 +79,9 @@ void Thread::exit() {
     }
 
     s_count = s_count - 1;
+
     TraceOut();
+
     dispatch(previous, s_scheduler.pop(), &s_lock);
 }
 
@@ -93,7 +96,6 @@ void Thread::run() {
     unsigned char previous[sizeof(Thread)];
     s_lock.acquire();
     Thread *next = s_scheduler.pop();
-    TraceIn(next, next->m_context);
     dispatch(reinterpret_cast<Thread *>(previous), next, &s_lock);
 }
 
