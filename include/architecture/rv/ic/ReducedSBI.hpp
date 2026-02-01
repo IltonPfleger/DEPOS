@@ -4,9 +4,9 @@
 #include <architecture/rv/Context.hpp>
 
 namespace rv {
-class MachineSyscall {
+class ReducedSBI {
   public:
-    enum { TIME = 0 };
+    enum { TIME = 'T' << 24 | 'I' << 16 | 'M' << 8 | 'E' };
 
     static bool dispatch(MachineContext *c) {
         bool handle = false;
@@ -18,6 +18,8 @@ class MachineSyscall {
                 handle = true;
             }
             c->pc += 4;
+        } else {
+            Exception<SupervisorMode>::dispatch();
         }
         return handle;
     }

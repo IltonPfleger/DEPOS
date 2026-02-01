@@ -4,7 +4,7 @@
 #include <architecture/rv/CLINT.hpp>
 #include <architecture/rv/PLIC.hpp>
 #include <architecture/rv/ic/Exception.hpp>
-#include <architecture/rv/ic/MachineSyscall.hpp>
+#include <architecture/rv/ic/ReducedSBI.hpp>
 #include <architecture/rv/ic/sbi/SBI.hpp>
 #include <memory/Memory.hpp>
 
@@ -12,7 +12,7 @@ namespace rv {
 class MIC {
   private:
     using Mode = MachineMode;
-    using Syscall = Meta::IF<Traits<Application>::Virtualized, sbi::SBI, MachineSyscall>::Result;
+    using Syscall = Meta::IF<Traits<Application>::Virtualized, sbi::SBI, ReducedSBI>::Result;
 
     static constexpr bool ChangeStack = Traits<RISCV>::Supervisor;
 
