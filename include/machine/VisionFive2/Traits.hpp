@@ -68,7 +68,8 @@ template <> struct Traits<PLIC> {
 };
 
 template <> struct Traits<DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>> {
-    static constexpr unsigned int IRQs[] = {17, 18, 19, 20, 21};
+    static constexpr unsigned int IRQs[] = {19};
+    // static constexpr unsigned int IRQs[] = {17, 18, 19, 20, 21};
 };
 
 template <> struct Traits<UART> {

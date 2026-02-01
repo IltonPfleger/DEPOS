@@ -54,7 +54,19 @@ int main(int, char *[]) {
 
     nic->attach(&arp);
 
-    //nic->debug();
+    while (1) {
+        auto guard = nic->receive();
+        auto data = guard->data();
+
+        Console::print("Rx: ");
+        for (int i = 0; i < 1520; i++) {
+            Console::print(Console::Hex(data[i]));
+            Console::print(" ");
+        }
+        Console::print("\n");
+    }
+
+    // nic->debug();
 
     Alarm::delay(10000);
 
