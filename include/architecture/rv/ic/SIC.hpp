@@ -5,22 +5,21 @@
 
 namespace rv {
 class SIC {
-    using Mode = SupervisorMode;
-    using Context = ContextBase<Mode>;
+    using Context = ContextBase<SupervisorMode>;
 
     static void timer(unsigned int) {
-        CPU::syscall(ReducedSBI::TIME);
+        CPU::syscall(0, 0, 0, 0, 0, 0, 0, ReducedSBI::TIME);
         Timer::handler(CPU::id());
     }
 
     static void dispatch(Context *) {
-        uintmax_t scause = csrr<Mode::CAUSE>();
-        int code = (scause << 1) >> 1;
+        uintmax_t scause = csrr<SupervisorMode::CAUSE>();
+        int code = scause & ~IC::INTERRUPT;
 
         if (scause & IC::INTERRUPT) {
             IC::dispatch(code);
         } else {
-            Exception<Mode>::dispatch();
+            Exception<SupervisorMode>::dispatch();
         }
     }
 
@@ -31,9 +30,10 @@ class SIC {
 
   public:
     static void init() {
-        csrw<Mode::TVEC>(entry);
+        csrw<SupervisorMode::TVEC>(entry);
+
         if constexpr (Traits<Timer>::Enable) {
-            csrs<Mode::IE>(Mode::TI);
+            csrs<SupervisorMode::IE>(SupervisorMode::TI);
             IC::bind(5, timer);
         }
     }

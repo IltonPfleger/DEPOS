@@ -30,7 +30,8 @@ class CLINT : Driver {
         }
     }
 
-    static void syscall(uint64_t delta = Ticks + read()) {
+    static void syscall(uint64_t delta = 0) {
+        if (delta == 0) delta = Ticks + read();
         write(delta);
         csrs<MachineMode::IE>(MachineMode::TI);
         csrc<MachineMode::IP>(SupervisorMode::TI);

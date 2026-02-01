@@ -16,8 +16,8 @@ class ReducedSBI {
             if (c->a0 == TIME) {
                 CLINT::syscall();
                 handle = true;
+                c->pc += 4;
             }
-            c->pc += 4;
         } else {
             Exception<SupervisorMode>::dispatch();
         }

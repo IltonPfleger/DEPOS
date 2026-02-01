@@ -96,6 +96,7 @@ void Thread::run() {
     unsigned char previous[sizeof(Thread)];
     s_lock.acquire();
     Thread *next = s_scheduler.pop();
+	TraceIn(next);
     dispatch(reinterpret_cast<Thread *>(previous), next, &s_lock);
 }
 
