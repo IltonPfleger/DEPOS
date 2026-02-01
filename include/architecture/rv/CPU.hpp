@@ -60,9 +60,10 @@ class CPU {
         if constexpr (Traits<RISCV>::Supervisor) {
             asm volatile("csrr a0, misa\n"
                          "and a0, a0, %0\n"
-                         "bnez a0, 1f\n"
-                         "wfi\n"
-                         "1:" ::"r"(1ULL << ('S' - 'A')));
+                         "bnez a0, 2f\n"
+                         "1: wfi\n"
+						 "j 1b\n"
+                         "2:" ::"r"(1ULL << ('S' - 'A')));
         }
 
         // Use TP as Core ID

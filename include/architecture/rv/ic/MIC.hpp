@@ -41,13 +41,13 @@ class MIC {
         }
 
         if constexpr (CLINT::Enable) {
-            CLINT::init();
             IC::bind(7, CLINT::handler);
+            CLINT::init();
         }
 
         if constexpr (PLIC::Enable) {
-            PLIC::init();
             IC::bind(11, PLIC::handler);
+            PLIC::init();
         }
     }
 };
