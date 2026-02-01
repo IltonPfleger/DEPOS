@@ -272,7 +272,7 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
         CH0_INTERRUPT_ENABLE_NIE = 1 << 15,
         CH0_INTERRUPT_ENABLE_AIE = 1 << 14,
         CH0_INTERRUPT_ENABLE_RIE = 1 << 6,
-        CH0_INTERRUPT_ENABLE_RBUE = 1 << 6,
+        CH0_INTERRUPT_ENABLE_RBUE = 1 << 7,
 
         CH0_INTERRUPT_STATUS_RI = 1 << 6,
         CH0_INTERRUPT_STATUS_RBU = 1 << 7,
@@ -314,6 +314,9 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
 
         Reg32(Base, SYSBUS_MODE) |= 1 << 11;
 
+        memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
+        CacheController::flush(m_tx_descriptors, sizeof(Descriptor) * k_number_of_descriptors);
+
         for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
             auto &d = m_rx_descriptors[i];
             m_rx_buffers[i] = new ReceiveBuffer(&d);
@@ -325,10 +328,14 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
         Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_AIE;
         Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_RIE | CH0_INTERRUPT_ENABLE_RBUE;
 
+        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF;
+        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32;
+        Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
+
         for (auto i : Traits<DWC_Ether_QoS<Base>>::IRQs)
             IC::bind(i, interrupt);
 
-        // Reg32(Base, CH0_TX_CONTROL) |= 1;
+        Reg32(Base, CH0_TX_CONTROL) |= 1;
         Reg32(Base, CH0_RX_CONTROL) |= 1;
 
         Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
@@ -337,28 +344,9 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
         TraceOut();
     }
 
-    // void descriptors() {
-    //     memset(m_tx_descriptors, 0, k_number_of_descriptors * sizeof(Descriptor));
-    //     CacheController::flush(m_tx_descriptors, sizeof(Descriptor) * k_number_of_descriptors);
-
-    //    for (unsigned int i = 0; i < k_number_of_descriptors; i++) {
-    //        auto &descriptor = m_rx_descriptors[i];
-    //        descriptor.buffer(m_rx_buffers[i]);
-    //        descriptor.des2 = 0;
-    //        descriptor.des3 = Descriptor::RX_AVAILABLE;
-    //        CacheController::flush(&descriptor, sizeof(Descriptor));
-    //    }
-
-    //    Reg32(Base, CH0_RX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) & 0xFFFFFFFF;
-    //    Reg32(Base, CH0_RX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_rx_descriptors) >> 32;
-    //    Reg32(Base, CH0_RX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
-    //    Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF;
-    //    Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32;
-    //    Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
-    //}
-
     auto receive() {
         unsigned int i = 0;
+
         while (1) {
             if (!m_rx_buffers[i]->lock()) break;
             i = (i + 1) % k_number_of_descriptors;
@@ -368,25 +356,26 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
                      static_cast<void (ReceiveBuffer::*)()>(&ReceiveBuffer::unlock)>(m_rx_buffers[i], false);
     }
 
-    // int send(const void *frame, unsigned int length) {
-    //     CacheController::flush(frame, length);
+    // Broken For Multicore
+    int send(const void *frame, unsigned int length) {
+        CacheController::flush(frame, length);
 
-    //    Descriptor &d = *reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_TX_DESCRIPTOR));
+        Descriptor &d = *reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_TX_DESCRIPTOR));
 
-    //    d.buffer(frame);
-    //    d.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
-    //    d.des2 = (length & 0x7FFF);
-    //    CacheController::flush(&d, sizeof(Descriptor));
-    //    Reg32(Base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(&d);
+        d.buffer(frame);
+        d.des3 = Descriptor::OWN | Descriptor::FIRST | Descriptor::LAST | (length & 0x3FFF);
+        d.des2 = (length & 0x7FFF);
+        CacheController::flush(&d, sizeof(Descriptor));
+        Reg32(Base, CH0_TX_DESCRIPTORS_LIST_TAIL_POINTER) = reinterpret_cast<unsigned long>(&d);
 
-    //    while (1) {
-    //        CacheController::flush(&d, sizeof(Descriptor));
-    //        if (!(d.des3 & Descriptor::OWN)) {
-    //            if (d.des3 & Descriptor::TX_ERROR) return 0;
-    //            return length;
-    //        }
-    //    }
-    //}
+        while (1) {
+            CacheController::flush(&d, sizeof(Descriptor));
+            if (!(d.des3 & Descriptor::OWN)) {
+                if (d.des3 & Descriptor::TX_ERROR) return 0;
+                return length;
+            }
+        }
+    }
 
   private:
     static constexpr unsigned int k_number_of_descriptors = 10;
