@@ -7,7 +7,7 @@
 
 class System {
   public:
-    static void init() {
+    __attribute__((noinline)) static void init() {
         bool BSP = CPU::id() == Traits<CPUS>::BSP;
         if (BSP) TraceIn();
 

@@ -28,7 +28,7 @@ class CPU {
 
     static auto idle() { asm("wfi"); }
     static auto halt() { asm("1: wfi\n j 1b"); }
-    static auto syscall(auto f) { asm("mv a0, %0\necall" ::"r"(f)); }
+    static auto syscall(auto f) { asm("mv a7, %0\necall" ::"r"(f)); }
     static auto id() {
         unsigned long tp;
         asm("mv %0, tp" : "=r"(tp));

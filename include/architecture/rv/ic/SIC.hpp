@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Timer.hpp>
-#include <architecture/rv/ic/MachineSyscall.hpp>
+#include <architecture/rv/ic/ReducedSBI.hpp>
 
 namespace rv {
 class SIC {
@@ -9,7 +9,7 @@ class SIC {
     using Context = ContextBase<Mode>;
 
     static void timer(unsigned int) {
-        CPU::syscall(MachineSyscall::TIME);
+        CPU::syscall(ReducedSBI::TIME);
         Timer::handler(CPU::id());
     }
 

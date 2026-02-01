@@ -21,7 +21,7 @@ template <> struct Traits<Machine> {
 
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
-    static constexpr int COUNT = 5;
+    static constexpr int COUNT = 1;
     static constexpr int ACTIVE = COUNT;
     static constexpr int BSP = 0;
 };
