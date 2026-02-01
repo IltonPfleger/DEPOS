@@ -4,18 +4,6 @@
 #include <utils/Console.hpp>
 #include <utils/string.hpp>
 
-alignas(2 * 1024 * 1024) unsigned char g_image[] = {
-#include __STR(__KERNEL__)
-};
-
-alignas(1 * 1024 * 1024) unsigned char g_dtb[] = {
-#include __STR(__DTB__)
-};
-
-alignas(4 * 1024 * 1024) unsigned char g_initramfs[] = {
-#include __STR(__INITRAMFS__)
-};
-
 class DTB {
     enum {
         FDT_BEGIN_NODE = 1,
@@ -73,25 +61,43 @@ class DTB {
     unsigned int m_size_dt_struct;
 };
 
+alignas(2 * 1024 * 1024) volatile unsigned char g_image[] = {
+#include __STR(__KERNEL__)
+};
+
+alignas(1 * 1024 * 1024) volatile unsigned char g_dtb[] = {
+#include __STR(__DTB__)
+};
+
+alignas(1 * 1024 * 1024) volatile unsigned char g_initramfs[] = {
+#include __STR(__INITRAMFS__)
+};
+
 int main() {
     Console::println("Linux:     %p\n", g_image);
     Console::println("DTB:       %p\n", g_dtb);
     Console::println("Initramfs: %p %d\n", g_initramfs, sizeof(g_initramfs));
 
-    typedef void (*Entry)(unsigned int, unsigned char *);
+    typedef void (*Entry)(unsigned int, DTB *);
     auto entry = reinterpret_cast<Entry>(g_image);
-    DTB *dtb = reinterpret_cast<DTB *>(g_dtb);
+    DTB *dtb = reinterpret_cast<DTB *>(const_cast<unsigned char *>(g_dtb));
 
     if (!dtb->valid()) {
         Console::print("DTB: Invalid!\n");
         return 1;
     }
 
-    unsigned int initramfs = static_cast<unsigned int>(reinterpret_cast<unsigned long>(g_initramfs));
-    if (!dtb->edit("linux,initrd-start", &initramfs, sizeof(initramfs))) {
+    unsigned int initramfs_start = static_cast<unsigned int>(reinterpret_cast<unsigned long>(g_initramfs));
+    unsigned int initramfs_end = static_cast<unsigned int>(reinterpret_cast<unsigned long>(g_initramfs) + sizeof(g_initramfs));
+
+    if (!dtb->edit("linux,initrd-start", &initramfs_start, sizeof(initramfs_start))) {
         Console::print("DTB: failed to update linux,initrd-start\n");
     };
 
-    entry(CPU::id(), g_dtb);
+    if (!dtb->edit("linux,initrd-end", &initramfs_end, sizeof(initramfs_end))) {
+        Console::print("DTB: failed to update linux,initrd-end\n");
+    }
+
+    entry(CPU::id(), dtb);
     return 0;
 }
