@@ -2,12 +2,14 @@
 #include <utils/Console.hpp>
 
 void Console::put(char c) {
-    if (s_panic >= 0 && s_panic != static_cast<int>(CPU::id())) return;
+    if (s_panic != 0 && s_panic != (CPU::id() + 1)) return;
     if (c == '\n') IO::put('\r');
     IO::put(c);
 }
 
-void Console::panic() { s_panic = CPU::id(); }
+void Console::panic() {
+    if (!CPU::Atomic::tsl(s_panic)) CPU::Atomic::store(s_panic, CPU::id() + 1);
+}
 
 void Console::print(char c) { put(c); }
 

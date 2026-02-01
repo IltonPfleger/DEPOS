@@ -7,29 +7,28 @@
 
 class System {
   public:
-    __attribute__((noinline)) static void init() {
-        volatile bool BSP = CPU::id() == Traits<CPUS>::BSP;
-        if (BSP) TraceIn();
-
-        Trace(CPU::id());
+    static void init() {
+        if (CPU::id() == Traits<CPUS>::BSP) TraceIn();
 
         CPU::barrier();
 
         Machine::init();
 
-        if (BSP) {
+        if (CPU::id() == Traits<CPUS>::BSP) {
             Memory::init();
             Timer::init();
             Application::init();
             Thread::init();
             TraceOut();
         }
+
         CPU::barrier();
         Thread::run();
     }
 };
 
-extern "C" __attribute__((naked, used, noinline, section(".init"))) void _init() {
+#pragma GCC optimize("O0")
+extern "C" __attribute__((naked, used, section(".init"))) void _init() {
     CPU::init();
     System::init();
 }

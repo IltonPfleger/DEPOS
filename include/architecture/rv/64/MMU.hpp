@@ -96,25 +96,6 @@ class SV39_MMU {
         alignas(Size) uintptr_t entries[EntriesNumber];
     };
 
-    // TODO: Don't need to be here
-    // class KernelPageTable {
-    //  private:
-    //    KernelPageTable();
-    //    static inline PageTable *s_pt = nullptr;
-
-    //  public:
-    //    static void init() {
-    //        s_pt = new (Memory::alloc(PageTable::Size)) PageTable();
-    //        s_pt->map(Traits<MemoryMap>::RamBas,
-    //                        Traits<MemoryMap>::RamBas, Traits<Memory>::SIZE,
-    //                        PageTable::KernelRW);
-    //        s_pt->map(Traits<MemoryMap>::UART, Traits<MemoryMap>::UART,
-    //                        PageTable::KernelRW);
-    //        s_pt->load();
-    //    }
-    //    static const PageTable *get() { return s_pt; }
-    //};
-
   public:
     static void init() {
         if (CPU::id() == Traits<CPUS>::BSP) {
@@ -127,6 +108,7 @@ class SV39_MMU {
         }
 
         CPU::barrier();
+
         s_kernel_page_table->load();
     }
 

@@ -61,5 +61,5 @@ class Console {
     }
 
   private:
-    static inline int s_panic = -1;
+    static inline unsigned int s_panic = 0;
 };

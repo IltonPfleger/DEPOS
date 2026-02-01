@@ -33,8 +33,8 @@ class SIC {
         csrw<SupervisorMode::TVEC>(entry);
 
         if constexpr (Traits<Timer>::Enable) {
-            csrs<SupervisorMode::IE>(SupervisorMode::TI);
             IC::bind(5, timer);
+            csrs<SupervisorMode::IE>(SupervisorMode::TI);
         }
     }
 };

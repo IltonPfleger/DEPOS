@@ -13,7 +13,7 @@ class ReducedSBI {
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
 
         if (mcause == 9) {
-            if (c->a0 == TIME) {
+            if (c->a7 == TIME) {
                 CLINT::syscall();
                 handle = true;
                 c->pc += 4;
