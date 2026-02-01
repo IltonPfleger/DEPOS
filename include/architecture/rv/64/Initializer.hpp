@@ -10,8 +10,9 @@
 namespace rv64 {
 class Initializer {
     __attribute__((naked)) static void mode() {
-        MIC::init();
         csrs<MachineMode::IE>(~0U);
+
+        MIC::init();
 
         if constexpr (Traits<RISCV>::Supervisor) {
             csrw<SupervisorMode::SATP>(0);
