@@ -28,42 +28,42 @@ void Memory::init() {
     s_spin.unlock();
 }
 
-uintptr_t Memory::virt2phys(uintptr_t address) {
+uintptr_t Memory::virt2phys(uintptr_t chunkess) {
     if constexpr (Traits<System>::Multitask)
-        return address - Traits<MemoryMap>::VirtualRamStart + Traits<MemoryMap>::PhysicalRamStart;
+        return chunkess - Traits<MemoryMap>::VirtualRamStart + Traits<MemoryMap>::PhysicalRamStart;
     else
-        return address;
+        return chunkess;
 }
 
 void *Memory::alloc(size_t size) {
-    s_spin.lock();
+    s_spin.acquire();
 
     TraceIn(size);
 
-    void *block = nullptr;
+    void *chunk = nullptr;
 
     if (!s_allocator) {
         __bmm.start -= size;
-        block = reinterpret_cast<void *>(virt2phys(__bmm.start));
+        chunk = reinterpret_cast<void *>(virt2phys(__bmm.start));
     } else {
-        block = s_allocator->remove(size);
+        chunk = s_allocator->remove(size);
     }
 
-    ERROR(!block, "Out of Memory.");
+    ERROR(!chunk, "Out of Memory.");
 
-    TraceOut(block);
+    TraceOut(chunk);
 
-    s_spin.unlock();
-    return block;
+    s_spin.release();
+    return chunk;
 }
 
-void Memory::free(void *addr, size_t size) {
-    s_spin.lock();
-    TraceIn(addr, size);
-    ERROR(addr == nullptr, "}\n");
-    s_allocator->insert(addr, size);
+void Memory::free(void *chunk, size_t size) {
+    s_spin.acquire();
+    TraceIn(chunk, size);
+    ERROR(chunk == nullptr, "}\n");
+    s_allocator->insert(chunk, size);
     TraceOut();
-    s_spin.unlock();
+    s_spin.release();
 }
 
 void *operator new(size_t, void *ptr) { return ptr; }
