@@ -45,6 +45,8 @@ int philosopher(void *p) {
 int main(int, char *[]) {
     TraceIn();
 
+    Thread *threads[Number];
+
     console = new Semaphore(0);
 
     for (long i = 0; i < Number; i++) {
@@ -52,10 +54,21 @@ int main(int, char *[]) {
     }
 
     for (long i = 0; i < Number; i++) {
-        new Thread(philosopher, (void *)i, Thread::Criterion::NORMAL);
+        threads[i] = new Thread(philosopher, (void *)i, Thread::Criterion::NORMAL);
     }
 
     console->v();
+
+    for (long i = 0; i < Number; i++) {
+        Thread::join(threads[i]);
+    }
+
+    for (long i = 0; i < Number; i++) {
+        delete forks[i];
+        delete threads[i];
+    }
+
+    delete console;
 
     TraceOut();
 }

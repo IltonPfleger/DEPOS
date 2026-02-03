@@ -50,6 +50,8 @@ Thread::Thread(Function f, Argument a, Criterion c)
     TraceOut();
 }
 
+Thread::~Thread() { join(this); }
+
 void Thread::join(Thread *thread) {
     CPU::Interruptions::disable();
     s_lock.acquire();
