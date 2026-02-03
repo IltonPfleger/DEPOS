@@ -37,22 +37,30 @@ Thread::Thread(Function f, Argument a, Criterion c)
     : m_stack(Segment(Traits<Memory>::PageSize)), m_waiting(0), m_link(Link(this, c)), m_criterion(c), m_state(State::READY),
       m_joining(0), m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
     TraceIn(this);
-    s_lock.lock();
+
+    CPU::Interruptions::disable();
+    s_lock.acquire();
+
     s_scheduler.insert(&m_link);
     s_count = s_count + 1;
-    s_lock.unlock();
+
+    s_lock.release();
+    CPU::Interruptions::enable();
+
     TraceOut();
 }
 
 void Thread::join(Thread *thread) {
-    s_lock.lock();
+    CPU::Interruptions::disable();
+    s_lock.acquire();
 
     auto previous = running();
     ERROR(thread == previous, "Join itself.");
     ERROR(thread->m_joining, "Already joined.");
 
     if (thread->m_state == State::FINISHED) {
-        s_lock.unlock();
+        s_lock.release();
+        CPU::Interruptions::enable();
         return;
     }
 
@@ -64,11 +72,11 @@ void Thread::join(Thread *thread) {
 }
 
 void Thread::exit() {
-    s_lock.lock();
+    CPU::Interruptions::disable();
+
+    s_lock.acquire();
 
     Thread *previous = running();
-
-    TraceIn(previous);
 
     previous->m_state = State::FINISHED;
 
@@ -80,8 +88,6 @@ void Thread::exit() {
 
     s_count = s_count - 1;
 
-    TraceOut();
-
     dispatch(previous, s_scheduler.pop(), &s_lock);
 }
 
@@ -89,17 +95,13 @@ void Thread::init() {
     TraceIn();
     for (int i = 0; i < Traits<CPUS>::ACTIVE; ++i)
         new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
-    TraceOut()
+    TraceOut();
 }
 
 void Thread::run() {
     unsigned char previous[sizeof(Thread)];
     s_lock.acquire();
     Thread *next = s_scheduler.pop();
-    TraceIn(next);
-    s_lock.release();
-    CPU::barrier();
-    s_lock.acquire();
     dispatch(reinterpret_cast<Thread *>(previous), next, &s_lock);
 }
 
@@ -121,15 +123,16 @@ void Thread::yield() {
 }
 
 void Thread::sleep(Queue &m_waiting, Spin &lock) {
+
     auto previous = running();
     previous->m_state = State::WAITING;
     previous->m_waiting = &m_waiting;
     m_waiting.insert(&previous->m_link);
 
+    CPU::Interruptions::disable();
     s_lock.acquire();
     auto next = s_scheduler.pop();
     s_lock.release();
-
     dispatch(previous, next, &lock);
 }
 
@@ -140,9 +143,11 @@ void Thread::wakeup(Queue &waiting) {
     awake->m_state = State::READY;
     awake->m_waiting = nullptr;
 
+    CPU::Interruptions::disable();
     s_lock.acquire();
     s_scheduler.insert(link);
     s_lock.release();
+    CPU::Interruptions::enable();
 }
 
 // int entry(void *arg) {
