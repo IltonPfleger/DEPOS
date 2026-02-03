@@ -9,11 +9,16 @@ class Interruptions {
     static void disable() { csrc<KernelMode::STATUS>(KernelMode::IRQE); }
     static void enable() { csrs<KernelMode::STATUS>(KernelMode::IRQE); }
 
-    static void on() { enable(); }
-    static bool off() {
-        unsigned long status = csrr<KernelMode::STATUS>();
-        disable();
-        return (status & KernelMode::IRQE) != 0;
+    static void pop() {
+        if (--m_levels[CPU::id()] == 0) enable();
     }
+
+    static bool push() {
+        disable();
+        m_levels[CPU::id()]++;
+    }
+
+  private:
+    unsigned char m_levels[Traits<CPUS>::ACTIVE];
 };
 } // namespace rv

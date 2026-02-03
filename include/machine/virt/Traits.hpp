@@ -29,7 +29,7 @@ template <> struct Traits<CPUS> {
 template <> struct Traits<Memory> {
     static constexpr unsigned Order = 30;
     static constexpr unsigned Size = (1 << Order);
-    static constexpr unsigned PageOrder = 15;
+    static constexpr unsigned PageOrder = 12;
     static constexpr unsigned PageSize = (1 << PageOrder);
 };
 

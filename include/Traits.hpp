@@ -20,7 +20,7 @@ template <> struct Traits<System> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr bool Enable = false;
+    static constexpr bool Enable = true;
     static constexpr unsigned long Frequency = 100;
 };
 

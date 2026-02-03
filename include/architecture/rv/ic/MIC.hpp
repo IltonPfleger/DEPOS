@@ -45,10 +45,10 @@ class MIC {
             CLINT::init();
         }
 
-        if constexpr (PLIC::Enable) {
-            IC::bind(11, PLIC::handler);
-            PLIC::init();
-        }
+        //if constexpr (PLIC::Enable) {
+        //    IC::bind(11, PLIC::handler);
+        //    PLIC::init();
+        //}
     }
 };
 

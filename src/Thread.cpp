@@ -38,14 +38,14 @@ Thread::Thread(Function f, Argument a, Criterion c)
       m_joining(0), m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
     TraceIn(this);
 
-    CPU::Interruptions::disable();
+    CPU::Interruptions::off();
     s_lock.acquire();
 
     s_scheduler.insert(&m_link);
     s_count = s_count + 1;
 
     s_lock.release();
-    CPU::Interruptions::enable();
+    CPU::Interruptions::on();
 
     TraceOut();
 }
@@ -104,7 +104,10 @@ void Thread::run() {
     unsigned char previous[sizeof(Thread)];
     s_lock.acquire();
     Thread *next = s_scheduler.pop();
-    dispatch(reinterpret_cast<Thread *>(previous), next, &s_lock);
+    TraceIn();
+    s_lock.release();
+    CPU::barrier();
+    dispatch(reinterpret_cast<Thread *>(previous), next, reinterpret_cast<Spin *>(previous));
 }
 
 void Thread::reschedule() {
