@@ -2,9 +2,9 @@
 
 #include <architecture/common/Atomic.hpp>
 #include <architecture/rv/Context.hpp>
-#include <architecture/rv/Interruptions.hpp>
 #include <architecture/rv/Modes.hpp>
 #include <architecture/rv/Traits.hpp>
+#include <architecture/rv/csrs.hpp>
 #include <memory/MemoryMap.hpp>
 #include <utils/Debug.hpp>
 
@@ -12,7 +12,6 @@ namespace rv {
 class CPU {
   public:
     using Context = ContextBase<rv::KernelMode>;
-    using Interruptions = rv::Interruptions;
     using Atomic = ArchitectureCommon::Atomic;
 
     static unsigned int be32toh(unsigned int x) {
@@ -102,5 +101,24 @@ class CPU {
                 ;
         }
     }
+
+    class Interruptions {
+      public:
+        static void disable() { csrc<KernelMode::STATUS>(KernelMode::IRQE); }
+        static void enable() { csrs<KernelMode::STATUS>(KernelMode::IRQE); }
+
+        static void on() {
+            if (m_status[id()]) enable();
+        }
+
+        static void off() {
+            unsigned long status = csrr<KernelMode::STATUS>();
+            disable();
+            m_status[id()] = (status & KernelMode::IRQE) != 0;
+        }
+
+      private:
+        static inline bool m_status[Traits<CPUS>::ACTIVE];
+    };
 };
 } // namespace rv
