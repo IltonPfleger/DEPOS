@@ -106,6 +106,7 @@ class VisionFive2 {
         }
 
         CPU::barrier();
+
         Initializer::init();
     }
 };

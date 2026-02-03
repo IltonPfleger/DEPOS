@@ -23,6 +23,7 @@ class Console {
     static void print(char);
     static void print(const char *);
     static void print(unsigned long);
+
     template <typename T> static void print(Hex<T> x) {
         bool started = false;
 
@@ -62,4 +63,5 @@ class Console {
 
   private:
     static inline unsigned int s_panic = 0;
+    static inline unsigned int s_column = 0;
 };

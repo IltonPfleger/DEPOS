@@ -5,6 +5,7 @@
 #include <memory/Memory.hpp>
 #include <utils/Debug.hpp>
 
+#pragma GCC optimize("O0")
 class System {
   public:
     static void init() {
@@ -13,6 +14,9 @@ class System {
         CPU::barrier();
 
         Machine::init();
+
+
+        CPU::barrier();
 
         if (CPU::id() == Traits<CPUS>::BSP) {
             Memory::init();
@@ -27,7 +31,6 @@ class System {
     }
 };
 
-#pragma GCC optimize("O0")
 extern "C" __attribute__((naked, used, section(".init"))) void _init() {
     CPU::init();
     System::init();

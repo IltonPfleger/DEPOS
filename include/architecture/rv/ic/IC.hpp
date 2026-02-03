@@ -10,8 +10,11 @@ class IC;
 using IC_DispatchTable = DispatchTable<0, 11, IC>;
 
 class IC : public IC_DispatchTable {
+
   public:
-    static void bind(unsigned int id, Handler handler) {
+    enum { INTERRUPT = 1UL << 63 };
+
+   static void bind(unsigned int id, Handler handler) {
         if constexpr (PLIC::Enable) {
             if (id > 11) {
                 PLIC::bind(id - 12, handler);
@@ -20,8 +23,6 @@ class IC : public IC_DispatchTable {
         }
         IC_DispatchTable::bind(id, handler);
     }
-
-    static constexpr unsigned long INTERRUPT = 1UL << 63;
 };
 
 } // namespace rv

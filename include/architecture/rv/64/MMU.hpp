@@ -93,13 +93,17 @@ class SV39_MMU {
       private:
         static constexpr auto Size = 4096;
         static constexpr auto EntriesNumber = 512;
-        alignas(Size) uintptr_t entries[EntriesNumber];
+        alignas(Size) uintptr_t entries[EntriesNumber] = {0};
     };
 
   public:
     static void init() {
+        // Console::print('X');
+        CPU::barrier();
+        // Console::print(CPU::id());
+
         if (CPU::id() == Traits<CPUS>::BSP) {
-            s_kernel_page_table = reinterpret_cast<PageTable *>(Memory::alloc(sizeof(PageTable)));
+            s_kernel_page_table = new (Memory::alloc(sizeof(PageTable))) PageTable();
             s_kernel_page_table->map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart,
                                      Traits<Memory>::Size, PageTable::KernelRW);
             s_kernel_page_table->map(Traits<MemoryMap>::PhysicalRamStart, Traits<MemoryMap>::PhysicalRamStart,

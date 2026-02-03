@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utils/string.hpp>
+
 namespace rv64 {
 template <typename T> class ContextBase {
   public:
@@ -14,6 +16,7 @@ template <typename T> class ContextBase {
     uint64_t &operator[](size_t i) { return (reinterpret_cast<uint64_t *>(&ra))[i - 1]; }
 
     ContextBase() = default;
+
     ContextBase(int (*entry)(void *), void *a0, void *sp, void (*exit)()) {
         this->ra = reinterpret_cast<uint64_t>(exit);
         this->pc = reinterpret_cast<uint64_t>(entry);

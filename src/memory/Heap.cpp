@@ -2,10 +2,8 @@
 #include <memory/Memory.hpp>
 #include <utils/Debug.hpp>
 
-void *operator new(unsigned long size, Heap::Location location) {
+void *operator new(unsigned long size, Heap::Location) {
     using Header = Heap::Header;
-    (void)location;
-
     Header *header = reinterpret_cast<Header *>(Memory::alloc(size + sizeof(Header)));
     header->m_size = size;
     return header + 1;

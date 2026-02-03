@@ -8,7 +8,7 @@
             Console::panic();                                                                                                  \
             Console::println("\n[ERROR] %s\n", __PRETTY_FUNCTION__);                                                           \
             Console::println("Expression: %s\n", #expr);                                                                       \
-            __VA_OPT__(Console::println(__VA_ARGS__));                                                                         \
+            __VA_OPT__(Console::println(__VA_ARGS__));                                                                           \
             __VA_OPT__(Console::print('\n'));                                                                                  \
             for (;;) {                                                                                                         \
             }                                                                                                                  \

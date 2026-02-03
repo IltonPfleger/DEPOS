@@ -9,17 +9,18 @@ class Application;
 class Debug;
 class Alarm;
 class Ethernet;
+class Console;
 
 template <typename U> class Scheduler;
 
 template <typename T> struct Traits;
 
 template <> struct Traits<System> {
-    static constexpr bool Multitask = false;
+    static constexpr bool Multitask = true;
 };
 
 template <> struct Traits<Timer> {
-    static constexpr bool Enable = true;
+    static constexpr bool Enable = false;
     static constexpr unsigned long Frequency = 100;
 };
 
@@ -41,6 +42,10 @@ template <> struct Traits<Scheduler<Thread>> {
 template <> struct Traits<Debug> {
     static constexpr bool Error = true;
     static constexpr bool Trace = true;
+};
+
+template <> struct Traits<Console> {
+    static constexpr unsigned int Columns = 70;
 };
 
 #include <application/Traits.hpp>

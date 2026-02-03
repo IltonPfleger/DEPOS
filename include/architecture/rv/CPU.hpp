@@ -6,6 +6,7 @@
 #include <architecture/rv/Modes.hpp>
 #include <architecture/rv/Traits.hpp>
 #include <memory/MemoryMap.hpp>
+#include <utils/Debug.hpp>
 
 namespace rv {
 class CPU {
@@ -39,12 +40,11 @@ class CPU {
         register uint64_t r5 asm("a5") = a5;
         register uint64_t r6 asm("a6") = a6;
         register uint64_t r7 asm("a7") = a7;
-        asm volatile("ecall" : "+r"(r0) : "r"(r1), "r"(r2), "r"(r3), "r"(r4), "r"(r5), "r"(r6), "r"(r7) : "memory");
+        asm volatile("ecall" ::"r"(r0), "r"(r1), "r"(r2), "r"(r3), "r"(r4), "r"(r5), "r"(r6), "r"(r7) : "memory");
     }
 
-    static auto id() {
-        unsigned long tp;
-        asm volatile("mv %0, tp" : "=r"(tp));
+    static unsigned int id() {
+        register unsigned int tp asm("tp");
         return tp;
     }
 
@@ -56,13 +56,13 @@ class CPU {
 
         asm volatile("csrw mscratch, ra");
 
-        // Halt Cores That Don't Support Supervisor Mode If Enabled
+        // Ensure ISA Compliance: halt cores lacking Supervisor Mode (S-mode) support.
         if constexpr (Traits<RISCV>::Supervisor) {
             asm volatile("csrr a0, misa\n"
                          "and a0, a0, %0\n"
                          "bnez a0, 2f\n"
                          "1: wfi\n"
-						 "j 1b\n"
+                         "j 1b\n"
                          "2:" ::"r"(1ULL << ('S' - 'A')));
         }
 
@@ -82,22 +82,23 @@ class CPU {
             __bmm.end = Traits<MemoryMap>::RamEnd;
         }
 
-        asm volatile("csrr ra, mscratch\n"
-                     "ret");
+        asm volatile("csrr ra, mscratch");
+
+        asm volatile("ret");
     }
 
-    static void barrier(unsigned int cores = Traits<CPUS>::ACTIVE) {
-        static volatile bool gsense = true;
-        __attribute__((section(".data"))) static volatile unsigned int ready[2] = {0};
+    static void barrier() {
+        __attribute__((section(".barrier"))) static volatile unsigned char gsense = 0;
+        __attribute__((section(".barrier"))) static volatile unsigned int ready[2] = {0};
 
-        bool sense = gsense;
+        unsigned char sense = CPU::Atomic::load(gsense);
         unsigned int arrived = Atomic::finc(ready[sense]);
 
-        if (arrived == cores - 1) {
-            ready[sense] = 0;
-            gsense = !sense;
+        if (arrived == Traits<CPUS>::ACTIVE - 1) {
+            CPU::Atomic::store(ready[sense], 0);
+            CPU::Atomic::store(gsense, !sense);
         } else {
-            while (gsense == sense)
+            while (CPU::Atomic::load(gsense) == sense)
                 ;
         }
     }
