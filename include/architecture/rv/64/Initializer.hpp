@@ -15,11 +15,11 @@ class Initializer {
 
         MIC::init();
 
-        // PMP::TOR<1>(__kmm.text.start, __kmm.text.end, PMP::X | PMP::LOCK);
+        PMP::TOR<1>(__kmm.text.start, __kmm.text.end, PMP::X | PMP::LOCK);
 
         if constexpr (Traits<RISCV>::Supervisor) {
             csrw<SupervisorMode::SATP>(0);
-            PMP::NAPOT<0>(0, 0, PMP::R | PMP::W | PMP::X);
+            PMP::NAPOT<2>(0, 0, PMP::R | PMP::W | PMP::X);
             csrw<MachineMode::MIDELEG>(0x1666);
             csrw<MachineMode::MEDELEG>(0xf4b509);
             csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
