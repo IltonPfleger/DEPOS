@@ -16,5 +16,5 @@ class Alarm {
 
   private:
     static inline Delay *s_delays = nullptr;
-    static inline Spin s_lock;
+    static inline Spin s_spin;
 };

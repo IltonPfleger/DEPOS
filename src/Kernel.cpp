@@ -15,7 +15,6 @@ class System {
 
         Machine::init();
 
-
         CPU::barrier();
 
         if (CPU::id() == Traits<CPUS>::BSP) {

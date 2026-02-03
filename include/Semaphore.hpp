@@ -7,21 +7,21 @@ class Semaphore {
     Semaphore(unsigned int value = 1) : m_value(value) {}
 
     void p() {
-        m_lock.lock();
+        m_spin.acquire();
         if (m_value-- < 1)
-            Thread::sleep(m_waiting, m_lock);
+            Thread::sleep(m_waiting, m_spin);
         else
-            m_lock.unlock();
+            m_spin.release();
     }
 
     void v() {
-        m_lock.lock();
+        m_spin.acquire();
         if (m_value++ < 0) Thread::wakeup(m_waiting);
-        m_lock.unlock();
+        m_spin.release();
     }
 
   private:
     int m_value;
     Thread::Queue m_waiting;
-    Spin m_lock;
+    Spin m_spin;
 };

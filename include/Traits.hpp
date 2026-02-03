@@ -16,7 +16,7 @@ template <typename U> class Scheduler;
 template <typename T> struct Traits;
 
 template <> struct Traits<System> {
-    static constexpr bool Multitask = true;
+    static constexpr bool Multitask = false;
 };
 
 template <> struct Traits<Timer> {
@@ -25,7 +25,7 @@ template <> struct Traits<Timer> {
 };
 
 template <> struct Traits<Alarm> {
-    static constexpr bool Enable = true;
+    static constexpr bool Enable = false;
     static constexpr unsigned long Frequency = 10;
 
     static_assert(Frequency <= Traits<Timer>::Frequency);

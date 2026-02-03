@@ -5,7 +5,7 @@ void Alarm::delay(unsigned int seconds) {
 
     Delay d{Thread::Queue{}, ticks, nullptr};
 
-    s_lock.lock();
+    s_spin.acquire();
     if (!s_delays || ticks < s_delays->ticks) {
         if (s_delays) s_delays->ticks -= ticks;
 
@@ -28,14 +28,14 @@ void Alarm::delay(unsigned int seconds) {
         current->next = &d;
     }
 
-    Thread::sleep(d.queue, s_lock);
+    Thread::sleep(d.queue, s_spin);
 }
 
 void Alarm::handler() {
-    s_lock.lock();
+    s_spin.acquire();
     if (s_delays && --s_delays->ticks <= 0) {
         Thread::wakeup(s_delays->queue);
         s_delays = s_delays->next;
     }
-    s_lock.unlock();
+    s_spin.release();
 }

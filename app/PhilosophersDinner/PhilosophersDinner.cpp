@@ -45,18 +45,17 @@ int philosopher(void *p) {
 int main(int, char *[]) {
     TraceIn();
 
-    Thread *threads[Number];
-	(void)threads;
-
-    console = new Semaphore(1);
+    console = new Semaphore(0);
 
     for (long i = 0; i < Number; i++) {
         forks[i] = new Semaphore(1);
     }
 
     for (long i = 0; i < Number; i++) {
-        threads[i] = new Thread(philosopher, (void *)i, Thread::Criterion::NORMAL);
+        new Thread(philosopher, (void *)i, Thread::Criterion::NORMAL);
     }
+
+    console->v();
 
     TraceOut();
 }
