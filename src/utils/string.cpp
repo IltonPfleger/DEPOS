@@ -1,14 +1,29 @@
+#include <utils/string.hpp>
+
 extern "C" {
-void *memcpy(void *dest, const void *src, unsigned long n) {
-    unsigned char *d = static_cast<unsigned char *>(dest);
-    const unsigned char *s = static_cast<const unsigned char *>(src);
+void *memcpy(void *destination, const void *source, size_t n) {
+    uint8_t *d = static_cast<uint8_t *>(destination);
+    const uint8_t *s = static_cast<const uint8_t *>(source);
+
+    unsigned long *d2 = reinterpret_cast<unsigned long *>(d);
+    const unsigned long *s2 = reinterpret_cast<const unsigned long *>(s);
+
+    while (n >= sizeof(unsigned long)) {
+        *d2++ = *s2++;
+        n -= sizeof(unsigned long);
+    }
+
+    d = reinterpret_cast<uint8_t *>(d2);
+    s = reinterpret_cast<const uint8_t *>(s2);
+
     while (n--) {
         *d++ = *s++;
     }
-    return dest;
+
+    return destination;
 }
 
-void *memset(void *dest, int c, unsigned long n) {
+void *memset(void *dest, int c, size_t n) {
     unsigned char *d = static_cast<unsigned char *>(dest);
 
     while (n--) {
@@ -18,11 +33,11 @@ void *memset(void *dest, int c, unsigned long n) {
     return dest;
 }
 
-int memcmp(const void *ptr1, const void *ptr2, unsigned long n) {
+int memcmp(const void *ptr1, const void *ptr2, size_t n) {
     const unsigned char *p1 = (const unsigned char *)ptr1;
     const unsigned char *p2 = (const unsigned char *)ptr2;
 
-    for (unsigned long i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         if (p1[i] != p2[i]) {
             return (int)(p1[i] - p2[i]);
         }
@@ -30,8 +45,8 @@ int memcmp(const void *ptr1, const void *ptr2, unsigned long n) {
     return 0;
 }
 
-unsigned long strlen(const char *str) {
-    unsigned long n = 0;
+unsigned strlen(const char *str) {
+    size_t n = 0;
     while (*str++)
         n++;
     return n;
@@ -45,15 +60,14 @@ int strcmp(const char *s1, const char *s2) {
     return (unsigned char)(*s1) - (unsigned char)(*s2);
 }
 
-const char *strchr(const char *str, int ch) {
-    while (*str) {
-        if (*str == ch) return str;
-        ++str;
+char *strchr(const char *str, int ch) {
+    while (*str != (char)ch) {
+        if (!*str) {
+            return nullptr;
+        }
+        str++;
     }
-
-    if (ch == '\0') return str;
-
-    return nullptr;
+    return const_cast<char *>(str);
 }
 
 long atol(const char *str) {
