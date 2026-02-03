@@ -16,7 +16,7 @@ class Memory {
     static uintptr_t virt2phys(uintptr_t);
 
   private:
-    static inline Allocator *s_allocator;
+    static inline Allocator *s_allocator = nullptr;
     static inline Spin s_spin;
 };
 

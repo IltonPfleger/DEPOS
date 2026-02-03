@@ -36,6 +36,10 @@ class SIC {
             IC::bind(5, timer);
             csrs<SupervisorMode::IE>(SupervisorMode::TI);
         }
+
+        if constexpr (PLIC::Enable) {
+            csrs<KernelMode::IE>(KernelMode::EI);
+        }
     }
 };
 

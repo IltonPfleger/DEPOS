@@ -7,13 +7,13 @@ template <unsigned int First, unsigned int Last, typename Tag> class DispatchTab
     using Handler = void (*)(unsigned int);
 
     static void dispatch(unsigned int id) {
-        ERROR(id < First || id > Last);
-        ERROR(s_entries[id - First] == 0);
+        ERROR(id < First || id > Last, "ID: %d\n", id);
+        ERROR(s_entries[id - First] == 0, "ID: %d\n", id);
         s_entries[id - First](id);
     }
 
     static void bind(unsigned int id, Handler handler) {
-        ERROR(id < First || id > Last);
+        ERROR(id < First || id > Last, "ID: %d\n", id);
         s_entries[id - First] = handler;
     }
 

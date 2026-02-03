@@ -91,9 +91,6 @@ struct LinuxImage {
     alignas(1 * 1024 * 1024) static constexpr unsigned char Initramfs[] = {
 #include __STR(__INITRAMFS__)
     };
-
-    static constexpr unsigned char Padding[next_power_of_two(sizeof(Kernel) + sizeof(Dtb) + sizeof(Initramfs)) -
-                                           (sizeof(Kernel) + sizeof(Dtb) + sizeof(Initramfs))] = {};
 };
 
 unsigned char *align(unsigned char *p, long alignment) {
@@ -153,10 +150,8 @@ int main() {
         Console::print("LinuxDeviceTree: failed to update memory\n");
     }
 
-    Memory::free(const_cast<unsigned char *>(LinuxImage::Kernel), sizeof(LinuxImage::Kernel) + sizeof(LinuxImage::Dtb) +
-                                                                      sizeof(LinuxImage::Initramfs) +
-                                                                      sizeof(LinuxImage::Padding));
     auto entry = reinterpret_cast<Entry>(kernel);
+
     entry(CPU::id(), dtb);
     return 0;
 }

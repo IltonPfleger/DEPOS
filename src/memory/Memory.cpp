@@ -10,11 +10,10 @@ void Memory::init() {
     const auto ApplicationSize = __mm.end - __mm.start;
     const auto BootMemorySize = __bmm.end - __bmm.start;
 
+    TraceIn(Console::Hex(__kmm.start), Console::Hex(__kmm.end), KernelSize, Console::Hex(__mm.start), Console::Hex(__mm.end),
+            ApplicationSize, Console::Hex(__bmm.start), Console::Hex(__bmm.end), BootMemorySize);
+
     s_allocator = new (alloc(sizeof(Allocator))) Allocator();
-
-    s_spin.lock();
-
-    TraceIn(__kmm.start, __kmm.end, KernelSize, __mm.start, __mm.end, ApplicationSize, __bmm.start, __bmm.end, BootMemorySize);
 
     for (unsigned long c = RamEnd - PageSize; c + PageSize > RamStart; c -= PageSize) {
         if (c + PageSize >= __kmm.start && c < __kmm.end) continue;
@@ -24,8 +23,6 @@ void Memory::init() {
     }
 
     TraceOut();
-
-    s_spin.unlock();
 }
 
 uintptr_t Memory::virt2phys(uintptr_t chunkess) {
@@ -43,6 +40,7 @@ void *Memory::alloc(size_t size) {
     void *chunk = nullptr;
 
     if (!s_allocator) {
+        Trace("Ussing Boot Memory!\n");
         __bmm.start -= size;
         chunk = reinterpret_cast<void *>(virt2phys(__bmm.start));
     } else {
@@ -60,7 +58,7 @@ void *Memory::alloc(size_t size) {
 void Memory::free(void *chunk, size_t size) {
     s_spin.acquire();
     TraceIn(chunk, size);
-    ERROR(chunk == nullptr, "}\n");
+    ERROR(chunk == nullptr);
     s_allocator->insert(chunk, size);
     TraceOut();
     s_spin.release();

@@ -9,19 +9,16 @@ class ReducedSBI {
     enum { TIME = 'T' << 24 | 'I' << 16 | 'M' << 8 | 'E' };
 
     static bool dispatch(MachineContext *c) {
-        bool handle = false;
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
 
         if (mcause == 9) {
             if (c->a7 == TIME) {
                 CLINT::syscall();
-                handle = true;
                 c->pc += 4;
+                return true;
             }
-        } else {
-            Exception<SupervisorMode>::dispatch();
         }
-        return handle;
+        return false;
     }
 };
 } // namespace rv
