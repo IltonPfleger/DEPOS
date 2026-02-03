@@ -67,18 +67,6 @@ class LinuxDeviceTree {
     unsigned m_size_dt_struct;
 };
 
-constexpr size_t next_power_of_two(size_t n) {
-    if (n == 0) return 1;
-    n--;
-    n |= n >> 1;
-    n |= n >> 2;
-    n |= n >> 4;
-    n |= n >> 8;
-    n |= n >> 16;
-    if constexpr (sizeof(size_t) > 4) n |= n >> 32;
-    return n + 1;
-}
-
 struct LinuxImage {
     alignas(2 * 1024 * 1024) static constexpr unsigned char Kernel[] = {
 #include __STR(__KERNEL__)
