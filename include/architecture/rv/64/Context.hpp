@@ -60,7 +60,6 @@ template <typename T> class ContextBase {
               [pc] "i"(offsetof(ContextBase, pc)), [status] "i"(offsetof(ContextBase, status)), [csrepc] "i"(T::EPC),
               [csrstatus] "i"(T::STATUS));
         T::ret();
-        __builtin_unreachable();
     }
 
     __attribute__((naked)) bool save() {
@@ -173,7 +172,6 @@ template <typename T> class ContextBase {
             asm("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
         }
         T::ret();
-        __builtin_unreachable();
     }
 };
 } // namespace rv64

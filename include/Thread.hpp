@@ -8,7 +8,7 @@
 
 class Thread {
   public:
-    enum class State { RUNNING, READY, WAITING, FINISHED };
+    enum class State { RUNNING, READY, WAITING, FINISHED, ZOMBIE };
     using Criterion = typename Scheduler<Thread>::Criterion;
     using Argument = void *;
     using Function = int (*)(Argument);
@@ -25,10 +25,10 @@ class Thread {
     static void exit();
     static void init();
     static void run();
-    static void sleep(Queue &, Spin &);
+    static void sleep(Queue &);
     static void wakeup(Queue &);
     static void yield();
-    static void dispatch(Thread *, Thread *, Spin *);
+    template <typename Epilogue, typename... Args> static void dispatch(Thread *, Thread *, Epilogue, Args...);
     static void reschedule();
     static int idle(void *);
 
@@ -45,4 +45,13 @@ class Thread {
     static inline Scheduler<Thread> s_scheduler;
     static inline volatile unsigned int s_count;
     static inline Spin s_lock;
+
+  private:
+    static void schedule(Thread *t) {
+        if (t->m_state != State::ZOMBIE) {
+            s_scheduler.insert(&t->m_link);
+        }
+    }
+
+    static void enqueue(Thread *t, Queue *q) { q->insert(&t->m_link); };
 };

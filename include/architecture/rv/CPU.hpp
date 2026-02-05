@@ -77,9 +77,11 @@ class CPU {
 
         // Setup Boot Memory
         if (id() == Traits<CPUS>::BSP) {
-            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<CPUS>::ACTIVE;
+            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<CPUS>::ACTIVE - 1;
             __bmm.end = Traits<MemoryMap>::RamEnd;
         }
+
+        barrier();
 
         asm volatile("csrr ra, mscratch");
 

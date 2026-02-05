@@ -60,7 +60,7 @@ int main(int, char *[]) {
     console->v();
 
     for (long i = 0; i < Number; i++) {
-        Thread::join(threads[i]);
+        // Thread::join(threads[i]);
     }
 
     for (long i = 0; i < Number; i++) {
