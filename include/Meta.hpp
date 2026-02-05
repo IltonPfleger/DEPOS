@@ -15,7 +15,7 @@ template <typename True, typename False> struct IF<false, True, False> {
 };
 
 template <typename T, auto Method, typename... Args> struct Caller {
-    static auto Result(T *obj, Args &&...args) { (obj->*Method)(args...); }
+    static auto Result(T *obj, Args... args) { (obj->*Method)(args...); }
 };
 
 // template <typename T, typename U> struct SAME {
@@ -38,13 +38,16 @@ template <typename T> struct Signed {
     static constexpr bool Result = T(-1) < T(0);
 };
 
-// template <typename T> struct ArrayType {
-//     using Result = void;
-// };
-//
-// template <typename T, long unsigned int N> struct ArrayType<T[N]> {
-//     using Result = T;
-// };
+template <typename T, typename U> struct Same {
+    static constexpr bool Result = false;
+};
+
+template <typename T> struct Same<T, T> {
+    static constexpr bool Result = true;
+};
+
+template <typename T, typename U>
+concept SameAs = Same<T, U>::Result;
 
 template <typename... Tn> struct TypeList {
     static constexpr unsigned int Length = sizeof...(Tn);

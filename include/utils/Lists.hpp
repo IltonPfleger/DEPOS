@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Meta.hpp>
 #include <Types.hpp>
 
 template <typename V, typename P> using ValueType = typename Meta::IF<Meta::Void<V>::Result, Meta::Empty, V>::Result;
@@ -24,8 +25,18 @@ template <typename Value = void, typename Priority = void> struct Node {
     Node *m_next = nullptr;
 };
 
+template <typename T>
+concept List = requires(T list, typename T::Element *node) {
+    list.insert(node);
+    //{ list.insert(node) } -> Meta::SameAs<void>;
+    { list.remove() } -> Meta::SameAs<typename T::Element *>;
+};
+
 template <typename T> class LinkedList {
+
   public:
+    using Element = T;
+
     bool empty() const { return !m_head; }
     T *head() const { return m_head; }
 
@@ -34,13 +45,16 @@ template <typename T> class LinkedList {
 };
 
 template <typename T> class LIFO : public LinkedList<T> {
+
   public:
+    using Element = T;
+
     void insert(T *node) {
         node->m_next = this->m_head;
         this->m_head = node;
     }
 
-    T *remove()  {
+    T *remove() {
         if (!this->m_head) return nullptr;
         T *node = this->m_head;
         this->m_head = node->m_next;
@@ -63,7 +77,10 @@ template <typename T> class LIFO : public LinkedList<T> {
 };
 
 template <typename T> class FIFO : public LinkedList<T> {
+
   public:
+    using Element = T;
+
     void insert(T *node) {
         node->m_next = nullptr;
         if (!this->m_head)

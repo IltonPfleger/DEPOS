@@ -6,13 +6,18 @@
 namespace rv {
 struct MachineMode {
     enum {
-        ME2ME = 3ULL << 11,         // Machine to Machine
-        ME2SUPERVISOR = 1ULL << 11, // Machine to Supervisor
-        ME2USER = 0ULL << 11,       // Machine to User
-        TI = 1ULL << 7,             // Timer Interrupt Enable
-        EI = 1ULL << 11,            // External Interrupt Enable
-        IRQE = 1ULL << 3,           // Interrupt Enable
-        PIRQE = 1ULL << 7,          // Previous Interrupt Enable
+        PP = 3 << 11,
+        PP_M = 3 << 11,
+        PP_S = 1 << 11,
+        PP_U = 0 << 11,
+        ME2ME = PP_M,
+        ME2SUPERVISOR = PP_S,
+        ME2USER = PP_U,
+
+        TI = 1ULL << 7,    // Timer Interrupt Enable
+        EI = 1ULL << 11,   // External Interrupt Enable
+        IRQE = 1ULL << 3,  // Interrupt Enable
+        PIRQE = 1ULL << 7, // Previous Interrupt Enable
     };
 
     static constexpr int HARTID = 0xF14;
