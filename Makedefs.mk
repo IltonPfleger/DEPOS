@@ -26,29 +26,23 @@ APPLICATION ?= HelloWorld
 
 CCFLAGS = -std=c++2c -I$(HERE) -I$(INCLUDE) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -Wall -Wextra -Werror -pedantic
 
-$(BUILD):
-	mkdir -p $(BUILD)
-
-$(TRAITS).mk: $(TRAITS)
-	$< > $@
-
-$(TRAITS): tools/Traits.cpp $(BUILD)
-	g++ $(CCFLAGS) $< -o $@
-
--include $(TRAITS).mk
-
-#MachineName     := $(shell $(TRAITS) $(INCLUDE) Traits.hpp "Traits<Machine>::NAME")
-#CPUS            := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<CPUS>::COUNT")
-#MemorySize      := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<Memory>::Size")
-#PageSize        := $(shell $(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<Memory>::PageSize")
-#RamStart        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::RamStart"))
-#SystemAddr        := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::SystemAddr"))
-#ApplicationAddr := $(shell printf "0x%x\n" $$($(TRAITS) $(INCLUDE) machine/$(MachineName)/Traits.hpp "Traits<MemoryMap>::ApplicationAddr"))
-#Hypervisor     := $(shell $(TRAITS) $(INCLUDE) Traits.hpp "Traits<System>::Hypervisor")
-
 MARCH_CCFLAGS = $(CCFLAGS)
 MARCH_CCFLAGS += -mcmodel=medany
 MARCH_CCFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
 MARCH_CCFLAGS += -msmall-data-limit=0
 MARCH_CCFLAGS += -march=rv64g_zicsr -mabi=lp64
 MARCH_CCFLAGS += -g -O3
+
+build: $(IMAGE)
+
+$(TRAITS).mk: $(TRAITS)
+	@mkdir -p $(dir $@)
+	$< > $@
+
+$(TRAITS): tools/Traits.cpp
+	@mkdir -p $(dir $@)
+	g++ $(CCFLAGS) $< -o $@
+
+ifneq ($(MAKECMDGOALS),clean)
+-include $(TRAITS).mk
+endif

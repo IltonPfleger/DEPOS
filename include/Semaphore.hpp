@@ -9,14 +9,14 @@ class Semaphore {
     void p() {
         m_spin.acquire();
         if (m_value-- < 1)
-            Thread::sleep(m_waiting, m_spin);
+            Thread::sleep(&m_waiting, &m_spin);
         else
             m_spin.release();
     }
 
     void v() {
         m_spin.acquire();
-        if (m_value++ < 0) Thread::wakeup(m_waiting);
+        if (m_value++ < 0) Thread::wakeup(&m_waiting);
         m_spin.release();
     }
 
