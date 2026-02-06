@@ -9,30 +9,27 @@ Thread *Thread::running() { return s_scheduler.current(); }
 
 template <typename Epilogue, typename... Args>
 void Thread::dispatch(Thread *previous, Thread *next, Epilogue epilogue, Args... args) {
-    if (next == previous) {
-        return;
-    }
+    ERROR(!previous);
+    ERROR(!next);
+    ERROR(next == previous);
 
     next->m_state = State::RUNNING;
     CPU::Context context;
 
     if (context.save()) {
         previous->m_context = &context;
-
         next->m_context->load(epilogue, previous, args...);
     }
 }
 
 int Thread::idle(void *) {
     while (s_count > Traits<CPUS>::ACTIVE) {
-        // if (!s_scheduler.empty()) yield();
+        //     // if (!s_scheduler.empty()) yield();
     }
 
     CPU::Interruptions::disable();
-    CPU::barrier();
     if (CPU::id() == Traits<CPUS>::BSP) Console::println("*** Shutdown! ***\n");
-    while (1)
-        CPU::halt();
+    CPU::halt();
     return 0;
 }
 
@@ -78,21 +75,18 @@ void Thread::exit() {
     CPU::Interruptions::disable();
 
     Thread *previous = running();
-    previous->m_state = State::ZOMBIE;
-
-    auto *next = s_scheduler.remove();
-
-    TraceIn(previous, next);
-
-    // if (previous->m_joining) {
-    //     previous->m_joining->m_state = State::READY;
-    //     s_scheduler.insert(&previous->m_joining->m_link);
-    //     previous->m_joining = 0;
-    // }
-
+    previous->m_state = State::FINISHED;
+    Link *next = s_scheduler.remove();
+    //
+    //    // if (previous->m_joining) {
+    //    //     previous->m_joining->m_state = State::READY;
+    //    //     s_scheduler.insert(&previous->m_joining->m_link);
+    //    //     previous->m_joining = 0;
+    //    // }
+    //
     CPU::Atomic::fdec(s_count);
 
-    dispatch(previous, next->value(), &schedule);
+    dispatch(previous, next->value(), finish);
 }
 
 void Thread::init() {
@@ -105,25 +99,18 @@ void Thread::init() {
 void Thread::run() {
     unsigned char previous[sizeof(Thread)];
     Thread *next = s_scheduler.remove()->value();
-    Queue queue;
-    dispatch(reinterpret_cast<Thread *>(previous), next, &enqueue, &queue);
+    dispatch(reinterpret_cast<Thread *>(previous), next, finish);
 }
 
 void Thread::reschedule() {
     CPU::Interruptions::disable();
+    Thread *previous = running();
+    Link *next = s_scheduler.remove(Criterion::NORMAL);
 
-    auto *next = s_scheduler.remove(Criterion::NORMAL);
-    if (!next) {
-        CPU::Interruptions::enable();
-        return;
+    if (next) {
+        previous->m_state = State::READY;
+        dispatch(previous, next->value(), schedule);
     }
-
-    auto previous = running();
-    previous->m_state = State::READY;
-
-    // s_lock.acquire();
-    // s_scheduler.insert(&previous->m_link);
-    dispatch(previous, next->value(), schedule);
 }
 
 // void Thread::yield() {
@@ -131,34 +118,30 @@ void Thread::reschedule() {
 //     reschedule();
 //     CPU::Interruptions::enable();
 // }
-//
-// void Thread::sleep(Queue &m_waiting) {
-//
-//     auto previous = running();
-//     previous->m_state = State::WAITING;
-//     previous->m_waiting = &m_waiting;
-//     // m_waiting.insert(&previous->m_link);
-//
-//     CPU::Interruptions::disable();
-//     // s_lock.acquire();
-//     auto next = s_scheduler.remove()->value();
-//     // s_lock.release();
-//     dispatch(previous, next, &m_waiting);
-// }
-//
-// void Thread::wakeup(Queue &waiting) {
-//     Link *link = waiting.remove();
-//     ERROR(!link, "Empty queue.");
-//     Thread *awake = link->value();
-//     awake->m_state = State::READY;
-//     awake->m_waiting = nullptr;
-//
-//     CPU::Interruptions::disable();
-//     s_lock.acquire();
-//     s_scheduler.insert(link);
-//     s_lock.release();
-//     CPU::Interruptions::enable();
-// }
+
+void Thread::sleep(Queue *m_waiting, Spin *spin) {
+    CPU::Interruptions::disable();
+
+    auto previous = running();
+    previous->m_state = State::WAITING;
+    previous->m_waiting = m_waiting;
+    m_waiting->insert(&previous->m_link);
+
+    Link *next = s_scheduler.remove();
+    dispatch(previous, next->value(), release, spin);
+}
+
+void Thread::wakeup(Queue *waiting) {
+    Link *link = waiting->remove();
+    ERROR(!link);
+    Thread *awake = link->value();
+    awake->m_state = State::READY;
+    awake->m_waiting = nullptr;
+
+    CPU::Interruptions::disable();
+    s_scheduler.insert(&awake->m_link);
+    CPU::Interruptions::enable();
+}
 
 // int entry(void *arg) {
 //     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile

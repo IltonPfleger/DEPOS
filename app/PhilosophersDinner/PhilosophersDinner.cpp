@@ -18,9 +18,7 @@ int philosopher(void *p) {
     while (iterations--) {
         console->p();
 
-        Console::print("Filósofo ");
-        Console::print(id);
-        Console::print(" esta pensando!\n");
+        Console::println("<%d> Filósofo %d está pensando!\n", CPU::id(), id);
 
         console->v();
 
@@ -29,9 +27,7 @@ int philosopher(void *p) {
 
         console->p();
 
-        Console::print("Filósofo ");
-        Console::print(id);
-        Console::print(" está comendo!\n");
+        Console::println("<%d> Filósofo %d está comendo!\n", CPU::id(), id);
 
         console->v();
 
@@ -46,6 +42,7 @@ int main(int, char *[]) {
     TraceIn();
 
     Thread *threads[Number];
+    (void)threads;
 
     console = new Semaphore(0);
 
@@ -59,16 +56,16 @@ int main(int, char *[]) {
 
     console->v();
 
-    for (long i = 0; i < Number; i++) {
-        // Thread::join(threads[i]);
-    }
+    // for (long i = 0; i < Number; i++) {
+    //     // Thread::join(threads[i]);
+    // }
 
-    for (long i = 0; i < Number; i++) {
-        delete forks[i];
-        delete threads[i];
-    }
+    // for (long i = 0; i < Number; i++) {
+    //     delete forks[i];
+    //     delete threads[i];
+    // }
 
-    delete console;
+    // delete console;
 
     TraceOut();
 }

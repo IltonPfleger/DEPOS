@@ -25,8 +25,8 @@ class Thread {
     static void exit();
     static void init();
     static void run();
-    static void sleep(Queue &);
-    static void wakeup(Queue &);
+    static void sleep(Queue *, Spin *);
+    static void wakeup(Queue *);
     static void yield();
     template <typename Epilogue, typename... Args> static void dispatch(Thread *, Thread *, Epilogue, Args...);
     static void reschedule();
@@ -44,14 +44,9 @@ class Thread {
   private:
     static inline Scheduler<Thread> s_scheduler;
     static inline volatile unsigned int s_count;
-    static inline Spin s_lock;
 
   private:
-    static void schedule(Thread *t) {
-        if (t->m_state != State::ZOMBIE) {
-            s_scheduler.insert(&t->m_link);
-        }
-    }
-
-    static void enqueue(Thread *t, Queue *q) { q->insert(&t->m_link); };
+    static void schedule(Thread *t) { s_scheduler.insert(&t->m_link); }
+    static void release(Thread *, Spin *spin) { spin->release(); };
+    static void finish(Thread *) {}
 };

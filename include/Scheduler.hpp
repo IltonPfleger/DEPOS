@@ -27,11 +27,7 @@ class RR : public Policy {
   public:
     static constexpr bool Preemptive = true;
     template <typename T> using Queue = FIFO<T>;
-    enum : Rank {
-        IDLE = 0,
-        NORMAL = 1,
-        Levels,
-    };
+    enum : Rank { IDLE = 0, NORMAL = 1, Levels = 2 };
     RR(Rank r = NORMAL, ...) : Policy(r) {}
 };
 
@@ -50,28 +46,30 @@ template <typename T> class Scheduler {
     // }
 
     Element *remove(Criterion::Rank threshold = 0) {
-        Guard<Spin, &Spin::acquire, &Spin::release> G(&m_spin);
+        m_spin.acquire();
         for (int i = Criterion::Levels - 1; i >= threshold; i--) {
-            if (!m_levels[i].empty()) {
-                Element *next = m_levels[i].remove();
-                m_heads[CPU::id()] = next->value();
-                return next;
-            }
+            if (m_levels[i].empty()) continue;
+            Element *next = m_levels[i].remove();
+            m_heads[CPU::id()] = next->value();
+            m_spin.release();
+            return next;
         }
+        m_spin.release();
         return nullptr;
     }
 
     void insert(Element *node) {
-        Guard<Spin, &Spin::acquire, &Spin::release> G(&m_spin);
         ERROR(!node);
         ERROR(node->priority() >= Criterion::Levels);
+        m_spin.acquire();
         m_levels[node->priority()].insert(node);
+        m_spin.release();
     }
 
     T *current() {
-        Guard<Spin, &Spin::acquire, &Spin::release> G(&m_spin);
-        ERROR(!m_heads[CPU::id()]);
-        return m_heads[CPU::id()];
+        T *thread = m_heads[CPU::id()];
+        ERROR(!thread);
+        return thread;
     }
 
   private:
