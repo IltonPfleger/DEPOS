@@ -45,17 +45,20 @@ template <typename T> class Scheduler {
     //     return true;
     // }
 
-    Element *remove(Criterion::Rank threshold = 0) {
+    __attribute__((noinline)) Element *remove(Criterion::Rank threshold = Criterion::IDLE) {
         m_spin.acquire();
-        for (int i = Criterion::Levels - 1; i >= threshold; i--) {
-            if (m_levels[i].empty()) continue;
-            Element *next = m_levels[i].remove();
-            m_heads[CPU::id()] = next->value();
-            m_spin.release();
-            return next;
+        Element *next = nullptr;
+        volatile int i = Criterion::Levels - 1;
+        while (i >= threshold && !next) {
+            next = m_levels[i].remove();
+            if (next) break;
+            i = i - 1;
+        }
+        if (next) {
+            __atomic_store_n(&m_heads[CPU::id()], next->value(), __ATOMIC_SEQ_CST);
         }
         m_spin.release();
-        return nullptr;
+        return next;
     }
 
     void insert(Element *node) {
@@ -67,9 +70,9 @@ template <typename T> class Scheduler {
     }
 
     T *current() {
-        T *thread = m_heads[CPU::id()];
-        ERROR(!thread);
-        return thread;
+        T *c = m_heads[CPU::id()];
+        ERROR(!c);
+        return c;
     }
 
   private:
