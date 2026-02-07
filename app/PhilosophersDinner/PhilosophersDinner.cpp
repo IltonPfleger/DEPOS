@@ -3,7 +3,7 @@
 #include <utils/Console.hpp>
 #include <utils/Debug.hpp>
 
-static constexpr int Number = 20;
+static constexpr int Number = 10;
 static constexpr int Iterations = 1000;
 Semaphore *forks[Number];
 Semaphore *console;
@@ -22,8 +22,13 @@ int philosopher(void *p) {
 
         console->v();
 
-        forks[left]->p();
-        forks[right]->p();
+        if (id == Number - 1) {
+            forks[right]->p();
+            forks[left]->p();
+        } else {
+            forks[left]->p();
+            forks[right]->p();
+        }
 
         console->p();
 

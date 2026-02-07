@@ -24,13 +24,12 @@ void Thread::dispatch(Thread *previous, Thread *next, Epilogue epilogue, Args...
 
 int Thread::idle(void *) {
     while (s_count > Traits<CPUS>::ACTIVE) {
-        // reschedule();
         yield();
     }
 
     CPU::Interruptions::disable();
     CPU::barrier();
-    if (CPU::id() == Traits<CPUS>::BSP) Console::println("*** Shutdown! ***\n");
+    if (CPU::id() == Traits<CPUS>::BSP) Console::println("\n*** Shutdown! ***\n");
     CPU::halt();
     return 0;
 }
