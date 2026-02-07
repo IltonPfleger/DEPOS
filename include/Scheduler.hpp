@@ -38,12 +38,7 @@ template <typename T> class Scheduler {
     using Element = Node<Thread *, Criterion>;
     using Queue = typename Criterion::template Queue<Element>;
 
-    // bool empty() const {
-    //     for (unsigned int i = 0; i < Criterion::Levels; i++) {
-    //         if (!m_levels[i].empty()) return false;
-    //     }
-    //     return true;
-    // }
+    Scheduler() = default;
 
     Element *remove(Criterion::Rank threshold = Criterion::IDLE) {
         m_spin.acquire();

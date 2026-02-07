@@ -8,7 +8,7 @@
 
 class Thread {
   public:
-    enum class State { RUNNING, READY, WAITING, FINISHED, ZOMBIE };
+    enum class State { RUNNING, READY, WAITING, FINISHING, FINISHED };
     using Criterion = typename Scheduler<Thread>::Criterion;
     using Argument = void *;
     using Function = int (*)(Argument);
@@ -16,12 +16,10 @@ class Thread {
     using Queue = FIFO<Link>;
     using Context = CPU::Context;
 
-    Thread() = default;
     Thread(Function, Argument, Criterion);
     ~Thread();
 
     static Thread *running();
-    static void join(Thread *);
     static void exit();
     static void init();
     static void run();
@@ -38,7 +36,6 @@ class Thread {
     Link m_link;
     Criterion m_criterion;
     volatile State m_state;
-    Thread *m_joining;
     Context *volatile m_context;
 
   private:
@@ -53,9 +50,9 @@ class Thread {
             break;
         case State::WAITING:
             t->m_waiting->insert(&t->m_link);
-            if (spin) spin->release();
+            spin->release();
             break;
-        case State::ZOMBIE:
+        case State::FINISHING:
             t->m_state = State::FINISHED;
             CPU::Atomic::fdec(s_count);
             break;
