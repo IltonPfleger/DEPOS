@@ -28,7 +28,7 @@ class Thread {
     static void sleep(Queue *, Spin *);
     static void wakeup(Queue *);
     static void yield();
-    template <typename Epilogue, typename... Args> static void dispatch(Thread *, Thread *, Epilogue, Args...);
+    static void dispatch(Thread *, Thread *, Spin *);
     static void reschedule();
     static int idle(void *);
 
@@ -38,7 +38,7 @@ class Thread {
     Link m_link;
     Criterion m_criterion;
     volatile State m_state;
-    Thread *volatile m_joining;
+    Thread *m_joining;
     Context *volatile m_context;
 
   private:
@@ -46,7 +46,21 @@ class Thread {
     static inline volatile unsigned int s_count;
 
   private:
-    static void schedule(Thread *t) { s_scheduler.insert(&t->m_link); }
-    static void release(Thread *, Spin *spin) { spin->release(); };
-    static void finish(Thread *) {}
+    static void epilogue(Thread *t, Spin *spin) {
+        switch (t->m_state) {
+        case State::READY:
+            s_scheduler.insert(&t->m_link);
+            break;
+        case State::WAITING:
+            t->m_waiting->insert(&t->m_link);
+            if (spin) spin->release();
+            break;
+        case State::ZOMBIE:
+            t->m_state = State::FINISHED;
+            CPU::Atomic::fdec(s_count);
+            break;
+        default:
+            break;
+        }
+    }
 };
