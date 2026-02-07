@@ -3,8 +3,8 @@
 #include <utils/Console.hpp>
 #include <utils/Debug.hpp>
 
-static constexpr int Number = 10;
-static constexpr int Iterations = 5;
+static constexpr int Number = 20;
+static constexpr int Iterations = 1000;
 Semaphore *forks[Number];
 Semaphore *console;
 

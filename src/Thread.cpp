@@ -24,10 +24,12 @@ void Thread::dispatch(Thread *previous, Thread *next, Epilogue epilogue, Args...
 
 int Thread::idle(void *) {
     while (s_count > Traits<CPUS>::ACTIVE) {
-        //     // if (!s_scheduler.empty()) yield();
+        // reschedule();
+        yield();
     }
 
     CPU::Interruptions::disable();
+    CPU::barrier();
     if (CPU::id() == Traits<CPUS>::BSP) Console::println("*** Shutdown! ***\n");
     CPU::halt();
     return 0;
@@ -103,8 +105,8 @@ void Thread::run() {
 }
 
 void Thread::reschedule() {
-    CPU::Interruptions::disable();
     Thread *previous = running();
+
     Link *next = s_scheduler.remove(Criterion::NORMAL);
 
     if (next) {
@@ -113,34 +115,36 @@ void Thread::reschedule() {
     }
 }
 
-// void Thread::yield() {
-//     CPU::Interruptions::disable();
-//     reschedule();
-//     CPU::Interruptions::enable();
-// }
+void Thread::yield() {
+    CPU::Interruptions::disable();
+    reschedule();
+    CPU::Interruptions::enable();
+}
 
 void Thread::sleep(Queue *m_waiting, Spin *spin) {
-    CPU::Interruptions::disable();
-
-    auto previous = running();
+    Thread *previous = const_cast<Thread *>(running());
     previous->m_state = State::WAITING;
     previous->m_waiting = m_waiting;
+
     m_waiting->insert(&previous->m_link);
 
     Link *next = s_scheduler.remove();
+
     dispatch(previous, next->value(), release, spin);
 }
 
-void Thread::wakeup(Queue *waiting) {
-    Link *link = waiting->remove();
+void Thread::wakeup(Queue *m_waiting) {
+    Link *link = m_waiting->remove();
+
     ERROR(!link);
+
     Thread *awake = link->value();
+
     awake->m_state = State::READY;
+
     awake->m_waiting = nullptr;
 
-    CPU::Interruptions::disable();
     s_scheduler.insert(&awake->m_link);
-    CPU::Interruptions::enable();
 }
 
 // int entry(void *arg) {

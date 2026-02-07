@@ -26,13 +26,14 @@ template <typename T> class ContextBase {
     }
 
     template <typename F, typename... Args> __attribute__((naked)) void load(F f, Args... args) {
-        asm("ld sp, %[sp](a0)" ::[sp] "i"(offsetof(ContextBase, sp)));
-        asm("mv s0, a0");
-        asm("addi sp, sp, %0" ::"i"(-sizeof(ContextBase)));
+        asm volatile("ld sp, %[sp](a0)" ::[sp] "i"(offsetof(ContextBase, sp)));
+        asm volatile("mv s0, a0");
+        asm volatile("addi sp, sp, %0" ::"i"(-sizeof(ContextBase)));
         f(args...);
-        asm("addi sp, sp, %0" ::"i"(sizeof(ContextBase)));
-        asm("mv a1, s0");
-        asm("ld ra, %[ra](a1)\n"
+        asm volatile("addi sp, sp, %0" ::"i"(sizeof(ContextBase)));
+        asm volatile("mv a1, s0");
+        asm volatile(
+            "ld ra, %[ra](a1)\n"
             "ld gp, %[gp](a1)\n"
             "ld s0, %[s0](a1)\n"
             "ld a0, %[a0](a1)\n"
@@ -63,7 +64,8 @@ template <typename T> class ContextBase {
     }
 
     __attribute__((naked)) bool save() {
-        asm("sd ra, %[ra](a0)\n"
+        asm volatile(
+            "sd ra, %[ra](a0)\n"
             "sd gp, %[gp](a0)\n"
             "sd sp, %[sp](a0)\n"
             "sd zero,%[a0](a0)\n"
@@ -92,15 +94,16 @@ template <typename T> class ContextBase {
               [s11] "i"(offsetof(ContextBase, s11)), [pc] "i"(offsetof(ContextBase, pc)), [csrstatus] "i"(T::STATUS),
               [me2me] "r"(T::ME2ME), [status] "i"(offsetof(ContextBase, status))
             : "memory");
-        asm("li a0, 1\n"
-            "ret\n");
+        asm volatile("li a0, 1\n"
+                     "ret\n");
     }
 
     template <bool ChangeStack = false> __attribute__((always_inline)) static inline ContextBase *push() {
         if constexpr (ChangeStack) {
-            asm("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
+            asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
         }
-        asm("addi sp, sp, %[size]\n"
+        asm volatile(
+            "addi sp, sp, %[size]\n"
             "sd ra, %[ra](sp)\n"
             "sd gp, %[gp](sp)\n"
             "sd t0, %[t0](sp)\n"
@@ -127,22 +130,23 @@ template <typename T> class ContextBase {
               [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7)), [size] "i"(-sizeof(ContextBase))
             : "memory");
 
-        asm("csrr t0, %0\n"
-            "sd t0, %c[status](sp)\n"
-            "csrr t0, %1\n"
-            "sd t0, %c[pc](sp)" ::"i"(T::STATUS),
-            "i"(T::EPC), [status] "i"(offsetof(ContextBase, status)), [pc] "i"(offsetof(ContextBase, pc)));
+        asm volatile("csrr t0, %0\n"
+                     "sd t0, %c[status](sp)\n"
+                     "csrr t0, %1\n"
+                     "sd t0, %c[pc](sp)" ::"i"(T::STATUS),
+                     "i"(T::EPC), [status] "i"(offsetof(ContextBase, status)), [pc] "i"(offsetof(ContextBase, pc)));
         register ContextBase *sp asm("sp");
         return sp;
     }
 
     template <bool ChangeStack = false> __attribute__((naked)) static void pop() {
-        asm("ld t0, %[statuso](sp)\n"
-            "csrw %[statusr], t0\n"
-            "ld t0, %[pc](sp)\n"
-            "csrw %[epcr], t0" ::[statusr] "i"(T::STATUS),
-            [epcr] "i"(T::EPC), [pc] "i"(offsetof(ContextBase, pc)), [statuso] "i"(offsetof(ContextBase, status)));
-        asm("ld ra, %[ra](sp)\n"
+        asm volatile("ld t0, %[statuso](sp)\n"
+                     "csrw %[statusr], t0\n"
+                     "ld t0, %[pc](sp)\n"
+                     "csrw %[epcr], t0" ::[statusr] "i"(T::STATUS),
+                     [epcr] "i"(T::EPC), [pc] "i"(offsetof(ContextBase, pc)), [statuso] "i"(offsetof(ContextBase, status)));
+        asm volatile(
+            "ld ra, %[ra](sp)\n"
             "ld gp, %[gp](sp)\n"
             "ld t0, %[t0](sp)\n"
             "ld t1, %[t1](sp)\n"
@@ -169,7 +173,7 @@ template <typename T> class ContextBase {
               [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7)), [size] "i"(sizeof(ContextBase))
             : "memory");
         if constexpr (ChangeStack) {
-            asm("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
+            asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
         }
         T::ret();
     }
