@@ -3,8 +3,8 @@
 #include <utils/Console.hpp>
 #include <utils/Debug.hpp>
 
-static constexpr int Number = 10;
-static constexpr int Iterations = 1000;
+static constexpr int Number = 100;
+static constexpr int Iterations = 100;
 Semaphore *forks[Number];
 Semaphore *console;
 
@@ -61,9 +61,9 @@ int main(int, char *[]) {
 
     console->v();
 
-    // for (long i = 0; i < Number; i++) {
-    //     // Thread::join(threads[i]);
-    // }
+    for (long i = 0; i < Number; i++) {
+        Thread::join(threads[i]);
+    }
 
     // for (long i = 0; i < Number; i++) {
     //     delete forks[i];

@@ -106,21 +106,12 @@ class CPU {
 
     class Interruptions {
       public:
-        static void disable() { csrc<KernelMode::STATUS>(KernelMode::IRQE); }
         static void enable() { csrs<KernelMode::STATUS>(KernelMode::IRQE); }
-
-        static void on() {
-            if (m_status[id()]) enable();
-        }
-
-        static void off() {
+        static bool disable() {
             unsigned long status = csrr<KernelMode::STATUS>();
-            disable();
-            m_status[id()] = (status & KernelMode::IRQE) != 0;
+            csrc<KernelMode::STATUS>(KernelMode::IRQE);
+            return (status & KernelMode::IRQE) != 0;
         }
-
-      private:
-        static inline bool m_status[Traits<CPUS>::ACTIVE];
     };
 };
 } // namespace rv

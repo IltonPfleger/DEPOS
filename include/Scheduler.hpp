@@ -45,18 +45,15 @@ template <typename T> class Scheduler {
     //     return true;
     // }
 
-    __attribute__((noinline)) Element *remove(Criterion::Rank threshold = Criterion::IDLE) {
+    Element *remove(Criterion::Rank threshold = Criterion::IDLE) {
         m_spin.acquire();
         Element *next = nullptr;
-        volatile int i = Criterion::Levels - 1;
+        int i = Criterion::Levels - 1;
         while (i >= threshold && !next) {
             next = m_levels[i].remove();
-            if (next) break;
             i = i - 1;
         }
-        if (next) {
-            __atomic_store_n(&m_heads[CPU::id()], next->value(), __ATOMIC_SEQ_CST);
-        }
+        if (next) m_heads[CPU::id()] = next->value();
         m_spin.release();
         return next;
     }

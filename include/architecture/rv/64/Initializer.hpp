@@ -31,9 +31,9 @@ class Initializer {
     static void init() {
         csrw<MachineMode::IE>(0);
 
-        MIC::init();
+        //PMP::TOR<1>(__kmm.text.start, __kmm.text.end, PMP::X | PMP::LOCK);
 
-        //// PMP::TOR<1>(__kmm.text.start, __kmm.text.end, PMP::X | PMP::LOCK);
+        MIC::init();
 
         // mode();
         // if constexpr (Traits<System>::Multitask) {

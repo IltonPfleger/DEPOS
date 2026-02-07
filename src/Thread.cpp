@@ -7,8 +7,7 @@
 
 Thread *Thread::running() { return s_scheduler.current(); }
 
-template <typename Epilogue, typename... Args>
-void Thread::dispatch(Thread *previous, Thread *next, Epilogue epilogue, Args... args) {
+void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
     ERROR(!previous);
     ERROR(!next);
     ERROR(next == previous);
@@ -18,7 +17,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Epilogue epilogue, Args...
 
     if (context.save()) {
         previous->m_context = &context;
-        next->m_context->load(epilogue, previous, args...);
+        next->m_context->load(epilogue, previous, spin);
     }
 }
 
@@ -40,54 +39,53 @@ Thread::Thread(Function f, Argument a, Criterion c)
 
     TraceIn(this);
 
-    CPU::Interruptions::off();
+    bool enabled = CPU::Interruptions::disable();
     CPU::Atomic::finc(s_count);
     s_scheduler.insert(&m_link);
-    CPU::Interruptions::on();
+    if (enabled) CPU::Interruptions::enable();
 
     TraceOut();
 }
 
-// Thread::~Thread() { join(this); }
+void Thread::join(Thread *thread) {
+    Thread *previous = running();
+    Queue queue;
 
-// void Thread::join(Thread *thread) {
-//     CPU::Interruptions::disable();
-//     s_lock.acquire();
-//
-//     auto previous = running();
-//     ERROR(thread == previous, "Join itself.");
-//     ERROR(thread->m_joining, "Already joined.");
-//
-//     if (thread->m_state == State::FINISHED) {
-//         s_lock.release();
-//         CPU::Interruptions::enable();
-//         return;
-//     }
-//
-//     previous->m_state = State::WAITING;
-//     thread->m_joining = previous;
-//
-//     dispatch(previous, s_scheduler.remove(), &s_lock);
-//     CPU::Interruptions::enable();
-// }
+    ERROR(thread == previous);
+    ERROR(thread->m_joining);
 
-void Thread::exit() {
+    previous->m_waiting = &queue;
+    thread->m_joining = previous;
+
+    if (thread->m_state == State::FINISHED || thread->m_state == State::ZOMBIE) return;
 
     CPU::Interruptions::disable();
 
-    Thread *previous = running();
-    previous->m_state = State::FINISHED;
-    Link *next = s_scheduler.remove();
-    //
-    //    // if (previous->m_joining) {
-    //    //     previous->m_joining->m_state = State::READY;
-    //    //     s_scheduler.insert(&previous->m_joining->m_link);
-    //    //     previous->m_joining = 0;
-    //    // }
-    //
-    CPU::Atomic::fdec(s_count);
+    previous->m_state = State::WAITING;
 
-    dispatch(previous, next->value(), finish);
+    Link *next = s_scheduler.remove();
+
+    dispatch(previous, next->value());
+
+    CPU::Interruptions::enable();
+}
+
+void Thread::exit() {
+    Thread *previous = running();
+
+    if (previous->m_joining) {
+        Link *link = nullptr;
+        while (!link)
+            link = previous->m_joining->m_waiting->remove();
+        s_scheduler.insert(link);
+    }
+
+    CPU::Interruptions::disable();
+
+    Link *next = s_scheduler.remove();
+    previous->m_state = State::ZOMBIE;
+
+    dispatch(previous, next->value());
 }
 
 void Thread::init() {
@@ -98,19 +96,21 @@ void Thread::init() {
 }
 
 void Thread::run() {
-    unsigned char previous[sizeof(Thread)];
+    unsigned char buffer[sizeof(Thread)];
+    Thread *previous = reinterpret_cast<Thread *>(buffer);
+    previous->m_state = State::FINISHED;
     Thread *next = s_scheduler.remove()->value();
-    dispatch(reinterpret_cast<Thread *>(previous), next, finish);
+    dispatch(previous, next);
 }
 
-void Thread::reschedule() {
+void __attribute__((optimize("O0"))) Thread::reschedule() {
     Thread *previous = running();
 
     Link *next = s_scheduler.remove(Criterion::NORMAL);
 
     if (next) {
         previous->m_state = State::READY;
-        dispatch(previous, next->value(), schedule);
+        dispatch(previous, next->value());
     }
 }
 
@@ -121,15 +121,14 @@ void Thread::yield() {
 }
 
 void Thread::sleep(Queue *m_waiting, Spin *spin) {
-    Thread *previous = const_cast<Thread *>(running());
+    Thread *previous = running();
+
     previous->m_state = State::WAITING;
     previous->m_waiting = m_waiting;
 
-    m_waiting->insert(&previous->m_link);
-
     Link *next = s_scheduler.remove();
 
-    dispatch(previous, next->value(), release, spin);
+    dispatch(previous, next->value(), spin);
 }
 
 void Thread::wakeup(Queue *m_waiting) {
