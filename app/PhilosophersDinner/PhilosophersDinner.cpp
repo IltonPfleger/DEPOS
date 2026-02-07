@@ -4,9 +4,10 @@
 #include <utils/Debug.hpp>
 
 static constexpr int Number = 100;
-static constexpr int Iterations = 100;
+static constexpr int Iterations = 10;
 Semaphore *forks[Number];
 Semaphore *console;
+Semaphore *finish;
 
 int philosopher(void *p) {
     unsigned int id = (unsigned int)(unsigned long)p;
@@ -40,6 +41,7 @@ int philosopher(void *p) {
         forks[left]->v();
     }
 
+    finish->v();
     return 0;
 }
 
@@ -50,6 +52,7 @@ int main(int, char *[]) {
     (void)threads;
 
     console = new Semaphore(0);
+    finish = new Semaphore(0);
 
     for (long i = 0; i < Number; i++) {
         forks[i] = new Semaphore(1);
@@ -62,15 +65,16 @@ int main(int, char *[]) {
     console->v();
 
     for (long i = 0; i < Number; i++) {
-        Thread::join(threads[i]);
+        finish->p();
     }
 
-    // for (long i = 0; i < Number; i++) {
-    //     delete forks[i];
-    //     delete threads[i];
-    // }
+    for (long i = 0; i < Number; i++) {
+        delete forks[i];
+        delete threads[i];
+    }
 
-    // delete console;
+    delete console;
+    delete finish;
 
     TraceOut();
 }

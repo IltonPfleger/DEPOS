@@ -5,8 +5,7 @@
 #include <memory/Memory.hpp>
 #include <utils/Debug.hpp>
 
-#pragma GCC optimize("O0")
-void init() {
+extern "C" __attribute__((optimize("O0"))) void init() {
     if (CPU::id() == Traits<CPUS>::BSP) TraceIn();
 
     CPU::barrier();

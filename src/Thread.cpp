@@ -35,7 +35,7 @@ int Thread::idle(void *) {
 
 Thread::Thread(Function f, Argument a, Criterion c)
     : m_stack(Segment(Traits<Memory>::PageSize)), m_waiting(0), m_link(Link(this, c)), m_criterion(c), m_state(State::READY),
-      m_joining(0), m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
+      m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
 
     TraceIn(this);
 
@@ -47,43 +47,15 @@ Thread::Thread(Function f, Argument a, Criterion c)
     TraceOut();
 }
 
-void Thread::join(Thread *thread) {
-    Thread *previous = running();
-    Queue queue;
-
-    ERROR(thread == previous);
-    ERROR(thread->m_joining);
-
-    previous->m_waiting = &queue;
-    thread->m_joining = previous;
-
-    if (thread->m_state == State::FINISHED || thread->m_state == State::ZOMBIE) return;
-
-    CPU::Interruptions::disable();
-
-    previous->m_state = State::WAITING;
-
-    Link *next = s_scheduler.remove();
-
-    dispatch(previous, next->value());
-
-    CPU::Interruptions::enable();
-}
+Thread::~Thread() { ERROR(m_state != State::FINISHED); }
 
 void Thread::exit() {
     Thread *previous = running();
 
-    if (previous->m_joining) {
-        Link *link = nullptr;
-        while (!link)
-            link = previous->m_joining->m_waiting->remove();
-        s_scheduler.insert(link);
-    }
-
     CPU::Interruptions::disable();
 
     Link *next = s_scheduler.remove();
-    previous->m_state = State::ZOMBIE;
+    previous->m_state = State::FINISHING;
 
     dispatch(previous, next->value());
 }
