@@ -30,13 +30,12 @@ template <> struct Traits<Alarm> {
 };
 
 template <> struct Traits<Thread> {
-    static constexpr unsigned long Quantum = 10;
+    static constexpr unsigned long RescheduleFrequency = 10;
     // static constexpr bool Preemptive = true;
     // using Criterion = RR;
 };
 
 template <> struct Traits<Scheduler<Thread>> {
-    static constexpr unsigned long Frequency = Traits<Timer>::Frequency;
     static constexpr bool Preemptive = true;
     using Criterion = RR;
 };

@@ -4,10 +4,11 @@
 #include <drivers/uart/UART16550.hpp>
 #include <machine/virt/Traits.hpp>
 
-using CPU = rv64::CPU;
-template <typename... Tickers> using TimerTemplate = rv::CLINT<Tickers...>;
+class CPU : public rv64::CPU {};
 
 class virt {
   public:
+    template <typename... Tickers> using Timer = rv::CLINT<Tickers...>;
+
     static void init() { rv64::Initializer::init(); }
 };

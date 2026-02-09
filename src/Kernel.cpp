@@ -1,5 +1,7 @@
 #include <Thread.hpp>
-#include <Timer.hpp>
+
+#include <abstractions/Timer.hpp>
+
 #include <application/Application.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Memory.hpp>
@@ -7,7 +9,7 @@
 #include <utils/Dispatcher.hpp>
 
 extern "C" __attribute__((optimize("O0"))) void init() {
-    if (CPU::id() == Traits<CPUS>::BSP) TraceIn();
+    if (CPU::id() == Traits<CPU>::BSP) TraceIn();
 
     CPU::barrier();
 
@@ -15,9 +17,9 @@ extern "C" __attribute__((optimize("O0"))) void init() {
 
     CPU::barrier();
 
-    Timer::init();
+    if constexpr (Traits<Timer>::Enable) Timer::init();
 
-    if (CPU::id() == Traits<CPUS>::BSP) {
+    if (CPU::id() == Traits<CPU>::BSP) {
         Memory::init();
         Application::init();
         Thread::init();

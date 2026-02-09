@@ -37,7 +37,7 @@ class PLIC : public PLIC_DispatchTable, public PLIC_Traits, Driver {
     static unsigned int context() {
         unsigned int core = csrr<MachineMode::HARTID>();
         if constexpr (Traits<RISCV>::Supervisor) {
-            return core * 2 + (Traits<CPUS>::COUNT - Traits<CPUS>::ACTIVE);
+            return core * 2 + (Traits<::CPU>::Count - Traits<::CPU>::Active);
         } else {
             return core * 2;
         }

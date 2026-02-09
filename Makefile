@@ -12,10 +12,10 @@ PAYLOAD_BIN       := $(BUILD)/$(APPLICATION).bin
 norun: $(IMAGE)
 
 run: $(IMAGE)
-	-$(QEMU) -M $(MACHINE_NAME) -smp $(CPUS_COUNT) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(IMAGE)
+	-$(QEMU) -M $(MACHINE_NAME) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(IMAGE)
 
 debug: $(IMAGE)
-	-$(QEMU) -M $(MACHINE_NAME) -smp $(CPUS_COUNT) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(IMAGE) -S -gdb tcp::1234
+	-$(QEMU) -M $(MACHINE_NAME) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(IMAGE) -S -gdb tcp::1234
 
 gdb:
 	riscv64-linux-gnu-gdb -ex "file build/DEPOS.elf"\
