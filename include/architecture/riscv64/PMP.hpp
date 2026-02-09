@@ -1,8 +1,8 @@
 #pragma once
 
-#include <architecture/rv/csrs.hpp>
+#include <architecture/riscv64/csrs.hpp>
 
-namespace rv {
+namespace riscv64 {
 
 class PMP {
     enum Registers { PMPADDR = 0x3B0, PMPCFG = 0x3A0 };
@@ -38,4 +38,4 @@ class PMP {
         csrw<PMPCFG + (N / 4)>((0x18 | flags) << ((N % 4) * 8));
     }
 };
-} // namespace rv
+} // namespace riscv64

@@ -1,17 +1,16 @@
 #pragma once
 
 #include <architecture/common/Atomic.hpp>
-#include <architecture/rv/Context.hpp>
-#include <architecture/rv/Modes.hpp>
-#include <architecture/rv/Traits.hpp>
-#include <architecture/rv/csrs.hpp>
+#include <architecture/riscv64/Context.hpp>
+#include <architecture/riscv64/Modes.hpp>
+#include <architecture/riscv64/Traits.hpp>
+#include <architecture/riscv64/csrs.hpp>
 #include <memory/MemoryMap.hpp>
-#include <utils/Debug.hpp>
 
-namespace rv {
+namespace riscv64 {
 class CPU {
   public:
-    using Context = ContextBase<rv::KernelMode>;
+    using Context = ContextBase<KernelMode>;
     using Atomic = ArchitectureCommon::Atomic;
 
     static unsigned int be32toh(unsigned int x) {
@@ -124,4 +123,4 @@ class CPU {
         }
     };
 };
-} // namespace rv
+} // namespace riscv64

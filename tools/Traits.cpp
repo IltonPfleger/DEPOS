@@ -5,6 +5,7 @@ using namespace std;
 
 int main() {
     cout << "MACHINE_NAME := " << Traits<Machine>::NAME << endl;
+    cout << "ARCH := " << Traits<CPU>::Architecture << endl;
     cout << "CPUS := " << Traits<CPU>::Count << endl;
     cout << "MEMORY_SIZE := " << Traits<Memory>::Size << endl;
     cout << "PAGE_SIZE := " << Traits<Memory>::PageSize << endl;

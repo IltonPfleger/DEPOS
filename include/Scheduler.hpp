@@ -1,6 +1,7 @@
 #pragma once
 #include <Spin.hpp>
 #include <Traits.hpp>
+#include <abstractions/CPU.hpp>
 #include <machine/Machine.hpp>
 #include <utils/Debug.hpp>
 #include <utils/Guard.hpp>

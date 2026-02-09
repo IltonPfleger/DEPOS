@@ -26,13 +26,6 @@ APPLICATION ?= HelloWorld
 
 CCFLAGS = -std=c++2c -I$(HERE) -I$(INCLUDE) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -Wall -Wextra -Werror -pedantic
 
-MARCH_CCFLAGS = $(CCFLAGS)
-MARCH_CCFLAGS += -mcmodel=medany
-MARCH_CCFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
-MARCH_CCFLAGS += -msmall-data-limit=0
-MARCH_CCFLAGS += -march=rv64g_zicsr -mabi=lp64
-MARCH_CCFLAGS += -g -O3
-
 build: $(IMAGE)
 
 $(TRAITS).mk: $(TRAITS)
@@ -46,3 +39,13 @@ $(TRAITS): tools/Traits.cpp
 ifneq ($(MAKECMDGOALS),clean)
 -include $(TRAITS).mk
 endif
+
+MARCH_CCFLAGS = $(CCFLAGS)
+MARCH_CCFLAGS += -D__ARCH=$(ARCH)
+MARCH_CCFLAGS += -mcmodel=medany
+MARCH_CCFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
+MARCH_CCFLAGS += -msmall-data-limit=0
+MARCH_CCFLAGS += -march=rv64g_zicsr -mabi=lp64
+MARCH_CCFLAGS += -g -O3
+
+

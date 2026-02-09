@@ -1,9 +1,8 @@
 #pragma once
 
-#include <architecture/rv/64/rv.hpp>
-#include <architecture/rv/Traits.hpp>
+#include <architecture/riscv64/Traits.hpp>
 
-namespace rv {
+namespace riscv64 {
 struct MachineMode {
     enum {
         PP = 3 << 11,
@@ -71,4 +70,4 @@ struct SupervisorMode {
 };
 
 using KernelMode = Meta::IF<Traits<RISCV>::Supervisor, SupervisorMode, MachineMode>::Result;
-} // namespace rv
+} // namespace riscv64

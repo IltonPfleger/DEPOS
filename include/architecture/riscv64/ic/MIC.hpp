@@ -1,14 +1,14 @@
 #pragma once
 
 #include <Traits.hpp>
-#include <architecture/rv/CLINT.hpp>
-#include <architecture/rv/PLIC.hpp>
-#include <architecture/rv/ic/Exception.hpp>
-#include <architecture/rv/ic/ReducedSBI.hpp>
-#include <architecture/rv/ic/sbi/SBI.hpp>
+#include <architecture/riscv64/CLINT.hpp>
+#include <architecture/riscv64/PLIC.hpp>
+#include <architecture/riscv64/ic/Exception.hpp>
+// #include <architecture/rv/ic/ReducedSBI.hpp>
+// #include <architecture/rv/ic/sbi/SBI.hpp>
 #include <memory/Memory.hpp>
 
-namespace rv {
+namespace riscv64 {
 class MIC {
   private:
     using Mode = MachineMode;
@@ -37,7 +37,8 @@ class MIC {
         csrw<MachineMode::TVEC>(MIC::entry);
 
         if constexpr (ChangeStack) {
-            csrw<Mode::SCRATCH>(reinterpret_cast<unsigned long>(Memory::alloc(4096)) + 4096);
+            char *stack = reinterpret_cast<char *>(Memory::alloc(Traits<Memory>::StackSize)) + Traits<Memory>::StackSize;
+            csrw<Mode::SCRATCH>(stack);
         }
 
         // if constexpr (CLINT::Enable) {
@@ -52,4 +53,4 @@ class MIC {
     }
 };
 
-} // namespace rv
+} // namespace riscv64
