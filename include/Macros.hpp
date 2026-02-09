@@ -7,5 +7,6 @@
 #define __MACHINE_TRAITS <machine/__MACHINE/Traits.hpp>
 
 #define __CPU_HEADER <architecture/__ARCH/CPU.hpp>
+#define __TIMER_HEADER <architecture/__ARCH/Timer.hpp>
 
 #define __APPLICATION_TRAITS <app/__APPLICATION/Traits.hpp>
