@@ -3,7 +3,7 @@
 template <unsigned long Duration, void (*Handler)(), unsigned int Channels> class Ticker {
   public:
     void tick(unsigned int channel) {
-        if (--m_current[channel] == 0) {
+        if (channel < Channels && --m_current[channel] == 0) {
             Handler();
             reset(channel);
         }
@@ -16,5 +16,5 @@ template <unsigned long Duration, void (*Handler)(), unsigned int Channels> clas
     static constexpr unsigned int k_duration = Duration;
 
   private:
-    unsigned long m_current[Channels] = {Duration};
+	unsigned long m_current[Channels + 1] = {Duration};
 };

@@ -19,6 +19,13 @@ class CLINT : Driver {
         Reg64(Addr, MTIMECMP + core * 8) = ticks;
     }
 
+    static void syscall(uint64_t delta = 0) {
+        if (delta == 0) delta = Ticks + read();
+        write(delta);
+        csrs<MachineMode::IE>(MachineMode::TI);
+        csrc<MachineMode::IP>(SupervisorMode::TI);
+    }
+
   public:
     static constexpr unsigned long Addr = Traits<::CLINT>::Addr;
     static constexpr unsigned long Clock = Traits<::CLINT>::Clock;

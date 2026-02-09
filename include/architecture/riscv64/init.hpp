@@ -4,10 +4,10 @@
 #include <architecture/riscv64/MMU.hpp>
 #include <architecture/riscv64/PLIC.hpp>
 #include <architecture/riscv64/PMP.hpp>
-// #include <architecture/riscv64/VirtualCPU.hpp>
+#include <architecture/riscv64/VirtualCPU.hpp>
 #include <architecture/riscv64/ic/IC.hpp>
 #include <architecture/riscv64/ic/MIC.hpp>
-// #include <architecture/riscv64/ic/SIC.hpp>
+#include <architecture/riscv64/ic/SIC.hpp>
 
 namespace riscv64 {
 //__attribute__((naked)) static void supervisor() {
@@ -32,8 +32,8 @@ inline void init() {
     MIC::init();
 
     if constexpr (Traits<RISCV>::Supervisor) {
-        // new (Memory::alloc(sizeof(VirtualCPU))) VirtualCPU();
-        // SIC::init();
+        new (Memory::alloc(sizeof(VirtualCPU))) VirtualCPU();
+        SIC::init();
     }
 
     // mode();
