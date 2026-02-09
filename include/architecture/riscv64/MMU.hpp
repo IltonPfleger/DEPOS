@@ -1,11 +1,11 @@
 #pragma once
 
-#include <architecture/rv/CPU.hpp>
-#include <architecture/rv/Modes.hpp>
-#include <architecture/rv/csrs.hpp>
+#include <architecture/riscv64/CPU.hpp>
+#include <architecture/riscv64/Modes.hpp>
+#include <architecture/riscv64/csrs.hpp>
 #include <memory/Memory.hpp>
 
-namespace rv64 {
+namespace riscv64 {
 class SV39_MMU {
   public:
     class TLB {
@@ -35,7 +35,7 @@ class SV39_MMU {
 
         void load() const {
             TLB::flush();
-            rv::csrw<rv::SupervisorMode::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
+            csrw<SupervisorMode::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
         }
 
         bool map(uintptr_t va, uintptr_t pa, Flags flags) {
@@ -99,10 +99,10 @@ class SV39_MMU {
   public:
     static void init() {
         // Console::print('X');
-        rv::CPU::barrier();
+        riscv64::CPU::barrier();
         // Console::print(CPU::id());
 
-        if (rv::CPU::id() == Traits<::CPU>::BSP) {
+        if (riscv64::CPU::id() == Traits<::CPU>::BSP) {
             s_kernel_page_table = new (Memory::alloc(sizeof(PageTable))) PageTable();
             s_kernel_page_table->map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart,
                                      Traits<Memory>::Size, PageTable::KernelRW);
@@ -111,7 +111,7 @@ class SV39_MMU {
             s_kernel_page_table->map(Traits<MemoryMap>::UART0, Traits<MemoryMap>::UART0, PageTable::KernelRW);
         }
 
-        rv::CPU::barrier();
+        riscv64::CPU::barrier();
 
         s_kernel_page_table->load();
     }
@@ -121,4 +121,4 @@ class SV39_MMU {
     static constexpr unsigned long Giga = (1 << 30);
     static inline PageTable *s_kernel_page_table;
 };
-} // namespace rv64
+} // namespace riscv64

@@ -5,7 +5,7 @@
 #include <utils/Debug.hpp>
 #include <utils/DispatchTable.hpp>
 
-namespace rv {
+namespace riscv64 {
 
 struct PLIC_Dummy {
     static constexpr bool Enable = Traits<PLIC>::Enable;
@@ -77,4 +77,4 @@ class PLIC : public PLIC_DispatchTable, public PLIC_Traits, Driver {
     }
 };
 
-} // namespace rv
+} // namespace riscv64

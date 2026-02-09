@@ -3,7 +3,7 @@
 #include <Scheduler.hpp>
 #include <Spin.hpp>
 #include <Traits.hpp>
-#include <machine/Machine.hpp>
+#include <abstractions/CPU.hpp>
 #include <memory/Segment.hpp>
 
 class Thread {

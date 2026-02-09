@@ -1,3 +1,4 @@
+#include <abstractions/CPU.hpp>
 #include <machine/Machine.hpp>
 #include <utils/Console.hpp>
 

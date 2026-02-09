@@ -1,8 +1,8 @@
 #pragma once
 
-#include <architecture/rv/csrs.hpp>
+#include <architecture/riscv64/csrs.hpp>
 
-namespace rv {
+namespace riscv64 {
 template <typename Mode = void> class Exception {
   public:
     static void dispatch() {
@@ -20,4 +20,4 @@ template <typename Mode = void> class Exception {
               prefix, cause, prefix, epc, prefix, tval, prefix, status);
     }
 };
-} // namespace rv
+} // namespace riscv64

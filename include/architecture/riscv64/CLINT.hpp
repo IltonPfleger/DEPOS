@@ -1,14 +1,13 @@
 #pragma once
 
 #include <architecture/common/Timer.hpp>
-
-#include <architecture/rv/CPU.hpp>
-#include <architecture/rv/Modes.hpp>
-#include <architecture/rv/Traits.hpp>
+#include <architecture/riscv64/CPU.hpp>
+#include <architecture/riscv64/Modes.hpp>
+#include <architecture/riscv64/Traits.hpp>
 #include <drivers/Driver.hpp>
 #include <utils/Debug.hpp>
 
-namespace rv {
+namespace riscv64 {
 
 template <typename... Tickers> class CLINT : Driver, ArchitectureCommon::TimerTemplate<Tickers...> {
 
@@ -57,4 +56,4 @@ template <typename... Tickers> class CLINT : Driver, ArchitectureCommon::TimerTe
     static constexpr unsigned long Ticks = Clock / Traits<Timer>::Frequency;
 };
 
-} // namespace rv
+} // namespace riscv64

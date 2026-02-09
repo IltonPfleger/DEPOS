@@ -1,10 +1,10 @@
 #pragma once
 
-#include <architecture/rv/PLIC.hpp>
+#include <architecture/riscv64/PLIC.hpp>
 #include <utils/Debug.hpp>
 #include <utils/DispatchTable.hpp>
 
-namespace rv {
+namespace riscv64 {
 
 class IC;
 using IC_DispatchTable = DispatchTable<0, 11, IC>;
@@ -25,4 +25,4 @@ class IC : public IC_DispatchTable {
     }
 };
 
-} // namespace rv
+} // namespace riscv64

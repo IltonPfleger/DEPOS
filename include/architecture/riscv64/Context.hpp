@@ -1,8 +1,9 @@
 #pragma once
 
+#include <architecture/riscv64/Modes.hpp>
 #include <utils/string.hpp>
 
-namespace rv64 {
+namespace riscv64 {
 template <typename T> class ContextBase {
   public:
     uint64_t ra, sp, gp, tp;
@@ -178,4 +179,7 @@ template <typename T> class ContextBase {
         T::ret();
     }
 };
-} // namespace rv64
+
+using MachineContext = ContextBase<MachineMode>;
+using SupervisorContext = ContextBase<SupervisorMode>;
+} // namespace riscv64
