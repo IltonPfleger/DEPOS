@@ -21,7 +21,7 @@ template <> struct Traits<Machine> {
 
 template <> struct Traits<CPUS> {
     static constexpr int XLEN = 64;
-    static constexpr int COUNT = 5;
+    static constexpr int COUNT = 1;
     static constexpr int ACTIVE = COUNT;
     static constexpr int BSP = 0;
 };
@@ -29,8 +29,9 @@ template <> struct Traits<CPUS> {
 template <> struct Traits<Memory> {
     static constexpr unsigned Order = 30;
     static constexpr unsigned Size = (1 << Order);
-    static constexpr unsigned PageOrder = 15;
-    static constexpr unsigned PageSize = (1 << PageOrder);
+    static constexpr unsigned PageSize = 4096;
+    static constexpr unsigned StackSize = PageSize;
+    // static constexpr unsigned PageOrder = 15;
 };
 
 template <> struct Traits<MemoryMap> {

@@ -4,6 +4,7 @@
 #include <machine/Machine.hpp>
 #include <memory/Memory.hpp>
 #include <utils/Debug.hpp>
+#include <utils/Dispatcher.hpp>
 
 extern "C" __attribute__((optimize("O0"))) void init() {
     if (CPU::id() == Traits<CPUS>::BSP) TraceIn();
@@ -14,9 +15,10 @@ extern "C" __attribute__((optimize("O0"))) void init() {
 
     CPU::barrier();
 
+    Timer::init();
+
     if (CPU::id() == Traits<CPUS>::BSP) {
         Memory::init();
-        Timer::init();
         Application::init();
         Thread::init();
         TraceOut();

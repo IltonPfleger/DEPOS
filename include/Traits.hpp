@@ -20,13 +20,19 @@ template <> struct Traits<System> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr unsigned long Frequency = 10000;
+    static constexpr unsigned long Frequency = 100'000;
     static constexpr bool Enable = true;
 };
 
 template <> struct Traits<Alarm> {
     static constexpr bool Enable = false;
     static constexpr unsigned long Frequency = 10;
+};
+
+template <> struct Traits<Thread> {
+    static constexpr unsigned long Quantum = 10;
+    // static constexpr bool Preemptive = true;
+    // using Criterion = RR;
 };
 
 template <> struct Traits<Scheduler<Thread>> {

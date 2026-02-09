@@ -42,8 +42,15 @@ class CPU {
         asm volatile("ecall" ::"r"(r0), "r"(r1), "r"(r2), "r"(r3), "r"(r4), "r"(r5), "r"(r6), "r"(r7) : "memory");
     }
 
-    static unsigned int id() {
-        register unsigned int tp asm("tp");
+    static auto stack() {
+        unsigned char *sp;
+        asm volatile("mv %0, sp" : "=r"(sp));
+        return sp;
+    }
+
+    static auto id() {
+        unsigned int tp;
+        asm volatile("mv %0, tp" : "=r"(tp));
         return tp;
     }
 
@@ -53,6 +60,7 @@ class CPU {
         // Disable Interruptions
         asm volatile("csrc mstatus, 0x8");
 
+        // Save Return Address
         asm volatile("csrw mscratch, ra");
 
         // Ensure ISA Compliance: halt cores lacking Supervisor Mode (S-mode) support.
@@ -65,7 +73,7 @@ class CPU {
                          "2:" ::"r"(1ULL << ('S' - 'A')));
         }
 
-        // Use TP as Core ID
+        // Use Thread Pointer as Core ID
         asm volatile("csrr tp, mhartid\n"
                      "addi tp, tp, %[offset]\n"
                      "mv %[core], tp"
@@ -81,8 +89,10 @@ class CPU {
             __bmm.end = Traits<MemoryMap>::RamEnd;
         }
 
+        // Wait Here For All See The Memory Pool
         barrier();
 
+        // Restore Return Address
         asm volatile("csrr ra, mscratch");
 
         asm volatile("ret");

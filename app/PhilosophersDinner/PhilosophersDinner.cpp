@@ -68,13 +68,13 @@ int main(int, char *[]) {
         finish->p();
     }
 
-    for (long i = 0; i < Number; i++) {
-        delete forks[i];
-        delete threads[i];
-    }
+    // for (long i = 0; i < Number; i++) {
+    //     delete forks[i];
+    //     delete threads[i];
+    // }
 
-    delete console;
-    delete finish;
+    // delete console;
+    // delete finish;
 
     TraceOut();
 }

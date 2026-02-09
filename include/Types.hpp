@@ -17,5 +17,7 @@ typedef intmax_t intptr_t;
 typedef uintmax_t uintptr_t;
 
 typedef unsigned long size_t;
+typedef uintmax_t Hz;
 typedef uintmax_t Microsecond;
+typedef uintmax_t Nanosecond;
 typedef uintmax_t Tick;
