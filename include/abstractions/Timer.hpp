@@ -7,7 +7,6 @@
 
 #include __TIMER_HEADER
 
-using ThreadTicker =
-    Ticker<Traits<Timer>::Frequency / Traits<Thread>::RescheduleFrequency, Thread::reschedule, Traits<CPU>::Active>;
+using Ticker1 = Ticker<Traits<Timer>::Frequency / Traits<Thread>::RescheduleFrequency, Thread::reschedule, Traits<CPU>::Active>;
 
-class Timer : public __ARCH::Timer<ThreadTicker> {};
+class Timer : public __ARCH::Timer<Ticker1> {};

@@ -33,6 +33,8 @@ uintptr_t Memory::virt2phys(uintptr_t chunkess) {
 }
 
 void *Memory::alloc(size_t size) {
+    if (size == 0) return 0;
+
     s_spin.acquire();
 
     TraceIn(size);

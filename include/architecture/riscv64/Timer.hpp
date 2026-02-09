@@ -7,32 +7,31 @@ namespace riscv64 {
 
 template <typename... Tickers> class Timer : public ArchitectureCommon::TimerTemplate<Tickers...> {
 
-    static void handler(unsigned int) {
-        CLINT::write();
+    static void machine(unsigned int) {
+        if constexpr (Traits<RISCV>::Supervisor) {
+            csrc<MachineMode::IE>(MachineMode::TI);
+            csrs<MachineMode::IP>(SupervisorMode::TI);
+        } else {
+            CLINT::write();
+            ArchitectureCommon::TimerTemplate<Tickers...>::handler(CPU::id());
+        }
+    }
+
+    static void supervisor(unsigned int) {
+        CPU::syscall(0, 0, 0, 0, 0, 0, 0, ReducedSBI::TIME);
         ArchitectureCommon::TimerTemplate<Tickers...>::handler(CPU::id());
     }
 
-    //    //     if constexpr (Traits<RISCV>::Supervisor) {
-    //    //         csrc<MachineMode::IE>(MachineMode::TI);
-    //    //         csrs<MachineMode::IP>(SupervisorMode::TI);
-    //    //     } else {
-    //    //         CLINT::write();
-    //    //         Timer::handler(CPU::id());
-    //    //     }
-    //    // }
-    //
-    //    // static void syscall(uint64_t delta = 0) {
-    //    //     if (delta == 0) delta = Ticks + read();
-    //    //     write(delta);
-    //    //     csrs<MachineMode::IE>(MachineMode::TI);
-    //    //     csrc<MachineMode::IP>(SupervisorMode::TI);
-    //    // }
-    //
   public:
-    static void init() {
-        IC::bind(7, handler);
-        csrs<MachineMode::IE>(MachineMode::TI);
-        CLINT::write();
+    template <bool mode = Traits<RISCV>::Supervisor ? 0 : 1> static void init() {
+        if (mode) {
+            IC::bind(7, machine);
+            csrs<MachineMode::IE>(MachineMode::TI);
+            CLINT::write();
+        } else {
+            IC::bind(5, supervisor);
+            csrs<SupervisorMode::IE>(SupervisorMode::TI);
+        }
     }
 };
 

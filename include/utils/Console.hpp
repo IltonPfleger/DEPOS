@@ -10,7 +10,6 @@ class Console {
 
   public:
     template <typename T> struct Hex {
-      public:
         explicit Hex(T x) : m_x(x) {}
         operator T() const { return m_x; }
 
