@@ -18,9 +18,6 @@ template <typename... Tickers> class TimerTemplate : public Tickers... {
     template <typename T> void update(unsigned int channel) {
         T &ticker = static_cast<T &>(*this);
         ticker.tick(channel);
-        // bool zero = ticker.tick(channel);
-        // TraceIn(zero);
-        // if (zero) ticker.reset(channel);
     }
 
   private:

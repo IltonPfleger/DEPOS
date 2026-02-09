@@ -55,7 +55,6 @@ template <typename... Tickers> class CLINT : Driver, ArchitectureCommon::TimerTe
     static constexpr unsigned long Addr = Traits<::CLINT>::Addr;
     static constexpr unsigned long Clock = Traits<::CLINT>::Clock;
     static constexpr unsigned long Ticks = Clock / Traits<Timer>::Frequency;
-    // static constexpr bool Enable = Traits<::CLINT>::Enable;
 };
 
 } // namespace rv

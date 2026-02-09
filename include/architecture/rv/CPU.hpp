@@ -78,14 +78,14 @@ class CPU {
                      "addi tp, tp, %[offset]\n"
                      "mv %[core], tp"
                      : [core] "=r"(core)
-                     : [offset] "i"(Traits<CPUS>::ACTIVE - Traits<CPUS>::COUNT));
+                     : [offset] "i"(Traits<::CPU>::Active - Traits<::CPU>::Count));
 
         // Get A Stack
         asm volatile("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * core));
 
         // Setup Boot Memory
-        if (id() == Traits<CPUS>::BSP) {
-            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<CPUS>::ACTIVE - 1;
+        if (id() == Traits<::CPU>::BSP) {
+            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<::CPU>::Active - 1;
             __bmm.end = Traits<MemoryMap>::RamEnd;
         }
 
@@ -102,14 +102,14 @@ class CPU {
         __attribute__((section(".barrier"))) static volatile unsigned char gsense = 0;
         __attribute__((section(".barrier"))) static volatile unsigned int ready[2] = {0};
 
-        unsigned char sense = CPU::Atomic::load(gsense);
+        unsigned char sense = Atomic::load(gsense);
         unsigned int arrived = Atomic::finc(ready[sense]);
 
-        if (arrived == Traits<CPUS>::ACTIVE - 1) {
-            CPU::Atomic::store(ready[sense], 0);
-            CPU::Atomic::store(gsense, !sense);
+        if (arrived == Traits<::CPU>::Active - 1) {
+            Atomic::store(ready[sense], 0);
+            Atomic::store(gsense, !sense);
         } else {
-            while (CPU::Atomic::load(gsense) == sense)
+            while (Atomic::load(gsense) == sense)
                 ;
         }
     }

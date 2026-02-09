@@ -5,7 +5,7 @@
 class Machine;
 class MemoryMap;
 class Memory;
-class CPUS;
+class CPU;
 class CLINT;
 class PLIC;
 class UART;
@@ -19,10 +19,9 @@ template <> struct Traits<Machine> {
     static constexpr const char NAME[] = "virt";
 };
 
-template <> struct Traits<CPUS> {
-    static constexpr int XLEN = 64;
-    static constexpr int COUNT = 1;
-    static constexpr int ACTIVE = COUNT;
+template <> struct Traits<CPU> {
+    static constexpr int Count = 5;
+    static constexpr int Active = Count;
     static constexpr int BSP = 0;
 };
 
@@ -31,7 +30,6 @@ template <> struct Traits<Memory> {
     static constexpr unsigned Size = (1 << Order);
     static constexpr unsigned PageSize = 4096;
     static constexpr unsigned StackSize = PageSize;
-    // static constexpr unsigned PageOrder = 15;
 };
 
 template <> struct Traits<MemoryMap> {
@@ -45,7 +43,6 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long RamEnd = Traits<System>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
 
     static constexpr unsigned long SystemAddr = RamStart;
-    // static constexpr unsigned long ApplicationAddr = RamStart + 0x00200000;
 
     static constexpr unsigned long UART0 = 0x10000000;
     static constexpr unsigned long CLINT = 0x02000000;

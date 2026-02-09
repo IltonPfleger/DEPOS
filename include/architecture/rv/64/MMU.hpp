@@ -99,10 +99,10 @@ class SV39_MMU {
   public:
     static void init() {
         // Console::print('X');
-        CPU::barrier();
+        rv::CPU::barrier();
         // Console::print(CPU::id());
 
-        if (CPU::id() == Traits<CPUS>::BSP) {
+        if (rv::CPU::id() == Traits<::CPU>::BSP) {
             s_kernel_page_table = new (Memory::alloc(sizeof(PageTable))) PageTable();
             s_kernel_page_table->map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart,
                                      Traits<Memory>::Size, PageTable::KernelRW);
@@ -111,7 +111,7 @@ class SV39_MMU {
             s_kernel_page_table->map(Traits<MemoryMap>::UART0, Traits<MemoryMap>::UART0, PageTable::KernelRW);
         }
 
-        CPU::barrier();
+        rv::CPU::barrier();
 
         s_kernel_page_table->load();
     }
