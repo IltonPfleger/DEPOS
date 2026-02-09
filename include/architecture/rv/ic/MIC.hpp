@@ -12,18 +12,18 @@ namespace rv {
 class MIC {
   private:
     using Mode = MachineMode;
-    using Syscall = Meta::IF<Traits<Application>::Virtualized, sbi::SBI, ReducedSBI>::Result;
+    // using Syscall = Meta::IF<Traits<Application>::Virtualized, sbi::SBI, ReducedSBI>::Result;
 
     static constexpr bool ChangeStack = Traits<RISCV>::Supervisor;
 
-    static void dispatch(MachineContext *c) {
+    static void dispatch(MachineContext *) {
         uintmax_t mcause = csrr<Mode::CAUSE>();
-        int code = mcause & ~IC::INTERRUPT;
 
         if (mcause & IC::INTERRUPT) {
-            IC::dispatch(code);
+            IC::dispatch(mcause & ~IC::INTERRUPT);
         } else {
-            if (!Syscall::dispatch(c)) Exception<MachineMode>::dispatch();
+            Exception<MachineMode>::dispatch();
+            // if (!Syscall::dispatch(c)) Exception<MachineMode>::dispatch();
         }
     }
 
@@ -40,10 +40,10 @@ class MIC {
             csrw<Mode::SCRATCH>(reinterpret_cast<unsigned long>(Memory::alloc(4096)) + 4096);
         }
 
-        if constexpr (CLINT::Enable) {
-            IC::bind(7, CLINT::handler);
-            CLINT::init();
-        }
+        // if constexpr (CLINT::Enable) {
+        //     IC::bind(7, CLINT::handler);
+        //     CLINT::init();
+        // }
 
         // if constexpr (PLIC::Enable) {
         //     IC::bind(11, PLIC::handler);

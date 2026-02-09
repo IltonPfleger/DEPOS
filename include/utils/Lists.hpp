@@ -28,12 +28,11 @@ template <typename Value = void, typename Priority = void> struct Node {
 template <typename T>
 concept List = requires(T list, typename T::Element *node) {
     list.insert(node);
-    //{ list.insert(node) } -> Meta::SameAs<void>;
+    { list.insert(node) } -> Meta::SameAs<void>;
     { list.remove() } -> Meta::SameAs<typename T::Element *>;
 };
 
 template <typename T> class LinkedList {
-
   public:
     using Element = T;
 
@@ -45,7 +44,6 @@ template <typename T> class LinkedList {
 };
 
 template <typename T> class LIFO : public LinkedList<T> {
-
   public:
     using Element = T;
 
@@ -77,7 +75,6 @@ template <typename T> class LIFO : public LinkedList<T> {
 };
 
 template <typename T> class FIFO : public LinkedList<T> {
-
   public:
     using Element = T;
 

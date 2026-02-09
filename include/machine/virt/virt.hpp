@@ -4,7 +4,8 @@
 #include <drivers/uart/UART16550.hpp>
 #include <machine/virt/Traits.hpp>
 
-typedef rv64::CPU CPU;
+using CPU = rv64::CPU;
+template <typename... Tickers> using TimerTemplate = rv::CLINT<Tickers...>;
 
 class virt {
   public:

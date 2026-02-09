@@ -14,7 +14,7 @@ void *operator new[](unsigned long size) { return ::operator new(size, Heap::SYS
 void *operator new[](unsigned long size, Heap::Location location) { return ::operator new(size, location); }
 
 void operator delete(void *p) {
-    ERROR(!p, "Invalid Pointer Deleted!");
+    ERROR(!p);
     using Header = Heap::Header;
     Header *header = reinterpret_cast<Header *>(p) - 1;
     Memory::free(header, header->m_size);

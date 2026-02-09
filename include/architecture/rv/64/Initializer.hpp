@@ -4,13 +4,14 @@
 #include <architecture/rv/CPU.hpp>
 #include <architecture/rv/PLIC.hpp>
 #include <architecture/rv/PMP.hpp>
+#include <architecture/rv/VirtualCPU.hpp>
 #include <architecture/rv/ic/IC.hpp>
 #include <architecture/rv/ic/MIC.hpp>
 #include <architecture/rv/ic/SIC.hpp>
 
 namespace rv64 {
 class Initializer {
-    //__attribute__((naked)) static void mode() {
+    //__attribute__((naked)) static void supervisor() {
     //    if constexpr (Traits<RISCV>::Supervisor) {
     //        csrw<SupervisorMode::SATP>(0);
     //        PMP::NAPOT<2>(0, 0, PMP::R | PMP::W | PMP::X);
@@ -18,9 +19,6 @@ class Initializer {
     //        csrw<MachineMode::MEDELEG>(0xf4b509);
     //        csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
     //        csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
-    //    } else {
-    //        csrs<MachineMode::STATUS>(MachineMode::ME2ME);
-    //        csrc<MachineMode::STATUS>(MachineMode::PIRQE);
     //    }
 
     //    csrw<MachineMode::EPC>(__builtin_return_address(0));
@@ -31,16 +29,20 @@ class Initializer {
     static void init() {
         csrw<MachineMode::IE>(0);
 
-        //PMP::TOR<1>(__kmm.text.start, __kmm.text.end, PMP::X | PMP::LOCK);
+        // PMP::TOR<1>(__kmm.text.start, __kmm.text.end, PMP::X | PMP::LOCK);
 
         MIC::init();
 
+        if constexpr (Traits<RISCV>::Supervisor) {
+            // new (Memory::alloc(sizeof(VirtualCPU))) VirtualCPU();
+            // SIC::init();
+        }
+
         // mode();
         // if constexpr (Traits<System>::Multitask) {
-        //     SV39_MMU::init();
+        //    SV39_MMU::init();
         // }
         // if constexpr (Traits<RISCV>::Supervisor) {
-        //     SIC::init();
         // }
     }
 };
