@@ -9,14 +9,14 @@ void Console::put(char c) {
 
     if (c == '\n') {
         io->putc('\r');
-        s_column = 0;
+        // s_column = 0;
     }
 
-    if (s_column >= Traits<Console>::Columns) {
-        io->putc('\n');
-    }
+    // if (s_column >= Traits<Console>::Columns) {
+    //     io->putc('\n');
+    // }
 
-    s_column++;
+    // s_column++;
 
     io->putc(c);
 }

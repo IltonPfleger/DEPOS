@@ -5,6 +5,11 @@
 #include <machine/virt/Traits.hpp>
 
 class virt {
+    template <typename... Ts> static void initializer(Meta::TypeList<Ts...>) { (Ts::init(), ...); }
+
   public:
-    static void init() { riscv64::init(); }
+    static void init() {
+        riscv64::init();
+        initializer(Traits<UART>::Devices{});
+    }
 };

@@ -94,6 +94,5 @@ class Console {
     static inline Stream cout;
 
   private:
-    static inline unsigned int s_panic = 0;
-    static inline unsigned int s_column = 0;
+    static volatile inline unsigned long s_panic = 0;
 };
