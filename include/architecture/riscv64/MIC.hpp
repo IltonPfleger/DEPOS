@@ -2,32 +2,32 @@
 
 #include <Traits.hpp>
 #include <architecture/riscv64/CLINT.hpp>
+#include <architecture/riscv64/Exception.hpp>
 #include <architecture/riscv64/PLIC.hpp>
-#include <architecture/riscv64/ic/Exception.hpp>
-// #include <architecture/rv/ic/ReducedSBI.hpp>
-// #include <architecture/rv/ic/sbi/SBI.hpp>
 #include <memory/Memory.hpp>
 
 namespace riscv64 {
 class MIC {
   private:
-    using Mode = MachineMode;
-    // using Syscall = Meta::IF<Traits<Application>::Virtualized, sbi::SBI, ReducedSBI>::Result;
-
     static constexpr bool ChangeStack = Traits<RISCV>::Supervisor;
 
-    static void dispatch(MachineContext *) {
-        uintmax_t mcause = csrr<Mode::CAUSE>();
+    static void dispatch(MachineContext *c) {
+        uintmax_t mcause = csrr<MachineMode::CAUSE>();
 
         if (mcause & IC::INTERRUPT) {
-            IC::dispatch(mcause & ~IC::INTERRUPT);
+            unsigned int id = mcause & ~IC::INTERRUPT;
+            IC::dispatch(id);
         } else {
-            Exception<MachineMode>::dispatch();
-            // if (!Syscall::dispatch(c)) Exception<MachineMode>::dispatch();
+            if (mcause == 9) {
+                CLINT::syscall();
+                c->pc += 4;
+            } else {
+                Exception<MachineMode>::dispatch();
+            }
         }
     }
 
-    __attribute__((naked, aligned(4))) static void entry() {
+    __attribute__((naked, optimize("O0"), aligned(4))) static void entry() {
         dispatch(MachineContext::push<ChangeStack>());
         MachineContext::pop<ChangeStack>();
     }
@@ -38,13 +38,14 @@ class MIC {
 
         if constexpr (ChangeStack) {
             char *stack = reinterpret_cast<char *>(Memory::alloc(Traits<Memory>::StackSize)) + Traits<Memory>::StackSize;
-            csrw<Mode::SCRATCH>(stack);
+            csrw<MachineMode::SCRATCH>(stack);
         }
 
-        // if constexpr (CLINT::Enable) {
-        //     IC::bind(7, CLINT::handler);
-        //     CLINT::init();
-        // }
+        if constexpr (Traits<Timer>::Enable && Traits<RISCV>::Supervisor) {
+            IC::bind(7, CLINT::forward);
+            csrs<MachineMode::IE>(MachineMode::TI);
+            CLINT::write();
+        }
 
         // if constexpr (PLIC::Enable) {
         //     IC::bind(11, PLIC::handler);

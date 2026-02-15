@@ -1,6 +1,12 @@
 #pragma once
 
 namespace riscv64 {
+template <int R> static inline auto csrrc(auto c) {
+    uint64_t r;
+    asm volatile("csrrc %0, %1, %2" : "=r"(r) : "i"(R), "r"(c));
+    return r;
+}
+
 template <int R> static inline void csrw(auto r) { asm volatile("csrw %0, %1" ::"i"(R), "r"(r)); }
 template <int R> static inline auto csrr() {
     uint64_t r;

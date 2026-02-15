@@ -117,8 +117,7 @@ class CPU {
       public:
         static void enable() { csrs<KernelMode::STATUS>(KernelMode::IRQE); }
         static bool disable() {
-            unsigned long status = csrr<KernelMode::STATUS>();
-            csrc<KernelMode::STATUS>(KernelMode::IRQE);
+            unsigned long status = csrrc<KernelMode::STATUS>(KernelMode::IRQE);
             return (status & KernelMode::IRQE) != 0;
         }
     };

@@ -8,23 +8,18 @@ namespace riscv64 {
 template <typename... Tickers> class Timer : public ArchitectureCommon::TimerTemplate<Tickers...> {
 
     static void machine(unsigned int) {
-        if constexpr (Traits<RISCV>::Supervisor) {
-            csrc<MachineMode::IE>(MachineMode::TI);
-            csrs<MachineMode::IP>(SupervisorMode::TI);
-        } else {
-            CLINT::write();
-            ArchitectureCommon::TimerTemplate<Tickers...>::handler(CPU::id());
-        }
+        CLINT::write();
+        ArchitectureCommon::TimerTemplate<Tickers...>::handler(CPU::id());
     }
 
     static void supervisor(unsigned int) {
-        CPU::syscall(0, 0, 0, 0, 0, 0, 0, ReducedSBI::TIME);
+        CPU::syscall(0, 0, 0, 0, 0, 0, 0, 0);
         ArchitectureCommon::TimerTemplate<Tickers...>::handler(CPU::id());
     }
 
   public:
-    template <bool mode = Traits<RISCV>::Supervisor ? 0 : 1> static void init() {
-        if (mode) {
+    static void init() {
+        if constexpr (!Traits<RISCV>::Supervisor) {
             IC::bind(7, machine);
             csrs<MachineMode::IE>(MachineMode::TI);
             CLINT::write();

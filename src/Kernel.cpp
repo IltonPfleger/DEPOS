@@ -23,10 +23,10 @@ extern "C" __attribute__((optimize("O0"))) void init() {
         Memory::init();
         Application::init();
         Thread::init();
-        TraceOut();
     }
 
     CPU::barrier();
+    if (CPU::id() == Traits<CPU>::BSP) TraceOut("Booting...");
     Thread::run();
 }
 

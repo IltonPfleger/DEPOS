@@ -19,11 +19,16 @@ class CLINT : Driver {
         Reg64(Addr, MTIMECMP + core * 8) = ticks;
     }
 
+    static void forward(unsigned int = 0) {
+        csrc<MachineMode::IE>(MachineMode::TI);
+        csrs<MachineMode::IP>(SupervisorMode::TI);
+    }
+
     static void syscall(uint64_t delta = 0) {
         if (delta == 0) delta = Ticks + read();
         write(delta);
-        csrs<MachineMode::IE>(MachineMode::TI);
         csrc<MachineMode::IP>(SupervisorMode::TI);
+        csrs<MachineMode::IE>(MachineMode::TI);
     }
 
   public:
