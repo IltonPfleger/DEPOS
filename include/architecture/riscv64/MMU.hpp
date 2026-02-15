@@ -18,19 +18,25 @@ class SV39_MMU {
 
       public:
         PageTable() = default;
+
         enum Flags {
             V = 1 << 0, // Valid
             R = 1 << 1, // Readable
             W = 1 << 2, // Writable
             X = 1 << 3, // Executable
             U = 1 << 4, // User accessible
+            G = 1 << 5, // Global
             A = 1 << 6, // Accessed
             D = 1 << 7, // Dirty
-            UserRO = A | D | R | U | V | X,
-            UserRW = A | D | R | U | V | W | X,
-            KernelRO = A | D | R | V | X,
-            KernelRW = A | D | R | V | W | X,
-            Default = UserRW
+
+            UserRO = V | R | U | A | D,
+            UserRX = V | R | X | U | A | D,
+            UserRW = V | R | W | U | A | D,
+
+            KernelRO = V | R | A | D,
+            KernelRX = V | R | X | A | D,
+            KernelRW = V | R | W | A | D,
+            KernelRWX = V | R | W | X | A | D,
         };
 
         void load() const {
@@ -102,11 +108,11 @@ class SV39_MMU {
 
         if (riscv64::CPU::id() == Traits<::CPU>::BSP) {
             s_kernel_page_table = new (Memory::alloc(sizeof(PageTable))) PageTable();
-            s_kernel_page_table->map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart,
-                                     Traits<Memory>::Size, PageTable::KernelRW);
-            s_kernel_page_table->map(Traits<MemoryMap>::PhysicalRamStart, Traits<MemoryMap>::PhysicalRamStart,
-                                     Traits<Memory>::Size, PageTable::KernelRW);
-            s_kernel_page_table->map(Traits<MemoryMap>::MMIO, Traits<MemoryMap>::MMIO, Giga, PageTable::KernelRW);
+            s_kernel_page_table->map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart, Giga,
+                                     PageTable::KernelRWX);
+            s_kernel_page_table->map(Traits<MemoryMap>::PhysicalRamStart, Traits<MemoryMap>::PhysicalRamStart, Giga,
+                                     PageTable::KernelRWX);
+            s_kernel_page_table->map(Traits<MemoryMap>::MMIO, Traits<MemoryMap>::MMIO, Giga, PageTable::KernelRWX);
         }
 
         riscv64::CPU::barrier();

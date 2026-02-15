@@ -1,12 +1,12 @@
 #pragma once
 
 #include <architecture/riscv64/CPU.hpp>
+#include <architecture/riscv64/IC.hpp>
+#include <architecture/riscv64/MIC.hpp>
 #include <architecture/riscv64/MMU.hpp>
 #include <architecture/riscv64/PLIC.hpp>
 #include <architecture/riscv64/PMP.hpp>
-#include <architecture/riscv64/ic/IC.hpp>
-#include <architecture/riscv64/ic/MIC.hpp>
-#include <architecture/riscv64/ic/SIC.hpp>
+#include <architecture/riscv64/SIC.hpp>
 
 namespace riscv64 {
 
@@ -24,6 +24,11 @@ inline void init() {
     csrw<MachineMode::IE>(0);
 
     MIC::init();
+
+    if constexpr (Traits<RISCV>::Supervisor) {
+        IC::bind(7, CLINT::forward);
+        csrs<MachineMode::IE>(MachineMode::TI);
+    }
 
     if constexpr (Traits<RISCV>::Supervisor) {
         supervisor();

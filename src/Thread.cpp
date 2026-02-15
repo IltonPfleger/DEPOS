@@ -72,6 +72,7 @@ void Thread::run() {
     Thread *previous = reinterpret_cast<Thread *>(buffer);
     previous->m_state = State::FINISHED;
     Thread *next = s_scheduler.remove()->value();
+    TraceIn(next);
     dispatch(previous, next);
 }
 
