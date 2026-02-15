@@ -3,20 +3,22 @@
 #include <utils/Console.hpp>
 
 void Console::put(char c) {
-    if (s_panic != 0 && s_panic != (CPU::id() + 1)) return;
+    if (panicked()) return;
+
+    IO *io = IO::instance();
 
     if (c == '\n') {
-        IO::put('\r');
+        io->putc('\r');
         s_column = 0;
     }
 
     if (s_column >= Traits<Console>::Columns) {
-        Console::put('\n');
+        io->putc('\n');
     }
 
     s_column++;
 
-    IO::put(c);
+    io->putc(c);
 }
 
 void Console::panic() {

@@ -8,5 +8,6 @@
 
 #define __CPU_HEADER <architecture/__ARCH/CPU.hpp>
 #define __TIMER_HEADER <architecture/__ARCH/Timer.hpp>
+#define __IC_HEADER <architecture/__ARCH/IC.hpp>
 
 #define __APPLICATION_TRAITS <app/__APPLICATION/Traits.hpp>

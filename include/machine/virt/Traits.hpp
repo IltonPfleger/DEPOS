@@ -13,7 +13,7 @@ class RISCV;
 
 template <typename T> struct Traits;
 
-template <unsigned long> class UART16550;
+template <unsigned long, unsigned long, unsigned long> class UART16550;
 
 template <> struct Traits<Machine> {
     static constexpr const char NAME[] = "virt";
@@ -52,7 +52,7 @@ template <> struct Traits<MemoryMap> {
 };
 
 template <> struct Traits<UART> {
-    typedef Meta::TypeList<UART16550<Traits<MemoryMap>::UART0>> Devices;
+    typedef Meta::TypeList<UART16550<Traits<MemoryMap>::UART0, 115200, 10 + 11>> Devices;
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 
