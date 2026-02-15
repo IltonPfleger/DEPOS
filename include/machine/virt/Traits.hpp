@@ -21,7 +21,7 @@ template <> struct Traits<Machine> {
 
 template <> struct Traits<CPU> {
     static constexpr const char Architecture[] = "riscv64";
-    static constexpr int Count = 5;
+    static constexpr int Count = 10;
     static constexpr int Active = Count;
     static constexpr int BSP = 0;
 };
@@ -45,6 +45,7 @@ template <> struct Traits<MemoryMap> {
 
     static constexpr unsigned long SystemAddr = RamStart;
 
+    static constexpr unsigned long MMIO = 0x00000000;
     static constexpr unsigned long UART0 = 0x10000000;
     static constexpr unsigned long CLINT = 0x02000000;
     static constexpr unsigned long PLIC = 0;

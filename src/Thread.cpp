@@ -75,7 +75,7 @@ void Thread::run() {
     dispatch(previous, next);
 }
 
-void __attribute__((optimize("O0"))) Thread::reschedule() {
+void Thread::reschedule() {
     Thread *previous = running();
 
     Link *next = s_scheduler.remove(Criterion::NORMAL);
