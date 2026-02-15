@@ -19,7 +19,7 @@ int philosopher(void *p) {
     while (iterations--) {
         console->p();
 
-        Console::cout << "<" << CPU::id() << ">" << " Filósofo " << id << " está pensando!\n";
+        Console::cout << "<" << CPU::id() << ">" << " Filósofo " << id << " está pensando!" << Console::endl;
 
         console->v();
 
@@ -33,8 +33,7 @@ int philosopher(void *p) {
 
         console->p();
 
-        Console::cout << "<" << CPU::id() << ">" << " Filósofo " << id << " está comendo!\n";
-
+        Console::cout << "<" << CPU::id() << ">" << " Filósofo " << id << " está comendo!" << Console::endl;
 
         console->v();
 
