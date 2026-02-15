@@ -15,7 +15,7 @@
 #define Trace(...)                                                                                                             \
     if constexpr (Traits<Debug>::Trace) {                                                                                      \
         __VA_OPT__([&](auto &&...args) { ((Console::cout << args), ...); }(__VA_ARGS__);)                                      \
-        __VA_OPT__(Console::cout << '\n';)                                                                                     \
+        __VA_OPT__(Console::cout << Console::endl;)                                                                            \
     }
 
 #define TraceIn(...)                                                                                                           \
@@ -25,7 +25,7 @@
             int n = 0;                                                                                                         \
             ((Console::cout << (n++ ? ", " : "") << args), ...);                                                               \
         }(__VA_ARGS__);)                                                                                                       \
-        Console::cout << ") {\n";                                                                                              \
+        Console::cout << ") {" << Console::endl;                                                                               \
     }
 
 #define TraceOut(...)                                                                                                          \
@@ -36,5 +36,5 @@
             ((Console::cout << (n++ ? ", " : "") << args), ...);                                                               \
         }(__VA_ARGS__);)                                                                                                       \
         __VA_OPT__(Console::cout << '\n';)                                                                                     \
-        Console::cout << __func__ << "}\n";                                                                                    \
+        Console::cout << __func__ << "}" << Console::endl;                                                                     \
     }
