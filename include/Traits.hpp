@@ -45,9 +45,5 @@ template <> struct Traits<Debug> {
     static constexpr bool Trace = true;
 };
 
-template <> struct Traits<Console> {
-    static constexpr unsigned int Columns = 70;
-};
-
 #include <application/Traits.hpp>
 #include <machine/Traits.hpp>

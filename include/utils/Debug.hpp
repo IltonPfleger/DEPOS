@@ -5,6 +5,7 @@
 #define ERROR(expr, ...)                                                                                                       \
     if constexpr (Traits<Debug>::Error) {                                                                                      \
         if (expr) {                                                                                                            \
+            Console::cout << Console::panic;                                                                                   \
             Console::cout << "\n[ERROR] " << __PRETTY_FUNCTION__ << "\nExpression: " << #expr << "\n";                         \
             __VA_OPT__([&](auto &&...args) { ((Console::cout << args), ...); }(__VA_ARGS__);)                                  \
             for (;;)                                                                                                           \

@@ -6,9 +6,9 @@ void Memory::init() {
     const auto PageSize = Traits<Memory>::PageSize;
     const auto RamStart = Traits<MemoryMap>::RamStart;
     const auto RamEnd = Traits<MemoryMap>::RamEnd;
-    //const auto KernelSize = __kmm.end - __kmm.start;
-    //const auto ApplicationSize = __mm.end - __mm.start;
-    //const auto BootMemorySize = __bmm.end - __bmm.start;
+    // const auto KernelSize = __kmm.end - __kmm.start;
+    // const auto ApplicationSize = __mm.end - __mm.start;
+    // const auto BootMemorySize = __bmm.end - __bmm.start;
 
     TraceIn();
 
