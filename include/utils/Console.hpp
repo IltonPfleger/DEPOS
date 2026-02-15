@@ -7,7 +7,6 @@
 
 class Console {
     using IO = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
-    static void put(char);
 
   public:
     class Stream {
@@ -79,14 +78,14 @@ class Console {
         unsigned int m_base;
     };
 
+  private:
+    static void put(char);
+
   public:
     static void init() { new (&cout) Stream; }
     static void panic();
     static bool panicked();
-    static Stream &endl(Console::Stream &s) {
-        s << '\n' << dec;
-        return s;
-    }
+    static Stream &endl(Console::Stream &s) { return (s << '\n' << dec); }
     static Stream &hex(Stream &s) { return s.m_base = 16, s; }
     static Stream &dec(Stream &s) { return s.m_base = 10, s; }
     static Stream &panic(Stream &s) { return Console::panic(), s; }
