@@ -2,39 +2,39 @@
 
 #include <utils/Lists.hpp>
 
-class Observed;
-class Observer;
+template <typename... Args> class Observer;
+template <typename... Args> class Observed;
 
-class Observed {
-    friend Observer;
+template <typename... Args> class Observed {
+    using Link = Node<Observer<Args...> *>;
+    friend class Observer<Args...>;
 
   public:
     Observed() = default;
-    void attach(Observer *o);
-    void detach(Observer *o);
-    virtual void notify();
+
+    void attach(Observer<Args...> *o) { m_observers.insert(&o->m_link); }
+
+    void detach(Observer<Args...> *o) { m_observers.remove(&o->m_link); }
+
+    void notify(Args &&...args) {
+        for (Link *l = m_observers.head(); l; l = l->next()) {
+            l->value()->update(static_cast<Args &&>(args)...);
+        }
+    }
 
   private:
-    using Link = Node<Observer *>;
     LIFO<Link> m_observers;
 };
 
-class Observer {
-    friend Observed;
+template <typename... Args> class Observer {
+    friend class Observed<Args...>;
 
   public:
     Observer() : m_link(this) {}
-    virtual void update() = 0;
+    virtual ~Observer() = default;
+
+    virtual void update(Args... args) = 0;
 
   private:
-    Observed::Link m_link;
+    typename Observed<Args...>::Link m_link;
 };
-
-inline void Observed::attach(Observer *o) { m_observers.insert(&o->m_link); }
-
-inline void Observed::detach(Observer *o) { m_observers.remove(&o->m_link); }
-
-inline void Observed::notify() {
-    for (Link *l = m_observers.head(); l; l = l->next())
-        l->value()->update();
-}
