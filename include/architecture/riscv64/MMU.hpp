@@ -98,9 +98,7 @@ class SV39_MMU {
 
   public:
     static void init() {
-        // Console::print('X');
         riscv64::CPU::barrier();
-        // Console::print(CPU::id());
 
         if (riscv64::CPU::id() == Traits<::CPU>::BSP) {
             s_kernel_page_table = new (Memory::alloc(sizeof(PageTable))) PageTable();
@@ -108,7 +106,7 @@ class SV39_MMU {
                                      Traits<Memory>::Size, PageTable::KernelRW);
             s_kernel_page_table->map(Traits<MemoryMap>::PhysicalRamStart, Traits<MemoryMap>::PhysicalRamStart,
                                      Traits<Memory>::Size, PageTable::KernelRW);
-            s_kernel_page_table->map(Traits<MemoryMap>::UART0, Traits<MemoryMap>::UART0, PageTable::KernelRW);
+            s_kernel_page_table->map(Traits<MemoryMap>::MMIO, Traits<MemoryMap>::MMIO, Giga, PageTable::KernelRW);
         }
 
         riscv64::CPU::barrier();
