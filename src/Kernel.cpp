@@ -9,7 +9,11 @@
 #include <utils/Dispatcher.hpp>
 
 extern "C" __attribute__((optimize("O0"))) void init() {
-    if (CPU::id() == Traits<CPU>::BSP) TraceIn();
+
+    if (CPU::id() == Traits<CPU>::BSP) {
+        Console::init();
+        TraceIn();
+    }
 
     CPU::barrier();
 

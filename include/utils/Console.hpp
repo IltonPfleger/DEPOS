@@ -3,6 +3,7 @@
 #include <Meta.hpp>
 #include <Traits.hpp>
 #include <Variadic.hpp>
+#include <memory/Memory.hpp>
 
 class Console {
     using IO = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
@@ -23,6 +24,11 @@ class Console {
         Stream &operator<<(const char *s) {
             while (s && *s)
                 *this << *s++;
+            return *this;
+        }
+
+        Stream &operator<<(bool b) {
+            *this << (b ? '1' : '0');
             return *this;
         }
 
@@ -83,11 +89,25 @@ class Console {
 
   public:
     template <typename T> struct Hex {
-        explicit Hex(T x) : m_x(x) {}
-        operator T() const { return m_x; }
-
-      private:
         T m_x;
+
+        // FIX 1: The constructor MUST be constexpr for Meta::Signed to work
+        constexpr Hex(T x) : m_x(x) {}
+
+        // FIX 2: Conversion operator (needed for the < check in Meta::Signed)
+        constexpr operator T() const { return m_x; }
+
+        // FIX 3: Assignment operator (needed for stream manipulation)
+        constexpr Hex &operator=(T v) {
+            m_x = v;
+            return *this;
+        }
+
+        // FIX 4: Division assignment (needed for base conversion logic)
+        constexpr Hex &operator/=(unsigned int v) {
+            m_x /= v;
+            return *this;
+        }
     };
 
     static void panic();
@@ -131,6 +151,19 @@ class Console {
         Console::print(static_cast<First &&>(first));
         Console::print(", ");
         Console::print(static_cast<Second &&>(second), static_cast<Args &&>(args)...);
+    }
+
+    static void init() { new (&cout) Stream; }
+    static Stream &endl(Console::Stream &s) {
+        s << '\n' << dec;
+        return s;
+    }
+    static Stream &hex(Stream &s) { return s.m_base = 16, s; }
+    static Stream &dec(Stream &s) { return s.m_base = 10, s; }
+    static Stream &panic(Stream &s) {
+        unsigned char volatile MSV;
+        if (!s.m_panic) s.m_panic = (reinterpret_cast<unsigned long>(&MSV) & ~(Traits<Memory>::StackSize - 1));
+        return s;
     }
 
   public:
