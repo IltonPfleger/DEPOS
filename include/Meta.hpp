@@ -72,37 +72,5 @@ concept Integer = requires(T a) {
 template <typename T>
 concept Pointer = requires(T t) { []<typename U>(U *) {}(t); };
 
-// template <typename T> struct _Pointer {
-//     static constexpr bool Result = false;
-// };
-//
-// template <typename T> struct _Pointer<T *> {
-//     static constexpr bool Result = true;
-// };
-//
-// template <typename T>
-// concept Pointer = _Pointer<T>::Result;
+} // namespace Meta
 
-// template <typename T>
-// concept IsArray = __is_array(T);
-
-// template <typename T>
-// struct REMOVE_POINTER {
-//     using Result = T;
-// };
-
-// template <typename T>
-// struct REMOVE_POINTER<T *> {
-//     using Result = T;
-// };
-
-// template <typename T>
-// struct IS_POINTER {
-//     static constexpr bool Result = false;
-// };
-
-// template <typename T>
-// struct IS_POINTER<T *> {
-//     static constexpr bool Result = true;
-// };
-}; // namespace Meta
