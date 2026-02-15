@@ -88,70 +88,70 @@ class Console {
     };
 
   public:
-    template <typename T> struct Hex {
-        T m_x;
+    // template <typename T> struct Hex {
+    //     T m_x;
 
-        // FIX 1: The constructor MUST be constexpr for Meta::Signed to work
-        constexpr Hex(T x) : m_x(x) {}
+    //    // FIX 1: The constructor MUST be constexpr for Meta::Signed to work
+    //    constexpr Hex(T x) : m_x(x) {}
 
-        // FIX 2: Conversion operator (needed for the < check in Meta::Signed)
-        constexpr operator T() const { return m_x; }
+    //    // FIX 2: Conversion operator (needed for the < check in Meta::Signed)
+    //    constexpr operator T() const { return m_x; }
 
-        // FIX 3: Assignment operator (needed for stream manipulation)
-        constexpr Hex &operator=(T v) {
-            m_x = v;
-            return *this;
-        }
+    //    // FIX 3: Assignment operator (needed for stream manipulation)
+    //    constexpr Hex &operator=(T v) {
+    //        m_x = v;
+    //        return *this;
+    //    }
 
-        // FIX 4: Division assignment (needed for base conversion logic)
-        constexpr Hex &operator/=(unsigned int v) {
-            m_x /= v;
-            return *this;
-        }
-    };
+    //    // FIX 4: Division assignment (needed for base conversion logic)
+    //    constexpr Hex &operator/=(unsigned int v) {
+    //        m_x /= v;
+    //        return *this;
+    //    }
+    //};
 
-    static void panic();
-    static void println(const char *, ...);
-    static void print(char);
-    static void print(const char *);
-    static void print(unsigned long);
+    // static void panic();
+    // static void println(const char *, ...);
+    // static void print(char);
+    // static void print(const char *);
+    // static void print(unsigned long);
 
-    template <typename T> static void print(Hex<T> x) {
-        bool started = false;
+    // template <typename T> static void print(Hex<T> x) {
+    //     bool started = false;
 
-        for (int i = (sizeof(x) * 8) - 4; i >= 0; i -= 4) {
-            unsigned int current = (x >> i) & 0xF;
-            if (current != 0 || started) {
-                put(current < 10 ? current + '0' : current - 10 + 'a');
-                started = true;
-            }
-        }
-        if (!started) {
-            put('0');
-        }
-    }
+    //    for (int i = (sizeof(x) * 8) - 4; i >= 0; i -= 4) {
+    //        unsigned int current = (x >> i) & 0xF;
+    //        if (current != 0 || started) {
+    //            put(current < 10 ? current + '0' : current - 10 + 'a');
+    //            started = true;
+    //        }
+    //    }
+    //    if (!started) {
+    //        put('0');
+    //    }
+    //}
 
-    template <Meta::Integer T> static void print(T t) {
-        if constexpr (Meta::Signed<T>::Result) {
-            if (t < 0) {
-                put('-');
-                t = -t;
-            }
-        }
-        print(static_cast<unsigned long>(t));
-    }
+    // template <Meta::Integer T> static void print(T t) {
+    //     if constexpr (Meta::Signed<T>::Result) {
+    //         if (t < 0) {
+    //             put('-');
+    //             t = -t;
+    //         }
+    //     }
+    //     print(static_cast<unsigned long>(t));
+    // }
 
-    template <Meta::Pointer T> static void print(T t) {
-        Console::print("0x");
-        Console::print(Hex(reinterpret_cast<unsigned long>(t)));
-    }
+    // template <Meta::Pointer T> static void print(T t) {
+    //     Console::print("0x");
+    //     Console::print(Hex(reinterpret_cast<unsigned long>(t)));
+    // }
 
-    template <typename First, typename Second, typename... Args>
-    static void print(First &&first, Second &&second, Args &&...args) {
-        Console::print(static_cast<First &&>(first));
-        Console::print(", ");
-        Console::print(static_cast<Second &&>(second), static_cast<Args &&>(args)...);
-    }
+    // template <typename First, typename Second, typename... Args>
+    // static void print(First &&first, Second &&second, Args &&...args) {
+    //     Console::print(static_cast<First &&>(first));
+    //     Console::print(", ");
+    //     Console::print(static_cast<Second &&>(second), static_cast<Args &&>(args)...);
+    // }
 
     static void init() { new (&cout) Stream; }
     static Stream &endl(Console::Stream &s) {
