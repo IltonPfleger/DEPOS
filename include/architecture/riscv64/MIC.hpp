@@ -53,7 +53,7 @@ class MIC {
             CLINT::write();
         }
 
-        if constexpr (Traits<::PLIC>::Enable) {
+        if constexpr (!Traits<RISCV>::Supervisor && Traits<::PLIC>::Enable) {
             PLIC::init();
             csrs<MachineMode::IE>(MachineMode::EI);
         }
