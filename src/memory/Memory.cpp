@@ -41,7 +41,7 @@ void *Memory::alloc(size_t size) {
     void *chunk = nullptr;
 
     if (!s_allocator) {
-        Trace("Ussing Boot Memory!\n");
+        Trace("Ussing Boot Memory!");
         __bmm.start -= size;
         __bmm.start &= ~(size - 1);
         chunk = reinterpret_cast<void *>(virt2phys(__bmm.start));

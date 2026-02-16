@@ -6,22 +6,18 @@
 
 namespace riscv64 {
 
-class IC;
-using IC_DispatchTable = DispatchTable<0, 11, IC>;
-
-class IC : public IC_DispatchTable {
+class IC : public DispatchTable<Traits<::IC>::First, Traits<::IC>::Last, IC> {
 
   public:
     enum { INTERRUPT = 1UL << 63 };
 
     static void bind(unsigned int id, Handler handler) {
-        if constexpr (PLIC::Enable) {
-            if (id > 11) {
-                PLIC::bind(id - 12, handler);
-                return;
-            }
+        DispatchTable<Traits<::IC>::First, Traits<::IC>::Last, IC>::bind(id, handler);
+
+        if (id > 11) {
+            PLIC::priority(id - 11, 1);
+            PLIC::enable(id - 11);
         }
-        IC_DispatchTable::bind(id, handler);
     }
 };
 

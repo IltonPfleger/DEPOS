@@ -10,6 +10,7 @@ class CLINT;
 class PLIC;
 class UART;
 class RISCV;
+class IC;
 
 template <typename T> struct Traits;
 
@@ -48,7 +49,7 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long MMIO = 0x00000000;
     static constexpr unsigned long UART0 = 0x10000000;
     static constexpr unsigned long CLINT = 0x02000000;
-    static constexpr unsigned long PLIC = 0;
+    static constexpr unsigned long PLIC = 0xc000000;
 };
 
 template <> struct Traits<UART> {
@@ -62,6 +63,11 @@ template <> struct Traits<CLINT> {
     static constexpr unsigned long Clock = 10'000'000;
 };
 
+template <> struct Traits<IC> {
+    static constexpr unsigned long First = 0;
+    static constexpr unsigned long Last = 10 + 11;
+};
+
 template <> struct Traits<PLIC> {
-    static constexpr bool Enable = false;
+    static constexpr bool Enable = true;
 };
