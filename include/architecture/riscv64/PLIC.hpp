@@ -29,7 +29,7 @@ class PLIC : Driver {
     static unsigned int context() {
         unsigned int core = CPU::id();
         if constexpr (Traits<RISCV>::Supervisor) {
-            return core * 2 + (Traits<::CPU>::Count - Traits<::CPU>::Active);
+            return (core * 2) + 1;
         } else {
             return core * 2;
         }
