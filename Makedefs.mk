@@ -24,7 +24,7 @@ QEMU    := qemu-system-riscv64
 MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
-CCFLAGS = -std=c++2c -I$(HERE) -I$(INCLUDE) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -Wall -Wextra -Werror -pedantic
+CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -Wall -Wextra -Werror -pedantic
 
 build: $(IMAGE)
 
