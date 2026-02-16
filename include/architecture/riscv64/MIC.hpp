@@ -16,14 +16,20 @@ class MIC {
 
         if (mcause & IC::INTERRUPT) {
             unsigned int id = mcause & ~IC::INTERRUPT;
-            IC::dispatch(id);
+
+            if (id == 11) {
+                id = PLIC::claim();
+                IC::dispatch(id + 11);
+                PLIC::complete(id);
+            } else {
+                IC::dispatch(id);
+            }
         } else {
             if (mcause == 9) {
                 CLINT::syscall();
                 c->pc += 4;
-            } else {
+            } else
                 Exception<MachineMode>::dispatch();
-            }
         }
     }
 
@@ -47,10 +53,9 @@ class MIC {
             CLINT::write();
         }
 
-        // if constexpr (PLIC::Enable) {
-        //     IC::bind(11, PLIC::handler);
-        //     PLIC::init();
-        // }
+        if constexpr (Traits<::PLIC>::Enable) {
+            PLIC::init();
+        }
     }
 };
 
