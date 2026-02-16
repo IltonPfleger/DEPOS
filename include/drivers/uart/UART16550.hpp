@@ -56,9 +56,7 @@ class UART16550 : public Driver, public Observed<unsigned char *, size_t> {
     }
 
   public:
-    static void init() {
-        // IC::bind(RxIRQ, handler);
-    }
+    static void init() { IC::bind(RxIRQ, handler); }
 
     static UART16550 *instance() {
         static UART16550 _;
