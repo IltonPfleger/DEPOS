@@ -47,7 +47,7 @@ class MIC {
             csrw<MachineMode::SCRATCH>(stack);
         }
 
-        if constexpr (Traits<Timer>::Enable && Traits<RISCV>::Supervisor) {
+        if constexpr (Traits<::Timer>::Enable && Traits<RISCV>::Supervisor) {
             IC::bind(7, CLINT::forward);
             csrs<MachineMode::IE>(MachineMode::TI);
             CLINT::write();

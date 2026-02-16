@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Meta.hpp>
+
 class Thread;
 class Machine;
 class Timer;
@@ -10,13 +12,15 @@ class Debug;
 class Alarm;
 class Ethernet;
 class Console;
+class Dummy;
+class Virtual;
 
 template <typename U> class Scheduler;
 
 template <typename T> struct Traits;
 
 template <> struct Traits<System> {
-    static constexpr bool Multitask = true;
+    static constexpr bool Multitask = false;
 };
 
 template <> struct Traits<Timer> {
@@ -43,6 +47,10 @@ template <> struct Traits<Scheduler<Thread>> {
 template <> struct Traits<Debug> {
     static constexpr bool Error = true;
     static constexpr bool Trace = true;
+};
+
+template <> struct Traits<Dummy> {
+    typedef Meta::TypeList<> Devices;
 };
 
 #include <application/Traits.hpp>

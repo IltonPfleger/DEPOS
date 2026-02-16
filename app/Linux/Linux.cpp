@@ -1,5 +1,8 @@
 #include "Traits.hpp"
 #include <Traits.hpp>
+#include <abstractions/CPU.hpp>
+#include <abstractions/VirtualCPU.hpp>
+#include <drivers/virtio/Console.hpp>
 #include <machine/Machine.hpp>
 #include <utils/Console.hpp>
 #include <utils/string.hpp>
@@ -89,7 +92,7 @@ unsigned char *align(unsigned char *p, long alignment) {
 
 int main() {
     constexpr long MB = 1024 * 1024;
-    constexpr long LinuxMemorySize = 128 * 1024 * 1024;
+    constexpr long LinuxMemorySize = 256 * 1024 * 1024;
     typedef void (*Entry)(unsigned, LinuxDeviceTree *);
 
     unsigned char *memory_start = reinterpret_cast<unsigned char *>(Memory::alloc(LinuxMemorySize));
@@ -111,11 +114,11 @@ int main() {
     memcpy(initramfs, LinuxImage::Initramfs, sizeof(LinuxImage::Initramfs));
 
     if (!dtb->valid()) {
-        Console::print("LinuxDeviceTree: Invalid!\n");
+        Console::cout << "LinuxDeviceTree: Invalid!\n";
         return 1;
     }
 
-    long memory_start_base = reinterpret_cast<long>(memory_start);
+    unsigned long memory_start_base = reinterpret_cast<long>(memory_start);
     unsigned memory_start_hi = static_cast<unsigned>(memory_start_base >> 32);
     unsigned memory_start_lo = static_cast<unsigned>(memory_start_base & 0xFFFFFFFF);
     unsigned memory_size_hi = static_cast<unsigned>(LinuxMemorySize >> 32);
@@ -127,19 +130,23 @@ int main() {
         CPU::htobe32(static_cast<unsigned>(reinterpret_cast<long>(initramfs) + sizeof(LinuxImage::Initramfs)));
 
     if (!dtb->edit("chosen", "linux,initrd-start", &initramfs_start, sizeof(initramfs_start))) {
-        Console::print("LinuxDeviceTree: failed to update linux,initrd-start\n");
+        Console::cout << "LinuxDeviceTree: failed to update linux,initrd-start\n";
     };
 
     if (!dtb->edit("chosen", "linux,initrd-end", &initramfs_end, sizeof(initramfs_end))) {
-        Console::print("LinuxDeviceTree: failed to update linux,initrd-end\n");
+        Console::cout << "LinuxDeviceTree: failed to update linux,initrd-end\n";
     }
 
     if (!dtb->edit("memory", "reg", &memory, sizeof(memory))) {
-        Console::print("LinuxDeviceTree: failed to update memory\n");
+        Console::cout << "LinuxDeviceTree: failed to update memory\n";
     }
 
     auto entry = reinterpret_cast<Entry>(kernel);
 
-    entry(CPU::id(), dtb);
+    Console::cout << "\n *** Linux ***\n";
+
+    // virtio::Console<Traits<MemoryMap>::UART0>::init();
+    new VirtualCPU(entry, MemoryMap::Entry{memory_start_base, memory_start_base + LinuxMemorySize}, CPU::id(), dtb);
+
     return 0;
 }

@@ -44,6 +44,38 @@ class SV39_MMU {
             csrw<SupervisorMode::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
         }
 
+        static uintptr_t virt2phys(uintptr_t va) {
+            uintptr_t vpn2 = (va >> 30) & 0x1FF;
+            uintptr_t vpn1 = (va >> 21) & 0x1FF;
+            uintptr_t vpn0 = (va >> 12) & 0x1FF;
+
+            uintptr_t satp = csrr<SupervisorMode::SATP>();
+
+            if (satp == 0) return va;
+
+            uintptr_t root = satp & 0xFFFFFFFFFFF;
+            PageTable *current = reinterpret_cast<PageTable *>(root << 12);
+
+            uintptr_t pte2 = current->entries[vpn2];
+            if (!(pte2 & V)) return 0;
+            if (pte2 & (R | W | X)) {
+                return ((pte2 >> 10) << 12) | (va & 0x3FFFFFFF);
+            }
+
+            PageTable *l1 = reinterpret_cast<PageTable *>((pte2 >> 10) << 12);
+            uintptr_t pte1 = l1->entries[vpn1];
+            if (!(pte1 & V)) return 0;
+            if (pte1 & (R | W | X)) {
+                return ((pte1 >> 10) << 12) | (va & 0x1FFFFF);
+            }
+
+            PageTable *l0 = reinterpret_cast<PageTable *>((pte1 >> 10) << 12);
+            uintptr_t pte0 = l0->entries[vpn0];
+            if (!(pte0 & V)) return 0;
+
+            return ((pte0 >> 10) << 12) | (va & 0xFFF);
+        }
+
         bool map(uintptr_t va, uintptr_t pa, Flags flags) {
             uintptr_t vpn2 = (va >> 30) & 0x1FF;
             uintptr_t vpn1 = (va >> 21) & 0x1FF;

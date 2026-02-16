@@ -1,10 +1,12 @@
 #pragma once
 
-#include <architecture/rv/Context.hpp>
-#include <architecture/rv/ic/sbi/Time.hpp>
+#include <architecture/riscv64/Context.hpp>
+#include <architecture/riscv64/sbi/Time.hpp>
 
-namespace rv {
+namespace riscv64 {
+
 namespace sbi {
+
 class Base {
   public:
     static constexpr unsigned int EID = 0x10;
@@ -53,10 +55,8 @@ class Base {
             break;
         }
         case PROBE_EXTENSION: {
-            if (c->a0 == Time::EID)
-                c->a1 = 1;
-            else
-                c->a1 = 0;
+            c->a1 = 0;
+            if (c->a0 == Time::EID) c->a1 = 1;
             c->a0 = 0;
             break;
         }
@@ -66,5 +66,7 @@ class Base {
         return handle;
     }
 };
+
 } // namespace sbi
-} // namespace rv
+
+} // namespace riscv64
