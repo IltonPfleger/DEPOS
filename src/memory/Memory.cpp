@@ -24,11 +24,11 @@ void Memory::init() {
     TraceOut();
 }
 
-uintptr_t Memory::virt2phys(uintptr_t chunkess) {
+uintptr_t Memory::virt2phys(uintptr_t chunk) {
     if constexpr (Traits<System>::Multitask)
-        return chunkess - Traits<MemoryMap>::VirtualRamStart + Traits<MemoryMap>::PhysicalRamStart;
+        return chunk - Traits<MemoryMap>::VirtualRamStart + Traits<MemoryMap>::PhysicalRamStart;
     else
-        return chunkess;
+        return chunk;
 }
 
 void *Memory::alloc(size_t size) {

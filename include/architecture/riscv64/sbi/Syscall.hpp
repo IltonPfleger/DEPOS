@@ -1,27 +1,29 @@
 #pragma once
 
-#include <architecture/rv/ic/sbi/Base.hpp>
-#include <architecture/rv/ic/sbi/Time.hpp>
+#include <architecture/riscv64/sbi/Base.hpp>
+#include <architecture/riscv64/sbi/Time.hpp>
 
-namespace rv {
+namespace riscv64 {
+
 namespace sbi {
+
 class Syscall {
   public:
     static constexpr unsigned int CODE = 9;
 
     static bool handler(MachineContext *c) {
-        bool handle = false;
         switch (c->a7) {
         case Base::EID:
-            handle = Base::handler(c);
-            break;
+            c->pc += 4;
+            return Base::handler(c);
         case Time::EID:
-            handle = Time::handler(c);
-            break;
+            c->pc += 4;
+            return Time::handler(c);
         }
-        c->pc += 4;
-        return handle;
+        return false;
     }
 };
+
 } // namespace sbi
-} // namespace rv
+
+} // namespace riscv64

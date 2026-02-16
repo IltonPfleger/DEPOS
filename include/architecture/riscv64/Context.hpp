@@ -3,6 +3,9 @@
 #include <architecture/riscv64/Modes.hpp>
 #include <utils/string.hpp>
 
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+
 namespace riscv64 {
 template <typename T> class ContextBase {
   public:
@@ -18,9 +21,9 @@ template <typename T> class ContextBase {
 
     ContextBase() = default;
 
-    ContextBase(int (*entry)(void *), void *a0, void *sp, void (*exit)()) {
-        this->ra = reinterpret_cast<uint64_t>(exit);
-        this->pc = reinterpret_cast<uint64_t>(entry);
+    ContextBase(auto pc, auto a0, auto sp, auto ra) {
+        this->ra = reinterpret_cast<uint64_t>(ra);
+        this->pc = reinterpret_cast<uint64_t>(pc);
         this->status = static_cast<uint64_t>(T::ME2ME | T::PIRQE);
         this->a0 = reinterpret_cast<uint64_t>(a0);
         this->sp = reinterpret_cast<uint64_t>(sp);
@@ -86,6 +89,8 @@ template <typename T> class ContextBase {
             "csrr t1, %[csrstatus]\n"
             "or t1, t1, %[me2me]\n"
             "sd t1, %[status](a0)\n"
+            "li a0, 1\n"
+            "ret"
             :
             : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)), [sp] "i"(offsetof(ContextBase, sp)),
               [a0] "i"(offsetof(ContextBase, a0)), [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
@@ -95,18 +100,18 @@ template <typename T> class ContextBase {
               [s11] "i"(offsetof(ContextBase, s11)), [pc] "i"(offsetof(ContextBase, pc)), [csrstatus] "i"(T::STATUS),
               [me2me] "r"(T::ME2ME), [status] "i"(offsetof(ContextBase, status))
             : "memory");
-        asm volatile("li a0, 1\n"
-                     "ret\n");
     }
 
     template <bool ChangeStack = false> __attribute__((always_inline)) static inline ContextBase *push() {
         if constexpr (ChangeStack) {
             asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
         }
+
         asm volatile(
             "addi sp, sp, %[size]\n"
             "sd ra, %[ra](sp)\n"
             "sd gp, %[gp](sp)\n"
+            "sd tp, %[tp](sp)\n"
             "sd t0, %[t0](sp)\n"
             "sd t1, %[t1](sp)\n"
             "sd t2, %[t2](sp)\n"
@@ -114,6 +119,14 @@ template <typename T> class ContextBase {
             "sd t4, %[t4](sp)\n"
             "sd t5, %[t5](sp)\n"
             "sd t6, %[t6](sp)\n"
+            :
+            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)), [tp] "i"(offsetof(ContextBase, tp)),
+              [t0] "i"(offsetof(ContextBase, t0)), [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)),
+              [t3] "i"(offsetof(ContextBase, t3)), [t4] "i"(offsetof(ContextBase, t4)), [t5] "i"(offsetof(ContextBase, t5)),
+              [t6] "i"(offsetof(ContextBase, t6)), [size] "i"(-sizeof(ContextBase))
+            : "memory");
+
+        asm volatile(
             "sd a0, %[a0](sp)\n"
             "sd a1, %[a1](sp)\n"
             "sd a2, %[a2](sp)\n"
@@ -123,18 +136,35 @@ template <typename T> class ContextBase {
             "sd a6, %[a6](sp)\n"
             "sd a7, %[a7](sp)\n"
             :
-            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)), [t0] "i"(offsetof(ContextBase, t0)),
-              [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)), [t3] "i"(offsetof(ContextBase, t3)),
-              [t4] "i"(offsetof(ContextBase, t4)), [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)),
-              [a0] "i"(offsetof(ContextBase, a0)), [a1] "i"(offsetof(ContextBase, a1)), [a2] "i"(offsetof(ContextBase, a2)),
+            : [a0] "i"(offsetof(ContextBase, a0)), [a1] "i"(offsetof(ContextBase, a1)), [a2] "i"(offsetof(ContextBase, a2)),
               [a3] "i"(offsetof(ContextBase, a3)), [a4] "i"(offsetof(ContextBase, a4)), [a5] "i"(offsetof(ContextBase, a5)),
-              [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7)), [size] "i"(-sizeof(ContextBase))
+              [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7))
+            : "memory");
+
+        asm volatile(
+            "sd s0,  %[s0](sp)\n"
+            "sd s1,  %[s1](sp)\n"
+            "sd s2,  %[s2](sp)\n"
+            "sd s3,  %[s3](sp)\n"
+            "sd s4,  %[s4](sp)\n"
+            "sd s5,  %[s5](sp)\n"
+            "sd s6,  %[s6](sp)\n"
+            "sd s7,  %[s7](sp)\n"
+            "sd s8,  %[s8](sp)\n"
+            "sd s9,  %[s9](sp)\n"
+            "sd s10, %[s10](sp)\n"
+            "sd s11, %[s11](sp)\n"
+            :
+            : [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)), [s2] "i"(offsetof(ContextBase, s2)),
+              [s3] "i"(offsetof(ContextBase, s3)), [s4] "i"(offsetof(ContextBase, s4)), [s5] "i"(offsetof(ContextBase, s5)),
+              [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)), [s8] "i"(offsetof(ContextBase, s8)),
+              [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11))
             : "memory");
 
         asm volatile("csrr t0, %0\n"
-                     "sd t0, %c[status](sp)\n"
+                     "sd t0, %[status](sp)\n"
                      "csrr t0, %1\n"
-                     "sd t0, %c[pc](sp)" ::"i"(T::STATUS),
+                     "sd t0, %[pc](sp)" ::"i"(T::STATUS),
                      "i"(T::EPC), [status] "i"(offsetof(ContextBase, status)), [pc] "i"(offsetof(ContextBase, pc)));
         register ContextBase *sp asm("sp");
         return sp;
@@ -144,18 +174,21 @@ template <typename T> class ContextBase {
         asm volatile("ld t0, %[statuso](sp)\n"
                      "csrw %[statusr], t0\n"
                      "ld t0, %[pc](sp)\n"
-                     "csrw %[epcr], t0" ::[statusr] "i"(T::STATUS),
-                     [epcr] "i"(T::EPC), [pc] "i"(offsetof(ContextBase, pc)), [statuso] "i"(offsetof(ContextBase, status)));
+                     "csrw %[epcr], t0"
+                     :
+                     : [statusr] "i"(T::STATUS), [epcr] "i"(T::EPC), [pc] "i"(offsetof(ContextBase, pc)),
+                       [statuso] "i"(offsetof(ContextBase, status))
+                     : "t0");
+
         asm volatile(
             "ld ra, %[ra](sp)\n"
             "ld gp, %[gp](sp)\n"
+            "ld tp, %[tp](sp)\n"
             "ld t0, %[t0](sp)\n"
             "ld t1, %[t1](sp)\n"
             "ld t2, %[t2](sp)\n"
-            "ld t3, %[t3](sp)\n"
-            "ld t4, %[t4](sp)\n"
-            "ld t5, %[t5](sp)\n"
-            "ld t6, %[t6](sp)\n"
+            "ld s0, %[s0](sp)\n"
+            "ld s1, %[s1](sp)\n"
             "ld a0, %[a0](sp)\n"
             "ld a1, %[a1](sp)\n"
             "ld a2, %[a2](sp)\n"
@@ -164,18 +197,43 @@ template <typename T> class ContextBase {
             "ld a5, %[a5](sp)\n"
             "ld a6, %[a6](sp)\n"
             "ld a7, %[a7](sp)\n"
+            :
+            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)), [tp] "i"(offsetof(ContextBase, tp)),
+              [t0] "i"(offsetof(ContextBase, t0)), [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)),
+              [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)), [a0] "i"(offsetof(ContextBase, a0)),
+              [a1] "i"(offsetof(ContextBase, a1)), [a2] "i"(offsetof(ContextBase, a2)), [a3] "i"(offsetof(ContextBase, a3)),
+              [a4] "i"(offsetof(ContextBase, a4)), [a5] "i"(offsetof(ContextBase, a5)), [a6] "i"(offsetof(ContextBase, a6)),
+              [a7] "i"(offsetof(ContextBase, a7))
+            : "memory");
+
+        asm volatile(
+            "ld s2,  %[s2](sp)\n"
+            "ld s3,  %[s3](sp)\n"
+            "ld s4,  %[s4](sp)\n"
+            "ld s5,  %[s5](sp)\n"
+            "ld s6,  %[s6](sp)\n"
+            "ld s7,  %[s7](sp)\n"
+            "ld s8,  %[s8](sp)\n"
+            "ld s9,  %[s9](sp)\n"
+            "ld s10, %[s10](sp)\n"
+            "ld s11, %[s11](sp)\n"
+            "ld t3,  %[t3](sp)\n"
+            "ld t4,  %[t4](sp)\n"
+            "ld t5,  %[t5](sp)\n"
+            "ld t6,  %[t6](sp)\n"
             "addi sp, sp, %[size]\n"
             :
-            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)), [t0] "i"(offsetof(ContextBase, t0)),
-              [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)), [t3] "i"(offsetof(ContextBase, t3)),
-              [t4] "i"(offsetof(ContextBase, t4)), [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)),
-              [a0] "i"(offsetof(ContextBase, a0)), [a1] "i"(offsetof(ContextBase, a1)), [a2] "i"(offsetof(ContextBase, a2)),
-              [a3] "i"(offsetof(ContextBase, a3)), [a4] "i"(offsetof(ContextBase, a4)), [a5] "i"(offsetof(ContextBase, a5)),
-              [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7)), [size] "i"(sizeof(ContextBase))
+            : [s2] "i"(offsetof(ContextBase, s2)), [s3] "i"(offsetof(ContextBase, s3)), [s4] "i"(offsetof(ContextBase, s4)),
+              [s5] "i"(offsetof(ContextBase, s5)), [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)),
+              [s8] "i"(offsetof(ContextBase, s8)), [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)),
+              [s11] "i"(offsetof(ContextBase, s11)), [t3] "i"(offsetof(ContextBase, t3)), [t4] "i"(offsetof(ContextBase, t4)),
+              [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)), [size] "i"(sizeof(ContextBase))
             : "memory");
+
         if constexpr (ChangeStack) {
             asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
         }
+
         T::ret();
     }
 };
@@ -183,3 +241,5 @@ template <typename T> class ContextBase {
 using MachineContext = ContextBase<MachineMode>;
 using SupervisorContext = ContextBase<SupervisorMode>;
 } // namespace riscv64
+
+#pragma GCC pop_options

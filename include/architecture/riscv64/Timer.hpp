@@ -2,6 +2,7 @@
 
 #include <architecture/common/Timer.hpp>
 #include <architecture/riscv64/CLINT.hpp>
+#include <architecture/riscv64/IC.hpp>
 
 namespace riscv64 {
 

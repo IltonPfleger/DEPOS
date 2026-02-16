@@ -32,6 +32,7 @@ $(BUILD)/$(APPLICATION).o: $(APPLICATION).cpp $(KERNEL_BLOB) $(DTB_BLOB) $(INITR
 
 $(DTB_BLOB): $(DTB)
 	@mkdir -p $(dir $@)
+	dtc -I dts -O dtb -o guest.dtb guest.dts
 	xxd -i $< | sed '1d' | head -n -2 > $@
 
 $(KERNEL_BLOB): $(KERNEL)

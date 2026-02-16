@@ -1,6 +1,7 @@
 #pragma once
 
 #include <architecture/riscv64/csrs.hpp>
+#include <utils/Debug.hpp>
 
 namespace riscv64 {
 

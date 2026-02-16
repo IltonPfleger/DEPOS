@@ -1,42 +1,47 @@
 #pragma once
 
-#include <architecture/rv/Context.hpp>
-#include <architecture/rv/Modes.hpp>
+#include <architecture/riscv64/Context.hpp>
+#include <architecture/riscv64/Modes.hpp>
 
-namespace rv {
+namespace riscv64 {
+
 namespace sbi {
+
 class IllegalInstruction {
   public:
     static constexpr unsigned int CODE = 2;
 
     enum Opcode {
-        SYSTEM = 0b1110011,
+        SYSTEM = 0x73,
     };
 
-    enum Function {
-        CSRR = 0x2000,
+    enum Mask {
+        OPCODE_MASK = 0x7F,
+        FUNCT3_MASK = 0x7000,
+        RD_MASK = 0xF80,
     };
 
-    enum {
-        RDTIME = 11000000000100000,
-    };
+    static constexpr uint32_t RDTIME_PATTERN = 0xC0102073;
+    static constexpr uint32_t RDTIME_MASK = 0xFFF0707F;
 
     static bool handler(MachineContext *c) {
-        bool handle = false;
-        uintmax_t tval = csrr<MachineMode::TVAL>();
+        uint32_t tval = static_cast<uint32_t>(csrr<MachineMode::TVAL>());
 
-        if (tval & SYSTEM) {
-            if (tval & CSRR) {
-                if (tval & RDTIME) {
-                    unsigned int i = (tval >> 7) & 0x1f;
-                    c->pc += 4;
-                    (*c)[i] = CLINT::read();
-                    handle = true;
-                }
+        if ((tval & RDTIME_MASK) == RDTIME_PATTERN) {
+            unsigned int rd = (tval >> 7) & 0x1F;
+
+            if (rd != 0) {
+                (*c)[rd] = CLINT::read();
             }
+
+            c->pc += 4;
+            return true;
         }
-        return handle;
+
+        return false;
     }
 };
+
 } // namespace sbi
-} // namespace rv
+
+} // namespace riscv64

@@ -47,10 +47,14 @@ class CPU {
         return sp;
     }
 
-    static auto id() {
-        unsigned int tp;
-        asm volatile("mv %0, tp" : "=r"(tp));
-        return tp;
+    static unsigned int id() {
+        if constexpr (!Traits<RISCV>::Supervisor)
+            return csrr<MachineMode::HARTID>();
+        else {
+            unsigned int tp;
+            asm volatile("mv %0, tp" : "=r"(tp));
+            return tp;
+        }
     }
 
     __attribute__((naked)) static void init() {
