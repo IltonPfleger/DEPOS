@@ -1,18 +1,19 @@
 #pragma once
 
+#include <architecture/riscv64/init.hpp>
+
 #include "CacheController.hpp"
 #include "Traits.hpp"
 
-#include <architecture/rv/64/RV64.hpp>
 #include <drivers/Driver.hpp>
 #include <drivers/uart/DW8250.hpp>
 #include <memory/Memory.hpp>
 #include <utils/BSS.hpp>
 
-typedef rv::IC IC;
-typedef rv::CPU CPU;
+// typedef rv::IC IC;
+// typedef rv::CPU CPU;
 
-#include <drivers/ethernet/DWC_Ether_QoS.hpp>
+// #include <drivers/ethernet/DWC_Ether_QoS.hpp>
 
 class VisionFive2 {
 
@@ -97,16 +98,13 @@ class VisionFive2 {
     };
 
   public:
-    using Initializer = rv64::Initializer;
-
     static void init() {
-        if (CPU::id() == Traits<CPUS>::BSP) {
+        if (riscv64::CPU::id() == Traits<CPU>::BSP) {
             Clock::init();
-            BSS::init();
         }
 
-        CPU::barrier();
+        riscv64::CPU::barrier();
 
-        Initializer::init();
+        riscv64::init();
     }
 };
