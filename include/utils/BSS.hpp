@@ -1,11 +1,14 @@
+#pragma once
+
 #include <memory/Memory.hpp>
 #include <memory/MemoryMap.hpp>
+#include <utils/string.hpp>
 
 class BSS {
   public:
     static void init() {
-        for (auto i = Memory::virt2phys(__kmm.bss.start); i != Memory::virt2phys(__kmm.bss.end); i++) {
-            *reinterpret_cast<unsigned char *>(i) = 0;
-        }
+        uintptr_t start = Memory::virt2phys(__kmm.bss.start);
+        uintptr_t end = Memory::virt2phys(__kmm.bss.end);
+        memset(reinterpret_cast<void *>(start), 0, end - start);
     }
 };

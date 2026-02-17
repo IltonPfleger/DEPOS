@@ -6,10 +6,11 @@
 class MemoryMap;
 class Memory;
 class Clock;
-class CPUS;
+class CPU;
 class CLINT;
 class PLIC;
 class UART;
+class IC;
 
 template <unsigned long> class DW8250;
 template <unsigned long> class DWC_Ether_QoS;
@@ -18,18 +19,18 @@ template <> struct Traits<Machine> {
     static constexpr const char NAME[] = "VisionFive2";
 };
 
-template <> struct Traits<CPUS> {
-    static constexpr int XLEN = 64;
-    static constexpr int COUNT = 5;
-    static constexpr int ACTIVE = Traits<System>::Multitask ? COUNT - 1 : COUNT;
+template <> struct Traits<CPU> {
+    static constexpr const char Architecture[] = "riscv64";
+    static constexpr int Count = 1;
+    static constexpr int Active = 1;
     static constexpr int BSP = 0;
 };
 
 template <> struct Traits<Memory> {
     static constexpr unsigned long Order = 30;
     static constexpr unsigned long Size = (1 << Order);
-    static constexpr unsigned long PageOrder = 12;
-    static constexpr unsigned long PageSize = (1 << PageOrder);
+    static constexpr unsigned long PageSize = 4096;
+    static constexpr unsigned long StackSize = PageSize;
 };
 
 template <> struct Traits<MemoryMap> {
@@ -45,6 +46,7 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long SystemAddr = RamStart;
 
     /* *** MMIO *** */
+    static constexpr unsigned long MMIO = 0x00000000;
     static constexpr unsigned long CacheController = 0x2010000;
     static constexpr unsigned long GMAC0 = 0x16030000;
     static constexpr unsigned long GMAC1 = 0x16040000;
@@ -59,26 +61,27 @@ template <> struct Traits<CLINT> {
     static constexpr unsigned long Clock = 4'000'000;
 };
 
-template <> struct Traits<PLIC> {
-    static constexpr bool Enable = true;
-    static constexpr unsigned long Addr = Traits<MemoryMap>::PLIC;
-    static constexpr unsigned int First = 0;
-    static constexpr unsigned int Last = 136;
-    static constexpr unsigned int Count = Last - First + 1;
-};
-
-template <> struct Traits<DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>> {
-    static constexpr unsigned int IRQs[] = {19};
-    // static constexpr unsigned int IRQs[] = {17, 18, 19, 20, 21};
-};
+// template <> struct Traits<DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>> {
+//     static constexpr unsigned int IRQs[] = {19};
+//     // static constexpr unsigned int IRQs[] = {17, 18, 19, 20, 21};
+// };
 
 template <> struct Traits<UART> {
     typedef Meta::TypeList<DW8250<Traits<MemoryMap>::UART0>> Devices;
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 
-template <> struct Traits<Ethernet> {
+// template <> struct Traits<Ethernet> {
+//     static constexpr bool Enable = true;
+//     typedef Meta::TypeList<DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>> Devices;
+//     static constexpr unsigned int NumberOfDevices = Devices::Length;
+// };
+
+template <> struct Traits<IC> {
+    static constexpr unsigned long First = 0;
+    static constexpr unsigned long Last = 136 + 11;
+};
+
+template <> struct Traits<PLIC> {
     static constexpr bool Enable = true;
-    typedef Meta::TypeList<DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>> Devices;
-    static constexpr unsigned int NumberOfDevices = Devices::Length;
 };

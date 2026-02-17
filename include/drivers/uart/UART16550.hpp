@@ -74,9 +74,4 @@ class UART16550 : public Driver, public Observed<unsigned char *, size_t> {
             ;
         return Reg8(Address, RBR);
     }
-
-    void write(const char *s) {
-        while (s && *s)
-            putc(*s++);
-    }
 };

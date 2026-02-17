@@ -5,10 +5,12 @@
 #include <application/Application.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Memory.hpp>
+#include <utils/BSS.hpp>
 #include <utils/Debug.hpp>
 #include <utils/Dispatcher.hpp>
 
 extern "C" __attribute__((optimize("O0"))) void init() {
+    CPU::barrier();
 
     if (CPU::id() == Traits<CPU>::BSP) {
         Console::init();
@@ -36,5 +38,6 @@ extern "C" __attribute__((optimize("O0"))) void init() {
 
 extern "C" __attribute__((naked, used, section(".init"))) void _init() {
     CPU::init();
+    BSS::init();
     init();
 }
