@@ -3,7 +3,7 @@
 #include <network/GenericAddress.hpp>
 #include <utils/Observer.hpp>
 
-class Ethernet : public Observed {
+class Ethernet : public Observed<> {
 
   public:
     typedef GenericAddress<6> Address;

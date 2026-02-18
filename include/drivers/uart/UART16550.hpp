@@ -5,14 +5,18 @@
 #include <utils/Debug.hpp>
 #include <utils/Observer.hpp>
 
-template <unsigned long Address, unsigned long BaudDivisor, unsigned long RxIRQ>
-class UART16550 : public Driver, public Observed<unsigned char *, size_t> {
+template <typename MyTraits> class UART16550 : public Driver, public Observed<unsigned char *, size_t> {
+    static constexpr unsigned long Address = MyTraits::Address;
+    static constexpr unsigned int Clock = MyTraits::Clock;
+    static constexpr unsigned int BaudRate = MyTraits::BaudRate;
+    static constexpr unsigned int BaudDivisor = Clock / (16 * BaudRate);
+
   private:
     UART16550() {
         Reg8(Address, IER) = 0x00;
         Reg8(Address, LCR) = LCR_DLAB;
-        Reg8(Address, DLL) = (uint8_t)(BaudDivisor & 0xFF);
-        Reg8(Address, DLM) = (uint8_t)((BaudDivisor >> 8) & 0xFF);
+        Reg8(Address, DLL) = static_cast<uint8_t>(BaudDivisor & 0xFF);
+        Reg8(Address, DLM) = static_cast<uint8_t>((BaudDivisor >> 8) & 0xFF);
         Reg8(Address, LCR) = LCR_8N1;
         Reg8(Address, FCR) = FCR_ENABLE | FCR_CLEAR;
         Reg8(Address, IER) = IER_RX;
@@ -20,18 +24,18 @@ class UART16550 : public Driver, public Observed<unsigned char *, size_t> {
     }
 
     enum Registers {
-        RBR = 0,
-        THR = 0,
-        IER = 1,
-        IIR = 2,
-        FCR = 2,
-        LCR = 3,
-        MCR = 4,
-        LSR = 5,
-        MSR = 6,
-        SCR = 7,
-        DLL = 0,
-        DLM = 1
+        RBR = 0 << MyTraits::Shift, // Receiver Buffer
+        THR = 0 << MyTraits::Shift, // Transmitter Holding
+        DLL = 0 << MyTraits::Shift, // Divisor Latch Low
+        IER = 1 << MyTraits::Shift, // Interrupt Enable
+        DLM = 1 << MyTraits::Shift, // Divisor Latch High
+        IIR = 2 << MyTraits::Shift, // Interrupt Identity
+        FCR = 2 << MyTraits::Shift, // FIFO Control
+        LCR = 3 << MyTraits::Shift, // Line Control
+        MCR = 4 << MyTraits::Shift, // Modem Control
+        LSR = 5 << MyTraits::Shift, // Line Status
+        MSR = 6 << MyTraits::Shift, // Modem Status
+        SCR = 7 << MyTraits::Shift  // Scratch
     };
 
     enum Bits {
@@ -56,7 +60,13 @@ class UART16550 : public Driver, public Observed<unsigned char *, size_t> {
     }
 
   public:
-    static void init() { IC::bind(RxIRQ, handler); }
+    static void init() {
+        for (auto IRQ : MyTraits::IRQs)
+            if (IRQ) {
+                IC::bind(IRQ, handler);
+                Console::cout << IRQ << Console::endl;
+            }
+    }
 
     static UART16550 *instance() {
         static UART16550 _;

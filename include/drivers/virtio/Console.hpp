@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Traits.hpp>
-#include <drivers/uart/DW8250.hpp>
 #include <drivers/uart/UART16550.hpp>
 #include <drivers/virtio/Handler.hpp>
 #include <drivers/virtio/LegacyHeader.hpp>

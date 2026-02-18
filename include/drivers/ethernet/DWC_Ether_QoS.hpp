@@ -1,3 +1,4 @@
+#include <abstractions/CPU.hpp>
 #include <drivers/Driver.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
@@ -88,9 +89,6 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
     static void init() {
         TraceIn();
 
-        unsigned short id1 = MDIO::read(phy, DWC_Ether_QoS_PHY_ID_1);
-        unsigned short id2 = MDIO::read(phy, DWC_Ether_QoS_PHY_ID_2);
-
         MDIO::clear45(phy, CHIP_CONFIG, CHIP_CONFIG_SOFTWARE_RESET);
         while (!(MDIO::read45(phy, CHIP_CONFIG) & CHIP_CONFIG_SOFTWARE_RESET))
             ;
@@ -98,19 +96,6 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
         MDIO::set(phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE | BASIC_CONTROL_RE_AUTO_NEGOTIATION);
         while (!(MDIO::read(phy, BASIC_STATUS) & BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE))
             ;
-        Console::println("ID: 0x%x%x\n", id1, id2);
-        if (MDIO::read(phy, STATUS) & STATUS_LINK) {
-            Console::println("Link is Up!\n");
-            Console::println("Speed: %dMb/s\n", speed());
-            if (MDIO::read(phy, STATUS) & STATUS_FULL_DUPLEX) {
-                Console::println("Link is Full Duplex!\n");
-            } else {
-                Console::println("Link is Half Duplex!\n");
-            }
-        } else {
-            Console::println("Link is Down!\n");
-        }
-
         MDIO::set45(phy, RGMII_CONFIG1, RGMII_CONFIG1_TX_CLK_SEL);
         MDIO::clear45(phy, CHIP_CONFIG, CHIP_CONFIG_RXC_DELAY_ENABLE);
         MDIO::clear45(phy, RGMII_CONFIG1, 0xF | 0xF << 10);
@@ -123,19 +108,6 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
         MDIO::set45(phy, PAD_DRIVE_STRENGTH_CFG, 3 << 4);
 
         TraceOut();
-    }
-
-    static int speed() {
-        switch ((MDIO::read(phy, STATUS) & STATUS_SPEED_MASK)) {
-        case STATUS_SPEED_1000:
-            return 1000;
-        case STATUS_SPEED_100:
-            return 100;
-        case STATUS_SPEED_10:
-            return 10;
-        default:
-            return 0;
-        }
     }
 
   private:
@@ -222,7 +194,6 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
             CacheController::flush(m_descriptor, sizeof(Descriptor));
             if (!own || !(m_descriptor->des3 & Descriptor::OWN)) {
                 if (!CPU::Atomic::tsl(m_lock)) {
-                    CacheController::flush(m_descriptor, sizeof(Descriptor));
                     return false;
                 }
             };
@@ -352,6 +323,8 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
             i = (i + 1) % k_number_of_descriptors;
         }
 
+        CacheController::flush(&m_rx_buffers[i], sizeof(m_rx_buffers[i]));
+
         return Guard<ReceiveBuffer, static_cast<bool (ReceiveBuffer::*)()>(&ReceiveBuffer::lock),
                      static_cast<void (ReceiveBuffer::*)()>(&ReceiveBuffer::unlock)>(m_rx_buffers[i], false);
     }
@@ -388,16 +361,23 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
 template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     enum Bit {
         TX_QUEUE0_OPERATION_MODE_TSF = 2,
+        RX_QUEUE0_OPERATION_MODE_RSF = 1 << 5,
+        RX_QUEUE0_OPERATION_MODE_FEP = 1 << 4,
+        RX_QUEUE0_OPERATION_MODE_FUP = 1 << 3,
+
     };
 
     enum Register {
         TX_QUEUE0_OPERATION_MODE = 0xd00,
+        RX_QUEUE0_OPERATION_MODE = 0xd30,
+
     };
 
   public:
     static void init() {
         TraceIn();
         Reg32(Base, TX_QUEUE0_OPERATION_MODE) |= TX_QUEUE0_OPERATION_MODE_TSF;
+        Reg32(Base, RX_QUEUE0_OPERATION_MODE) |= RX_QUEUE0_OPERATION_MODE_FUP | RX_QUEUE0_OPERATION_MODE_FEP;
         TraceOut();
     }
 };
@@ -418,8 +398,8 @@ template <unsigned long Base> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<Bas
         DMA::reset();
         MTL::init();
         PHY::init();
-        m_device = new (Heap::SYSTEM) DWC_Ether_QoS();
         MAC::init();
+        m_device = new (Heap::SYSTEM) DWC_Ether_QoS();
         TraceOut();
     }
 
