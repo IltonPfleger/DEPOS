@@ -1,4 +1,5 @@
 #pragma once
+
 #include <Spin.hpp>
 #include <Thread.hpp>
 
@@ -7,21 +8,25 @@ class Semaphore {
     Semaphore(int value = 1) : m_value(value) {}
 
     void p() {
-        CPU::Interruptions::disable();
+        bool enabled = CPU::Interruptions::disable();
+
         m_spin.acquire();
         if (m_value-- < 1)
             Thread::sleep(&m_waiting, &m_spin);
         else
             m_spin.release();
-        CPU::Interruptions::enable();
+
+        if (enabled) CPU::Interruptions::enable();
     }
 
     void v() {
-        CPU::Interruptions::disable();
+        bool enabled = CPU::Interruptions::disable();
+
         m_spin.acquire();
         if (m_value++ < 0) Thread::wakeup(&m_waiting);
         m_spin.release();
-        CPU::Interruptions::enable();
+
+        if (enabled) CPU::Interruptions::enable();
     }
 
   private:

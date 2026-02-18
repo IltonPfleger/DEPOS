@@ -2,12 +2,13 @@
 #include <drivers/Driver.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
-#include <network/ethernet/Ethernet.hpp>
+#include <network/GenericAddress.hpp>
 #include <utils/Debug.hpp>
 #include <utils/Guard.hpp>
+#include <utils/Observer.hpp>
 #include <utils/string.hpp>
 
-template <unsigned long Base> class DWC_Ether_QoS;
+// template <typename> class DWC_Ether_QoS;
 
 template <unsigned long Base> class _MDIO : Driver {
     enum Register { BASE = 0x200, DATA = 0x204 };
@@ -139,17 +140,6 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
     };
 
   public:
-    struct Address {
-        unsigned int high;
-        unsigned int low;
-    };
-
-    static Address address() { return {Reg32(Base, ADDRESS0_HIGH) & 0xFFFF, Reg32(Base, ADDRESS0_LOW)}; }
-    static void address(unsigned int high, unsigned int low) {
-        Reg32(Base, ADDRESS0_HIGH) = (Reg32(Base, ADDRESS0_HIGH) & 0xFFFF0000) | (high & 0xFFFF);
-        Reg32(Base, ADDRESS0_LOW) = low;
-    }
-
     static void init() {
         TraceIn();
         Reg32(Base, PACKET_FILTER) |= PACKET_FILTER_RECEIVE_ALL | PACKET_FILTER_PROMISCUOUS_MODE;
@@ -160,7 +150,7 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
     }
 };
 
-template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet {
+template <typename MyTraits> class DWC_Ether_QoS_DMA : public Observed<>, Driver {
     using Buffer = unsigned char[2048];
     struct Descriptor {
         unsigned int des0;
@@ -213,6 +203,7 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
         void unlock() { unlock(true); }
 
         uint8_t *data() { return m_data; }
+        size_t length() { return m_descriptor->des3 & 0x3FFF; }
 
       private:
         Descriptor *m_descriptor;
@@ -265,7 +256,7 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
 
         if (status & CH0_INTERRUPT_STATUS_RI) {
             status |= CH0_INTERRUPT_STATUS_RI;
-            notify();
+            this->notify();
         }
 
         if (status & CH0_INTERRUPT_STATUS_RBU) {
@@ -303,7 +294,7 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
         Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32;
         Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number_of_descriptors - 1;
 
-        for (auto i : Traits<DWC_Ether_QoS<Base>>::IRQs)
+        for (auto i : MyTraits::IRQs)
             IC::bind(i, interrupt);
 
         Reg32(Base, CH0_TX_CONTROL) |= 1;
@@ -330,7 +321,7 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
     }
 
     // Broken For Multicore
-    int send(const void *frame, unsigned int length) {
+    int send(void *frame, unsigned int length) {
         CacheController::flush(frame, length);
 
         Descriptor &d = *reinterpret_cast<Descriptor *>(Reg32(Base, CH0_CURRENT_APP_TX_DESCRIPTOR));
@@ -351,6 +342,7 @@ template <unsigned long Base> class DWC_Ether_QoS_DMA : Driver, public Ethernet 
     }
 
   private:
+    static constexpr unsigned long Base = MyTraits::Address;
     static constexpr unsigned int k_number_of_descriptors = 10;
     static inline DWC_Ether_QoS_DMA *s_instance;
     ReceiveBuffer *m_rx_buffers[k_number_of_descriptors];
@@ -382,11 +374,11 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     }
 };
 
-template <unsigned long Base> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<Base> {
-    using DMA = DWC_Ether_QoS_DMA<Base>;
-    using MTL = DWC_Ether_QoS_MTL<Base>;
-    using PHY = DWC_Ether_QoS_PHY<Base>;
-    using MAC = DWC_Ether_QoS_MAC<Base>;
+template <typename MyTraits> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<MyTraits> {
+    using DMA = DWC_Ether_QoS_DMA<MyTraits>;
+    using MTL = DWC_Ether_QoS_MTL<MyTraits::Address>;
+    using PHY = DWC_Ether_QoS_PHY<MyTraits::Address>;
+    using MAC = DWC_Ether_QoS_MAC<MyTraits::Address>;
 
   public:
     DWC_Ether_QoS() : DMA() {}
@@ -394,14 +386,19 @@ template <unsigned long Base> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<Bas
     static auto *instance() { return m_device; }
 
     static void init() {
-        TraceIn();
-        DMA::reset();
-        MTL::init();
-        PHY::init();
-        MAC::init();
-        m_device = new (Heap::SYSTEM) DWC_Ether_QoS();
-        TraceOut();
+        if (!m_device) {
+            TraceIn();
+            DMA::reset();
+            MTL::init();
+            PHY::init();
+            MAC::init();
+            m_device = new (Heap::SYSTEM) DWC_Ether_QoS();
+            TraceOut();
+        }
     }
+
+    auto mac() { return GenericAddress<6>(MyTraits::MAC); }
+    auto ip() { return GenericAddress<4>(MyTraits::IP); }
 
   private:
     static inline DWC_Ether_QoS *m_device;

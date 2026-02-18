@@ -4,7 +4,7 @@
 
 template <size_t Length> struct GenericAddress {
     GenericAddress() = default;
-    GenericAddress(const unsigned char *str) {
+    GenericAddress(const char *str) {
         const char *token = str;
         const char *next = token;
         for (unsigned int i = 0; i < Length; i++) {
