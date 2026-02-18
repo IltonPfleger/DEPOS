@@ -6,14 +6,11 @@
 #include "Traits.hpp"
 
 #include <drivers/Driver.hpp>
-#include <drivers/uart/DW8250.hpp>
+#include <drivers/uart/UART16550.hpp>
 #include <memory/Memory.hpp>
 #include <utils/BSS.hpp>
 
-// typedef rv::IC IC;
-// typedef rv::CPU CPU;
-
-// #include <drivers/ethernet/DWC_Ether_QoS.hpp>
+#include <drivers/ethernet/DWC_Ether_QoS.hpp>
 
 class VisionFive2 {
 

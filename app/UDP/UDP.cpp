@@ -1,6 +1,6 @@
 #include <Alarm.hpp>
-// #include <network/ethernet/Ethernet.hpp>
 #include <machine/Machine.hpp>
+#include <network/ethernet/Ethernet.hpp>
 #include <utils/Console.hpp>
 #include <utils/Observer.hpp>
 
@@ -35,14 +35,6 @@ typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NIC;
 //     TraceOut();
 // }
 
-class ARP : public Observer {
-
-    void update() { TraceIn(); }
-
-  public:
-    ARP() = default;
-};
-
 int main(int, char *[]) {
     TraceIn();
 
@@ -50,22 +42,12 @@ int main(int, char *[]) {
 
     auto nic = NIC::instance();
 
-    ARP arp;
-
-    nic->attach(&arp);
-
     while (1) {
         auto guard = nic->receive();
-        //
-        //        Console::print("Rx: ");
-        //        for (int i = 0; i < 1520; i++) {
-        //            Console::print(Console::Hex(data[i]));
-        //            Console::print(" ");
-        //        }
-        //        Console::print("\n");
-    }
 
-    Alarm::delay(10000);
+        Ethernet::Header *header = reinterpret_cast<Ethernet::Header *>(guard->data());
+        TraceIn(static_cast<unsigned short>(header->m_type));
+    }
 
     TraceOut();
 
