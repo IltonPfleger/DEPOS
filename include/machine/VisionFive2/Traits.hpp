@@ -11,10 +11,11 @@ class CLINT;
 class PLIC;
 class UART;
 class UART0;
+class GMAC0;
 class IC;
 
 template <typename> class UART16550;
-template <unsigned long> class DWC_Ether_QoS;
+template <typename> class DWC_Ether_QoS;
 
 template <> struct Traits<Machine> {
     static constexpr const char NAME[] = "VisionFive2";
@@ -75,13 +76,15 @@ template <> struct Traits<CLINT> {
     static constexpr unsigned long Clock = 4'000'000;
 };
 
-template <> struct Traits<DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>> {
+template <> struct Traits<GMAC0> {
+    static constexpr const char *MAC = "12:34:56:78:12:34";
+    static constexpr const char *IP = "192.168.1.101";
+    static constexpr unsigned long Address = Traits<MemoryMap>::GMAC0;
     static constexpr unsigned int IRQs[] = {17, 18, 19, 20, 21};
 };
 
 template <> struct Traits<Ethernet> {
-    static constexpr bool Enable = true;
-    typedef Meta::TypeList<DWC_Ether_QoS<Traits<MemoryMap>::GMAC0>> Devices;
+    typedef Meta::TypeList<DWC_Ether_QoS<Traits<GMAC0>>> Devices;
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 

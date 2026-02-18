@@ -16,7 +16,7 @@ class Thread {
     using Queue = FIFO<Link>;
     using Context = CPU::Context;
 
-    Thread(Function, Argument, Criterion);
+    Thread(Function, Argument, Criterion = Criterion::NORMAL);
     ~Thread();
 
     static Thread *running();
