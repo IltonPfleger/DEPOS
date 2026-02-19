@@ -3,27 +3,41 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 #include <utils/Observer.hpp>
+#include <utils/Singleton.hpp>
 
-template <typename Driver> class NIC : public Observed<const unsigned char *, size_t>, private Observer<> {
+template <typename Driver>
+class NIC : public Observed<const unsigned char *, size_t>, private Observer<>, public Singleton<NIC<Driver>> {
 
   public:
-    NIC() : semaphore(0) {
+    NIC() {
+        m_running = true;
         Driver::init();
         Driver::instance()->attach(this);
-        new Thread(worker, this);
+        m_thread = new Thread(worker, this);
     };
 
-    static int worker(void *p) {
-        NIC *nic = reinterpret_cast<NIC *>(p);
-        while (1) {
-            nic->semaphore.p();
-            auto guard = Driver::instance()->receive();
-            nic->notify(guard->data(), guard->length());
-        }
+    ~NIC() {
+        m_running = false;
+        m_semaphore.v();
+        delete m_thread;
+        Driver::instance()->detach(this);
     }
 
-    void update() { semaphore.v(); }
+    static int worker(void *) {
+        auto *nic = NIC<Driver>::s_instance;
+        while (nic->m_running) {
+            nic->m_semaphore.p();
+            auto guard = Driver::instance()->receive();
+            TraceIn();
+            nic->notify(guard->data(), guard->length());
+        }
+        return 0;
+    }
+
+    void update() override { m_semaphore.v(); }
 
   private:
-    Semaphore semaphore;
+    volatile bool m_running;
+    Thread *m_thread;
+    Semaphore m_semaphore;
 };

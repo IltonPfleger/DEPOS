@@ -5,10 +5,14 @@
 #include <machine/Traits.hpp>
 #include <network/GenericAddress.hpp>
 #include <network/ethernet/Ethernet.hpp>
+#include <network/ethernet/NIC.hpp>
+#include <network/ethernet/ip/ARP.hpp>
 
-template <typename NIC> class IPv4 {
+template <typename Driver>
+class IPv4 : public Observer<const unsigned char *, size_t>, public Observed<const unsigned char *, size_t> {
   public:
     enum Protocol : unsigned char { ICMP = 1, TCP = 6, UDP = 17 };
+
     typedef GenericAddress<4> Address;
 
     struct Header {
@@ -54,30 +58,41 @@ template <typename NIC> class IPv4 {
     } __attribute__((packed));
 
   public:
-    IPv4() { m_nic = NIC::instance(); }
+    IPv4() {
+        m_nic = NIC<Driver>::instance();
+        m_arp = ARP<Driver>::instance();
+        m_nic->attach(this);
+    }
 
-    auto receive() {
-        while (1) {
-            auto packet = m_nic->receive();
-            Ethernet::Header *ethernet = reinterpret_cast<Ethernet::Header *>(packet->data());
-            if (ethernet->m_type == CPU::be16toh(Ethernet::IPv4)) {
-                return packet;
-            }
+    ~IPv4() {
+        m_nic->detach(this);
+        NIC<Driver>::release();
+        ARP<Driver>::release();
+    }
+
+    void update(const unsigned char *data, size_t length) {
+        if (length < sizeof(Ethernet::Header) + sizeof(Header)) return;
+
+        const Ethernet::Header *ethernet = reinterpret_cast<const Ethernet::Header *>(data);
+        if (ethernet->m_type == Ethernet::EtherType::IPv4) {
+            notify(reinterpret_cast<const unsigned char *>(ethernet + 1), length - sizeof(Ethernet::Header));
         }
     }
 
-    void send(Address destination, Address source, Protocol protocol, void *data, uint16_t length) {
+    void send(Address destination, Protocol protocol, void *data, uint16_t length) {
         uint16_t total = sizeof(Ethernet::Header) + sizeof(Header) + length;
 
-        // TODO: Implement ARP and MAC
-        Ethernet::Header *ethernet = new (data)
-            Ethernet::Header(Ethernet::Address("FF:FF:FF:FF:FF:FF"), Ethernet::Address("FF:FF:FF:FF:FF:FF"), Ethernet::IPv4);
+        Ethernet::Address dmac = (destination == Address("255.255.255.255")) ? Ethernet::Address("255.255.255.255.255.255")
+                                                                             : m_arp->resolve(destination);
 
-        new (ethernet + 1) Header(destination, source, protocol, length);
+        Ethernet::Header *ethernet = new (data) Ethernet::Header(dmac, Driver::instance()->mac(), Ethernet::IPv4);
 
-        m_nic->send(data, total);
+        new (ethernet + 1) Header(destination, Driver::instance()->ip(), protocol, length);
+
+        Driver::instance()->send(data, total);
     }
 
   private:
-    NIC *m_nic;
+    NIC<Driver> *m_nic;
+    ARP<Driver> *m_arp;
 };
