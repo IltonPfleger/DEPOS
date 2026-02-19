@@ -126,6 +126,9 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
         DWC_Ether_QoS_PHY_CONTROL_STATUS_LINK_STATUS_UP = 1 << 19,
         DWC_Ether_QoS_PHY_CONTROL_STATUS_LINK_MODE_FULL_DUPLEX = 1 << 16,
         CONFIGURATION_CST = 1 << 21,
+        CONFIGURATION_PS = 1 << 15,
+        CONFIGURATION_FES = 1 << 14,
+        CONFIGURATION_FULL_DUPLEX = 1 << 13,
 
     };
 
@@ -145,7 +148,8 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
         Reg32(Base, PACKET_FILTER) |= PACKET_FILTER_RECEIVE_ALL | PACKET_FILTER_PROMISCUOUS_MODE;
         Reg32(Base, RX_QUEUE_CONTROL0) = RX_QUEUE_CONTROL0_QUEUE0_ENABLE;
         Reg32(Base, CONFIGURATION) |= CONFIGURATION_RECEIVER_ENABLE | CONFIGURATION_TRANSMITTER_ENABLE;
-        Reg32(Base, CONFIGURATION) |= CONFIGURATION_CST;
+        Reg32(Base, CONFIGURATION) |= CONFIGURATION_CST | CONFIGURATION_FULL_DUPLEX;
+        Console::cout << Console::hex << Reg32(Base, CONFIGURATION) << Console::endl;
         TraceOut();
     }
 };
@@ -369,7 +373,7 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     static void init() {
         TraceIn();
         Reg32(Base, TX_QUEUE0_OPERATION_MODE) |= TX_QUEUE0_OPERATION_MODE_TSF;
-        Reg32(Base, RX_QUEUE0_OPERATION_MODE) |= RX_QUEUE0_OPERATION_MODE_FUP | RX_QUEUE0_OPERATION_MODE_FEP;
+        Reg32(Base, RX_QUEUE0_OPERATION_MODE) |= RX_QUEUE0_OPERATION_MODE_RSF;
         TraceOut();
     }
 };

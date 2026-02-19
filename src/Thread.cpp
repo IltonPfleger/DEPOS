@@ -47,7 +47,13 @@ Thread::Thread(Function f, Argument a, Criterion c)
     TraceOut();
 }
 
-Thread::~Thread() { ERROR(m_state != State::FINISHED); }
+Thread::~Thread() { Thread::join(this); }
+
+void Thread::join(Thread *joinable) {
+    while (joinable->m_state != State::FINISHED) {
+        yield();
+    }
+}
 
 void Thread::exit() {
     Thread *previous = running();

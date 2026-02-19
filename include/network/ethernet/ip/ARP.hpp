@@ -6,8 +6,11 @@
 #include <network/ethernet/NIC.hpp>
 #include <utils/Lists.hpp>
 #include <utils/Observer.hpp>
+#include <utils/Singleton.hpp>
 
-template <typename Driver> class ARP : public Observer<const unsigned char *, size_t> {
+template <typename Driver> class ARP : public Observer<const unsigned char *, size_t>, public Singleton<ARP<Driver>> {
+    friend Singleton<ARP<Driver>>;
+
     struct Header {
         uint16_t htype = 0x0100; // Hardware Type: Ethernet (Big Endian)
         uint16_t ptype = 0x0008; // Protocol Type: IPv4 (Big Endian)
@@ -29,12 +32,21 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
 
     typedef Node<Pending *> Link;
 
-  public:
-    ARP(NIC<Driver> *nic) : m_nic(nic) { m_nic->attach(this); }
+    ARP(NIC<Driver> *nic = NIC<Driver>::instance()) : m_nic(nic) {
+        m_nic->attach(this);
+        m_pending = Ethernet::Address("0.0.0.0.0.0");
+    }
 
+    ~ARP() {
+        m_nic->detach(this);
+        NIC<Driver>::release();
+    }
+
+  public:
     Ethernet::Address resolve(GenericAddress<4> ip) {
         Ethernet::Address my_mac = Driver::instance()->mac();
         Ethernet::Address broadcast("255:255:255:255:255:255");
+        Ethernet::Address zeros("0.0.0.0.0.0");
         GenericAddress<4> my_ip = Driver::instance()->ip();
 
         unsigned char packet[sizeof(Ethernet::Header) + sizeof(Header) + 64];
@@ -42,32 +54,29 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
         Ethernet::Header *ethernet = new (packet) Ethernet::Header(broadcast, my_mac, Ethernet::EtherType::ARP);
         Header *header = new (ethernet + 1) Header();
 
-        header->operation = 0x0100; // Request
+        header->operation = 0x0100;
         header->sha = my_mac;
         header->spa = my_ip;
-        header->tha = Ethernet::Address("00:00:00:00:00:00");
+        header->tha = zeros;
         header->tpa = ip;
 
-        bool enabled = CPU::Interruptions::disable();
+        while (m_pending == zeros) {
+            Driver::instance()->send(packet, sizeof(packet));
+            volatile unsigned int i = 100'000'000;
+            while (i) {
+                i = i - 1;
+            }
+        }
 
-        m_spin.acquire();
-        Pending pending(header);
-        Link link(&pending);
-        m_pending.insert(&link);
-
-        Driver::instance()->send(packet, sizeof(packet));
-
-        Thread::sleep(&pending.m_queue, &m_spin);
-
-        if (enabled) CPU::Interruptions::enable();
-
-        return header->tha;
+        return m_pending;
     }
 
     void update(const unsigned char *data, size_t) {
         const Ethernet::Header *ethernet = reinterpret_cast<const Ethernet::Header *>(data);
 
         if (ethernet->m_type != Ethernet::EtherType::ARP) return;
+
+        TraceIn();
 
         const Header *header = reinterpret_cast<const Header *>(ethernet + 1);
 
@@ -90,28 +99,14 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
                 Driver::instance()->send(packet, sizeof(packet));
             }
         } else if (header->operation == 0x0200) {
-            m_spin.acquire();
-
-            for (Link *l = m_pending.head(); l; l = l->next()) {
-                Pending *pending = l->value();
-
-                if (pending->header->tpa == header->spa) {
-
-                    pending->header->tha = header->sha;
-
-                    m_pending.remove(l);
-                    Thread::wakeup(&pending->m_queue);
-
-                    break;
-                }
-            }
-
-            m_spin.release();
+            m_pending = header->sha;
         }
     }
 
   private:
+    // volatile bool m_running = true;
     NIC<Driver> *m_nic;
-    LIFO<Link> m_pending;
-    Spin m_spin;
+    Ethernet::Address m_pending;
+    // LIFO<Link> m_pending;
+    // Spin m_spin;
 };

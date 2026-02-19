@@ -2,60 +2,47 @@
 #include <machine/Machine.hpp>
 #include <network/ethernet/NIC.hpp>
 #include <network/ethernet/ip/ARP.hpp>
+#include <network/ethernet/ip/IPv4.hpp>
+#include <network/ethernet/ip/TFTP.hpp>
+#include <network/ethernet/ip/UDP.hpp>
 #include <utils/Console.hpp>
 #include <utils/Observer.hpp>
-
-// static void init() {
-//     TraceIn();
-//
-//     NIC::init();
-//
-//     Alarm::delay(1);
-//
-//     UDP protocol;
-//
-//     unsigned int max = 64 * 1024;
-//     unsigned char *buffer = new unsigned char[max];
-//
-//     while (1) {
-//         unsigned int size = protocol.receive(buffer, max);
-//         Console::print(size, '\n');
-//
-//         for (size_t i = 0; i < size; i += 4) {
-//             Console::print(Console::Hex(*((unsigned short *)(buffer + i))));
-//             Console::print(" ");
-//
-//             if (i != 0 && i % 32 == 0) {
-//                 Console::print("\n");
-//             }
-//         }
-//     }
-//     delete[] buffer;
-//     TraceOut();
-// }
 
 int main(int, char *[]) {
     TraceIn();
 
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Driver;
 
-    NIC<Driver> nic;
-    ARP<Driver> arp(&nic);
-    arp.resolve("192.168.1.100");
-    (void)nic;
-    (void)arp;
+    constexpr unsigned int size = 1 << 20;
+    void *buffer = Memory::alloc(size);
+    TFTP<Driver> tftp("192.168.1.100");
+    tftp.request("Image", buffer, size);
 
     while (1)
         ;
 
-    // NIC::init();
+    // ARP<Driver> *arp = ARP<Driver>::instance();
+    //// NIC<Driver> *nic = NIC<Driver>::instance();
 
-    // auto nic = NIC::instance();
+    // UDP<Driver> udp;
+    // volatile unsigned int i = 10'000'000;
+    // while (i) {
+    //     i = i - 1;
+    // }
+    // unsigned char buffer[1518];
+    // udp.send("255.255.255.255", 0, buffer, 64);
 
-    // auto guard = nic->receive();
+    // ARP<Driver>::release();
 
-    // Ethernet::Header *header = reinterpret_cast<Ethernet::Header *>(guard->data());
-    // TraceIn(static_cast<unsigned short>(header->m_type));
+    // NIC<Driver>::release();
+
+    // NIC<Driver> nic;
+    //  ARP<Driver> arp(&nic);
+    //  IPv4<Driver> ipv4(&nic, &arp);
+
+    //  arp.resolve("192.168.1.100");
+    //(void)nic;
+    //(void)arp;
 
     TraceOut();
 

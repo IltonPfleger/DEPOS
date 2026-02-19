@@ -5,17 +5,6 @@ void *memcpy(void *destination, const void *source, size_t n) {
     uint8_t *d = static_cast<uint8_t *>(destination);
     const uint8_t *s = static_cast<const uint8_t *>(source);
 
-    unsigned long *d2 = reinterpret_cast<unsigned long *>(d);
-    const unsigned long *s2 = reinterpret_cast<const unsigned long *>(s);
-
-    while (n >= sizeof(unsigned long)) {
-        *d2++ = *s2++;
-        n -= sizeof(unsigned long);
-    }
-
-    d = reinterpret_cast<uint8_t *>(d2);
-    s = reinterpret_cast<const uint8_t *>(s2);
-
     while (n--) {
         *d++ = *s++;
     }

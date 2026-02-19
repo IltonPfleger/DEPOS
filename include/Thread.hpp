@@ -26,6 +26,7 @@ class Thread {
     static void sleep(Queue *, Spin *);
     static void wakeup(Queue *);
     static void yield();
+    static void join(Thread *);
     static void dispatch(Thread *, Thread *, Spin *);
     static void reschedule();
     static int idle(void *);
