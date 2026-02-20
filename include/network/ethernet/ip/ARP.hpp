@@ -76,8 +76,6 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
 
         if (ethernet->m_type != Ethernet::EtherType::ARP) return;
 
-        TraceIn();
-
         const Header *header = reinterpret_cast<const Header *>(ethernet + 1);
 
         if (header->operation == 0x0100) {

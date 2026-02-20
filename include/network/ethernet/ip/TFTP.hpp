@@ -40,6 +40,8 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
         ptr += 6;
 
         size_t tftp_payload_size = 2 + (name_length + 1) + 6;
+
+        TraceIn();
         m_udp.send(m_server_ip, m_server_port, packet, tftp_payload_size);
     }
 
@@ -49,6 +51,8 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
         size_t tftp_length = length - sizeof(typename UDP<Driver>::Header);
         auto opcode = static_cast<Opcode>(CPU::be16toh(*reinterpret_cast<const uint16_t *>(tftp)));
         m_server_port = CPU::be16toh(udp->m_source);
+
+        Console::cout << m_server_port << Console::endl;
 
         if (opcode == Opcode::DATA) {
             uint16_t block = CPU::be16toh(*reinterpret_cast<const uint16_t *>(tftp + 2));
