@@ -192,12 +192,22 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
         uint32_t ch0_rx_tail_pointer;          // 0x1128
         uint32_t ch0_txdesc_ring_length;       // 0x112c
         uint32_t ch0_rxdesc_ring_length;       // 0x1130
+        uint32_t interrupt_enable;             // 0x1134
+        uint32_t _1138[(0x114c - 0x1138) / 4]; // 0x1138
+        uint32_t current_rx_descriptor;        // 0x114c
+        uint32_t _1150[(0x1160 - 0x1150) / 4]; // 0x1150
+        uint32_t interrupt_status;             // 0x1160
     };
 
     enum Bits {
         MODE_SOFTWARE_RESET = 1 << 0,
         SYSBUS_MODE_EAME = 1 << 11,
-
+        INTERRUPT_ENABLE_NIE = 1 << 15,
+        INTERRUPT_ENABLE_AIE = 1 << 14,
+        INTERRUPT_ENABLE_RIE = 1 << 6,
+        INTERRUPT_ENABLE_RBUE = 1 << 7,
+        INTERRUPT_STATUS_RI = 1 << 6,
+        INTERRUPT_STATUS_RBU = 1 << 7,
     };
 
   public:
@@ -206,51 +216,67 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
 
         s_instance = this;
         m_tx_head = 0;
+        m_rx_head = 0;
         m_registers = reinterpret_cast<volatile Registers *>(MyTraits::Address + 0x1000);
 
         memset(m_tx_descriptors, 0, k_number * sizeof(Descriptor));
         CacheController::flush(m_tx_descriptors, k_number * sizeof(Descriptor));
 
         for (size_t i = 0; i < k_number; i++) {
-            //     m_rx_descriptors[i].buffer() = reinterpret_cast<uintptr_t>(alloc()->m_data);
-            //     m_rx_descriptors[i].des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
-            //     CacheController::flush(&m_rx_descriptors[i], sizeof(Descriptor));
-            // m_tx_buffers[i].m_descriptor = &m_tx_descriptors[i];
+            m_rx_buffers[i].m_descriptor = &m_rx_descriptors[i];
+            m_rx_descriptors[i].buffer() = reinterpret_cast<uintptr_t>(m_rx_buffers[i].m_data);
+            m_rx_descriptors[i].des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
+            CacheController::flush(&m_rx_descriptors[i], sizeof(Descriptor));
             m_tx_buffers[i].m_locked = false;
         }
 
         m_registers->sysbus_mode |= SYSBUS_MODE_EAME;
 
-        // m_registers->ch0_rxdesc_list_address = reinterpret_cast<uintptr_t>(m_rx_descriptors) & 0xFFFFFFFF;
-        // m_registers->ch0_rxdesc_list_haddress = reinterpret_cast<uintptr_t>(m_rx_descriptors) >> 32;
-        // m_registers->ch0_rxdesc_ring_length = k_number - 1;
+        m_registers->ch0_rxdesc_list_address = reinterpret_cast<uintptr_t>(m_rx_descriptors) & 0xFFFFFFFF;
+        m_registers->ch0_rxdesc_list_haddress = reinterpret_cast<uintptr_t>(m_rx_descriptors) >> 32;
+        m_registers->ch0_rxdesc_ring_length = k_number - 1;
 
         m_registers->ch0_txdesc_list_address = reinterpret_cast<uintptr_t>(m_tx_descriptors) & 0xFFFFFFFF;
         m_registers->ch0_txdesc_list_haddress = reinterpret_cast<uintptr_t>(m_tx_descriptors) >> 32;
         m_registers->ch0_txdesc_ring_length = k_number - 1;
 
         m_registers->ch0_tx_control |= 1;
-        // m_registers->ch0_rx_control |= 1;
+        m_registers->ch0_rx_control |= 1;
 
-        // m_registers->ch0_rx_tail_pointer = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(m_rx_descriptors) + k_number);
+        m_registers->interrupt_enable = INTERRUPT_ENABLE_NIE | INTERRUPT_ENABLE_AIE;
+        m_registers->interrupt_enable |= INTERRUPT_ENABLE_RBUE;
+        m_registers->interrupt_enable |= INTERRUPT_ENABLE_RIE;
 
-        //      Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_NIE | CH0_INTERRUPT_ENABLE_AIE;
-        //      Reg32(Base, CH0_INTERRUPT_ENABLE) |= CH0_INTERRUPT_ENABLE_RIE | CH0_INTERRUPT_ENABLE_RBUE;
+        for (auto i : MyTraits::IRQs)
+            IC::bind(i, interrupt);
 
-        //      Reg32(Base, CH0_TX_DESCRIPTORS_LIST_ADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) & 0xFFFFFFFF;
-        //      Reg32(Base, CH0_TX_DESCRIPTORS_LIST_HADDR) = reinterpret_cast<unsigned long>(m_tx_descriptors) >> 32;
-        //      Reg32(Base, CH0_TX_DESCRIPTORS_RING_LENGTH) = k_number - 1;
-
-        //      for (auto i : MyTraits::IRQs)
-        //          IC::bind(i, interrupt);
-
-        //      Reg32(Base, CH0_TX_CONTROL) |= 1;
-        //      Reg32(Base, CH0_RX_CONTROL) |= 1;
-
-        //      Reg32(Base, CH0_RX_DESCRIPTORS_LIST_TAIL_POINTER) =
-        //          reinterpret_cast<unsigned long>(m_rx_descriptors + k_number);
+        m_registers->ch0_rx_tail_pointer = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(m_rx_descriptors + k_number));
 
         TraceOut();
+    }
+
+    static void interrupt(unsigned int) { s_instance->interrupt(); }
+
+    void interrupt() {
+        volatile unsigned int &status = m_registers->interrupt_status;
+        unsigned int done = 0;
+
+        TraceIn();
+
+        if (status & INTERRUPT_STATUS_RI) {
+            done |= INTERRUPT_STATUS_RI;
+        }
+
+        if (status & INTERRUPT_STATUS_RBU) {
+            Descriptor *current = reinterpret_cast<Descriptor *>(m_registers->current_rx_descriptor);
+            unsigned int i = reinterpret_cast<long>(current - m_rx_descriptors);
+            if (!m_rx_buffers[i].m_locked) {
+                free(&m_rx_buffers[i]);
+            }
+            done |= INTERRUPT_STATUS_RBU;
+        }
+
+        status |= done;
     }
 
     static void reset() {
@@ -274,6 +300,14 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
     void free(Buffer *b) {
         if (b >= &m_tx_buffers[0] && b < &m_tx_buffers[k_number]) {
             b->m_locked = false;
+        }
+        if (b >= &m_rx_buffers[0] && b < &m_rx_buffers[k_number]) {
+            b->m_locked = false;
+            b->m_descriptor->buffer() = reinterpret_cast<uintptr_t>(b->m_data);
+            b->m_descriptor->des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
+            b->m_descriptor->des2 = 0;
+            CacheController::flush(b->m_descriptor, sizeof(Descriptor));
+            m_registers->ch0_rx_tail_pointer = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(b->m_descriptor + 1));
         }
     }
 
@@ -402,8 +436,6 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
     //       TraceOut();
     //   }
 
-    //  static void interrupt(unsigned int) { s_instance->interrupt(); }
-
     //  void interrupt() {
     //      volatile unsigned int &status = Reg32(Base, CH0_INTERRUPT_STATUS);
 
@@ -510,6 +542,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
     Buffer m_rx_buffers[k_number];
     Buffer m_tx_buffers[k_number];
     unsigned int m_tx_head;
+    unsigned int m_rx_head;
 
     // static constexpr unsigned long Base = MyTraits::Address;
     // volatile unsigned int m_tx_head = 0;
