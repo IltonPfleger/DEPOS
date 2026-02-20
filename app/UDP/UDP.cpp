@@ -15,13 +15,14 @@ int main(int, char *[]) {
 
     Driver::init();
 
-    auto buffer = Driver::instance()->alloc();
+    // auto buffer = Driver::instance()->alloc();
 
     // constexpr unsigned int size = 1 << 20;
     // void *buffer = Memory::alloc(size);
     unsigned int i = 1000;
-    while (i--) {
-        Driver::instance()->send(buffer, 1400);
+    (void)i;
+    while (1) {
+        // Driver::instance()->send(buffer, 1400);
     }
 
     // void *buffer = Memory::alloc(size);
