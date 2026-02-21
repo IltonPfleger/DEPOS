@@ -4,8 +4,8 @@
 #include <machine/Machine.hpp>
 #include <machine/Traits.hpp>
 #include <network/GenericAddress.hpp>
+#include <network/NetworkAdapter.hpp>
 #include <network/ethernet/Ethernet.hpp>
-#include <network/ethernet/NIC.hpp>
 #include <network/ethernet/ip/ARP.hpp>
 
 template <typename Driver>
@@ -59,22 +59,17 @@ class IPv4 : public Observer<const unsigned char *, size_t>, public Observed<con
 
   public:
     IPv4() {
-        m_nic = NIC<Driver>::instance();
-        m_arp = ARP<Driver>::instance();
+        m_nic = NetworkAdapter<Driver>::instance();
         m_nic->attach(this);
     }
 
-    ~IPv4() {
-        m_nic->detach(this);
-        NIC<Driver>::release();
-        ARP<Driver>::release();
-    }
+    ~IPv4() { m_nic->detach(this); }
 
     void update(const unsigned char *data, size_t length) {
         if (length < sizeof(Ethernet::Header) + sizeof(Header)) return;
 
         const Ethernet::Header *ethernet = reinterpret_cast<const Ethernet::Header *>(data);
-        if (ethernet->m_type == Ethernet::EtherType::IPv4) {
+        if (CPU::be16toh(ethernet->m_type) == Ethernet::IPv4) {
             notify(reinterpret_cast<const unsigned char *>(ethernet + 1), length - sizeof(Ethernet::Header));
         }
     }
@@ -83,16 +78,15 @@ class IPv4 : public Observer<const unsigned char *, size_t>, public Observed<con
         uint16_t total = sizeof(Ethernet::Header) + sizeof(Header) + length;
 
         Ethernet::Address dmac = (destination == Address("255.255.255.255")) ? Ethernet::Address("255.255.255.255.255.255")
-                                                                             : m_arp->resolve(destination);
+                                                                             : ARP<Driver>::resolve(destination);
 
         Ethernet::Header *ethernet = new (data) Ethernet::Header(dmac, Driver::instance()->mac(), Ethernet::IPv4);
 
         new (ethernet + 1) Header(destination, Driver::instance()->ip(), protocol, length);
 
-        Driver::instance()->send(data, total);
+        m_nic->send(data, total);
     }
 
   private:
-    NIC<Driver> *m_nic;
-    ARP<Driver> *m_arp;
+    NetworkAdapter<Driver> *m_nic;
 };

@@ -14,41 +14,25 @@ int main(int, char *[]) {
 
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Driver;
 
-    Driver::init();
-
     NetworkAdapter<Driver>::init();
-
     ARP<Driver>::init();
 
+    unsigned int i = 2000;
     constexpr unsigned int size = 64 * 1024 * 1024;
     void *buffer = Memory::alloc(size);
 
-    // IPv4<Driver> ipv4(IPv4<Driver>::Broadcast);
-    //// UDP<Driver> udp(IPv4<Driver>::Broadcast);
+    while (i--) {
+        // Driver::instance()->send(buffer, 1500);
+        NetworkAdapter<Driver>::instance()->send(buffer, 1500);
+    }
 
-    //// while (i--) {
-    ////     // Driver::instance()->send(buffer, 1500);
-    ////     NetworkAdapter<Driver>::instance()->send(buffer, 1500);
-    //// }
-    //// while (1)
-    ////    ;
+    // constexpr unsigned int size = 64 * 1024 * 1024;
+    // void *buffer = Memory::alloc(size);
+    // TFTP<Driver> tftp("192.168.1.100");
+    // tftp.request("Image", buffer, size);
 
-    TFTP<Driver> tftp("192.168.1.100");
-    tftp.request("Image", buffer, size);
-
-    // unsigned int i = 2000;
-    // while (i--) {
-    //     Console::cout << "INDEX: " << i << Console::endl;
-    //     NetworkAdapter<Driver>::instance()->send(buffer, 500);
-    //     // udp.send("255.255.255.255", 0, buffer, 500);
-    //     // ipv4.send("255.255.255.255", 0, buffer, 500);
-    // }
-
-    // Console::cout << "DONE!";
-
-    (void)buffer;
-    while (1)
-        ;
+    // while (1)
+    //     ;
 
     // ARP<Driver>::resolve("192.168.1.100");
 

@@ -4,7 +4,7 @@
 #include <utils/Debug.hpp>
 
 static constexpr int Number = 100;
-static constexpr int Iterations = 10;
+static constexpr int Iterations = 100;
 Semaphore *forks[Number];
 Semaphore *console;
 Semaphore *finish;
@@ -41,7 +41,6 @@ int philosopher(void *p) {
         forks[left]->v();
     }
 
-    finish->v();
     return 0;
 }
 
@@ -49,7 +48,6 @@ int main(int, char *[]) {
     TraceIn();
 
     Thread *threads[Number];
-    (void)threads;
 
     console = new Semaphore(0);
     finish = new Semaphore(0);
@@ -65,7 +63,7 @@ int main(int, char *[]) {
     console->v();
 
     for (long i = 0; i < Number; i++) {
-        finish->p();
+        Thread::join(threads[i]);
     }
 
     TraceOut();

@@ -9,7 +9,7 @@
 namespace riscv64 {
 class MIC {
   private:
-    static constexpr bool ChangeStack = Traits<RISCV>::Supervisor || Traits<RISCV>::Hypervisor || Traits<Debug>::Error;
+    static constexpr bool ChangeStack = Traits<RISCV>::Supervisor || Traits<RISCV>::Hypervisor;
 
     static void dispatch(MachineContext *c) {
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
