@@ -10,7 +10,8 @@
 
 class IPv4 {
   public:
-    enum Protocol : unsigned char { ICMP = 1, TCP = 6, UDP = 17 };
+    typedef unsigned char Protocol;
+    enum : Protocol { ICMP = 1, TCP = 6, UDP = 17 };
     typedef GenericAddress<4> Address;
 
     struct Header {
@@ -40,20 +41,22 @@ class IPv4 {
             m_checksum = checksum(this, sizeof(Header));
         }
 
-        static uint16_t checksum(const void *data, size_t length) {
-            uint32_t sum = 0;
-            const uint16_t *ptr = reinterpret_cast<const uint16_t *>(data);
-
-            for (; length > 1; length -= 2)
-                sum += *ptr++;
-            if (length > 0) sum += *reinterpret_cast<const uint8_t *>(ptr);
-
-            while (sum >> 16)
-                sum = (sum & 0xFFFF) + (sum >> 16);
-            return static_cast<uint16_t>(~sum);
-        }
-
     } __attribute__((packed));
+
+    static uint16_t checksum(const void *data, size_t length) {
+        uint32_t sum = 0;
+        const uint16_t *ptr = reinterpret_cast<const uint16_t *>(data);
+
+        for (; length > 1; length -= 2)
+            sum += *ptr++;
+        if (length > 0) sum += *reinterpret_cast<const uint8_t *>(ptr);
+
+        while (sum >> 16)
+            sum = (sum & 0xFFFF) + (sum >> 16);
+        return static_cast<uint16_t>(~sum);
+    }
+
+    static constexpr Address Broadcast = Address(255, 255, 255, 255);
 
   public:
     template <typename Driver>
@@ -71,15 +74,14 @@ class IPv4 {
 
             const Ethernet::Header *ethernet = reinterpret_cast<const Ethernet::Header *>(data);
             if (CPU::be16toh(ethernet->m_type) == Ethernet::IPv4) {
-                notify(reinterpret_cast<const unsigned char *>(ethernet + 1), length - sizeof(Ethernet::Header));
+                notify(data + sizeof(Ethernet::Header), length - sizeof(Header));
             }
         }
 
         void send(Address destination, Protocol protocol, void *data, uint16_t length) {
             uint16_t total = sizeof(Ethernet::Header) + sizeof(Header) + length;
 
-            Ethernet::Address dmac = (destination == Address("255.255.255.255")) ? Ethernet::Address("255.255.255.255.255.255")
-                                                                                 : ARP<Driver>::resolve(destination);
+            Ethernet::Address dmac = (destination == Broadcast) ? Ethernet::Broadcast : ARP<Driver>::resolve(destination);
 
             Ethernet::Header *ethernet = new (data) Ethernet::Header(dmac, Driver::instance()->mac(), Ethernet::IPv4);
 

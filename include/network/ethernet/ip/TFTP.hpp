@@ -16,7 +16,7 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
     TFTP(IPv4::Address server_ip) : m_server_ip(server_ip) { m_udp.attach(this); }
 
     void *header(uint8_t *buffer) {
-        return buffer + sizeof(Ethernet::Header) + sizeof(typename IPv4::Header) + sizeof(typename UDP<Driver>::Header);
+        return buffer + sizeof(Ethernet::Header) + sizeof(IPv4::Header) + sizeof(UDP::Header);
     }
 
     void request(const char *filename, void *buffer, size_t size) {
@@ -46,9 +46,9 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
     }
 
     void update(const unsigned char *data, size_t length) {
-        const auto *udp = reinterpret_cast<const typename UDP<Driver>::Header *>(data);
+        const auto *udp = reinterpret_cast<const UDP::Header *>(data);
         const uint8_t *tftp = reinterpret_cast<const uint8_t *>(udp + 1);
-        size_t tftp_length = length - sizeof(typename UDP<Driver>::Header);
+        size_t tftp_length = length - sizeof(UDP::Header);
         auto opcode = static_cast<Opcode>(CPU::be16toh(*reinterpret_cast<const uint16_t *>(tftp)));
         m_server_port = CPU::be16toh(udp->m_source);
 
@@ -82,7 +82,7 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
     }
 
   private:
-    UDP<Driver> m_udp;
+    UDP::Connection<Driver> m_udp;
     IPv4::Address m_server_ip;
     uint16_t m_expected_block;
     uint8_t *m_user_buffer;
