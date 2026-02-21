@@ -9,12 +9,11 @@ class CPU;
 class CLINT;
 class PLIC;
 class UART;
+class UART0;
 class RISCV;
 class IC;
 
-template <typename T> struct Traits;
-
-template <unsigned long, unsigned long, unsigned long> class UART16550;
+template <typename> class UART16550;
 
 template <> struct Traits<Machine> {
     static constexpr const char NAME[] = "virt";
@@ -22,7 +21,7 @@ template <> struct Traits<Machine> {
 
 template <> struct Traits<CPU> {
     static constexpr const char Architecture[] = "riscv64";
-    static constexpr int Count = 1;
+    static constexpr int Count = 5;
     static constexpr int Active = Count;
     static constexpr int BSP = 0;
 };
@@ -52,8 +51,16 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long PLIC = 0xc000000;
 };
 
+template <> struct Traits<UART0> {
+    static constexpr unsigned long Address = Traits<MemoryMap>::UART0;
+    static constexpr unsigned int Clock = 10'000'000;
+    static constexpr unsigned int BaudRate = 115200;
+    static constexpr unsigned int Shift = 0;
+    static constexpr unsigned int IRQs[] = {10};
+};
+
 template <> struct Traits<UART> {
-    typedef Meta::TypeList<UART16550<Traits<MemoryMap>::UART0, 115200, 10 + 11>> Devices;
+    typedef Meta::TypeList<UART16550<Traits<UART0>>> Devices;
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 

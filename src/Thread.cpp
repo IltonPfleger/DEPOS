@@ -23,7 +23,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
 
 int Thread::idle(void *) {
     while (s_count > Traits<CPU>::Active) {
-        yield();
+        reschedule();
     }
 
     CPU::Interruptions::disable();
@@ -51,14 +51,14 @@ Thread::~Thread() { Thread::join(this); }
 
 void Thread::join(Thread *joinable) {
     while (joinable->m_state != State::FINISHED) {
-        yield();
+        reschedule();
     }
 }
 
 void Thread::exit() {
-    Thread *previous = running();
-
     CPU::Interruptions::disable();
+
+    Thread *previous = running();
 
     Link *next = s_scheduler.remove();
     previous->m_state = State::FINISHING;
@@ -82,6 +82,8 @@ void Thread::run() {
 }
 
 void Thread::reschedule() {
+    bool enabled = CPU::Interruptions::disable();
+
     Thread *previous = running();
 
     Link *next = s_scheduler.remove(Criterion::NORMAL);
@@ -90,15 +92,13 @@ void Thread::reschedule() {
         previous->m_state = State::READY;
         dispatch(previous, next->value());
     }
-}
 
-void Thread::yield() {
-    CPU::Interruptions::disable();
-    reschedule();
-    CPU::Interruptions::enable();
+    if (enabled) CPU::Interruptions::enable();
 }
 
 void Thread::sleep(Queue *m_waiting, Spin *spin) {
+    bool enabled = CPU::Interruptions::disable();
+
     Thread *previous = running();
 
     previous->m_state = State::WAITING;
@@ -107,9 +107,13 @@ void Thread::sleep(Queue *m_waiting, Spin *spin) {
     Link *next = s_scheduler.remove();
 
     dispatch(previous, next->value(), spin);
+
+    if (enabled) CPU::Interruptions::enable();
 }
 
 void Thread::wakeup(Queue *m_waiting) {
+    bool enabled = CPU::Interruptions::disable();
+
     Link *link = m_waiting->remove();
 
     ERROR(!link);
@@ -121,6 +125,8 @@ void Thread::wakeup(Queue *m_waiting) {
     awake->m_waiting = nullptr;
 
     s_scheduler.insert(&awake->m_link);
+
+    if (enabled) CPU::Interruptions::enable();
 }
 
 // int entry(void *arg) {

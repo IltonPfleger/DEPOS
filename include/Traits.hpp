@@ -28,13 +28,13 @@ template <> struct Traits<Timer> {
     static constexpr bool Enable = true;
 };
 
-template <> struct Traits<Alarm> {
-    static constexpr bool Enable = false;
-    static constexpr unsigned long Frequency = 10;
-};
+// template <> struct Traits<Alarm> {
+//     static constexpr bool Enable = false;
+//     static constexpr unsigned long Frequency = 10;
+// };
 
 template <> struct Traits<Thread> {
-    static constexpr unsigned long RescheduleFrequency = 10;
+    static constexpr unsigned long RescheduleFrequency = 1000;
     // static constexpr bool Preemptive = true;
     // using Criterion = RR;
 };

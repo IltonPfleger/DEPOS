@@ -64,7 +64,6 @@ template <typename MyTraits> class UART16550 : public Driver, public Observed<un
         for (auto IRQ : MyTraits::IRQs)
             if (IRQ) {
                 IC::bind(IRQ, handler);
-                Console::cout << IRQ << Console::endl;
             }
     }
 

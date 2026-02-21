@@ -16,9 +16,9 @@ template <typename... Args> class Observed {
 
     void detach(Observer<Args...> *o) { m_observers.remove(&o->m_link); }
 
-    void notify(Args &&...args) {
+    void notify(Args ...args) {
         for (Link *l = m_observers.head(); l; l = l->next()) {
-            l->value()->update(static_cast<Args &&>(args)...);
+            l->value()->update(args...);
         }
     }
 

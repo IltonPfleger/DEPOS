@@ -1,110 +1,164 @@
 #pragma once
 
-#include <Semaphore.hpp>
+#include <Latch.hpp>
 #include <Spin.hpp>
+#include <network/NetworkAdapter.hpp>
 #include <network/ethernet/Ethernet.hpp>
-#include <network/ethernet/NIC.hpp>
-#include <utils/Lists.hpp>
 #include <utils/Observer.hpp>
-#include <utils/Singleton.hpp>
 
-template <typename Driver> class ARP : public Observer<const unsigned char *, size_t>, public Singleton<ARP<Driver>> {
-    friend Singleton<ARP<Driver>>;
+template <typename Driver> class ARP : public Observer<const unsigned char *, size_t> {
+
+    enum { REQUEST = 1, REPLY = 2 };
 
     struct Header {
-        uint16_t htype = 0x0100; // Hardware Type: Ethernet (Big Endian)
-        uint16_t ptype = 0x0008; // Protocol Type: IPv4 (Big Endian)
-        uint8_t hlen = 6;        // Hardware length (MAC)
-        uint8_t plen = 4;        // Protocol length (IP)
-        uint16_t operation;      // 0x0100 para Request, 0x0200 para Reply (Big Endian)
-        Ethernet::Address sha;   // Sender Hardware Address
-        GenericAddress<4> spa;   // Sender Protocol Address
-        Ethernet::Address tha;   // Target Hardware Address (0 no Request)
-        GenericAddress<4> tpa;   // Target Protocol Address
+        uint16_t htype;
+        uint16_t ptype;
+        uint8_t hlen;
+        uint8_t plen;
+        uint16_t operation;
+        Ethernet::MAC sha;
+        GenericAddress<4> spa;
+        Ethernet::MAC tha;
+        GenericAddress<4> tpa;
+
+        Header() {
+            htype = CPU::htobe16(1);
+            hlen = 6;
+            ptype = CPU::htobe16(0x0800);
+            plen = 4;
+        }
     } __attribute__((packed));
 
-    struct Pending {
-        Header *header;
-        Thread::Queue m_queue;
+    ARP() {
+        m_adapter = NetworkAdapter<Driver>::instance();
+        m_adapter->attach(this);
+    }
 
-        Pending(Header *h) : header(h) {}
+    ~ARP() { m_adapter->detach(this); }
+
+    class Table {
+        struct Entry {
+            Ethernet::MAC m_ha;
+            GenericAddress<4> m_pa;
+            Thread::Queue m_waiting;
+            bool m_valid = false;
+            unsigned int m_counter = 0;
+        };
+
+      public:
+        unsigned char hash(GenericAddress<4> pa) { return pa[3]; }
+
+        void update(GenericAddress<4> pa, Ethernet::MAC ha) {
+            int id = hash(pa);
+            m_table[id].m_pa = pa;
+            m_table[id].m_ha = ha;
+            m_table[id].m_valid = true;
+        }
+
+        bool resolve(GenericAddress<4> pa, Ethernet::MAC *ha) {
+            int id = hash(pa);
+            if (m_table[id].m_valid && m_table[id].m_pa == pa) {
+                *ha = m_table[id].m_ha;
+                return true;
+            }
+            return false;
+        }
+
+        void wait(GenericAddress<4> pa, Spin *spin) {
+            int id = hash(pa);
+            m_table[id].m_counter++;
+            Thread::sleep(&m_table[id].m_waiting, spin);
+        }
+
+        void wakeup(GenericAddress<4> pa) {
+            int id = hash(pa);
+            while (m_table[id].m_counter--) {
+                Thread::wakeup(&m_table[id].m_waiting);
+            }
+        }
+
+      private:
+        Entry m_table[256] = {};
     };
 
-    typedef Node<Pending *> Link;
-
-    ARP(NIC<Driver> *nic = NIC<Driver>::instance()) : m_nic(nic) {
-        m_nic->attach(this);
-        m_pending = Ethernet::Address("0.0.0.0.0.0");
-    }
-
-    ~ARP() {
-        m_nic->detach(this);
-        NIC<Driver>::release();
-    }
-
   public:
-    Ethernet::Address resolve(GenericAddress<4> ip) {
-        Ethernet::Address my_mac = Driver::instance()->mac();
-        Ethernet::Address broadcast("255:255:255:255:255:255");
-        Ethernet::Address zeros("0.0.0.0.0.0");
-        GenericAddress<4> my_ip = Driver::instance()->ip();
+    static void init() { s_instance = new ARP(); }
 
-        unsigned char packet[sizeof(Ethernet::Header) + sizeof(Header) + 64];
+    void update(const unsigned char *d, size_t) override {
+        const auto *ethernet = reinterpret_cast<const Ethernet::Header *>(d);
 
-        Ethernet::Header *ethernet = new (packet) Ethernet::Header(broadcast, my_mac, Ethernet::EtherType::ARP);
-        Header *header = new (ethernet + 1) Header();
+        if (CPU::be16toh(ethernet->m_type) != Ethernet::ARP) return;
 
-        header->operation = 0x0100;
-        header->sha = my_mac;
-        header->spa = my_ip;
-        header->tha = zeros;
-        header->tpa = ip;
+        const auto *arp = reinterpret_cast<const Header *>(ethernet + 1);
+        uint16_t operation = CPU::be16toh(arp->operation);
 
-        while (m_pending == zeros) {
-            Driver::instance()->send(packet, sizeof(packet));
-            volatile unsigned int i = 100'000'000;
-            while (i) {
-                i = i - 1;
+        if (operation == REQUEST) {
+            if (arp->tpa == Driver::instance()->ip() || arp->tpa == GenericAddress<4>(255, 255, 255, 255)) {
+                reply(arp->sha, arp->spa);
             }
+        } else if (operation == REPLY) {
+            m_spin.acquire();
+            m_table.update(arp->spa, arp->sha);
+            m_table.wakeup(arp->spa);
+            m_spin.release();
         }
-
-        return m_pending;
     }
 
-    void update(const unsigned char *data, size_t) {
-        const Ethernet::Header *ethernet = reinterpret_cast<const Ethernet::Header *>(data);
+    void request(GenericAddress<4> pa) {
+        auto mac = Driver::instance()->mac();
+        auto ip = Driver::instance()->ip();
 
-        if (ethernet->m_type != Ethernet::EtherType::ARP) return;
+        alignas(64) unsigned char buffer[128];
+        size_t length = sizeof(Ethernet::Header) + sizeof(Header);
 
-        const Header *header = reinterpret_cast<const Header *>(ethernet + 1);
+        auto *ethernet = new (buffer) Ethernet::Header(Ethernet::Broadcast, mac, Ethernet::ARP);
+        auto *arp = new (ethernet + 1) Header();
 
-        if (header->operation == 0x0100) {
-            GenericAddress<4> my_ip = Driver::instance()->ip();
-            Ethernet::Address my_mac = Driver::instance()->mac();
+        arp->operation = CPU::htobe16(REQUEST);
+        arp->sha = mac;
+        arp->spa = ip;
+        arp->tha = Ethernet::MAC("00:00:00:00:00:00");
+        arp->tpa = pa;
 
-            if (header->tpa == my_ip) {
-                unsigned char packet[sizeof(Ethernet::Header) + sizeof(Header) + 64];
+        m_adapter->send(buffer, length);
+    }
 
-                Ethernet::Header *reply_eth = new (packet) Ethernet::Header(header->sha, my_mac, Ethernet::EtherType::ARP);
-                Header *reply_arp = new (reply_eth + 1) Header();
+    static Ethernet::MAC resolve(GenericAddress<4> pa) {
+        Ethernet::MAC ha;
 
-                reply_arp->operation = 0x0200;
-                reply_arp->sha = my_mac;
-                reply_arp->spa = my_ip;
-                reply_arp->tha = header->sha;
-                reply_arp->tpa = header->spa;
+        while (true) {
+            s_instance->m_spin.acquire();
+            bool resolved = s_instance->m_table.resolve(pa, &ha);
 
-                Driver::instance()->send(packet, sizeof(packet));
+            if (resolved) {
+                s_instance->m_spin.release();
+                break;
             }
-        } else if (header->operation == 0x0200) {
-            m_pending = header->sha;
+
+            s_instance->request(pa);
+            s_instance->m_table.wait(pa, &s_instance->m_spin);
         }
+
+        return ha;
     }
 
   private:
-    // volatile bool m_running = true;
-    NIC<Driver> *m_nic;
-    Ethernet::Address m_pending;
-    // LIFO<Link> m_pending;
-    // Spin m_spin;
+    void reply(Ethernet::MAC tha, GenericAddress<4> tpa) {
+        alignas(64) unsigned char buffer[128];
+        auto *eth = new (buffer) Ethernet::Header(tha, Driver::instance()->mac(), Ethernet::ARP);
+        auto *arp = new (eth + 1) Header();
+
+        arp->operation = CPU::htobe16(REPLY);
+        arp->sha = Driver::instance()->mac();
+        arp->spa = Driver::instance()->ip();
+        arp->tha = tha;
+        arp->tpa = tpa;
+
+        m_adapter->send(buffer, sizeof(Ethernet::Header) + sizeof(Header));
+    }
+
+    static inline ARP *s_instance;
+    NetworkAdapter<Driver> *m_adapter;
+    Table m_table;
+    Spin m_spin;
 };

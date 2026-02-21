@@ -101,6 +101,8 @@ class CPU {
         asm volatile("ret");
     }
 
+    static void mb() { asm volatile("" ::: "memory"); }
+
     static void barrier() {
         __attribute__((section(".barrier"))) static volatile unsigned char gsense = 0;
         __attribute__((section(".barrier"))) static volatile unsigned int ready[2] = {0};

@@ -68,7 +68,7 @@ template <typename T> class Scheduler {
     }
 
   private:
-    T *m_heads[Traits<CPU>::Active];
+    T *m_heads[Traits<CPU>::Active] = {nullptr};
     Queue m_levels[Criterion::Levels];
     Spin m_spin;
 };
