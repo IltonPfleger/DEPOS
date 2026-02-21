@@ -13,10 +13,10 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
     };
 
   public:
-    TFTP(IPv4<Driver>::Address server_ip) : m_server_ip(server_ip) { m_udp.attach(this); }
+    TFTP(IPv4::Address server_ip) : m_server_ip(server_ip) { m_udp.attach(this); }
 
     void *header(uint8_t *buffer) {
-        return buffer + sizeof(Ethernet::Header) + sizeof(typename IPv4<Driver>::Header) + sizeof(typename UDP<Driver>::Header);
+        return buffer + sizeof(Ethernet::Header) + sizeof(typename IPv4::Header) + sizeof(typename UDP<Driver>::Header);
     }
 
     void request(const char *filename, void *buffer, size_t size) {
@@ -83,7 +83,7 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
 
   private:
     UDP<Driver> m_udp;
-    typename IPv4<Driver>::Address m_server_ip;
+    IPv4::Address m_server_ip;
     uint16_t m_expected_block;
     uint8_t *m_user_buffer;
     size_t m_buffer_size;
