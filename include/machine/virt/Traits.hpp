@@ -56,7 +56,7 @@ template <> struct Traits<UART0> {
     static constexpr unsigned int Clock = 10'000'000;
     static constexpr unsigned int BaudRate = 115200;
     static constexpr unsigned int Shift = 0;
-    static constexpr unsigned int IRQs[] = {10};
+    static constexpr unsigned int IRQs[] = {21};
 };
 
 template <> struct Traits<UART> {
