@@ -4,14 +4,15 @@
 
 class Segment {
   public:
+    Segment() = default;
+
     Segment(unsigned long addr, unsigned int size, bool owned = true)
         : m_addr(reinterpret_cast<char *>(addr)), m_size(size), m_owned(owned) {}
 
     Segment(unsigned int size) : Segment(reinterpret_cast<unsigned long>(Memory::alloc(size)), size) {}
 
     ~Segment() {
-        if (m_owned)
-            Memory::free(m_addr, m_size);
+        if (m_owned) Memory::free(m_addr, m_size);
     }
 
     char *base() const { return m_addr; }

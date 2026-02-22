@@ -32,6 +32,7 @@ class Thread {
     static int idle(void *);
 
   private:
+    Meta::IF<Traits<Thread>::IsolatedKernelStack, Segment, Meta::Empty>::Result m_kstack;
     Segment m_stack;
     Queue *m_waiting;
     Link m_link;

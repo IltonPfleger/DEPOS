@@ -29,18 +29,7 @@ class CPU {
     static auto idle() { asm volatile("wfi"); }
     static auto halt() { asm volatile("1: wfi\n j 1b"); }
 
-    static void syscall(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6,
-                        uint64_t a7) {
-        register uint64_t r0 asm("a0") = a0;
-        register uint64_t r1 asm("a1") = a1;
-        register uint64_t r2 asm("a2") = a2;
-        register uint64_t r3 asm("a3") = a3;
-        register uint64_t r4 asm("a4") = a4;
-        register uint64_t r5 asm("a5") = a5;
-        register uint64_t r6 asm("a6") = a6;
-        register uint64_t r7 asm("a7") = a7;
-        asm volatile("ecall" ::"r"(r0), "r"(r1), "r"(r2), "r"(r3), "r"(r4), "r"(r5), "r"(r6), "r"(r7) : "memory");
-    }
+    static void syscall() { asm volatile("ecall"); }
 
     static auto stack() {
         unsigned char *sp;
