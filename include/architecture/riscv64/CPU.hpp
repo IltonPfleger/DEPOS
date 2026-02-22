@@ -6,7 +6,6 @@
 #include <architecture/riscv64/Traits.hpp>
 #include <architecture/riscv64/csrs.hpp>
 #include <memory/MemoryMap.hpp>
-#include <utils/Debug.hpp>
 
 namespace riscv64 {
 class CPU {
@@ -39,16 +38,15 @@ class CPU {
 
     static unsigned int id() {
         if constexpr (!Traits<RISCV>::Supervisor)
-            return csrr<MachineMode::HARTID>();
+            return csrr<MachineMode::HARTID>() - Traits<::CPU>::Offset;
         else {
-            unsigned int tp;
-            asm volatile("mv %0, tp" : "=r"(tp));
-            return tp;
+            register unsigned int core asm("tp");
+            return core;
         }
     }
 
     __attribute__((naked)) static void init() {
-        unsigned int core;
+        register unsigned int core asm("tp");
 
         // Disable Interruptions
         asm volatile("csrc mstatus, 0x8");
@@ -56,38 +54,32 @@ class CPU {
         // Save Return Address
         asm volatile("csrw mscratch, ra");
 
-        // Ensure ISA Compliance: halt cores lacking Supervisor Mode (S-mode) support.
-        if constexpr (Traits<RISCV>::Supervisor) {
-            asm volatile("csrr a0, misa\n"
-                         "and a0, a0, %0\n"
-                         "bnez a0, 2f\n"
-                         "1: wfi\n"
-                         "j 1b\n"
-                         "2:" ::"r"(1ULL << ('S' - 'A')));
+        // Use Thread Pointer as Core ID
+        asm volatile("csrr tp, mhartid");
+
+        if (core < Traits<::CPU>::Offset) {
+            halt();
         }
 
-        // Use Thread Pointer as Core ID
-        asm volatile("csrr tp, mhartid\n"
-                     "addi tp, tp, %[offset]\n"
-                     "mv %[core], tp"
-                     : [core] "=r"(core)
-                     : [offset] "i"(Traits<::CPU>::Active - Traits<::CPU>::Count));
+        core -= Traits<::CPU>::Offset;
+
+        if (core >= Traits<::CPU>::Active) {
+            halt();
+        }
 
         // Get A Stack
-        asm volatile("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * core));
+        asm volatile("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::StackSize * core));
 
         // Setup Boot Memory
         if (id() == Traits<::CPU>::BSP) {
-            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::PageSize * Traits<::CPU>::Active - 1;
+            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::StackSize * Traits<::CPU>::Active - 1;
             __bmm.end = Traits<MemoryMap>::RamEnd;
         }
-
-        // Wait Here For All See The Memory Pool
-        barrier();
 
         // Restore Return Address
         asm volatile("csrr ra, mscratch");
 
+        // Return
         asm volatile("ret");
     }
 

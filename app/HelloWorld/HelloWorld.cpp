@@ -17,12 +17,14 @@ class Waiter : public Observer<unsigned char *, size_t> {
 
 int main(int, char *[]) {
     typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result Device;
-    Console::cout << "Hello World!\n";
-    Console::cout << "Press a Key to Exit...\n";
+    TraceIn();
     Waiter *w = new Waiter();
     Device::instance()->attach(w);
+    Console::cout << "Hello World!\n";
+    Console::cout << "Press a Key to Exit...\n";
     while (!w->m_done)
         ;
     delete w;
+    TraceOut();
     return 0;
 }

@@ -19,13 +19,12 @@ class UDP {
 
         void update(const unsigned char *data, size_t length) {
             const auto *ip = reinterpret_cast<const IPv4::Header *>(data);
-            uint8_t ihl = (ip->m_version & 0x0F) * 4;
-            const auto *udp = reinterpret_cast<const Header *>(data + ihl);
+            const auto *udp = reinterpret_cast<const Header *>(data + sizeof(IPv4::Header));
 
             if (ip->m_protocol != IPv4::UDP) return;
 
             if (!m_port || CPU::be16toh(udp->m_destination) == m_port) {
-                notify(data + ihl, length - ihl);
+                notify(data + sizeof(IPv4::Header), length - sizeof(IPv4::Header));
             }
         }
 

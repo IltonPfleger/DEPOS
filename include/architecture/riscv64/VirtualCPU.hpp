@@ -26,12 +26,14 @@ class VirtualCPU {
     static constexpr unsigned long Size = Traits<MemoryMap>::PLIC;
 
     template <typename... Args> VirtualCPU(void (*entry)(Args...), MemoryMap::Entry memory, Args... args) {
+		(void)memory;
         CPU::Interruptions::disable();
         csrw<SupervisorMode::SATP>(0);
         // PMP::NAPOT<0>(Address, Size);
-        PMP::NAPOT<0>(memory.start, memory.end - memory.start, PMP::R | PMP::W | PMP::X);
+        PMP::NAPOT<0>(0, 0, PMP::R | PMP::W | PMP::X);
+        // PMP::NAPOT<0>(memory.start, memory.end - memory.start, PMP::R | PMP::W | PMP::X);
         //(void)memory;
-        // PMP::TOR<1>(memory.start, memory.end, PMP::R | PMP::W | PMP::X);
+        //  PMP::TOR<1>(memory.start, memory.end, PMP::R | PMP::W | PMP::X);
 
         unsigned long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt

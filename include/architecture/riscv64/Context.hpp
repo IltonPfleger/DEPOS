@@ -6,7 +6,8 @@
 #pragma GCC push_options
 #pragma GCC optimize("O0")
 
-//TODO: TP For Linux And Supervisor BUG
+// TODO: Meta Template For CSRs
+// TODO: TP For Linux And Supervisor BUG
 
 namespace riscv64 {
 template <typename T> class ContextBase {
@@ -29,8 +30,7 @@ template <typename T> class ContextBase {
         this->status = static_cast<uint64_t>(T::ME2ME | T::PIRQE);
         this->a0 = reinterpret_cast<uint64_t>(a0);
         this->sp = reinterpret_cast<uint64_t>(usp);
-		(void)ksp;
-        //this->scratch = reinterpret_cast<uint64_t>(ksp);
+        this->scratch = reinterpret_cast<uint64_t>(ksp);
     }
 
     template <typename F, typename... Args> __attribute__((naked)) void load(F f, Args... args) {
@@ -58,10 +58,10 @@ template <typename T> class ContextBase {
             "ld s11, %[s11](a1)\n"
             "ld t0, %[pc](a1)\n"
             "ld t1, %[status](a1)\n"
-            //"ld t3, %[scratch](a1)\n"
+            "ld t3, %[scratch](a1)\n"
             "csrw %[epcr], t0\n"
             "csrw %[statusr], t1\n"
-            //"csrw %[scratchr], t3\n"
+            "csrw %[scratchr], t3\n"
             :
             : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)), [s0] "i"(offsetof(ContextBase, s0)),
               [s1] "i"(offsetof(ContextBase, s1)), [a0] "i"(offsetof(ContextBase, a0)), [s2] "i"(offsetof(ContextBase, s2)),
@@ -93,8 +93,8 @@ template <typename T> class ContextBase {
             "sd s10, %[s10](a0)\n"
             "sd s11, %[s11](a0)\n"
             "sd ra, %[pc](a0)\n"
-            //"csrr t0, %[scratchr]\n"
-            //"sd t0, %[scratch](a0)\n"
+            "csrr t0, %[scratchr]\n"
+            "sd t0, %[scratch](a0)\n"
             "csrr t1, %[csrstatus]\n"
             "or t1, t1, %[me2me]\n"
             "sd t1, %[status](a0)\n"
