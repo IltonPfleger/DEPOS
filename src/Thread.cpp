@@ -23,7 +23,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
 
 int Thread::idle(void *) {
     while (s_count > Traits<CPU>::Active) {
-        reschedule();
+        // reschedule();
     }
 
     CPU::Interruptions::disable();
@@ -51,7 +51,7 @@ Thread::~Thread() { Thread::join(this); }
 
 void Thread::join(Thread *joinable) {
     while (joinable->m_state != State::FINISHED) {
-        reschedule();
+        // reschedule();
     }
 }
 
@@ -82,7 +82,7 @@ void Thread::run() {
 }
 
 void Thread::reschedule() {
-    bool enabled = CPU::Interruptions::disable();
+    // bool enabled = CPU::Interruptions::disable();
 
     Thread *previous = running();
 
@@ -93,7 +93,7 @@ void Thread::reschedule() {
         dispatch(previous, next->value());
     }
 
-    if (enabled) CPU::Interruptions::enable();
+    // if (enabled) CPU::Interruptions::enable();
 }
 
 void Thread::sleep(Queue *m_waiting, Spin *spin) {

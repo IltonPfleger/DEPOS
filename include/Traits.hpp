@@ -49,6 +49,10 @@ template <> struct Traits<Debug> {
     static constexpr bool Trace = true;
 };
 
+template <> struct Traits<Console> {
+    static constexpr unsigned int Columns = 50;
+};
+
 template <> struct Traits<Dummy> {
     typedef Meta::TypeList<> Devices;
 };
