@@ -14,7 +14,7 @@ template <typename... Tickers> class Timer : public ArchitectureCommon::TimerTem
     }
 
     static void supervisor(unsigned int) {
-        CPU::syscall(0, 0, 0, 0, 0, 0, 0, 0);
+        CPU::syscall();
         ArchitectureCommon::TimerTemplate<Tickers...>::handler(CPU::id());
     }
 

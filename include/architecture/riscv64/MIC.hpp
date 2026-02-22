@@ -9,14 +9,13 @@
 namespace riscv64 {
 class MIC {
   private:
-    static constexpr bool ChangeStack = true; //;Traits<RISCV>::Supervisor || Traits<RISCV>::Hypervisor | Traits<Debug>::Error;
+    static constexpr bool ChangeStack = Traits<Thread>::IsolatedKernelStack || Traits<System>::Multitask;
 
     static void dispatch(MachineContext *c) {
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
 
         if (mcause & IC::INTERRUPT) {
             unsigned int id = mcause & ~IC::INTERRUPT;
-
             if (id == 11) {
                 id = PLIC::claim();
                 if (id) IC::dispatch(id + 11);
@@ -41,9 +40,8 @@ class MIC {
   public:
     static void init() {
         csrw<MachineMode::TVEC>(MIC::entry);
-        csrw<MachineMode::IE>(0);
 
-        if constexpr (ChangeStack) {
+        if constexpr (Traits<System>::Multitask) {
             char *stack = reinterpret_cast<char *>(Memory::alloc(Traits<Memory>::StackSize)) + Traits<Memory>::StackSize;
             csrw<MachineMode::SCRATCH>(stack);
         }
@@ -54,10 +52,10 @@ class MIC {
             CLINT::write();
         }
 
-        // if constexpr (!Traits<RISCV>::Supervisor && Traits<::PLIC>::Enable) {
-        //     PLIC::init();
-        //     csrs<MachineMode::IE>(MachineMode::EI);
-        // }
+        if constexpr (!Traits<RISCV>::Supervisor && Traits<::PLIC>::Enable) {
+            PLIC::init();
+            csrs<MachineMode::IE>(MachineMode::EI);
+        }
     }
 };
 

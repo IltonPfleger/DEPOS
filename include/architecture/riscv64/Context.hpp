@@ -15,18 +15,20 @@ template <typename T> class ContextBase {
     uint64_t a0, a1, a2, a3, a4, a5, a6, a7;
     uint64_t s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
     uint64_t t3, t4, t5, t6;
-    uint64_t status, pc;
+    uint64_t status, scratch, pc;
 
     uint64_t &operator[](size_t i) { return (reinterpret_cast<uint64_t *>(&ra))[i - 1]; }
 
     ContextBase() = default;
 
-    ContextBase(auto pc, auto a0, auto sp, auto ra) {
+    ContextBase(auto usp, auto ksp, auto pc, auto ra, auto a0) {
         this->ra = reinterpret_cast<uint64_t>(ra);
         this->pc = reinterpret_cast<uint64_t>(pc);
         this->status = static_cast<uint64_t>(T::ME2ME | T::PIRQE);
         this->a0 = reinterpret_cast<uint64_t>(a0);
-        this->sp = reinterpret_cast<uint64_t>(sp);
+        this->sp = reinterpret_cast<uint64_t>(usp);
+		(void)ksp;
+        //this->scratch = reinterpret_cast<uint64_t>(ksp);
     }
 
     template <typename F, typename... Args> __attribute__((naked)) void load(F f, Args... args) {
@@ -54,16 +56,19 @@ template <typename T> class ContextBase {
             "ld s11, %[s11](a1)\n"
             "ld t0, %[pc](a1)\n"
             "ld t1, %[status](a1)\n"
-            "csrw %[csrepc], t0\n"
-            "csrw %[csrstatus], t1\n"
+            //"ld t3, %[scratch](a1)\n"
+            "csrw %[epcr], t0\n"
+            "csrw %[statusr], t1\n"
+            //"csrw %[scratchr], t3\n"
             :
             : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)), [s0] "i"(offsetof(ContextBase, s0)),
               [s1] "i"(offsetof(ContextBase, s1)), [a0] "i"(offsetof(ContextBase, a0)), [s2] "i"(offsetof(ContextBase, s2)),
               [s3] "i"(offsetof(ContextBase, s3)), [s4] "i"(offsetof(ContextBase, s4)), [s5] "i"(offsetof(ContextBase, s5)),
               [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)), [s8] "i"(offsetof(ContextBase, s8)),
               [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11)),
-              [pc] "i"(offsetof(ContextBase, pc)), [status] "i"(offsetof(ContextBase, status)), [csrepc] "i"(T::EPC),
-              [csrstatus] "i"(T::STATUS));
+              [pc] "i"(offsetof(ContextBase, pc)), [status] "i"(offsetof(ContextBase, status)),
+              [scratch] "i"(offsetof(ContextBase, scratch)), [epcr] "i"(T::EPC), [scratchr] "i"(T::SCRATCH),
+              [statusr] "i"(T::STATUS));
         T::ret();
     }
 
@@ -86,6 +91,8 @@ template <typename T> class ContextBase {
             "sd s10, %[s10](a0)\n"
             "sd s11, %[s11](a0)\n"
             "sd ra, %[pc](a0)\n"
+            //"csrr t0, %[scratchr]\n"
+            //"sd t0, %[scratch](a0)\n"
             "csrr t1, %[csrstatus]\n"
             "or t1, t1, %[me2me]\n"
             "sd t1, %[status](a0)\n"
@@ -98,7 +105,8 @@ template <typename T> class ContextBase {
               [s5] "i"(offsetof(ContextBase, s5)), [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)),
               [s8] "i"(offsetof(ContextBase, s8)), [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)),
               [s11] "i"(offsetof(ContextBase, s11)), [pc] "i"(offsetof(ContextBase, pc)), [csrstatus] "i"(T::STATUS),
-              [me2me] "r"(T::ME2ME), [status] "i"(offsetof(ContextBase, status))
+              [scratch] "i"(offsetof(ContextBase, scratch)), [scratchr] "i"(T::SCRATCH), [me2me] "r"(T::ME2ME),
+              [status] "i"(offsetof(ContextBase, status))
             : "memory");
     }
 
@@ -111,7 +119,7 @@ template <typename T> class ContextBase {
             "addi sp, sp, %[size]\n"
             "sd ra, %[ra](sp)\n"
             "sd gp, %[gp](sp)\n"
-            "sd tp, %[tp](sp)\n"
+            //"sd tp, %[tp](sp)\n"
             "sd t0, %[t0](sp)\n"
             "sd t1, %[t1](sp)\n"
             "sd t2, %[t2](sp)\n"
@@ -183,7 +191,7 @@ template <typename T> class ContextBase {
         asm volatile(
             "ld ra, %[ra](sp)\n"
             "ld gp, %[gp](sp)\n"
-            "ld tp, %[tp](sp)\n"
+            //"ld tp, %[tp](sp)\n"
             "ld t0, %[t0](sp)\n"
             "ld t1, %[t1](sp)\n"
             "ld t2, %[t2](sp)\n"

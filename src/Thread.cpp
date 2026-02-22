@@ -23,7 +23,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
 
 int Thread::idle(void *) {
     while (s_count > Traits<CPU>::Active) {
-        // reschedule();
+        reschedule();
     }
 
     CPU::Interruptions::disable();
@@ -34,10 +34,18 @@ int Thread::idle(void *) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : m_stack(Segment(Traits<Memory>::PageSize)), m_waiting(0), m_link(Link(this, c)), m_criterion(c), m_state(State::READY),
-      m_context(new(m_stack.end() - sizeof(CPU::Context)) CPU::Context(f, a, m_stack.end(), exit)) {
+    : m_waiting(0), m_link(Link(this, c)), m_criterion(c), m_state(State::READY) {
 
     TraceIn(this);
+
+    new (&m_stack) Segment(Traits<Memory>::StackSize);
+
+    // if constexpr (Traits<Thread>::IsolatedKernelStack) {
+    //     new (&m_kstack) Segment(Traits<Memory>::StackSize);
+    //     m_context = new (m_stack.end() - sizeof(CPU::Context)) CPU::Context(m_stack.end(), m_kstack.end(), f, exit, a);
+    // } else {
+    m_context = new (m_stack.end() - sizeof(CPU::Context)) CPU::Context(m_stack.end(), 0, f, exit, a);
+    //}
 
     bool enabled = CPU::Interruptions::disable();
     CPU::Atomic::finc(s_count);
@@ -51,7 +59,7 @@ Thread::~Thread() { Thread::join(this); }
 
 void Thread::join(Thread *joinable) {
     while (joinable->m_state != State::FINISHED) {
-        // reschedule();
+        reschedule();
     }
 }
 
@@ -82,7 +90,7 @@ void Thread::run() {
 }
 
 void Thread::reschedule() {
-    // bool enabled = CPU::Interruptions::disable();
+    bool enabled = CPU::Interruptions::disable();
 
     Thread *previous = running();
 
@@ -93,7 +101,7 @@ void Thread::reschedule() {
         dispatch(previous, next->value());
     }
 
-    // if (enabled) CPU::Interruptions::enable();
+    if (enabled) CPU::Interruptions::enable();
 }
 
 void Thread::sleep(Queue *m_waiting, Spin *spin) {
