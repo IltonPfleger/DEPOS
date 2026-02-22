@@ -42,14 +42,15 @@ class MIC {
         csrw<MachineMode::TVEC>(MIC::entry);
 
         if constexpr (Traits<System>::Multitask) {
-            char *stack = reinterpret_cast<char *>(Memory::alloc(Traits<Memory>::StackSize)) + Traits<Memory>::StackSize;
-            csrw<MachineMode::SCRATCH>(stack);
+            /* Keep Boot Stack For Handle Machine Mode IRQs */
+            csrw<MachineMode::SCRATCH>(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * CPU::id());
         }
 
         if constexpr (Traits<::Timer>::Enable && Traits<RISCV>::Supervisor) {
             IC::bind(7, CLINT::forward);
-            csrs<MachineMode::IE>(MachineMode::TI);
-            CLINT::write();
+            csrs<MachineMode::IP>(SupervisorMode::TI);
+            // csrs<MachineMode::IE>(MachineMode::TI);
+            // CLINT::write();
         }
 
         if constexpr (!Traits<RISCV>::Supervisor && Traits<::PLIC>::Enable) {
