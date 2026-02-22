@@ -62,9 +62,7 @@ template <typename MyTraits> class UART16550 : public Driver, public Observed<un
   public:
     static void init() {
         for (auto IRQ : MyTraits::IRQs)
-            if (IRQ) {
-                IC::bind(IRQ, handler);
-            }
+            IC::bind(IRQ, handler);
     }
 
     static UART16550 *instance() {

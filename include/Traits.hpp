@@ -20,7 +20,7 @@ template <typename U> class Scheduler;
 template <typename T> struct Traits;
 
 template <> struct Traits<System> {
-    static constexpr bool Multitask = true;
+    static constexpr bool Multitask = false;
 };
 
 template <> struct Traits<Timer> {
@@ -34,8 +34,8 @@ template <> struct Traits<Timer> {
 // };
 
 template <> struct Traits<Thread> {
-    static constexpr unsigned long RescheduleFrequency = 1000;
-    static constexpr bool IsolatedKernelStack = false;
+    static constexpr unsigned long RescheduleFrequency = 10;
+    static constexpr bool IsolatedKernelStack = true;
 };
 
 template <> struct Traits<Scheduler<Thread>> {

@@ -8,7 +8,6 @@
 #include <drivers/Driver.hpp>
 #include <drivers/uart/UART16550.hpp>
 #include <memory/Memory.hpp>
-#include <utils/BSS.hpp>
 
 #include <drivers/ethernet/DWC_Ether_QoS.hpp>
 
@@ -69,5 +68,7 @@ class VisionFive2 : Driver {
         riscv64::CPU::barrier();
 
         riscv64::init();
+
+        Meta::ForEachTypeList(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
     }
 };

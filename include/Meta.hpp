@@ -18,6 +18,14 @@ template <typename T, auto Method, typename... Args> struct Caller {
     static auto Result(T *obj, Args... args) { (obj->*Method)(args...); }
 };
 
+template <unsigned N, typename T> struct Array {
+    constexpr T &operator[](unsigned int row) { return m_data[row]; }
+    constexpr const T &operator[](unsigned int row) const { return m_data[row]; }
+
+  private:
+    T m_data[N];
+};
+
 // template <typename T, typename U> struct SAME {
 //     static constexpr bool Result = false;
 // };
@@ -63,6 +71,8 @@ template <typename Head, typename... Tail, unsigned int Index> struct GetFromTyp
     using Result = typename GetFromTypeList<TypeList<Tail...>, Index - 1>::Result;
 };
 
+template <typename... Ts, typename F> void ForEachTypeList(Meta::TypeList<Ts...>, F &&f) { (f.template operator()<Ts>(), ...); }
+
 template <typename T>
 concept Integer = requires(T a) {
     a % 10;
@@ -73,4 +83,3 @@ template <typename T>
 concept Pointer = requires(T t) { []<typename U>(U *) {}(t); };
 
 } // namespace Meta
-

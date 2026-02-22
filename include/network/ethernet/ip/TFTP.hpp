@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Semaphore.hpp>
 #include <network/ethernet/ip/UDP.hpp>
 
 template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> {
@@ -18,7 +19,7 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
 
     void *header(uint8_t *buffer) { return buffer + sizeof(Ethernet::Header) + sizeof(IPv4::Header) + sizeof(UDP::Header); }
 
-    void request(const char *filename, void *buffer, size_t size) {
+    size_t request(const char *filename, void *buffer, size_t size) {
         m_user_buffer = reinterpret_cast<unsigned char *>(buffer);
         m_buffer_size = size;
         m_received_size = 0;
@@ -48,6 +49,10 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
         size_t tftp_payload_size = reinterpret_cast<uint8_t *>(ptr) - reinterpret_cast<uint8_t *>(opcode);
 
         m_connection.send(m_server_ip, m_server_port, packet, tftp_payload_size);
+
+        m_semaphore.p();
+
+        return m_received_size;
     }
 
     void update(const unsigned char *data, size_t length) {
@@ -61,26 +66,26 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
             ack(0);
         } else if (opcode == DATA) {
             uint16_t block = CPU::be16toh(*reinterpret_cast<const uint16_t *>(tftp + 2));
-            const uint8_t *data = tftp + 4;
-            size_t data_length = tftp_length - 4;
-            bool is_last = (data_length < k_blksize_int);
+            const uint8_t *payload = tftp + 4;
+            size_t payload_length = tftp_length - 4;
 
             ERROR(block != m_expected_block);
-            ERROR(m_received_size + data_length > m_buffer_size);
+            ERROR(m_received_size + payload_length > m_buffer_size);
+
+            memcpy(m_user_buffer + m_received_size, payload, payload_length);
+            m_received_size += payload_length;
+
+            ack(block);
+            m_expected_block++;
 
             if (block % 64 == 0) {
                 Console::cout << "#";
             }
 
-            if (is_last) {
+            if (payload_length < k_blksize_int) {
                 Console::cout << " [OK]" << Console::endl;
+                m_semaphore.v();
             }
-
-            memcpy(m_user_buffer + m_received_size, data, data_length);
-            m_received_size += data_length;
-
-            ack(block);
-            m_expected_block++;
         }
 
         ERROR(opcode == Opcode::ERROR);
@@ -100,6 +105,7 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
 
   private:
     UDP::Connection<Driver> m_connection;
+    Semaphore m_semaphore;
     IPv4::Address m_server_ip;
     uint16_t m_expected_block;
     uint8_t *m_user_buffer;

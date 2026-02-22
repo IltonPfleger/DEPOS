@@ -39,13 +39,9 @@ Thread::Thread(Function f, Argument a, Criterion c)
     TraceIn(this);
 
     new (&m_stack) Segment(Traits<Memory>::StackSize);
+    new (&m_kstack) Segment(Traits<Memory>::StackSize);
 
-    // if constexpr (Traits<Thread>::IsolatedKernelStack) {
-    //     new (&m_kstack) Segment(Traits<Memory>::StackSize);
-    //     m_context = new (m_stack.end() - sizeof(CPU::Context)) CPU::Context(m_stack.end(), m_kstack.end(), f, exit, a);
-    // } else {
-    m_context = new (m_stack.end() - sizeof(CPU::Context)) CPU::Context(m_stack.end(), 0, f, exit, a);
-    //}
+    m_context = new (m_stack.end() - sizeof(CPU::Context)) CPU::Context(m_stack.end(), m_kstack.end(), f, exit, a);
 
     bool enabled = CPU::Interruptions::disable();
     CPU::Atomic::finc(s_count);

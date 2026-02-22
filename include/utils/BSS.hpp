@@ -1,5 +1,6 @@
 #pragma once
 
+#include <abstractions/CPU.hpp>
 #include <memory/Memory.hpp>
 #include <memory/MemoryMap.hpp>
 #include <utils/string.hpp>
@@ -7,8 +8,11 @@
 class BSS {
   public:
     static void init() {
-        uintptr_t start = Memory::virt2phys(__kmm.bss.start);
-        uintptr_t end = Memory::virt2phys(__kmm.bss.end);
-        memset(reinterpret_cast<void *>(start), 0, end - start);
+        if (CPU::id() == Traits<CPU>::BSP) {
+            uintptr_t start = Memory::virt2phys(__kmm.bss.start);
+            uintptr_t end = Memory::virt2phys(__kmm.bss.end);
+            memset(reinterpret_cast<void *>(start), 0, end - start);
+        }
+        CPU::barrier();
     }
 };

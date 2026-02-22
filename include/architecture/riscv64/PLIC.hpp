@@ -26,14 +26,7 @@ class PLIC : Driver {
     static unsigned int claim(unsigned int c = context()) { return Reg32(Address, CLAIM + (c * 0x1000)); }
     static void complete(unsigned int id, unsigned int c = context()) { Reg32(Address, CLAIM + (c * 0x1000)) = id; }
 
-    static unsigned int context() {
-        unsigned int core = CPU::id();
-        if constexpr (Traits<RISCV>::Supervisor) {
-            return (core * 2) + 1;
-        } else {
-            return core * 2;
-        }
-    }
+    static unsigned int context() { return Traits<::PLIC>::Contexts[CPU::id()][Traits<RISCV>::Supervisor]; }
 
     static void enable(unsigned int source, unsigned int c = context()) {
         unsigned int bank = source / 32;
@@ -50,7 +43,7 @@ class PLIC : Driver {
     static void init() {
         threshold(context(), 0);
 
-        for (unsigned int i = 1; i < Traits<IC>::Last - 11; i++) {
+        for (unsigned int i = 0; i < Traits<IC>::Last - 11; i++) {
             priority(i, 1);
             disable(i);
         }

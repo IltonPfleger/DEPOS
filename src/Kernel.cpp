@@ -10,8 +10,6 @@
 #include <utils/Dispatcher.hpp>
 
 extern "C" __attribute__((optimize("O0"))) void init() {
-    CPU::barrier();
-
     if (CPU::id() == Traits<CPU>::BSP) {
         Console::init();
         TraceIn();
@@ -32,7 +30,6 @@ extern "C" __attribute__((optimize("O0"))) void init() {
     }
 
     CPU::barrier();
-    if (CPU::id() == Traits<CPU>::BSP) TraceOut("Booting...");
     Thread::run();
 }
 
