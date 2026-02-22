@@ -86,7 +86,7 @@ int main() {
     TraceIn();
 
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Driver;
-    typedef void (*Entry)(unsigned, LinuxDeviceTree *);
+    typedef void (*Entry)(int, LinuxDeviceTree *);
 
     Driver::init();
 
@@ -148,7 +148,7 @@ int main() {
 
     Console::cout << "\n *** Linux ***\n";
 
-    new VirtualCPU(entry, MemoryMap::Entry{memory_start_base, memory_start_base + LinuxMemorySize}, CPU::id(), dtb);
+    new VirtualCPU(entry, MemoryMap::Entry{memory_start_base, memory_start_base + LinuxMemorySize}, 0, dtb);
 
     TraceOut();
 
