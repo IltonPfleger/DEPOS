@@ -93,7 +93,7 @@ unsigned char *align(unsigned char *p, long alignment) {
 int main() {
     constexpr long MB = 1024 * 1024;
     constexpr long LinuxMemorySize = 256 * 1024 * 1024;
-    typedef void (*Entry)(unsigned, LinuxDeviceTree *);
+    typedef void (*Entry)(int, LinuxDeviceTree *);
 
     unsigned char *memory_start = reinterpret_cast<unsigned char *>(Memory::alloc(LinuxMemorySize));
     unsigned char *current = memory_start;
@@ -146,7 +146,7 @@ int main() {
     Console::cout << "\n *** Linux ***\n";
 
     // virtio::Console<Traits<MemoryMap>::UART0>::init();
-    new VirtualCPU(entry, MemoryMap::Entry{memory_start_base, memory_start_base + LinuxMemorySize}, CPU::id(), dtb);
+    new VirtualCPU(entry, MemoryMap::Entry{memory_start_base, memory_start_base + LinuxMemorySize}, 0, dtb);
 
     return 0;
 }
