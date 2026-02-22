@@ -9,7 +9,7 @@
 namespace riscv64 {
 class MIC {
   private:
-    static constexpr bool ChangeStack = Traits<RISCV>::Supervisor || Traits<RISCV>::Hypervisor;
+    static constexpr bool ChangeStack = true; //;Traits<RISCV>::Supervisor || Traits<RISCV>::Hypervisor | Traits<Debug>::Error;
 
     static void dispatch(MachineContext *c) {
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
@@ -41,6 +41,7 @@ class MIC {
   public:
     static void init() {
         csrw<MachineMode::TVEC>(MIC::entry);
+        csrw<MachineMode::IE>(0);
 
         if constexpr (ChangeStack) {
             char *stack = reinterpret_cast<char *>(Memory::alloc(Traits<Memory>::StackSize)) + Traits<Memory>::StackSize;
@@ -53,10 +54,10 @@ class MIC {
             CLINT::write();
         }
 
-        if constexpr (!Traits<RISCV>::Supervisor && Traits<::PLIC>::Enable) {
-            PLIC::init();
-            csrs<MachineMode::IE>(MachineMode::EI);
-        }
+        // if constexpr (!Traits<RISCV>::Supervisor && Traits<::PLIC>::Enable) {
+        //     PLIC::init();
+        //     csrs<MachineMode::IE>(MachineMode::EI);
+        // }
     }
 };
 

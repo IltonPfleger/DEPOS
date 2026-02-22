@@ -161,20 +161,20 @@ template <typename T> class ContextBase {
               [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11))
             : "memory");
 
-        asm volatile("csrr t0, %0\n"
-                     "sd t0, %[status](sp)\n"
-                     "csrr t0, %1\n"
-                     "sd t0, %[pc](sp)" ::"i"(T::STATUS),
-                     "i"(T::EPC), [status] "i"(offsetof(ContextBase, status)), [pc] "i"(offsetof(ContextBase, pc)));
+        asm volatile("csrr t0, %[statusr]\n"
+                     "csrr t1, %[epcr]\n"
+                     "sd t0, %[statuso](sp)\n"
+                     "sd t1, %[pc](sp)" ::[statusr] "i"(T::STATUS),
+                     [epcr] "i"(T::EPC), [statuso] "i"(offsetof(ContextBase, status)), [pc] "i"(offsetof(ContextBase, pc)));
         register ContextBase *sp asm("sp");
         return sp;
     }
 
     template <bool ChangeStack = false> __attribute__((naked)) static void pop() {
         asm volatile("ld t0, %[statuso](sp)\n"
+                     "ld t1, %[pc](sp)\n"
                      "csrw %[statusr], t0\n"
-                     "ld t0, %[pc](sp)\n"
-                     "csrw %[epcr], t0"
+                     "csrw %[epcr], t1"
                      :
                      : [statusr] "i"(T::STATUS), [epcr] "i"(T::EPC), [pc] "i"(offsetof(ContextBase, pc)),
                        [statuso] "i"(offsetof(ContextBase, status))

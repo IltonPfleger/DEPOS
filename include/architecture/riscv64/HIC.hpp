@@ -40,8 +40,8 @@ class HIC {
     }
 
     __attribute__((naked, optimize("O0"), aligned(4))) static void entry() {
-        dispatch(MachineContext::push<true>());
-        MachineContext::pop<true>();
+        dispatch(MachineContext::push<false>());
+        MachineContext::pop<false>();
     }
 
   public:

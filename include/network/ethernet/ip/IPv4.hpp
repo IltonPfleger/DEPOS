@@ -74,7 +74,7 @@ class IPv4 {
 
             const Ethernet::Header *ethernet = reinterpret_cast<const Ethernet::Header *>(data);
             if (CPU::be16toh(ethernet->m_type) == Ethernet::IPv4) {
-                notify(data + sizeof(Ethernet::Header), length - sizeof(Header));
+                notify(data + sizeof(Ethernet::Header), length - sizeof(Ethernet::Header));
             }
         }
 

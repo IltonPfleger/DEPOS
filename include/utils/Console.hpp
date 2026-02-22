@@ -95,4 +95,5 @@ class Console {
 
   private:
     static volatile inline unsigned long s_panic = 0;
+    static inline unsigned int s_column = 0;
 };

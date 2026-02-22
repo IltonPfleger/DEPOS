@@ -6,6 +6,7 @@
 #include <architecture/riscv64/Traits.hpp>
 #include <architecture/riscv64/csrs.hpp>
 #include <memory/MemoryMap.hpp>
+#include <utils/Debug.hpp>
 
 namespace riscv64 {
 class CPU {
