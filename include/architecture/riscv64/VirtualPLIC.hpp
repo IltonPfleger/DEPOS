@@ -86,10 +86,10 @@ class VirtualPLIC {
 
   private:
     static constexpr unsigned int k_number_of_contexts = 2;
-    uint32_t m_priority[1024]; // 32 Bits For Each IRQ
-    uint32_t m_pending[32];    // One Bit For Each IRQ
-    uint32_t m_enabled[k_number_of_contexts][32];
-    uint32_t m_threshold[k_number_of_contexts]; // Threshold Per Context
+    uint32_t m_priority[1024] = {}; // 32 Bits For Each IRQ
+    uint32_t m_pending[32] = {};    // One Bit For Each IRQ
+    uint32_t m_enabled[k_number_of_contexts][32] = {};
+    uint32_t m_threshold[k_number_of_contexts] = {}; // Threshold Per Context
 };
 
 } // namespace riscv64

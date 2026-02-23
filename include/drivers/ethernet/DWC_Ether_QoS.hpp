@@ -422,7 +422,8 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     }
 };
 
-template <typename MyTraits> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<MyTraits> {
+template <typename Tag> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<Traits<DWC_Ether_QoS<Tag>>> {
+    using MyTraits = Traits<DWC_Ether_QoS<Tag>>;
     using DMA = DWC_Ether_QoS_DMA<MyTraits>;
     using MTL = DWC_Ether_QoS_MTL<MyTraits::Address>;
     using PHY = DWC_Ether_QoS_PHY<MyTraits::Address>;

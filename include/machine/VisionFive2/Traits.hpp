@@ -58,7 +58,7 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long PLIC = 0x0C000000;
 };
 
-template <> struct Traits<UART0> {
+template <> struct Traits<UART16550<UART0>> {
     static constexpr unsigned long Address = Traits<MemoryMap>::UART0;
     static constexpr unsigned int Clock = 24'000'000;
     static constexpr unsigned int BaudRate = 115200;
@@ -67,7 +67,7 @@ template <> struct Traits<UART0> {
 };
 
 template <> struct Traits<UART> {
-    typedef Meta::TypeList<UART16550<Traits<UART0>>> Devices;
+    typedef Meta::TypeList<UART16550<UART0>> Devices;
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 
@@ -77,7 +77,7 @@ template <> struct Traits<CLINT> {
     static constexpr unsigned long Clock = 4'000'000;
 };
 
-template <> struct Traits<GMAC0> {
+template <> struct Traits<DWC_Ether_QoS<GMAC0>> {
     static constexpr const char *MAC = "12:34:56:78:12:34";
     static constexpr const char *IP = "192.168.1.101";
     static constexpr unsigned long Address = Traits<MemoryMap>::GMAC0;
@@ -85,7 +85,7 @@ template <> struct Traits<GMAC0> {
 };
 
 template <> struct Traits<Ethernet> {
-    typedef Meta::TypeList<DWC_Ether_QoS<Traits<GMAC0>>> Devices;
+    typedef Meta::TypeList<DWC_Ether_QoS<GMAC0>> Devices;
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 

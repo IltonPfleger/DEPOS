@@ -49,7 +49,7 @@ template <> struct Traits<Debug> {
 };
 
 template <> struct Traits<Console> {
-    static constexpr unsigned int Columns = 70;
+    static constexpr unsigned int Columns = 80;
 };
 
 template <> struct Traits<Dummy> {

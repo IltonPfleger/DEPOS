@@ -95,15 +95,15 @@ class CPU {
         __attribute__((section(".barrier"))) static volatile unsigned char gsense = 0;
         __attribute__((section(".barrier"))) static volatile unsigned int ready[2] = {0};
 
-        unsigned char sense = Atomic::load(gsense);
+        unsigned char sense = gsense;
         unsigned int arrived = Atomic::finc(ready[sense]);
 
         if (arrived == Traits<::CPU>::Active - 1) {
-            Atomic::store(ready[sense], 0);
-            Atomic::store(gsense, !sense);
+            ready[sense] = 0;
+            gsense = !sense;
         } else {
-            while (Atomic::load(gsense) == sense)
-                ;
+            while (gsense == sense)
+                mb();
         }
     }
 

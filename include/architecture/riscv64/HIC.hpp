@@ -25,7 +25,6 @@ class HIC {
                 id = PLIC::claim();
                 if (id) {
                     IC::dispatch(id + 11);
-                    VirtualCPU::handler(id + 11);
                 }
                 PLIC::complete(id);
             } else {

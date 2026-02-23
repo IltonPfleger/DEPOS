@@ -63,13 +63,12 @@ class VirtualCPU {
     }
 
     static void handler(unsigned int id) {
-        if (id == 7 && m_current && CLINT::read() >= m_current->m_mtimecmp) {
-            csrs<MachineMode::IP>(SupervisorMode::TI);
-        } else if (id > 11) {
-            if (m_current && m_current->m_plic.interrupt(id - 11)) {
-                csrs<MachineMode::IP>(SupervisorMode::EI);
-            }
-        }
+        if (id != 7) return;
+        if (m_current && CLINT::read() >= m_current->m_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
+    }
+
+    static void interrupt(unsigned int id) {
+        if (m_current && m_current->m_plic.interrupt(id - 11)) csrs<MachineMode::IP>(SupervisorMode::EI);
     }
 
     static bool read(unsigned long addr, unsigned int *destination) {
