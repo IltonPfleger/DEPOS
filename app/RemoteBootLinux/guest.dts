@@ -9,7 +9,6 @@
     chosen {
 		bootargs = "console=hvc0 loglevel=8";
         stdout-path = "/soc/virtio_mmio@30000000";
-        //stdout-path = "/soc/uart@10000000";
 		linux,initrd-start = <0x0 0x0>;
         linux,initrd-end = <0x0 0x0>;
     };
@@ -58,19 +57,18 @@
             phandle = <0x02>; 
         };
 
-        //uart@10000000 {
-        //    compatible = "ns16550a";
-        //    reg = <0x00 0x10000000 0x00 0x100>;
-        //    interrupts = <0x0a>;
-        //    interrupt-parent = <0x02>;
-        //    clock-frequency = <3686400>; 
-        //};
-
         virtio_mmio@30000000 {
             compatible = "virtio,mmio";
             reg = <0x00 0x30000000 0x00 0x1000>;
 			interrupts = <0x20>;
-            interrupt-parent = <0x02>;
-        };
+			interrupt-parent = <&plic>;
+		};
+
+		//virtio_net@30200000 {
+		//	compatible = "virtio,mmio";
+		//	reg = <0x0 0x30200000 0x0 0x1000>;
+		//	interrupts = <50>;
+		//	interrupt-parent = <&plic>;
+		//};
     };
 };

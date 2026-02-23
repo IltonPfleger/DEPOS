@@ -1,31 +1,25 @@
 #pragma once
 
 #include <Traits.hpp>
-#include <abstractions/VirtualCPU.hpp>
 #include <drivers/uart/UART16550.hpp>
 #include <drivers/virtio/Handler.hpp>
 #include <drivers/virtio/LegacyHeader.hpp>
 #include <drivers/virtio/VirtQueue.hpp>
 #include <memory/Heap.hpp>
-#include <network/NetworkAdapter.hpp>
 #include <utils/Observer.hpp>
 
 namespace virtio {
 
-static constexpr int N = 128;
-
-template <typename Device, uintptr_t Base> class Console : public Handler, public Observer<const unsigned char *, size_t> {
-
+template <typename Device, uintptr_t A> class Network : public Handler, public Observer<const unsigned char *, size_t> {
   public:
-    static Console *instance() {
-        if (!s_instance) s_instance = new Console();
+    static auto *instance() {
+        if (!s_instance) s_instance = new Network;
         return s_instance;
     }
 
     unsigned int *header() { return &m_header.m_magic; }
     unsigned int pfn() { return m_queues[m_header.m_queue_selector].m_address / m_header.m_guest_page_size; }
     void ack(unsigned int source) { m_header.m_interrupt_status &= ~source; }
-
     void pfn(unsigned int value) {
         new (&m_queues[m_header.m_queue_selector])
             VirtQueue(value * m_header.m_guest_page_size, k_number_of_descriptors, m_header.m_queue_align);
@@ -46,9 +40,7 @@ template <typename Device, uintptr_t Base> class Console : public Handler, publi
                 VirtQueue::RingDescriptor *descriptor = queue.get(current_id);
                 char *data = reinterpret_cast<char *>(descriptor->address);
 
-                for (uint32_t j = 0; j < descriptor->length; j++) {
-                    Device::instance()->putc(data[j]);
-                }
+                NetworkAdapter<Device>::instance()->send(data, descriptor->length);
 
                 total_length += descriptor->length;
 
@@ -71,7 +63,6 @@ template <typename Device, uintptr_t Base> class Console : public Handler, publi
         unsigned char *destination = reinterpret_cast<unsigned char *>(descriptor->address);
         memcpy(destination, buffer, size);
         m_header.m_interrupt_status |= 0x1;
-        VirtualCPU::interrupt(Traits<Device>::IRQs[0]);
         queue.free(id, size);
     }
 
@@ -79,28 +70,31 @@ template <typename Device, uintptr_t Base> class Console : public Handler, publi
     static bool write(uintptr_t addr, unsigned int source) { return instance()->Handler::write(addr, source); }
 
   private:
-    Console() {
+    Network() {
         m_header.m_magic = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
         m_header.m_version = 1;
-        m_header.m_id = 3;
+        m_header.m_id = 1;
         m_header.m_vendor = 0x554d4551;
-        m_header.m_host_features = 1 << 27;
+        // m_header.m_host_features = k_virtio_net_f_mac;
         m_header.m_queue_number_max = k_number_of_descriptors;
-        Device::instance()->attach(this);
+        NetworkAdapter<Device>::instance()->attach(this);
     }
 
   public:
-    static constexpr uintptr_t Address = Base;
-    static constexpr uintptr_t Size = sizeof(Console);
-    LegacyHeader m_header;
+    static constexpr uintptr_t Address = A;
+    static constexpr uintptr_t Size = sizeof(Network);
 
   private:
+    static constexpr uint32_t k_virtio_net_f_mac = 5;
     static constexpr uintptr_t k_number_of_queues = 2;
     static constexpr uintptr_t k_number_of_descriptors = 128;
     static constexpr uintptr_t k_tx_queue = 1;
     static constexpr uintptr_t k_rx_queue = 0;
-    static inline Console *s_instance = nullptr;
+    static inline Network *s_instance = nullptr;
+
+  public:
     VirtQueue m_queues[k_number_of_queues];
+    LegacyHeader m_header;
 };
 
 } // namespace virtio

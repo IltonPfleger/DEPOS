@@ -116,42 +116,13 @@ void Thread::sleep(Queue *m_waiting, Spin *spin) {
 }
 
 void Thread::wakeup(Queue *m_waiting) {
-    bool enabled = CPU::Interruptions::disable();
-
     Link *link = m_waiting->remove();
-
     ERROR(!link);
-
     Thread *awake = link->value();
-
     awake->m_state = State::READY;
-
     awake->m_waiting = nullptr;
 
+    bool enabled = CPU::Interruptions::disable();
     s_scheduler.insert(&awake->m_link);
-
     if (enabled) CPU::Interruptions::enable();
 }
-
-// int entry(void *arg) {
-//     RT_Thread *current = const_cast<RT_Thread *>(static_cast<volatile
-//     RT_Thread *>(Thread::running())); auto now           = Alarm::utime(); if
-//     (now < current->start) Alarm::usleep(current->start - now);
-//
-//     while (1) {
-//         current->function(arg);
-//         now = Alarm::utime();
-//
-//         int miss = (now - current->start) - current->deadline;
-//         ERROR(miss > 0, "Missed deadline: %dμ\n", miss);
-//
-//         current->start += current->period;
-//         Alarm::usleep(current->start - now);
-//     }
-//     return 0;
-// }
-//
-// RT_Thread::RT_Thread(Function f, Argument a, Microsecond d, Microsecond p,
-// Microsecond c, Microsecond s)
-//     : Thread(entry, a, Criterion(d, p, c)), function(f), deadline(d),
-//     period(p), duration(c), start(s) {}

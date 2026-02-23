@@ -3,11 +3,11 @@
 #include <utils/Console.hpp>
 #include <utils/Observer.hpp>
 
-class Waiter : public Observer<unsigned char *, size_t> {
+class Waiter : public Observer<const unsigned char *, size_t> {
   public:
     Waiter() : m_done(false) {}
 
-    void update(unsigned char *buffer, size_t size) override {
+    void update(const unsigned char *buffer, size_t size) override {
         Console::cout << "Pressed Key: " << buffer[size - 1] << '\n';
         m_done = true;
     }
