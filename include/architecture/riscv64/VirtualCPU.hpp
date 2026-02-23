@@ -27,11 +27,10 @@ class VirtualCPU {
 
     template <typename... Args> VirtualCPU(void (*entry)(Args...), MemoryMap::Entry memory, Args... args) {
         CPU::Interruptions::disable();
+
         csrw<SupervisorMode::SATP>(0);
-        // PMP::NAPOT<0>(Address, Size);
+
         PMP::NAPOT<0>(memory.start, memory.end - memory.start, PMP::R | PMP::W | PMP::X);
-        //(void)memory;
-        // PMP::TOR<1>(memory.start, memory.end, PMP::R | PMP::W | PMP::X);
 
         unsigned long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt
@@ -57,6 +56,8 @@ class VirtualCPU {
         supervisor(args...);
     }
 
+    static auto current() { return m_current; }
+
     static void reset(unsigned long x) {
         csrc<MachineMode::IP>(SupervisorMode::TI);
         m_current->m_mtimecmp = x;
@@ -67,8 +68,8 @@ class VirtualCPU {
         if (m_current && CLINT::read() >= m_current->m_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
     }
 
-    static void interrupt(unsigned int id) {
-        if (m_current && m_current->m_plic.interrupt(id - 11)) csrs<MachineMode::IP>(SupervisorMode::EI);
+    void interrupt(unsigned int id) {
+        if (m_plic.interrupt(id - 11)) csrs<MachineMode::IP>(SupervisorMode::EI);
     }
 
     static bool read(unsigned long addr, unsigned int *destination) {
@@ -79,6 +80,8 @@ class VirtualCPU {
 
   private:
     static inline VirtualCPU *m_current;
+
+  private:
     unsigned long m_mtimecmp;
     VirtualPLIC m_plic;
 };

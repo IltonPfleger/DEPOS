@@ -50,7 +50,7 @@ template <typename Tag> class UART16550 : public Driver, public Observed<const u
     };
 
     static void handler(unsigned int) {
-        unsigned char buffer[16];
+        unsigned char buffer[32];
         unsigned int i = 0;
         while (Reg8(Address, LSR) & LSR_RX_READY && i < sizeof(buffer)) {
             unsigned char c = Reg8(Address, RBR);
