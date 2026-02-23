@@ -4,7 +4,6 @@
 #include <architecture/riscv64/MMU.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/VirtualCPU.hpp>
-// #include <drivers/virtio/Handler.hpp>
 
 namespace riscv64 {
 
@@ -14,11 +13,12 @@ class LoadAccessFault {
     using ActiveTraits = Meta::IF<Traits<RISCV>::Hypervisor, Traits<Virtual>, Traits<Dummy>>::Result;
     using PageTable = SV39_MMU::PageTable;
 
-    template <typename... Ts>
-    static bool dispatch([[maybe_unused]] uintptr_t x, [[maybe_unused]] unsigned int *y, Meta::TypeList<Ts...>) {
+    template <typename... Ts> static bool dispatch(uintptr_t address, unsigned *destination, Meta::TypeList<Ts...>) {
+        (void)address;
+        (void)destination;
         return ([&]() {
-            if (x >= Ts::Address && x < (Ts::Address + Ts::Size)) {
-                return Ts::read(x, y);
+            if (address >= Ts::Address && address < (Ts::Address + Ts::Size)) {
+                return Ts::read(address, destination);
             }
             return false;
         }() || ...);
