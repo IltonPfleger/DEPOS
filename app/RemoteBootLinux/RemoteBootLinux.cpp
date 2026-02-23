@@ -155,14 +155,7 @@ int main() {
         Console::cout << "LinuxDeviceTree: failed to update memory\n";
     }
 
-    const char *cpio_magic = reinterpret_cast<const char *>(initramfs);
-    if (cpio_magic[0] == '0' && cpio_magic[1] == '7' && cpio_magic[2] == '0') {
-        Console::cout << "Initramfs magic detectado na memória local!\n";
-    } else {
-        Console::cout << "ERRO: Initramfs não parece um CPIO na memória!\n";
-    }
-
-    auto entry = reinterpret_cast<Entry>(kernel);
+    Entry entry = reinterpret_cast<Entry>(kernel);
 
     Console::cout << "\n *** Linux ***\n";
 
