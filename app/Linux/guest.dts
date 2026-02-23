@@ -10,8 +10,8 @@
 		bootargs = "console=hvc0 loglevel=8";
         stdout-path = "/soc/virtio_mmio@30000000";
         //stdout-path = "/soc/uart@10000000";
-		linux,initrd-start = <0x0>;
-        linux,initrd-end = <0x0>;
+		linux,initrd-start = <0x0 0x0>;
+        linux,initrd-end = <0x0 0x0>;
     };
 
     cpus {
