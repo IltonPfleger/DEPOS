@@ -71,7 +71,7 @@ template <typename Device, uintptr_t Base> class Console : public Handler, publi
         unsigned char *destination = reinterpret_cast<unsigned char *>(descriptor->address);
         memcpy(destination, buffer, size);
         m_header.m_interrupt_status |= 0x1;
-        VirtualCPU::interrupt(Traits<Device>::IRQs[0]);
+        m_vcpu->interrupt(Traits<Device>::IRQs[0]);
         queue.free(id, size);
     }
 
@@ -86,6 +86,7 @@ template <typename Device, uintptr_t Base> class Console : public Handler, publi
         m_header.m_vendor = 0x554d4551;
         m_header.m_host_features = 1 << 27;
         m_header.m_queue_number_max = k_number_of_descriptors;
+        m_vcpu = VirtualCPU::current();
         Device::instance()->attach(this);
     }
 
@@ -100,6 +101,9 @@ template <typename Device, uintptr_t Base> class Console : public Handler, publi
     static constexpr uintptr_t k_tx_queue = 1;
     static constexpr uintptr_t k_rx_queue = 0;
     static inline Console *s_instance = nullptr;
+
+  private:
+    VirtualCPU *m_vcpu;
     VirtQueue m_queues[k_number_of_queues];
 };
 

@@ -13,7 +13,6 @@ class Time {
 
     static bool handler(MachineContext *c) {
         VirtualCPU::reset(c->a0);
-        // CLINT::syscall(c->a0);
         c->a0 = 0;
         c->a1 = 0;
         return true;
