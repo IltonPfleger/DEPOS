@@ -168,7 +168,12 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
             BUF1V = 1 << 24,
         };
 
-        uint64_t &buffer() { return *reinterpret_cast<uint64_t *>(&des0); }
+        uint64_t buffer() const { return (static_cast<uint64_t>(des1) << 32) | des0; }
+
+        void buffer(uint64_t addr) {
+            des0 = static_cast<uint32_t>(addr);
+            des1 = static_cast<uint32_t>(addr >> 32);
+        }
     };
 
     struct Buffer {
@@ -252,7 +257,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
 
         for (size_t i = 0; i < k_number; i++) {
             m_rx_buffers[i].m_descriptor = &m_rx_descriptors[i];
-            m_rx_descriptors[i].buffer() = reinterpret_cast<uintptr_t>(m_rx_buffers[i].m_data);
+            m_rx_descriptors[i].buffer(reinterpret_cast<uintptr_t>(m_rx_buffers[i].m_data));
             m_rx_descriptors[i].des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
             CacheController::flush(&m_rx_descriptors[i], sizeof(Descriptor));
             m_tx_buffers[i].m_locked = false;
@@ -328,7 +333,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
 
     void free(Buffer *b) {
         b->m_locked = false;
-        b->m_descriptor->buffer() = reinterpret_cast<uintptr_t>(b->m_data);
+        b->m_descriptor->buffer(reinterpret_cast<uintptr_t>(b->m_data));
         b->m_descriptor->des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
         b->m_descriptor->des2 = 0;
         CacheController::flush(b->m_descriptor, sizeof(Descriptor));
@@ -338,7 +343,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
     int send(const void *p, size_t s) {
         Descriptor &d = m_tx_descriptors[m_tx_head];
 
-        d.buffer() = reinterpret_cast<uint64_t>(p);
+        d.buffer(reinterpret_cast<uint64_t>(p));
         d.des3 = Descriptor::OWN | Descriptor::FD | Descriptor::LD | (s & 0x3FFF);
         d.des2 = s & 0x3FFF;
 
@@ -433,7 +438,7 @@ template <typename MyTraits> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<MyTr
         MTL::init();
         s_instance = new (Heap::SYSTEM) DWC_Ether_QoS();
         MAC::init();
-        volatile unsigned int i = 5'000'000;
+        volatile unsigned int i = 50'000'000;
         while (i)
             i = i - 1;
 

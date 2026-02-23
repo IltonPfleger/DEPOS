@@ -2,7 +2,7 @@
 
 #include <architecture/riscv64/init.hpp>
 
-#include "CacheController.hpp"
+#include "Cache.hpp"
 #include "Traits.hpp"
 
 #include <drivers/Driver.hpp>

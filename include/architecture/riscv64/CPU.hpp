@@ -13,17 +13,23 @@ class CPU {
     using Context = ContextBase<KernelMode>;
     using Atomic = ArchitectureCommon::Atomic;
 
-    static unsigned int be32toh(unsigned int x) {
-        return ((x & 0xFF000000) >> 24) | ((x & 0x00FF0000) >> 8) | ((x & 0x0000FF00) << 8) | ((x & 0x000000FF) << 24);
+    static uint64_t htobe64(uint64_t x) {
+        return ((x & 0xFF00000000000000ULL) >> 56) | ((x & 0x00FF000000000000ULL) >> 40) | ((x & 0x0000FF0000000000ULL) >> 24) |
+               ((x & 0x000000FF00000000ULL) >> 8) | ((x & 0x00000000FF000000ULL) << 8) | ((x & 0x0000000000FF0000ULL) << 24) |
+               ((x & 0x000000000000FF00ULL) << 40) | ((x & 0x00000000000000FFULL) << 56);
     }
+
+    static uint64_t be64toh(uint64_t x) { return htobe64(x); }
 
     static uint32_t htobe32(uint32_t x) {
         return ((x & 0xFF000000) >> 24) | ((x & 0x00FF0000) >> 8) | ((x & 0x0000FF00) << 8) | ((x & 0x000000FF) << 24);
     }
 
+    static uint32_t be32toh(uint32_t x) { return htobe32(x); }
+
     static uint16_t htobe16(uint16_t x) { return (uint16_t)((x >> 8) | (x << 8)); }
 
-    static uint16_t be16toh(uint16_t x) { return (uint16_t)((x >> 8) | (x << 8)); }
+    static uint16_t be16toh(uint16_t x) { return htobe16(x); }
 
     static auto idle() { asm volatile("wfi"); }
     static auto halt() { asm volatile("1: wfi\n j 1b"); }

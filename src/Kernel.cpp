@@ -33,7 +33,7 @@ extern "C" __attribute__((optimize("O0"))) void init() {
     Thread::run();
 }
 
-extern "C" __attribute__((naked, used, section(".init"))) void _init() {
+extern "C" __attribute__((optimize("O0"), naked, used, section(".init"))) void _init() {
     CPU::init();
     BSS::init();
     init();

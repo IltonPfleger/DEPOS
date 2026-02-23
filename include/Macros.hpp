@@ -4,6 +4,7 @@
 #define __STR(X) ___STR(X)
 
 #define __MACHINE_HEADER <machine/__MACHINE/__MACHINE.hpp>
+#define __CACHE_HEADER <machine/__MACHINE/Cache.hpp>
 #define __MACHINE_TRAITS <machine/__MACHINE/Traits.hpp>
 
 #define __CPU_HEADER <architecture/__ARCH/CPU.hpp>
