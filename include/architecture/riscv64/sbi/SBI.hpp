@@ -27,9 +27,9 @@ class SBI {
             return sbi::LoadAccessFault::handler(c);
         case StoreAccessFault::CODE:
             return sbi::StoreAccessFault::handler(c);
+        default:
+            return false;
         }
-
-        return false;
     }
 };
 
