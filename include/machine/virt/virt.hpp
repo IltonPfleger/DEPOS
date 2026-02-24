@@ -10,6 +10,6 @@ class virt {
   public:
     static void init() {
         riscv64::init();
-        initializer(Traits<UART>::Devices{});
+        Meta::ForEachTypeList(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
     }
 };

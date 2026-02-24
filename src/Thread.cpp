@@ -12,11 +12,11 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
     ERROR(!next);
     ERROR(next == previous);
 
-    next->m_state = State::RUNNING;
     CPU::Context context;
+    previous->m_context = &context;
 
     if (context.save()) {
-        previous->m_context = &context;
+        next->m_state = State::RUNNING;
         next->m_context->load(epilogue, previous, spin);
     }
 }
@@ -94,6 +94,7 @@ void Thread::reschedule() {
 
     if (next) {
         previous->m_state = State::READY;
+        CPU::mb();
         dispatch(previous, next->value());
     }
 

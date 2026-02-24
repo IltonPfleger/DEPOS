@@ -21,8 +21,8 @@ template <> struct Traits<Machine> {
 
 template <> struct Traits<CPU> {
     static constexpr const char Architecture[] = "riscv64";
-    static constexpr int Count = 1;
-    static constexpr int Active = 1;
+    static constexpr int Count = 5;
+    static constexpr int Active = Count;
     static constexpr int Offset = 0;
     static constexpr int BSP = 0;
 };
@@ -52,7 +52,7 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long PLIC = 0xc000000;
 };
 
-template <> struct Traits<UART0> {
+template <> struct Traits<UART16550<UART0>> {
     static constexpr unsigned long Address = Traits<MemoryMap>::UART0;
     static constexpr unsigned int Clock = 10'000'000;
     static constexpr unsigned int BaudRate = 115200;
@@ -61,7 +61,7 @@ template <> struct Traits<UART0> {
 };
 
 template <> struct Traits<UART> {
-    typedef Meta::TypeList<UART16550<Traits<UART0>>> Devices;
+    typedef Meta::TypeList<UART16550<UART0>> Devices;
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 
