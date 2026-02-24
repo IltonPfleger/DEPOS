@@ -26,7 +26,7 @@ template <typename Value = void, typename Priority = void> struct Node {
 };
 
 template <typename T>
-concept List = requires(T list, typename T::Element *node) {
+concept ListConcept = requires(T list, typename T::Element *node) {
     list.insert(node);
     { list.insert(node) } -> Meta::SameAs<void>;
     { list.remove() } -> Meta::SameAs<typename T::Element *>;

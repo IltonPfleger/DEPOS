@@ -10,7 +10,12 @@ namespace riscv64 {
 namespace sbi {
 
 class StoreAccessFault {
-    using ActiveTraits = Meta::IF<Traits<RISCV>::Hypervisor, Traits<Virtual>, Traits<Dummy>>::Result;
+
+    struct NoVirtualDevices {
+        static Meta::TypeList<> Devices;
+    };
+
+    using ActiveTraits = Meta::IF<Traits<RISCV>::Hypervisor, Traits<Virtual>, NoVirtualDevices>::Result;
     using PageTable = SV39_MMU::PageTable;
 
   public:
@@ -30,7 +35,7 @@ class StoreAccessFault {
         uintptr_t addr = PageTable::virt2phys(csrr<MachineMode::TVAL>());
         unsigned int instruction = *reinterpret_cast<unsigned int *>(PageTable::virt2phys(c->pc));
         unsigned int i = (instruction >> 20) & 0x1F;
-        return c->pc += 4, dispatch(addr, (*c)[i], ActiveTraits::Devices{});
+        return c->pc += 4, dispatch(addr, (*c)[i], ActiveTraits::Devices);
     }
 };
 

@@ -6,20 +6,19 @@ class Thread;
 class Machine;
 class Timer;
 class RR;
-class System;
+class Kernel;
 class Application;
 class Debug;
 class Alarm;
 class Ethernet;
 class Console;
-class Dummy;
 class Virtual;
 
 template <typename U> class Scheduler;
 
 template <typename T> struct Traits;
 
-template <> struct Traits<System> {
+template <> struct Traits<Kernel> {
     static constexpr bool Multitask = false;
 };
 
@@ -39,16 +38,15 @@ template <> struct Traits<Scheduler<Thread>> {
 };
 
 template <> struct Traits<Debug> {
-    static constexpr bool Error = true;
-    static constexpr bool Trace = true;
+    static const bool error = true;
+    static const bool warning = false;
+    static const bool info = false;
+    static const bool trace = false;
+    static const bool logger = true;
 };
 
 template <> struct Traits<Console> {
     static constexpr unsigned int Columns = 70;
-};
-
-template <> struct Traits<Dummy> {
-    typedef Meta::TypeList<> Devices;
 };
 
 #include <application/Traits.hpp>

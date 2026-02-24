@@ -1,0 +1,169 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3cda202..3f61219 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -10,7 +10,7 @@ endif()
+ option(USE_CL_HPP "Use older CL/cl.hpp instead of CL/opencl.hpp" OFF)
+ option(USE_CL2_HPP "Use older CL/cl2.hpp instead of CL/opencl.hpp" OFF)
+ option(USE_INTERNAL_BLAS "Use Internal Blas" OFF)
+-option(USE_HDF "Compile with HDF support" ON)
++option(USE_HDF "Compile with HDF support" OFF)
+ option(USE_SQLITE3 "Compile with sqlite3 support for kernel caching" ON)
+ option(USE_ONNX "Compile with ONNX support" ON)
+ option(USE_PYDLPRIM "Compile python interface for dlprimitives" ON)
+diff --git a/include/dlprim/net.hpp b/include/dlprim/net.hpp
+index 533e9a4..134bac1 100644
+--- a/include/dlprim/net.hpp
++++ b/include/dlprim/net.hpp
+@@ -69,6 +69,10 @@ namespace dlprim {
+         ///
+         void load_parameters(std::string const &name,bool allow_missing=false);
+         ///
++        /// Load parameters from file name OBNZip format
++        ///
++        void load_parameters_raw(std::string const &name,bool allow_missing=false, bool is_torch=false);
++        ///
+         /// Load parameters from external model
+         ///
+         void load_parameters(ModelBase &model,bool allow_missing=false);
+diff --git a/src/net.cpp b/src/net.cpp
+index 96e3dac..594243c 100644
+--- a/src/net.cpp
++++ b/src/net.cpp
+@@ -15,6 +15,14 @@
+ #include <set>
+ #include <list>
+ #include <algorithm>
++#include <vector>
++#include <iostream>
++#include <fstream>
++#include <iomanip>
++#include <string>
++#include <cstdint>
++#include <unordered_map>
++#include <regex>
+ 
+ #ifndef DISABLE_HDF5
+ #include "H5Cpp.h"
+@@ -247,6 +255,121 @@ namespace dlprim {
+         }
+     }
+ 
++    void Net::load_parameters_raw(std::string const &filename, bool allow_missing, bool is_torch){
++
++        std::unordered_map<std::string, std::vector<std::vector<float>>> weights_map;  // Layer -> Multiple weight tensors
++        std::ifstream infile(filename);
++
++
++        std::string line;
++        std::string layer_name;
++        std::regex weight_pattern(R"([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)");  // Matches float numbers
++
++        std::cout << "Reading weights file: " << filename << std::endl;
++
++        while (std::getline(infile, line)) {
++            if (line.empty()) {
++                continue;
++            }  // Skip empty lines
++
++            // Identify layer names
++            if (line.rfind("Layer: ", 0) == 0) {  // Line starts with "Layer: "
++                layer_name = line.substr(7);  // Extract the layer name
++                weights_map[layer_name] = {};  // Initialize empty weight list
++            }
++            // Skip "Weight <index>: Shape <shape>" lines
++            else if (line.rfind("  Weight ", 0) == 0) {
++                continue;
++            }
++            // Extract weights inside brackets
++            else if (!layer_name.empty() && line.find('[') != std::string::npos && line.find(']') != std::string::npos) {
++
++                std::vector<float> weights;
++                size_t start = line.find('[') + 1;
++                size_t end = line.find(']');
++                std::string weight_str = line.substr(start, end - start);
++
++                std::sregex_iterator iter(line.begin(), line.end(), weight_pattern);
++                std::sregex_iterator end_iter;
++                while (iter != end_iter) {
++                    try {
++                        weights.push_back(std::stod(iter->str()));
++                    } catch (const std::exception &e) {
++                        std::cerr << "Error converting value '" << iter->str()
++                                    << "' to double: " << e.what() << std::endl;
++                    }
++                    ++iter;
++                }
++
++                if (!weights.empty()) {
++                    weights_map[layer_name].push_back(weights);  // Store weight tensor for this layer
++                }
++            }
++        }
++
++        infile.close();
++
++        // Print summary of loaded weights
++        for (const auto& pair : weights_map) {
++            //std::cout << "Layer: " << pair.first << " | Weight Tensors: " << pair.second.size() << std::endl;
++            for (size_t i = 0; i < pair.second.size(); ++i) {
++                //std::cout << "  Tensor " << i + 1 << ": " << pair.second[i].size() << " values" << std::endl;
++            }
++        }
++
++        // Load weights into the model
++        for (auto& param : parameters_) {
++            const std::string& name = param.first; // Layer name
++            std::string corrected_name = name;
++            if (is_torch) {
++                // Torch-specific name correction
++                if (name.size() >= 2) {
++                    if (name.compare(name.size() - 2, 2, ".0") == 0) {
++                        corrected_name = name.substr(0, name.size() - 2) + ".weight";
++                    } else if (name.compare(name.size() - 2, 2, ".1") == 0) {
++                        corrected_name = name.substr(0, name.size() - 2) + ".bias";
++                    }
++                }
++            } else {
++                //Ensure that name has at least 2 characters before trying to remove them
++                if (name.size() > 2) {
++                    corrected_name = name.substr(0, name.size() - 2);
++                }
++            }
++
++            std::cout << "Reading layer name: " << corrected_name << "\n";
++
++            auto it = weights_map.find(corrected_name);
++
++            if (it == weights_map.end()) {
++                std::cout << "Layer weights not found for: " << corrected_name << "\n";
++                // Debugging: Print all keys in weights_map
++                // std::cout << "Available keys in weights_map: ";
++                // for (const auto& pair : weights_map) {
++                //    std::cout << "[" << pair.first << "] ";
++                // }
++                // std::cout << std::endl;
++
++            } else {
++                const auto& flat_weights = it->second;
++                Tensor& tensor = param.second;
++
++                //std::cout << "flat_weights size: " << flat_weights[0].size() << std::endl;
++                //std::cout << "tensor size: " << tensor.shape().total_size() << std::endl;
++                //std::cout << "tensor shape: " << tensor.shape() << std::endl;
++
++                // Ensure size compatibility before copying
++                if (flat_weights[0].size() == tensor.shape().total_size()){
++                    memcpy(tensor.host_data(), flat_weights[0].data(), flat_weights[0].size() * sizeof(float));
++                } else {
++                    std::cerr << "Size mismatch: Cannot copy weights!" << std::endl;
++                }
++            }
++        }
++        copy_parameters_to_device();
++    }
++
++
+     void Net::load_parameters(ModelBase &model,bool allow_missing)
+     {
+         for(auto  &pr : parameters_) {
