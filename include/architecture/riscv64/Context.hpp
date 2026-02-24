@@ -34,34 +34,31 @@ template <typename T> class ContextBase {
     }
 
     template <typename F, typename... Args> __attribute__((naked)) void load(F f, Args... args) {
-        asm volatile("ld sp, %[sp](a0)" ::[sp] "i"(offsetof(ContextBase, sp)));
-        asm volatile("mv s0, a0");
-        asm volatile("addi sp, sp, %0" ::"i"(-sizeof(ContextBase)));
+        asm volatile("mv s11, a0");
         f(args...);
-        asm volatile("addi sp, sp, %0" ::"i"(sizeof(ContextBase)));
-        asm volatile("mv a1, s0");
+        asm volatile("ld sp, %[sp](s11)" ::[sp] "i"(offsetof(ContextBase, sp)));
         asm volatile(
-            "ld ra, %[ra](a1)\n"
-            "ld gp, %[gp](a1)\n"
-            "ld s0, %[s0](a1)\n"
-            "ld a0, %[a0](a1)\n"
-            "ld s1, %[s1](a1)\n"
-            "ld s2, %[s2](a1)\n"
-            "ld s3, %[s3](a1)\n"
-            "ld s4, %[s4](a1)\n"
-            "ld s5, %[s5](a1)\n"
-            "ld s6, %[s6](a1)\n"
-            "ld s7, %[s7](a1)\n"
-            "ld s8, %[s8](a1)\n"
-            "ld s9, %[s9](a1)\n"
-            "ld s10, %[s10](a1)\n"
-            "ld s11, %[s11](a1)\n"
-            "ld t0, %[pc](a1)\n"
-            "ld t1, %[status](a1)\n"
-            "ld t3, %[scratch](a1)\n"
+            "ld ra, %[ra](s11)\n"
+            "ld gp, %[gp](s11)\n"
+            "ld s0, %[s0](s11)\n"
+            "ld a0, %[a0](s11)\n"
+            "ld s1, %[s1](s11)\n"
+            "ld s2, %[s2](s11)\n"
+            "ld s3, %[s3](s11)\n"
+            "ld s4, %[s4](s11)\n"
+            "ld s5, %[s5](s11)\n"
+            "ld s6, %[s6](s11)\n"
+            "ld s7, %[s7](s11)\n"
+            "ld s8, %[s8](s11)\n"
+            "ld s9, %[s9](s11)\n"
+            "ld s10, %[s10](s11)\n"
+            "ld t0, %[pc](s11)\n"
+            "ld t1, %[status](s11)\n"
+            "ld t3, %[scratch](s11)\n"
             "csrw %[epcr], t0\n"
             "csrw %[statusr], t1\n"
             "csrw %[scratchr], t3\n"
+            "ld s11, %[s11](s11)\n"
             :
             : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)), [s0] "i"(offsetof(ContextBase, s0)),
               [s1] "i"(offsetof(ContextBase, s1)), [a0] "i"(offsetof(ContextBase, a0)), [s2] "i"(offsetof(ContextBase, s2)),

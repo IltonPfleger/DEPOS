@@ -41,15 +41,15 @@ template <typename T> class Scheduler {
     Scheduler() = default;
 
     Element *remove(Criterion::Rank threshold = Criterion::IDLE) {
-        m_spin.acquire();
         Element *next = nullptr;
         int i = Criterion::Levels - 1;
         while (i >= threshold && !next) {
+            m_spin.acquire();
             next = m_levels[i].remove();
+            m_spin.release();
             i = i - 1;
         }
         if (next) m_heads[CPU::id()] = next->value();
-        m_spin.release();
         return next;
     }
 
@@ -68,7 +68,7 @@ template <typename T> class Scheduler {
     }
 
   private:
-    T *m_heads[Traits<CPU>::Active] = {nullptr};
-    Queue m_levels[Criterion::Levels] = {};
-    Spin m_spin = {};
+    T *m_heads[Traits<CPU>::Active];
+    Queue m_levels[Criterion::Levels];
+    Spin m_spin;
 };
