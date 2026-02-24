@@ -21,8 +21,8 @@ template <typename, unsigned long> class Network;
 } // namespace virtio
 
 template <> struct Traits<Virtual> {
-    // typedef Meta::TypeList<riscv64::VirtualCPU, virtio::Console<0x30000000>, virtio::Network<DWC_Ether_QoS<GMAC0>,
-    // 0x30200000>>
-    //     Devices;
-    typedef Meta::TypeList<riscv64::VirtualCPU, virtio::Console<UART16550<UART0>, 0x30000000>> Devices;
+    typedef Meta::TypeList<riscv64::VirtualCPU, virtio::Console<UART16550<UART0>, 0x30000000>,
+                           virtio::Network<DWC_Ether_QoS<GMAC0>, 0x30200000>>
+        Devices;
+    // typedef Meta::TypeList<riscv64::VirtualCPU, virtio::Console<UART16550<UART0>, 0x30000000>> Devices;
 };

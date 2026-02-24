@@ -24,7 +24,7 @@ template <> struct Traits<System> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr unsigned long Frequency = 1000;
+    static constexpr unsigned long Frequency = 100;
     static constexpr bool Enable = true;
 };
 
@@ -49,7 +49,7 @@ template <> struct Traits<Debug> {
 };
 
 template <> struct Traits<Console> {
-    static constexpr unsigned int Columns = 80;
+    static constexpr unsigned int Columns = 70;
 };
 
 template <> struct Traits<Dummy> {

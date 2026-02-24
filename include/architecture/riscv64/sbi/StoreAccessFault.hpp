@@ -3,7 +3,7 @@
 #include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <drivers/virtio/Console.hpp>
-// #include <drivers/virtio/Network.hpp>
+#include <drivers/virtio/Network.hpp>
 
 namespace riscv64 {
 
