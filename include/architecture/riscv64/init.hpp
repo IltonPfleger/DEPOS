@@ -34,7 +34,7 @@ inline void init() {
         SIC::init();
     }
 
-    if constexpr (Traits<System>::Multitask) {
+    if constexpr (Traits<Kernel>::Multitask) {
         SV39_MMU::init();
     }
 }

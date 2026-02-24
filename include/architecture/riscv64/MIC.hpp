@@ -9,7 +9,7 @@
 namespace riscv64 {
 class MIC {
   private:
-    static constexpr bool ChangeStack = Traits<Thread>::IsolatedKernelStack || Traits<System>::Multitask;
+    static constexpr bool ChangeStack = Traits<Thread>::IsolatedKernelStack || Traits<Kernel>::Multitask;
 
     static void dispatch(MachineContext *c) {
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
@@ -41,7 +41,7 @@ class MIC {
     static void init() {
         csrw<MachineMode::TVEC>(MIC::entry);
 
-        if constexpr (Traits<System>::Multitask) {
+        if constexpr (Traits<Kernel>::Multitask) {
             /* Keep Boot Stack For Handle M-Mode IRQs */
             csrw<MachineMode::SCRATCH>(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * CPU::id());
         }

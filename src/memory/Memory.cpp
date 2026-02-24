@@ -25,7 +25,7 @@ void Memory::init() {
 }
 
 uintptr_t Memory::virt2phys(uintptr_t chunk) {
-    if constexpr (Traits<System>::Multitask)
+    if constexpr (Traits<Kernel>::Multitask)
         return chunk - Traits<MemoryMap>::VirtualRamStart + Traits<MemoryMap>::PhysicalRamStart;
     else
         return chunk;

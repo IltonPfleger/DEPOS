@@ -1,0 +1,51 @@
+#!/bin/sh
+
+HOST_IP=192.168.1.200
+LIDAR_IP=192.168.1.181
+
+#HOST_IP=150.162.62.155
+#LIDAR_IP=150.162.62.181
+#CAMERA_IP=150.162.62.140
+
+
+if [ ! -d "lib/depthai-core" ] || [ ! -d "lib/openzen" ]; then
+    echo "Compiling Dependencies"
+    (cd lib && make clone && make -j${nproc})
+fi
+
+if [ -z $1 ]; then
+    echo "ERROR: Provide A Valid Network Interface As First Argument!"
+    exit 1
+fi
+
+
+ping -c ${LIDAR_IP} &> /dev/null
+if $? -eq 1; then
+    echo "Failed To Ping LiDAR..."
+    echo "Flushing Network Interface..."
+    for IP in $(ip -4 addr show dev $1 | grep "inet" | awk '{print $2}'); do
+        sudo ip addr del $IP dev $1
+    done
+    #echo "Starting LiDAR Setup..."
+    #sudo ip addr add dev $1 192.168.1.200/24
+    #curl --data "addr=${LIDAR_IP}" http://192.168.1.201/cgi/setting/net &> /dev/null
+    #curl --data "submit" http://192.168.1.201/cgi/save  &> /dev/null
+    #curl --data "reset_system" http://192.168.1.201/cgi/reset  &> /dev/null
+    #sudo ip addr del dev $1 192.168.1.200/24
+    echo "Setting Up Host Network Interface..."
+    sudo ip addr add dev $1 ${HOST_IP}/24
+fi
+
+
+echo "Compiling SmartData..."
+make APPLICATION=main_read_sensors_hardware hardware
+
+echo "Cleaning Cache..."
+(cd bin && sudo find . -type f -not -name "*.md" -exec rm {} +)
+
+echo "Starting!"
+sudo dbus-launch gnome-terminal -- sh -c "./build/smartdata 1" &
+sudo dbus-launch gnome-terminal -- sh -c "./build/smartdata 2" &
+sudo dbus-launch gnome-terminal -- sh -c "./build/smartdata 3" &
+
+
