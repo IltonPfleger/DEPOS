@@ -38,7 +38,7 @@ class Thread {
     Link m_link;
     Criterion m_criterion;
     volatile State m_state;
-    Context *volatile m_context;
+    Context *m_context;
 
   private:
     static inline Scheduler<Thread> s_scheduler;

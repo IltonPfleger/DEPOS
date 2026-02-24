@@ -89,7 +89,7 @@ class CPU {
         asm volatile("ret");
     }
 
-    static void mb() { asm volatile("" ::: "memory"); }
+    static void mb() { asm volatile("fence iorw, iorw" ::: "memory"); }
 
     static void barrier() {
         __attribute__((section(".barrier"))) static volatile unsigned char gsense = 0;
@@ -109,8 +109,13 @@ class CPU {
 
     class Interruptions {
       public:
-        static void enable() { csrs<KernelMode::STATUS>(KernelMode::IRQE); }
+        static void enable() {
+            mb();
+            csrs<KernelMode::STATUS>(KernelMode::IRQE);
+        }
+
         static bool disable() {
+            mb();
             unsigned long status = csrrc<KernelMode::STATUS>(KernelMode::IRQE);
             return (status & KernelMode::IRQE) != 0;
         }

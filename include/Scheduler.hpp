@@ -61,11 +61,7 @@ template <typename T> class Scheduler {
         m_spin.release();
     }
 
-    T *current() {
-        T *c = m_heads[CPU::id()];
-        ERROR(!c);
-        return c;
-    }
+    T *current() { return m_heads[CPU::id()]; }
 
   private:
     T *m_heads[Traits<CPU>::Active];
