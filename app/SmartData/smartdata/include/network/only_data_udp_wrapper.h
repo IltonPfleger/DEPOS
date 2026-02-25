@@ -82,7 +82,6 @@ public:
     typedef IF<Traits<TSTP>::enabled, TSTP_Metadata, Dummy_Metadata>::Result Metadata;
 
     // Buffers used to hold frames across a zero-copy network stack
-#define _UTIL
     typedef _UTIL::Buffer<NIC<Only_Data_UDP_Wrapper>, Frame, void, Metadata> Buffer;
 
     // Observers of a protocol get a also a pointer to the received buffer

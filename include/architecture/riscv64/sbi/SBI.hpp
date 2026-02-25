@@ -21,8 +21,15 @@ class SBI {
         switch (mcause) {
         case Syscall::CODE:
             return sbi::Syscall::handler(c);
-        case IllegalInstruction::CODE:
-            return sbi::IllegalInstruction::handler(c);
+
+            /* IllegalInstruction handles access to restricted CSRs (like TIME and CYCLE).
+            Currently disabled because we delegate these permissions directly via MCOUNTEREN,
+            avoiding the overhead of trapping to M-Mode.
+
+            case IllegalInstruction::CODE:
+                return sbi::IllegalInstruction::handler(c);
+            */
+
         case LoadAccessFault::CODE:
             return sbi::LoadAccessFault::handler(c);
         case StoreAccessFault::CODE:

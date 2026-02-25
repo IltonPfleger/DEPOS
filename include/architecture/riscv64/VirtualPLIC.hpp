@@ -31,28 +31,29 @@ class VirtualPLIC {
             *destination = m_enabled[context][chunk];
             return true;
         } else if (offset >= THRESHOLD) {
-            unsigned long diff = offset - THRESHOLD;
-            unsigned int context = diff / 0x1000;
-            unsigned int reg_offset = diff % 0x1000;
+            unsigned int off = offset - THRESHOLD;
+            unsigned int ctx = off / 0x1000;
+            unsigned int reg = off % 0x1000;
 
-            if (reg_offset == 4) {
+            if (ctx >= k_number_of_contexts) return false;
+
+            if (reg == 0) {
+                *destination = m_threshold[ctx];
+                return true;
+            }
+
+            if (reg == 4) {
                 *destination = 0;
-
                 for (unsigned int i = 0; i < 32; ++i) {
-                    uint32_t active = m_pending[i] & m_enabled[context][i];
+                    uint32_t active = m_pending[i] & m_enabled[ctx][i];
+
+                    if (i == 0) active &= ~1;
 
                     if (active) {
-                        for (unsigned int bit = 0; bit < 32; ++bit) {
-                            if ((active >> bit) & 1) {
-                                unsigned int id = (i * 32) + bit;
-
-                                if (id == 0) continue;
-
-                                m_pending[i] &= ~(1 << bit);
-                                *destination = id;
-                                return true;
-                            }
-                        }
+                        unsigned int bit = __builtin_ctz(active);
+                        m_pending[i] &= ~(1 << bit);
+                        *destination = (i * 32) + bit;
+                        return true;
                     }
                 }
                 return true;

@@ -1,6 +1,6 @@
 #include <Thread.hpp>
 
-#include <abstractions/Timer.hpp>
+#include <architecture/Timer.hpp>
 
 #include <application/Application.hpp>
 #include <machine/Machine.hpp>

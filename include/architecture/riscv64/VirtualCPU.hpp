@@ -14,8 +14,7 @@ namespace riscv64 {
 
 class VirtualCPU {
 
-    template <typename... Args> __attribute__((naked)) static void supervisor(Args... args) {
-        (void(args), ...);
+    template <typename... Args> __attribute__((naked)) static void supervisor([[maybe_unused]] Args... args) {
         asm volatile("mret");
     }
 
