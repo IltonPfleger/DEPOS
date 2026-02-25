@@ -13,6 +13,7 @@ class Alarm;
 class Ethernet;
 class Console;
 class Virtual;
+class CPU;
 
 template <typename U> class Scheduler;
 
@@ -32,11 +33,6 @@ template <> struct Traits<Alarm> {
     static constexpr bool Enable = true;
 };
 
-template <> struct Traits<Thread> {
-    static constexpr unsigned long RescheduleFrequency = 1'000;
-    static constexpr bool IsolatedKernelStack = true;
-};
-
 template <> struct Traits<Scheduler<Thread>> {
     static constexpr bool Preemptive = true;
     using Criterion = RR;
@@ -53,3 +49,10 @@ template <> struct Traits<Console> {
 
 #include <application/Traits.hpp>
 #include <machine/Traits.hpp>
+
+template <> struct Traits<Thread> {
+    static constexpr unsigned long RescheduleFrequency = 1'000;
+    static constexpr unsigned int UserStackSize = Traits<Memory>::PageSize;
+    static constexpr unsigned int KernelStackSize = Traits<Memory>::PageSize;
+    static constexpr bool IsolatedKernelStack = true;
+};

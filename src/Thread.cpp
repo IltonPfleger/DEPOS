@@ -1,5 +1,6 @@
 #include <Alarm.hpp>
 #include <Thread.hpp>
+#include <Traits.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
 #include <memory/Segment.hpp>
@@ -34,14 +35,16 @@ Thread::Return Thread::idle(Argument) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : m_waiting(0), m_link(Link(this, c)), m_criterion(c), m_state(State::READY) {
+    : m_stack(Traits<Thread>::UserStackSize), m_kstack(Traits<Thread>::KernelStackSize), m_waiting(0), m_link(Link(this, c)),
+      m_criterion(c), m_state(State::READY) {
 
     TraceIn(this);
 
-    new (&m_stack) Segment(Traits<Memory>::StackSize);
-    new (&m_kstack) Segment(Traits<Memory>::StackSize);
+    // new (&m_stack) Segment(Traits<Memory>::StackSize);
+    // new (&m_kstack) Segment(Traits<Memory>::StackSize);
 
-    m_context = new (m_stack.end() - sizeof(CPU::Context)) CPU::Context(m_stack.end(), m_kstack.end(), f, exit, a);
+    m_context = reinterpret_cast<Context *>(m_stack.end() - sizeof(Context));
+    *m_context = Context(m_stack.end(), m_kstack.end(), f, exit, a);
 
     bool enabled = CPU::Interruptions::disable();
     CPU::Atomic::finc(s_count);

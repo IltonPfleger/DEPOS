@@ -33,8 +33,8 @@ class Thread {
     static Return idle(Argument);
 
   private:
-    Segment m_kstack;
     Segment m_stack;
+    Segment m_kstack;
     Queue *m_waiting;
     Link m_link;
     Criterion m_criterion;

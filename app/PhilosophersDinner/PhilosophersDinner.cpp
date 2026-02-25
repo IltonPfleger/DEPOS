@@ -10,7 +10,7 @@ Semaphore *forks[Number];
 Semaphore *console;
 Semaphore *finish;
 
-int philosopher(void *p) {
+void *philosopher(void *p) {
     unsigned int id = (unsigned int)(unsigned long)p;
 
     int iterations = Iterations;
@@ -21,8 +21,6 @@ int philosopher(void *p) {
         console->p();
 
         Console::cout << "<" << CPU::id() << ">" << " Filósofo " << id << " está pensando!" << Console::endl;
-
-        Console::cout << Timer::time() << Console::endl;
 
         console->v();
 

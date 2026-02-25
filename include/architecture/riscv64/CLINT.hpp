@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Traits.hpp>
+#include <architecture/riscv64/Modes.hpp>
+#include <architecture/riscv64/Traits.hpp>
 #include <architecture/riscv64/csrs.hpp>
 #include <drivers/Driver.hpp>
 
@@ -32,8 +34,8 @@ class CLINT : Driver {
     }
 
   public:
-    static constexpr unsigned long Addr = Traits<::CLINT>::Addr;
-    static constexpr unsigned long Clock = Traits<::CLINT>::Clock;
+    static constexpr unsigned long Addr = Traits<CLINT>::Addr;
+    static constexpr unsigned long Clock = Traits<CLINT>::Clock;
     static constexpr unsigned long Ticks = Clock / Traits<Timer>::Frequency;
 };
 

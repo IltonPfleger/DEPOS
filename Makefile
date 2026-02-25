@@ -43,7 +43,7 @@ $(SYSTEM).bin : $(SYSTEM).elf $(TOOLS_OBJECTS)
 	$(OBJCOPY) -O binary $(SYSTEM).elf $(SYSTEM).bin
 
 $(SYSTEM).elf: $(OBJECTS)
-	$(LD) -e _init --section-start=.init=$(KERNEL_ADDR) --image-base=$(KERNEL_ADDR) -o $@ $(OBJECTS)
+	$(LD) --no-gc-sections -e _init --section-start=.init=$(KERNEL_ADDR) --image-base=$(KERNEL_ADDR) -o $@ $(OBJECTS)
 
 $(BUILD)/%: tools/%.cpp 
 	mkdir -p $(dir $@)

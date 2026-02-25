@@ -84,11 +84,11 @@ private:
     static void keep_alive();
 
 private:
-    static inline Time _reference;
-    static inline Time _skew;
-    static inline volatile Time _next_sync;
-    static inline Function_Handler * _life_keeper_handler;
-    static inline Alarm * _life_keeper;
+    static Time _reference;
+    static Time _skew;
+    static volatile Time _next_sync;
+    static Function_Handler * _life_keeper_handler;
+    static Alarm * _life_keeper;
 };
 
 #endif

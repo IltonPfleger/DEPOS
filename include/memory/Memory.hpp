@@ -20,4 +20,4 @@ class Memory {
     static inline Spin s_spin;
 };
 
-void *operator new(size_t, void *);
+// void *operator new(size_t, void *);

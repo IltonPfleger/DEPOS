@@ -82,7 +82,7 @@ class Console {
     static void put(char);
 
   public:
-    static void init() { new (&cout) Stream; }
+    static void init() { cout = Stream(); }
     static void panic();
     static bool panicked();
     static Stream &endl(Console::Stream &s) { return (s << '\n' << dec); }

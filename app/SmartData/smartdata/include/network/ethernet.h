@@ -85,6 +85,7 @@ public:
 
     typedef IF<Traits<TSTP>::enabled, TSTP_Metadata, Dummy_Metadata>::Result Metadata;
 
+#define _UTIL
     // Buffers used to hold frames across a zero-copy network stack
     typedef _UTIL::Buffer<NIC<Ethernet>, Frame, void, Metadata> Buffer;
 

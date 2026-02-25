@@ -44,7 +44,7 @@ class CPU {
 
     static unsigned int id() {
         if constexpr (!Traits<RISCV>::Supervisor)
-            return csrr<MachineMode::HARTID>() - Traits<::CPU>::Offset;
+            return csrr<MachineMode::HARTID>() - Traits<CPU>::Offset;
         else {
             register unsigned int core asm("tp");
             return core;
@@ -63,13 +63,13 @@ class CPU {
         // Use Thread Pointer as Core ID
         asm volatile("csrr tp, mhartid");
 
-        if (core < Traits<::CPU>::Offset) {
+        if (core < Traits<CPU>::Offset) {
             halt();
         }
 
-        core -= Traits<::CPU>::Offset;
+        core -= Traits<CPU>::Offset;
 
-        if (core >= Traits<::CPU>::Active) {
+        if (core >= Traits<CPU>::Active) {
             halt();
         }
 
@@ -77,8 +77,8 @@ class CPU {
         asm volatile("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::StackSize * core));
 
         // Setup Boot Memory
-        if (id() == Traits<::CPU>::BSP) {
-            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::StackSize * Traits<::CPU>::Active - 1;
+        if (id() == Traits<CPU>::BSP) {
+            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::StackSize * Traits<CPU>::Active - 1;
             __bmm.end = Traits<MemoryMap>::RamEnd;
         }
 
@@ -98,7 +98,7 @@ class CPU {
         unsigned char sense = gsense;
         unsigned int arrived = Atomic::finc(ready[sense]);
 
-        if (arrived == Traits<::CPU>::Active - 1) {
+        if (arrived == Traits<CPU>::Active - 1) {
             ready[sense] = 0;
             gsense = !sense;
         } else {
