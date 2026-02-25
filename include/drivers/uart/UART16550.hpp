@@ -67,8 +67,8 @@ template <typename Tag> class UART16550 : public Driver, public Observed<const u
     }
 
     static UART16550 *instance() {
-        static UART16550 _;
-        return &_;
+        static UART16550 $;
+        return &$;
     }
 
     void putc(char c) {

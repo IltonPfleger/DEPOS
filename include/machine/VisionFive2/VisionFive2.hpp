@@ -65,10 +65,16 @@ class VisionFive2 : Driver {
             aoncrg_init();
         }
 
+        riscv64::CPU::mb();
+
         riscv64::CPU::barrier();
 
         riscv64::init();
 
+        riscv64::CPU::mb();
+
         Meta::ForEachTypeList(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
+
+        riscv64::CPU::mb();
     }
 };

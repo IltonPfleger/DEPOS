@@ -14,4 +14,14 @@ namespace EPOS {
 #include <smartdata.h>
 } // namespace EPOS
 
-int main(int, char *[]) { Console::cout << "SmartData:\n "; }
+int main(int, char *[]) {
+    EPOS::Antigravity a(0, 1000000, EPOS::SmartData::ADVERTISED);
+
+    for (unsigned int i = 0; i < 10000; i++) {
+        a = i;
+        Console::cout << "a=" << (unsigned int)a << Console::endl;
+        Alarm::udelay(1000000);
+    }
+
+    Console::cout << "SmartData:\n ";
+}

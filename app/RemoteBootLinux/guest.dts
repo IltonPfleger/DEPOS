@@ -64,11 +64,11 @@
 			interrupt-parent = <&plic>;
 		};
 
-		virtio_mmio@30200000 {
-			compatible = "virtio,mmio";
-			reg = <0x0 0x30200000 0x0 0x1000>;
-			interrupts = <50>;
-			interrupt-parent = <&plic>;
-		};
+		//virtio_mmio@30200000 {
+		//	compatible = "virtio,mmio";
+		//	reg = <0x0 0x30200000 0x0 0x1000>;
+		//	interrupts = <50>;
+		//	interrupt-parent = <&plic>;
+		//};
     };
 };

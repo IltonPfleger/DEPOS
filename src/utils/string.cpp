@@ -112,36 +112,35 @@ int strcmp(const char *s1, const char *s2) {
     return (unsigned char)(*s1) - (unsigned char)(*s2);
 }
 
-//
-// char *strchr(const char *str, int ch) {
-//     while (*str != (char)ch) {
-//         if (!*str) {
-//             return nullptr;
-//         }
-//         str++;
-//     }
-//     return const_cast<char *>(str);
-// }
-//
-// long atol(const char *str) {
-//     long result = 0;
-//     int sign = 1;
-//
-//     while (*str == ' ' || *str == '\t' || *str == '\n')
-//         ++str;
-//
-//     if (*str == '-') {
-//         sign = -1;
-//         ++str;
-//     } else if (*str == '+') {
-//         ++str;
-//     }
-//
-//     while (*str >= '0' && *str <= '9') {
-//         result = result * 10 + (*str - '0');
-//         ++str;
-//     }
-//
-//     return result * sign;
-// }
+char *strchr(const char *str, int ch) {
+    while (*str != (char)ch) {
+        if (!*str) {
+            return nullptr;
+        }
+        str++;
+    }
+    return const_cast<char *>(str);
+}
+
+long atol(const char *str) {
+    long result = 0;
+    int sign = 1;
+
+    while (*str == ' ' || *str == '\t' || *str == '\n')
+        ++str;
+
+    if (*str == '-') {
+        sign = -1;
+        ++str;
+    } else if (*str == '+') {
+        ++str;
+    }
+
+    while (*str >= '0' && *str <= '9') {
+        result = result * 10 + (*str - '0');
+        ++str;
+    }
+
+    return result * sign;
+}
 }
