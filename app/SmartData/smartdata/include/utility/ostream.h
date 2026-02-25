@@ -182,7 +182,7 @@ class OStream {
     }
 
   private:
-    void print(const char *s) { DEPOS::Console::cout << s; }
+    void print(const char *s) { DEPOS::Console::cout << s << DEPOS::Console::endl; }
 
     int itoa(int v, char *s);
     int utoa(unsigned int v, char *s, unsigned int i = 0);
