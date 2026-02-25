@@ -100,7 +100,7 @@ template <typename T> class Handler {
         auto &queue = m_queues[m_header.m_queue_selector];
         const uint32_t address = source * m_header.m_guest_page_size;
 
-        new (&queue) VirtQueue(address, T::NumberOfDescriptors, m_header.m_queue_align);
+        queue = VirtQueue(address, T::NumberOfDescriptors, m_header.m_queue_align);
         m_header.m_queue_page_frame_number = source;
     }
 
