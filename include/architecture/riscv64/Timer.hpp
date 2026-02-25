@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Types.hpp>
 #include <architecture/common/Timer.hpp>
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/IC.hpp>
@@ -22,7 +23,7 @@ template <typename... Tickers> class Timer : public ArchitectureCommon::TimerTem
     static inline uint64_t time() {
         uint64_t value;
         asm volatile("rdtime %0" : "=r"(value));
-        return value * 1'000'000 / Traits<::CLINT>::Clock;
+        return value * 1'000'000 / Traits<CLINT>::Clock;
     }
 
     static void init() {

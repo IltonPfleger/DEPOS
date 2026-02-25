@@ -1,7 +1,7 @@
 #pragma once
 
+#include <Types.hpp>
 #include <architecture/riscv64/Modes.hpp>
-#include <utils/string.hpp>
 
 #pragma GCC push_options
 #pragma GCC optimize("O0")

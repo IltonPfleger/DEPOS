@@ -9,7 +9,7 @@ all:
 	$(MAKE) -C $(APPLICATION) all
 else
 
-SOURCES := $(wildcard $(APPLICATION)/*.cpp)
+SOURCES := $(shell find $(APPLICATION) -name '*.cpp' -o -name '*.cc')
 OBJECTS := $(patsubst $(APPLICATION)/%.cpp,$(BUILD)/$(APPLICATION)/%.o,$(SOURCES))
 DEPENDENCIES := $(OBJECTS:.o=.d)
 

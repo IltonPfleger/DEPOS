@@ -20,7 +20,7 @@ class TSC {
         static Hertz frequency = 0;
         if (frequency == 0) {
             TSC::Time_Stamp t0 = TSC::time_stamp();
-            ::Alarm::udelay(1000000);
+            DEPOS::Alarm::udelay(1000000);
             TSC::Time_Stamp t1 = TSC::time_stamp();
             frequency = t1 - t0;
         }
@@ -29,7 +29,7 @@ class TSC {
     static PPB accuracy() { return 50; }
 
     static Time_Stamp time_stamp() {
-		return ::Timer::time();
+		return DEPOS::Timer::time();
         // if (Traits<Build>::ARCHITECTURE == Traits<Build>::ARMv8) {
         //     struct timeval time;
         //     gettimeofday(&time, nullptr);

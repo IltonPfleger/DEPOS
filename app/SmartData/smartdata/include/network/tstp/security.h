@@ -26,6 +26,7 @@ class TSTP::Security : private SmartData, private Data_Observer<Buffer> {
     static const Time::Type KEY_EXPIRY = 1 * 60 * 1000 * 1000;
     static const Time::Type POLY_TIME_WINDOW = KEY_EXPIRY / 2;
 
+#define _SYS
     typedef _SYS::AES<KEY_SIZE> _AES;
     typedef Diffie_Hellman<_AES> _DH;
     typedef Poly1305<_AES> _Poly1305;
@@ -242,7 +243,7 @@ class TSTP::Security : private SmartData, private Data_Observer<Buffer> {
     static void *key_manager(void *);
 
   private:
-    static Semaphore _mtx;
+    static DEPOS::Semaphore _mtx;
 
     static Node_Id _id;
     static Auth _auth;

@@ -39,6 +39,12 @@ class SV39_MMU {
             KernelRWX = V | R | W | X | A | D,
         };
 
+        static PageTable *init() {
+            PageTable *pg = reinterpret_cast<PageTable *>(Memory::alloc(sizeof(PageTable)));
+            *pg = PageTable();
+            return pg;
+        }
+
         void load() const {
             TLB::flush();
             csrw<SupervisorMode::SATP>(Mode | reinterpret_cast<uintptr_t>(this) >> 12);
@@ -85,13 +91,13 @@ class SV39_MMU {
             PageTable *l0;
 
             if (!entries[vpn2]) {
-                l1 = new (Memory::alloc(Size)) PageTable();
+                l1 = PageTable::init();
                 set(vpn2, reinterpret_cast<uintptr_t>(l1), V);
             } else {
                 l1 = walk(vpn2);
             }
             if (!l1->entries[vpn1]) {
-                l0 = new (Memory::alloc(Size)) PageTable();
+                l0 = PageTable::init();
                 l1->set(vpn1, reinterpret_cast<uintptr_t>(l0), V);
             } else {
                 l0 = l1->walk(vpn1);
@@ -139,7 +145,7 @@ class SV39_MMU {
         riscv64::CPU::barrier();
 
         if (riscv64::CPU::id() == Traits<::CPU>::BSP) {
-            s_kernel_page_table = new (Memory::alloc(sizeof(PageTable))) PageTable();
+            *s_kernel_page_table = *PageTable::init();
             s_kernel_page_table->map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart, Giga,
                                      PageTable::KernelRWX);
             s_kernel_page_table->map(Traits<MemoryMap>::PhysicalRamStart, Traits<MemoryMap>::PhysicalRamStart, Giga,

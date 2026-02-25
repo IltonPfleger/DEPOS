@@ -6,8 +6,6 @@
 
 #else
 
-#include <utils/Debug.hpp>
-
 #define assert(expr)
 
 #endif

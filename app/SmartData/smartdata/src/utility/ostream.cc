@@ -1,18 +1,21 @@
 // EPOS OStream Implementation
 
+namespace DEPOS {
+#include <utils/Console.hpp>
+} // namespace DEPOS
+
+#include <architecture/cpu.h>
 #include <main_traits.h>
 #include <utility/ostream.h>
-#include <architecture/cpu.h>
 
 // Class Attributes
 const char OStream::_digits[] = "0123456789abcdef";
 
 // Class Methods
-int OStream::itoa(int v, char * s)
-{
+int OStream::itoa(int v, char *s) {
     UInt32 i = 0;
 
-    if(v < 0) {
+    if (v < 0) {
         v = -v;
         s[i++] = '-';
     }
@@ -20,36 +23,31 @@ int OStream::itoa(int v, char * s)
     return utoa(static_cast<UInt32>(v), s, i);
 }
 
-
-int OStream::utoa(unsigned int v, char * s, unsigned int i)
-{
+int OStream::utoa(unsigned int v, char *s, unsigned int i) {
     UInt32 j;
 
-    if(!v) {
+    if (!v) {
         s[i++] = '0';
         return i;
     }
 
-    if(v > 256) {
-        if(_base == 8 || _base == 16)
-            s[i++] = '0';
-        if(_base == 16)
-            s[i++] = 'x';
+    if (v > 256) {
+        if (_base == 8 || _base == 16) s[i++] = '0';
+        if (_base == 16) s[i++] = 'x';
     }
 
-    for(j = v; j != 0; i++, j /= _base);
-    for(j = 0; v != 0; j++, v /= _base)
+    for (j = v; j != 0; i++, j /= _base)
+        ;
+    for (j = 0; v != 0; j++, v /= _base)
         s[i - 1 - j] = _digits[v % _base];
 
     return i;
 }
 
-
-int OStream::llitoa(long long v, char * s)
-{
+int OStream::llitoa(long long v, char *s) {
     UInt32 i = 0;
 
-    if(v < 0) {
+    if (v < 0) {
         v = -v;
         s[i++] = '-';
     }
@@ -57,41 +55,35 @@ int OStream::llitoa(long long v, char * s)
     return llutoa(static_cast<unsigned long long>(v), s, i);
 }
 
-
-int OStream::llutoa(unsigned long long v, char * s, unsigned int i)
-{
+int OStream::llutoa(unsigned long long v, char *s, unsigned int i) {
     UInt64 j;
 
-    if(!v) {
+    if (!v) {
         s[i++] = '0';
         return i;
     }
 
-    if(v > 256) {
-        if(_base == 8 || _base == 16)
-            s[i++] = '0';
-        if(_base == 16)
-            s[i++] = 'x';
+    if (v > 256) {
+        if (_base == 8 || _base == 16) s[i++] = '0';
+        if (_base == 16) s[i++] = 'x';
     }
 
-    for(j = v; j != 0; i++, j /= _base);
-    for(j = 0; v != 0; j++, v /= _base)
+    for (j = v; j != 0; i++, j /= _base)
+        ;
+    for (j = 0; v != 0; j++, v /= _base)
         s[i - 1 - j] = _digits[v % _base];
 
     return i;
 }
 
-
-int OStream::ptoa(const void * p, char * s)
-{
+int OStream::ptoa(const void *p, char *s) {
     CPU::Reg64 j, v = reinterpret_cast<CPU::Reg64>(p);
 
     s[0] = '0';
     s[1] = 'x';
 
-    for(j = 0; j < sizeof(void *) * 2; j++, v >>= 4)
-        s[2 + sizeof(void *) * 2 - 1 - j]
-            = _digits[v & 0xf];
+    for (j = 0; j < sizeof(void *) * 2; j++, v >>= 4)
+        s[2 + sizeof(void *) * 2 - 1 - j] = _digits[v & 0xf];
 
     return j + 2;
 }
@@ -100,5 +92,5 @@ int OStream::ptoa(const void * p, char * s)
 // manually initialized before use (at setup())
 OStream kout, kerr;
 
-pthread_mutex_t OStream::MutexHandle;
-bool OStream::MutexInitialized = false;
+//pthread_mutex_t OStream::MutexHandle;
+//bool OStream::MutexInitialized = false;

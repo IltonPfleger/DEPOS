@@ -136,16 +136,16 @@ class TSTP : private Traits<TSTP>::NIC_Family, private SmartData, private NIC<Tr
     static void finish();
 
   private:
-    static inline Security *_security;
-    static inline Timekeeper *_timekeeper;
-    static inline Locator *_locator;
-    static inline Router *_router;
-    static inline Manager *_manager;
+    static Security *_security;
+    static Timekeeper *_timekeeper;
+    static Locator *_locator;
+    static Router *_router;
+    static Manager *_manager;
 
-    static inline NIC<NIC_Family> *_nic;
-    static inline TSTP *_tstp;
-    static inline Data_Observed<Buffer> _parts;
-    static inline Data_Observed<Buffer> _clients;
+    static NIC<NIC_Family> *_nic;
+    static TSTP *_tstp;
+    static Data_Observed<Buffer> _parts;
+    static Data_Observed<Buffer> _clients;
 };
 
 #endif
@@ -198,34 +198,5 @@ inline TSTP::Global_Space TSTP::absolute(const TSTP::Space &s) { return Locator:
 inline TSTP::Time TSTP::now() { return Timekeeper::now(); }
 inline TSTP::Time TSTP::relative(const TSTP::Time &t) { return TSTP::_timekeeper->relative(t); }
 inline TSTP::Time TSTP::absolute(const TSTP::Time &t) { return t ? TSTP::_timekeeper->relative(t) : t; }
-
-void TSTP::marshal(Buffer *buf) {
-    db<TSTP>(TRC) << "TSTP::marshal(buf=" << buf << ")" << endl;
-
-    Manager::marshal(buf);
-    Router::marshal(buf);
-    Locator::marshal(buf);
-    Timekeeper::marshal(buf);
-    Security::marshal(buf);
-
-    Packet *packet = buf->frame()->data<Packet>();
-    db<TSTP>(INF) << "TSTP::marshal:packet=" << *packet << ",size=" << buf->size() << endl;
-}
-
-void TSTP::update(NIC_Family::Observed *obs, const Protocol &prot, Buffer *buf) {
-    db<TSTP>(TRC) << "TSTP::update(nic=" << obs << ",prot=" << hex << prot << ",buf=" << buf << ")" << endl;
-    Packet *packet = buf->frame()->data<Packet>();
-    db<TSTP>(INF) << "TSTP::update:packet=" << packet->header()->unit() << "," << packet->header()->device()
-                  << ",will notify=" << buf->destined_to_me << "," << buf->trusted << endl;
-    db<TSTP>(INF) << "TSTP::sizeof(packet)=" << sizeof(*packet->header()) << ",buf-size()=" << buf->size() << endl;
-
-    _parts.notify(buf);
-
-    if (buf->destined_to_me && buf->trusted && packet->type() != CONTROL)
-        _clients.notify(
-            buf); // why was tstp bothering with unit here? --> space time seems ok, but unit is like opening SmartData casquet
-
-    _nic->free(buf);
-}
 
 #endif

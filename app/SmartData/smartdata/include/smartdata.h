@@ -13,6 +13,8 @@
 
 #define __UTIL
 
+void *operator new(size_t, void *);
+
 // Scale for Geographic Space used by communication protocols (applications always get CM_32)
 namespace Space_Time {
     enum Scale {

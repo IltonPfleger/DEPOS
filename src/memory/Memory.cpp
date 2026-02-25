@@ -12,7 +12,8 @@ void Memory::init() {
 
     TraceIn();
 
-    s_allocator = new (alloc(sizeof(Allocator))) Allocator();
+    s_allocator = reinterpret_cast<Allocator *>(alloc(sizeof(Allocator)));
+    *s_allocator = Allocator();
 
     for (unsigned long c = RamEnd - PageSize; c + PageSize > RamStart; c -= PageSize) {
         if (c + PageSize >= __kmm.start && c < __kmm.end) continue;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Meta.hpp>
+#include <architecture/riscv64/CPU.hpp>
 #include <drivers/Driver.hpp>
 #include <utils/Debug.hpp>
 #include <utils/DispatchTable.hpp>
@@ -26,9 +27,7 @@ class PLIC : Driver {
     static unsigned int claim(unsigned int c = context()) { return Reg32(Address, CLAIM + (c * 0x1000)); }
     static void complete(unsigned int id, unsigned int c = context()) { Reg32(Address, CLAIM + (c * 0x1000)) = id; }
 
-    static unsigned int context() {
-        return Traits<::PLIC>::Contexts[CPU::id() + Traits<::CPU>::Offset][Traits<RISCV>::Supervisor];
-    }
+    static unsigned int context() { return Traits<PLIC>::Contexts[CPU::id() + Traits<CPU>::Offset][Traits<RISCV>::Supervisor]; }
 
     static void enable(unsigned int source, unsigned int c = context()) {
         unsigned int bank = source / 32;

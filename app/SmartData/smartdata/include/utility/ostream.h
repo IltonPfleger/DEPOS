@@ -192,7 +192,7 @@ class OStream {
 
   private:
     void print(const char *s) {
-        Console::cout << s;
+		DEPOS::Console::cout << s;
         // pthread_mutex_lock(&MutexHandle);
         // printf("%s", s);
         // pthread_mutex_unlock(&MutexHandle);

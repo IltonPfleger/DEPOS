@@ -2,6 +2,13 @@
 
 #include <Traits.hpp>
 
+namespace riscv64 {
+class CPU;
+class CLINT;
+class PLIC;
+class IC;
+} // namespace riscv64
+
 class RISCV;
 
 template <> struct Traits<RISCV> {
@@ -10,3 +17,8 @@ template <> struct Traits<RISCV> {
 
     static_assert(!(Supervisor && Hypervisor));
 };
+
+template <> struct Traits<riscv64::CPU> : Traits<CPU> {};
+template <> struct Traits<riscv64::CLINT> : Traits<CLINT> {};
+template <> struct Traits<riscv64::PLIC> : Traits<PLIC> {};
+template <> struct Traits<riscv64::IC> : Traits<IC> {};
