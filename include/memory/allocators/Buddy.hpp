@@ -7,11 +7,9 @@ template <size_t Max> class Buddy {
     using List = FIFO<Entry>;
 
     static size_t level(size_t size) {
-        size_t level = 0;
-        while ((1U << level) < size && level <= Max) {
-            ++level;
-        }
-        return level;
+        if (size <= 1) return 0;
+        size_t l = 64 - __builtin_clzll(size - 1);
+        return (l > Max) ? Max : l;
     }
 
   public:

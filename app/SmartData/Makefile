@@ -19,7 +19,7 @@ $(INFO): $(BUILD)/$(APPLICATION).o
 
 $(BUILD)/$(APPLICATION).o: $(APPLICATION).cpp
 	@mkdir -p $(dir $@)
-	$(CC) $(MARCH_CCFLAGS) -Ismartdata/include -I../include -MMD -MP -c $< -o $@ -Wno-deprecated-enum-enum-conversion -Wno-overflow -Wno-unused-parameter 
-	$(LD) -e main -r $(OBJECTS) -o $@
+	$(CC) $(MARCH_CCFLAGS) -Ismartdata/include -I../include -MMD -MP -c $< -o $@.o -Wno-deprecated-enum-enum-conversion -Wno-overflow -Wno-unused-parameter -Wno-pedantic -Wno-tautological-compare -Wno-volatile -Wno-ignored-qualifiers -Wno-deprecated-copy -Wno-return-type
+	$(LD) -e main -r $@.o -o $@
 
 -include $(DEPENDENCIES)

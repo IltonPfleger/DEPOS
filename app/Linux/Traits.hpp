@@ -16,9 +16,9 @@ class VirtualCPU;
 }
 
 namespace virtio {
-template <unsigned long> class Console;
+template <typename, unsigned long> class Console;
 }
 
 template <> struct Traits<Virtual> {
-    typedef Meta::TypeList<riscv64::VirtualCPU, virtio::Console<0x30000000>> Devices;
+    typedef Meta::TypeList<riscv64::VirtualCPU, virtio::Console<UART16550<UART0>, 0x30000000>> Devices;
 };

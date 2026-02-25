@@ -23,12 +23,17 @@ template <> struct Traits<Kernel> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr unsigned long Frequency = 100'000;
+    static constexpr unsigned long Frequency = 1'000;
+    static constexpr bool Enable = true;
+};
+
+template <> struct Traits<Alarm> {
+    static constexpr unsigned long Frequency = Traits<Timer>::Frequency;
     static constexpr bool Enable = true;
 };
 
 template <> struct Traits<Thread> {
-    static constexpr unsigned long RescheduleFrequency = 10;
+    static constexpr unsigned long RescheduleFrequency = 1'000;
     static constexpr bool IsolatedKernelStack = true;
 };
 

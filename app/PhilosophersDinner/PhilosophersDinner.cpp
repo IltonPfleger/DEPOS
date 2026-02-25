@@ -1,5 +1,6 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
+#include <architecture/Timer.hpp>
 #include <utils/Console.hpp>
 #include <utils/Debug.hpp>
 
@@ -20,6 +21,8 @@ int philosopher(void *p) {
         console->p();
 
         Console::cout << "<" << CPU::id() << ">" << " Filósofo " << id << " está pensando!" << Console::endl;
+
+        Console::cout << Timer::time() << Console::endl;
 
         console->v();
 

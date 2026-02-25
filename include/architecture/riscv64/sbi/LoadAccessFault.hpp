@@ -17,15 +17,17 @@ class LoadAccessFault {
     using ActiveTraits = Meta::IF<Traits<RISCV>::Hypervisor, Traits<Virtual>, NoVirtualDevices>::Result;
     using PageTable = SV39_MMU::PageTable;
 
-    template <typename... Ts>
-    static bool dispatch([[maybe_unused]] uintptr_t x, [[maybe_unused]] unsigned int *y, Meta::TypeList<Ts...>) {
-        return ([&]() {
-            if (x >= Ts::Address && x < (Ts::Address + Ts::Size)) {
-                return Ts::read(x, y);
-            }
-            return false;
-        }() || ...);
-    }
+    template <typename T> struct Dispatcher;
+    template <typename... Ts> struct Dispatcher<Meta::TypeList<Ts...>> {
+        static bool run(uintptr_t x, unsigned int *y) {
+            return ([&]() {
+                if (x >= Ts::Address && x < (Ts::Address + Ts::Size)) {
+                    return Ts::read(x, y);
+                }
+                return false;
+            }() || ...);
+        }
+    };
 
   public:
     static constexpr unsigned int CODE = 5;
@@ -34,7 +36,7 @@ class LoadAccessFault {
         uintptr_t addr = PageTable::virt2phys(csrr<MachineMode::TVAL>());
         unsigned int instruction = *reinterpret_cast<unsigned int *>(PageTable::virt2phys(c->pc));
         unsigned int i = (instruction >> 7) & 0x1F;
-        return c->pc += 4, dispatch(addr, reinterpret_cast<unsigned int *>(&(*c)[i]), ActiveTraits::Devices);
+        return c->pc += 4, Dispatcher<ActiveTraits::Devices>::run(addr, reinterpret_cast<unsigned int*>(&(*c)[i]));
     }
 };
 

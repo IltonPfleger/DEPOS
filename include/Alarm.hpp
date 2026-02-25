@@ -11,7 +11,7 @@ class Alarm {
     };
 
   public:
-    static void delay(unsigned int seconds);
+    static void udelay(unsigned int);
     static void handler();
 
   private:

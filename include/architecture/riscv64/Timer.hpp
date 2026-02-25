@@ -19,6 +19,12 @@ template <typename... Tickers> class Timer : public ArchitectureCommon::TimerTem
     }
 
   public:
+    static inline uint64_t time() {
+        uint64_t value;
+        asm volatile("rdtime %0" : "=r"(value));
+        return value * 1'000'000 / Traits<::CLINT>::Clock;
+    }
+
     static void init() {
         if constexpr (!Traits<RISCV>::Supervisor) {
             IC::bind(7, machine);

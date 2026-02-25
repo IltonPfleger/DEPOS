@@ -637,7 +637,7 @@ public:
         bool operator==(const Unit & u) const {
             if (!(_unit & SI) && (((_unit >> 24) == (MOTION_VECTOR_LOCAL>>24)) || ((_unit >> 24) == (MOTION_VECTOR_GLOBAL >> 24))))
                 return (_unit >> 24) == (u >> 24); // ignore subtype (class of motion vector local or global)
-            return _unit == u;
+            return _unit == u._unit;
         }
 
         size_t value_size() const {
@@ -1274,7 +1274,9 @@ public:
             process(ADVERTISE);
         }
         if(period > 0) {
-            struct arg_struct_updater * args = reinterpret_cast<struct arg_struct_updater *>(malloc(sizeof(struct arg_struct_updater)));
+			//TODO: REVIEW
+            //struct arg_struct_updater * args = reinterpret_cast<struct arg_struct_updater *>(malloc(sizeof(struct arg_struct_updater)));
+            struct arg_struct_updater * args = new (struct arg_struct_updater);
             args->sd = this;
             _thread = new Periodic_Thread(period, 0, &updater, static_cast<void *>(args));
             db<SmartData>(INF) << "SmartData[R]::thread=" << _thread << endl;
@@ -1548,7 +1550,8 @@ private:
             _interesteds.insert(binding->link());
             if(interest->period()) {
                 if(!_thread) {
-                    struct arg_struct_updater * args = reinterpret_cast<struct arg_struct_updater*>(malloc(sizeof(struct arg_struct_updater)));
+                    //struct arg_struct_updater * args = reinterpret_cast<struct arg_struct_updater*>(malloc(sizeof(struct arg_struct_updater)));
+                    struct arg_struct_updater * args = new (struct arg_struct_updater);
                     args->sd = this;
                     _thread = new /*(SYSTEM)*/ Periodic_Thread(Microsecond(interest->period()), Microsecond(interest->expiry()), &updater, reinterpret_cast<void *>(args));
                 } else {
@@ -1600,7 +1603,7 @@ private:
 
     static void* updater(void * args) {
         //UInt32 device, Time expiry, Responsive_SmartData * sd) {
-        Thread::assignhandler();
+        //Thread::assignhandler();
         struct arg_struct_updater *arguments = static_cast<struct arg_struct_updater*>(args);
         Responsive_SmartData *sd = arguments->sd;
 

@@ -141,16 +141,16 @@ public:
     static void finish();
 
 private:
-    static Security * _security;
-    static Timekeeper * _timekeeper;
-    static Locator * _locator;
-    static Router * _router;
-    static Manager * _manager;
+    static inline Security * _security;
+    static inline Timekeeper * _timekeeper;
+    static inline Locator * _locator;
+    static inline Router * _router;
+    static inline Manager * _manager;
 
-    static NIC<NIC_Family> * _nic;
-    static TSTP * _tstp;
-    static Data_Observed<Buffer> _parts;
-    static Data_Observed<Buffer> _clients;
+    static inline NIC<NIC_Family> * _nic;
+    static inline TSTP * _tstp;
+    static inline Data_Observed<Buffer> _parts;
+    static inline Data_Observed<Buffer> _clients;
 };
 
 #endif

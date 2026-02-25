@@ -125,9 +125,9 @@ int main() {
     unsigned memory_size_lo = static_cast<unsigned>(LinuxMemorySize & 0xFFFFFFFF);
     unsigned memory[] = {CPU::htobe32(memory_start_hi), CPU::htobe32(memory_start_lo), CPU::htobe32(memory_size_hi),
                          CPU::htobe32(memory_size_lo)};
-    unsigned initramfs_start = CPU::htobe32(static_cast<unsigned>(reinterpret_cast<long>(initramfs)));
-    unsigned initramfs_end =
-        CPU::htobe32(static_cast<unsigned>(reinterpret_cast<long>(initramfs) + sizeof(LinuxImage::Initramfs)));
+
+    long initramfs_start = CPU::htobe64(reinterpret_cast<long>(initramfs));
+    long initramfs_end = CPU::htobe64(reinterpret_cast<long>(initramfs) + sizeof(LinuxImage::Initramfs));
 
     if (!dtb->edit("chosen", "linux,initrd-start", &initramfs_start, sizeof(initramfs_start))) {
         Console::cout << "LinuxDeviceTree: failed to update linux,initrd-start\n";

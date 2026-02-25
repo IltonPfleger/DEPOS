@@ -6,7 +6,7 @@
 #define __aes_common_only__
 #include <machine/aes.h>
 #undef __aes_common_only__
-#include <memory.h>
+//#include <memory.h>
 
 // EPOS 128-bit Advanced Encryption Standard (AES) Software Implementation
 // Adapted from https://github.com/kokke/tiny-AES128-C

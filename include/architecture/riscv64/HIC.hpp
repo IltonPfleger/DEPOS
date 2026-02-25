@@ -54,6 +54,7 @@ class HIC {
 
         IC::bind(7, [](unsigned int) { CLINT::write(); });
         csrs<MachineMode::IE>(MachineMode::TI);
+        csrs<MachineMode::MCOUNTEREN>(MachineMode::CY | MachineMode::TIME | MachineMode::INSTRET);
 
         if constexpr (Traits<::PLIC>::Enable) {
             PLIC::init();
