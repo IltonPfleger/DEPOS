@@ -6,12 +6,10 @@
 
 #ifdef __tstp__
 
-namespace DEPOS {
 #include <Alarm.hpp>
 #include <Semaphore.hpp>
 #include <architecture/Timer.hpp>
 #include <utils/Console.hpp>
-} // namespace DEPOS
 
 #include <main_traits.h>
 #include <network/tstp/tstp.h>

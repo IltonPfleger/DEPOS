@@ -4,8 +4,11 @@
 #include <utils/Console.hpp>
 #include <utils/Debug.hpp>
 
+using namespace DEPOS;
+
 static constexpr int Number = 100;
 static constexpr int Iterations = 100;
+
 Semaphore *forks[Number];
 Semaphore *console;
 Semaphore *finish;

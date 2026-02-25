@@ -1,10 +1,8 @@
 // EPOS Trustful Space-Time Protocol Implementation
 
-namespace DEPOS {
 #include <Macros.hpp>
 #include <Semaphore.hpp>
 #include <architecture/Timer.hpp>
-} // namespace DEPOS
 
 #include <main_traits.h>
 #include <utility/math.h>

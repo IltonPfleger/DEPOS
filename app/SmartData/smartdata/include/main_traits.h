@@ -242,9 +242,9 @@ struct Traits<SmartData> : public Traits<Build> {
 template <>
 struct Traits<Debug> : public Traits<Build> {
     static const bool error   = true;
-    static const bool warning = false;
-    static const bool info    = false;
-    static const bool trace   = false;
+    static const bool warning = true;
+    static const bool info    = true;
+    static const bool trace   = true;
     static const bool logger  = true;
 };
 

@@ -36,6 +36,5 @@ extern "C" void init() {
 extern "C" __attribute__((optimize("O0"), naked, used, section(".init"))) void _init() {
     CPU::init();
     BSS::init();
-    Console::cout << "OI";
     init();
 }

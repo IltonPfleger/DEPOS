@@ -1,11 +1,9 @@
 // EPOS Trustful Space-Time Protocol Implementation
 
-namespace DEPOS {
 #include <Alarm.hpp>
 #include <architecture/Timer.hpp>
 #include <utils/Console.hpp>
 #include <Semaphore.hpp>
-} // namespace DEPOS
 
 #include <machine/nic.h>
 #include <main_traits.h>
@@ -17,7 +15,7 @@ namespace DEPOS {
 #ifdef __tstp__
 
 // Class attributes
-//std::mutex TSTP::Security::_mtx;
+DEPOS::Semaphore TSTP::Security::_mtx;
 TSTP::Security::_AES TSTP::Security::_aes;
 TSTP::Security::_AES &TSTP::Security::_cipher = TSTP::Security::_aes;
 TSTP::Security::Node_Id TSTP::Security::_id;

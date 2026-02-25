@@ -15,6 +15,8 @@ void *operator new(unsigned long size) { return ::operator new(size, Heap::SYSTE
 void *operator new[](unsigned long size) { return ::operator new(size, Heap::SYSTEM); }
 void *operator new[](unsigned long size, Heap::Location location) { return ::operator new(size, location); }
 
+void *operator new(unsigned long, void *p) { return p; }
+
 void operator delete(void *p) {
     ERROR(!p);
     using Header = Heap::Header;
