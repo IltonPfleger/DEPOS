@@ -1,8 +1,6 @@
 // EPOS (Litte-endian) Big Numbers Utility Implementation
 
-namespace DEPOS {
 #include <utils/Console.hpp>
-} // namespace DEPOS
 
 #include <main_traits.h>
 #include <utility/bignum.h>

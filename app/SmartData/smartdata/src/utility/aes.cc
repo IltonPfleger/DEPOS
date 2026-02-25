@@ -1,8 +1,6 @@
 // EPOS AES Utility Implementation
 
-namespace DEPOS {
 #include <utils/Console.hpp>
-} // namespace DEPOS
 
 #include <assert.h>
 #include <main_traits.h>

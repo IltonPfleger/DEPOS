@@ -1,11 +1,9 @@
 // EPOS Trustful SpaceTime Protocol Initialization
 
-namespace DEPOS {
 #include <Alarm.hpp>
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 #include <architecture/Timer.hpp>
-} // namespace DEPOS
 
 #define __tstp__ 1
 

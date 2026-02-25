@@ -2,12 +2,10 @@
 
 // #include <system/config.h>
 
-namespace DEPOS {
 #include <Alarm.hpp>
 #include <Semaphore.hpp>
 #include <architecture/Timer.hpp>
 #include <utils/Console.hpp>
-} // namespace DEPOS
 
 #define __tstp__ 1
 

@@ -3,6 +3,8 @@
 #include <Spin.hpp>
 #include <Thread.hpp>
 
+namespace DEPOS {
+
 class Semaphore {
   public:
     Semaphore(int value = 0) : m_value(value) {}
@@ -26,3 +28,5 @@ class Semaphore {
     Thread::Queue m_waiting;
     Spin m_spin;
 };
+
+} // namespace DEPOS

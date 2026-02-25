@@ -1,8 +1,6 @@
 // EPOS OStream Implementation
 
-namespace DEPOS {
 #include <utils/Console.hpp>
-} // namespace DEPOS
 
 #include <architecture/cpu.h>
 #include <main_traits.h>
