@@ -62,13 +62,18 @@ class VirtualCPU {
         m_current->m_mtimecmp = x;
     }
 
-    static void handler(unsigned int id) {
-        if (id != 7) return;
-        if (m_current && CLINT::read() >= m_current->m_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
+    static void handler(unsigned int) {
+        if (!m_current) return;
+        if (CLINT::read() >= m_current->m_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
+
+        if (m_current->m_external_interrupt_pending) {
+            m_current->m_external_interrupt_pending = false;
+            csrs<MachineMode::IP>(SupervisorMode::EI);
+        }
     }
 
     void interrupt(unsigned int id) {
-        if (m_plic.interrupt(id - 11)) csrs<MachineMode::IP>(SupervisorMode::EI);
+        if (m_plic.interrupt(id - 11)) m_external_interrupt_pending = true;
     }
 
     static bool read(unsigned long addr, unsigned int *destination) {
@@ -82,6 +87,7 @@ class VirtualCPU {
 
   private:
     unsigned long m_mtimecmp;
+    bool m_external_interrupt_pending;
     VirtualPLIC m_plic;
 };
 
