@@ -9,16 +9,15 @@
 #include <utils/Console.hpp>
 
 int main(int, char *[]) {
+    TSTP::init();
+
     Antigravity a(0, 1000000, SmartData::ADVERTISED);
 
-    while (1)
-        ;
-
-    // for (unsigned int i = 0; i < 10000; i++) {
-    //     a = i;
-    //     DEPOS::Console::cout << "a=" << (unsigned int)a << DEPOS::Console::endl;
-    //     DEPOS::Alarm::udelay(1000000);
-    // }
+    for (unsigned int i = 0; i < 10000; i++) {
+        a = i;
+        DEPOS::Console::cout << "a=" << (unsigned int)a << DEPOS::Console::endl;
+        DEPOS::Alarm::udelay(1000000);
+    }
 
     DEPOS::Console::cout << "SmartData:\n ";
 }

@@ -3,15 +3,8 @@
 // EPOS OStream Interface
 
 #include <main_traits.h>
-//#include <pthread.h>
-//#include <stdio.h>
 #include <system/types.h>
-
-// extern "C" {
-//     void _print_preamble();
-//     void _print(const char * s);
-//     void _print_trailler(bool error);
-// }
+#include <utils/Console.hpp>
 
 class OStream {
   public:
@@ -24,8 +17,6 @@ class OStream {
     struct Err {};
 
   private:
-    //static pthread_mutex_t MutexHandle;
-    //static bool MutexInitialized;
 
   public:
     OStream() : _base(10), _error(false) {
@@ -42,14 +33,14 @@ class OStream {
 
     OStream &operator<<(const Begl &begl) {
         // if(Traits<System>::multicore)
-        //_print_preamble();
+        //     _print_preamble();
         return *this;
     }
 
     OStream &operator<<(const Endl &endl) {
         // if(Traits<System>::multicore)
-        //_print_trailler(_error);
-        print("\n");
+        //     _print_trailler(_error);
+        // print("\n");
         _base = 10;
         return *this;
     }
@@ -191,12 +182,7 @@ class OStream {
     }
 
   private:
-    void print(const char *s) {
-		DEPOS::Console::cout << s;
-        // pthread_mutex_lock(&MutexHandle);
-        // printf("%s", s);
-        // pthread_mutex_unlock(&MutexHandle);
-    }
+    void print(const char *s) { DEPOS::Console::cout << s; }
 
     int itoa(int v, char *s);
     int utoa(unsigned int v, char *s, unsigned int i = 0);

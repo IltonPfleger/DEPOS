@@ -1,24 +1,20 @@
 // EPOS Trustful SpaceTime Protocol Initialization
 
-#include <Alarm.hpp>
-#include <Semaphore.hpp>
-#include <Thread.hpp>
-#include <architecture/Timer.hpp>
-
 #define __tstp__ 1
 
 #ifdef __tstp__
 
-#include <machine/udpnic.h>
 #include <main_traits.h>
+#include <machine/udpnic.h>
 #include <network/tstp/tstp.h>
 
-TSTP *TSTP::_tstp;
-UDP_Socket *UDPNIC::soc;
+TSTP* TSTP::_tstp;
+UDP_Socket* UDPNIC::soc;
 UDPNIC::_AES UDPNIC::_aes;
 unsigned char UDPNIC::GRP_KEY[16];
 
-TSTP::TSTP(NIC<NIC_Family> *nic) {
+TSTP::TSTP(NIC<NIC_Family> * nic)
+{
     db<Init, TSTP>(TRC) << "TSTP(nic=" << nic << ")" << endl;
 
     _nic = nic;
@@ -33,10 +29,11 @@ TSTP::TSTP(NIC<NIC_Family> *nic) {
     _manager = new /*(SYSTEM)*/ Manager;
 }
 
-TSTP::Security::Security() {
+TSTP::Security::Security()
+{
     db<TSTP>(TRC) << "TSTP::Security() -- NO SECURITY BOOTSTRAP ENABLED, USING FIXED UUID config" << endl;
 
-    // unsigned char uuid[8] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x05, 0x07, 0x08 };
+	// unsigned char uuid[8] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x05, 0x07, 0x08 };
 
     // _id = new /*(&_id)*/ Node_Id(/*Machine::*/uuid/*()*/, sizeof(UUID));
 
@@ -64,16 +61,17 @@ TSTP::Security::Security() {
     */
 }
 
-TSTP::Locator::Locator() {
+TSTP::Locator::Locator()
+{
     db<TSTP>(TRC) << "TSTP::Locator()" << endl;
 
-    // System_Info::Boot_Map * bm = &System::info()->bm;
-    // if(bm->space_x != Space::UNKNOWN) {
-    //     _engine.here(Space(bm->space_x, bm->space_y, bm->space_z));
-    //     _engine.confidence(100);
-    // } else {
-
-    // TCB - usar valores diferentes para instancias diferentes.
+    //System_Info::Boot_Map * bm = &System::info()->bm;
+    //if(bm->space_x != Space::UNKNOWN) {
+    //    _engine.here(Space(bm->space_x, bm->space_y, bm->space_z));
+    //    _engine.confidence(100);
+    //} else {
+	
+	// TCB - usar valores diferentes para instancias diferentes.
     _engine.here(Space(0, 0, 0));
     _engine.confidence(100);
     //}
@@ -81,20 +79,21 @@ TSTP::Locator::Locator() {
     attach_part(this);
 
     db<TSTP>(INF) << "TSTP::Locator:here=" << here();
-    if (here() == sink())
+    if(here() == sink())
         db<TSTP>(INF) << "[sink]" << endl;
     else
         db<TSTP>(INF) << "[node]" << endl;
 
     // Wait for spatial localization
-    // TCB - I commented this code because confidence didn't get higher than 80 and initialization was stuck here.
-    // while(confidence() < 80)
+	// TCB - I commented this code because confidence didn't get higher than 80 and initialization was stuck here.
+    //while(confidence() < 80)
     //    Thread::/*self()->*/yield();
 
     // _absolute_location is initialized later through an Epoch message
 }
 
-TSTP::Timekeeper::Timekeeper() {
+TSTP::Timekeeper::Timekeeper()
+{
     db<TSTP>(TRC) << "TSTP::Timekeeper()" << endl;
     db<TSTP>(INF) << "TSTP::Timekeeper:timer accuracy = " << timer_accuracy() << " ppb" << endl;
     db<TSTP>(INF) << "TSTP::Timekeeper:timer frequency = " << timer_frequency() << " Hz" << endl;
@@ -105,39 +104,42 @@ TSTP::Timekeeper::Timekeeper() {
 
     _skew = 0;
 
-    if (here() == sink())
+    if(here() == sink())
         _next_sync = INFINITE; // just so that the sink will always have synchronized() returning true
     else {
         _next_sync = INFINITE;
-        // TODO this thread creation introduces an error to time synchronization
-        // 0;
-        //  keep_alive();
-        //  Microsecond period = static_cast<Microsecond>(sync_period());
-        //  _life_keeper_handler = new /*(SYSTEM)*/ Function_Handler(&keep_alive);
-        //  _life_keeper = new /*(SYSTEM)*/ Alarm(period, _life_keeper_handler, INFINITE);
-        //  while(!synchronized())
-        //      Thread::/*self()->*/yield();
+        // TODO this thread creation introduces an error to time synchronization 
+	//0;
+        // keep_alive();
+        // Microsecond period = static_cast<Microsecond>(sync_period());
+        // _life_keeper_handler = new /*(SYSTEM)*/ Function_Handler(&keep_alive);
+        // _life_keeper = new /*(SYSTEM)*/ Alarm(period, _life_keeper_handler, INFINITE);
+        // while(!synchronized())
+        //     Thread::/*self()->*/yield();
     }
 }
 
-TSTP::Router::Router() {
+TSTP::Router::Router()
+{
     db<TSTP>(TRC) << "TSTP::Router()" << endl;
 
     attach_part(this);
 }
 
-TSTP::Manager::Manager() {
+TSTP::Manager::Manager()
+{
     db<TSTP>(TRC) << "TSTP::Manager()" << endl;
 
     attach_part(this);
 }
 
-void TSTP::init() {
+void TSTP::init()
+{
     db<Init, TSTP>(TRC) << "TSTP::init()" << endl;
 
     _nic = new UDPNIC();
 
-    _tstp = new /*(SYSTEM)*/ TSTP(_nic); // leaked memory if we do not attribute tstp to a variable for later deletion
+    _tstp  = new /*(SYSTEM)*/ TSTP(_nic); // leaked memory if we do not attribute tstp to a variable for later deletion
 }
 
 void TSTP::finish() {
@@ -145,20 +147,20 @@ void TSTP::finish() {
     delete _nic;
 }
 
-// template <typename Engine>
-// TSTP::MAC<Engine, true> TSTP::MAC<Engine, true>::_instance;
+//template <typename Engine>
+//TSTP::MAC<Engine, true> TSTP::MAC<Engine, true>::_instance;
 
-// template <typename Engine>
-// TSTP::MAC<Engine, false> TSTP::MAC<Engine, false>::_instance;
+//template <typename Engine>
+//TSTP::MAC<Engine, false> TSTP::MAC<Engine, false>::_instance;
 
-// template <typename Engine>
-// TSTP::MAC<Engine, true> TSTP::MAC<Engine, true>::instance() {
-//     return _instance;
-// }
+//template <typename Engine>
+//TSTP::MAC<Engine, true> TSTP::MAC<Engine, true>::instance() {
+//    return _instance;
+//}
 
-// template <typename Engine>
-// TSTP::MAC<Engine, false> TSTP::MAC<Engine, false>::instance() {
-//     return _instance;
-// }
+//template <typename Engine>
+//TSTP::MAC<Engine, false> TSTP::MAC<Engine, false>::instance() {
+//    return _instance;
+//}
 
 #endif
