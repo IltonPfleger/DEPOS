@@ -1,11 +1,12 @@
-#include "Traits.hpp"
 #include <Traits.hpp>
-#include <abstractions/CPU.hpp>
 #include <abstractions/VirtualCPU.hpp>
+#include <architecture/CPU.hpp>
 #include <drivers/virtio/Console.hpp>
 #include <machine/Machine.hpp>
 #include <utils/Console.hpp>
 #include <utils/string.hpp>
+
+using namespace DEPOS;
 
 class LinuxDeviceTree {
     enum {
@@ -145,7 +146,6 @@ int main() {
 
     Console::cout << "\n *** Linux ***\n";
 
-    // virtio::Console<Traits<MemoryMap>::UART0>::init();
     new VirtualCPU(entry, MemoryMap::Entry{memory_start_base, memory_start_base + LinuxMemorySize}, 0, dtb);
 
     return 0;
