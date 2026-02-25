@@ -7,6 +7,8 @@
 #include "memory/MemoryMap.hpp"
 
 int main(int argc, char *argv[]) {
+    using MemoryMap = DEPOS::MemoryMap;
+
     MemoryMap::App app = {};
 
     if (argc < 3) {

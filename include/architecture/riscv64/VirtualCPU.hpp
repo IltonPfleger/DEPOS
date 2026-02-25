@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Traits.hpp>
-
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/Modes.hpp>
@@ -9,6 +8,8 @@
 #include <architecture/riscv64/VirtualPLIC.hpp>
 #include <memory/Memory.hpp>
 #include <memory/Segment.hpp>
+
+namespace DEPOS {
 
 namespace riscv64 {
 
@@ -92,3 +93,5 @@ class VirtualCPU {
 };
 
 } // namespace riscv64
+
+} // namespace DEPOS

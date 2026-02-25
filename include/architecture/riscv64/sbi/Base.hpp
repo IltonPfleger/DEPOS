@@ -3,6 +3,8 @@
 #include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/sbi/Time.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 namespace sbi {
@@ -70,3 +72,5 @@ class Base {
 } // namespace sbi
 
 } // namespace riscv64
+
+} // namespace DEPOS

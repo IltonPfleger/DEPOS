@@ -1,10 +1,11 @@
 #pragma once
 
-// #include <Task.hpp>
 #include <Thread.hpp>
 #include <Traits.hpp>
 #include <memory/Heap.hpp>
 #include <memory/MemoryMap.hpp>
+
+namespace DEPOS {
 
 class Application {
   public:
@@ -15,3 +16,5 @@ class Application {
         TraceOut();
     };
 };
+
+} // namespace DEPOS

@@ -5,6 +5,8 @@
 #include <drivers/virtio/Console.hpp>
 #include <drivers/virtio/Network.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 namespace sbi {
@@ -44,3 +46,5 @@ class StoreAccessFault {
 } // namespace sbi
 
 } // namespace riscv64
+
+} // namespace DEPOS

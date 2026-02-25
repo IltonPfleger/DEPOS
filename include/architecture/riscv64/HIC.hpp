@@ -9,6 +9,8 @@
 #include <memory/Memory.hpp>
 #include <utils/Debug.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 class HIC {
@@ -56,7 +58,7 @@ class HIC {
         csrs<MachineMode::IE>(MachineMode::TI);
         // csrs<MachineMode::MCOUNTEREN>(~0);
 
-        if constexpr (Traits<::PLIC>::Enable) {
+        if constexpr (Traits<PLIC>::Enable) {
             PLIC::init();
             csrs<MachineMode::IE>(MachineMode::EI);
         }
@@ -66,3 +68,5 @@ class HIC {
 };
 
 } // namespace riscv64
+
+} // namespace DEPOS

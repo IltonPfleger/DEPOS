@@ -1,5 +1,7 @@
 #include <Alarm.hpp>
 
+namespace DEPOS {
+
 void Alarm::udelay(unsigned int microseconds) {
     unsigned long ticks = (microseconds * Traits<Alarm>::Frequency) / 1'000'000;
     if (ticks == 0) return;
@@ -48,3 +50,5 @@ void Alarm::handler() {
 
     s_spin.release();
 }
+
+} // namespace DEPOS

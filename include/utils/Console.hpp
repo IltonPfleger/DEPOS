@@ -5,6 +5,8 @@
 #include <Variadic.hpp>
 #include <memory/Memory.hpp>
 
+namespace DEPOS {
+
 class Console {
     using IO = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
 
@@ -97,3 +99,5 @@ class Console {
     static volatile inline unsigned long s_panic = 0;
     static inline unsigned int s_column = 0;
 };
+
+} // namespace DEPOS

@@ -7,7 +7,10 @@
 #include <architecture/riscv64/csrs.hpp>
 #include <memory/MemoryMap.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
+
 class CPU {
   public:
     using Context = ContextBase<KernelMode>;
@@ -121,4 +124,7 @@ class CPU {
         }
     };
 };
+
 } // namespace riscv64
+
+} // namespace DEPOS

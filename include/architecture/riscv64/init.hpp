@@ -9,6 +9,8 @@
 #include <architecture/riscv64/PMP.hpp>
 #include <architecture/riscv64/SIC.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 __attribute__((naked)) static void supervisor() {
@@ -40,3 +42,5 @@ inline void init() {
 }
 
 } // namespace riscv64
+
+} // namespace DEPOS

@@ -2,7 +2,10 @@
 
 #include <architecture/riscv64/Traits.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
+
 struct MachineMode {
     enum {
         PP = 3 << 11,
@@ -76,3 +79,5 @@ struct SupervisorMode {
 
 using KernelMode = Meta::IF<Traits<RISCV>::Supervisor, SupervisorMode, MachineMode>::Result;
 } // namespace riscv64
+
+} // namespace DEPOS

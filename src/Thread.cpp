@@ -6,6 +6,8 @@
 #include <memory/Segment.hpp>
 #include <utils/Debug.hpp>
 
+namespace DEPOS {
+
 Thread *Thread::running() { return s_scheduler.current(); }
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
@@ -130,3 +132,5 @@ void Thread::wakeup(Queue *m_waiting) {
     s_scheduler.insert(&awake->m_link);
     if (enabled) CPU::Interruptions::enable();
 }
+
+} // namespace DEPOS

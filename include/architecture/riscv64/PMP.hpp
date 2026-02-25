@@ -3,6 +3,8 @@
 #include <architecture/riscv64/csrs.hpp>
 #include <utils/Debug.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 class PMP {
@@ -39,4 +41,7 @@ class PMP {
         csrw<PMPCFG + (N / 4)>((0x18 | flags) << ((N % 4) * 8));
     }
 };
+
 } // namespace riscv64
+
+} // namespace DEPOS

@@ -4,6 +4,8 @@
 #include <utils/Debug.hpp>
 #include <utils/DispatchTable.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 class IC : public DispatchTable<Traits<IC>::First, Traits<IC>::Last, IC> {
@@ -22,3 +24,5 @@ class IC : public DispatchTable<Traits<IC>::First, Traits<IC>::Last, IC> {
 };
 
 } // namespace riscv64
+
+} // namespace DEPOS

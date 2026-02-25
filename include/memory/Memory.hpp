@@ -5,6 +5,8 @@
 #include <memory/MemoryMap.hpp>
 #include <memory/allocators/Buddy.hpp>
 
+namespace DEPOS {
+
 class Memory {
   private:
     using Allocator = Allocators::Buddy<Traits<Memory>::Order>;
@@ -20,4 +22,4 @@ class Memory {
     static inline Spin s_spin;
 };
 
-// void *operator new(size_t, void *);
+} // namespace DEPOS

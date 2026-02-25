@@ -6,6 +6,8 @@
 #include <architecture/riscv64/csrs.hpp>
 #include <drivers/Driver.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 class CLINT : Driver {
@@ -40,3 +42,5 @@ class CLINT : Driver {
 };
 
 } // namespace riscv64
+
+} // namespace DEPOS

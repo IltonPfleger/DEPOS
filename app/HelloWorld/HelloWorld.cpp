@@ -3,6 +3,8 @@
 #include <utils/Console.hpp>
 #include <utils/Observer.hpp>
 
+using namespace DEPOS;
+
 class Waiter : public Observer<const unsigned char *, size_t> {
   public:
     Waiter() : m_done(false) {}

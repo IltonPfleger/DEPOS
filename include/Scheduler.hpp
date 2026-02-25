@@ -1,17 +1,12 @@
 #pragma once
 #include <Spin.hpp>
 #include <Traits.hpp>
-#include <abstractions/CPU.hpp>
+#include <architecture/CPU.hpp>
 #include <utils/Debug.hpp>
 #include <utils/Guard.hpp>
 #include <utils/Lists.hpp>
 
-// template <typename T> struct Head {};
-//
-// template <> struct Head<Thread> {
-//     static constexpr unsigned long N = Traits<CPUS>::COUNT;
-//     static auto id() { return CPU::id(); }
-// };
+namespace DEPOS {
 
 class Policy {
   public:
@@ -68,3 +63,5 @@ template <typename T> class Scheduler {
     Queue m_levels[Criterion::Levels];
     Spin m_spin;
 };
+
+} // namespace DEPOS

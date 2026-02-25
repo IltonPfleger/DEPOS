@@ -5,6 +5,8 @@
 #include <utils/Debug.hpp>
 #include <utils/Observer.hpp>
 
+namespace DEPOS {
+
 template <typename Tag> class UART16550 : public Driver, public Observed<const unsigned char *, size_t> {
     using MyTraits = Traits<UART16550<Tag>>;
     static constexpr unsigned long Address = MyTraits::Address;
@@ -83,3 +85,5 @@ template <typename Tag> class UART16550 : public Driver, public Observed<const u
         return Reg8(Address, RBR);
     }
 };
+
+} // namespace DEPOS

@@ -5,6 +5,8 @@
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/IC.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 template <typename... Tickers> class Timer : public ArchitectureCommon::TimerTemplate<Tickers...> {
@@ -39,3 +41,5 @@ template <typename... Tickers> class Timer : public ArchitectureCommon::TimerTem
 };
 
 } // namespace riscv64
+
+} // namespace DEPOS

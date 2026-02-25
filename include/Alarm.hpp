@@ -3,6 +3,8 @@
 #include <Spin.hpp>
 #include <Thread.hpp>
 
+namespace DEPOS {
+
 class Alarm {
     struct Delay {
         Thread::Queue queue;
@@ -18,3 +20,5 @@ class Alarm {
     static inline Delay *s_delays = nullptr;
     static inline Spin s_spin;
 };
+
+} // namespace DEPOS

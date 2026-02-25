@@ -3,6 +3,8 @@
 #include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/Modes.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 namespace sbi {
@@ -45,3 +47,5 @@ class IllegalInstruction {
 } // namespace sbi
 
 } // namespace riscv64
+
+} // namespace DEPOS

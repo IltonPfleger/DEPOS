@@ -2,6 +2,8 @@
 #include <memory/Memory.hpp>
 #include <utils/Debug.hpp>
 
+using namespace DEPOS;
+
 void *operator new(unsigned long size, Heap::Location) {
     using Header = Heap::Header;
     Header *header = reinterpret_cast<Header *>(Memory::alloc(size + sizeof(Header)));

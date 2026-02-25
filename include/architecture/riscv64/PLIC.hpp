@@ -6,6 +6,8 @@
 #include <utils/Debug.hpp>
 #include <utils/DispatchTable.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 class PLIC : Driver {
@@ -52,3 +54,5 @@ class PLIC : Driver {
 };
 
 } // namespace riscv64
+
+} // namespace DEPOS

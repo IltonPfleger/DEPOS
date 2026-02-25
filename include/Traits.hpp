@@ -2,6 +2,8 @@
 
 #include <Meta.hpp>
 
+namespace DEPOS {
+
 class Thread;
 class Machine;
 class Timer;
@@ -47,8 +49,12 @@ template <> struct Traits<Console> {
     static constexpr unsigned int Columns = 70;
 };
 
+} // namespace DEPOS
+
 #include <application/Traits.hpp>
 #include <machine/Traits.hpp>
+
+namespace DEPOS {
 
 template <> struct Traits<Thread> {
     static constexpr unsigned long RescheduleFrequency = 1'000;
@@ -56,3 +62,5 @@ template <> struct Traits<Thread> {
     static constexpr unsigned int KernelStackSize = Traits<Memory>::PageSize;
     static constexpr bool IsolatedKernelStack = true;
 };
+
+} // namespace DEPOS
