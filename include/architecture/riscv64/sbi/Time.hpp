@@ -4,6 +4,8 @@
 #include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/VirtualCPU.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 namespace sbi {
@@ -22,3 +24,5 @@ class Time {
 } // namespace sbi
 
 } // namespace riscv64
+
+} // namespace DEPOS

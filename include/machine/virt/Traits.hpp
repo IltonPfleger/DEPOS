@@ -2,6 +2,8 @@
 
 #include <Meta.hpp>
 
+namespace DEPOS {
+
 class Machine;
 class MemoryMap;
 class Memory;
@@ -88,3 +90,5 @@ template <> struct Traits<PLIC> {
         return contexts;
     }();
 };
+
+} // namespace DEPOS

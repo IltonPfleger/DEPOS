@@ -2,6 +2,7 @@
 #include <iostream>
 
 using namespace std;
+using namespace DEPOS;
 
 int main() {
     cout << "MACHINE_NAME := " << Traits<Machine>::NAME << endl;

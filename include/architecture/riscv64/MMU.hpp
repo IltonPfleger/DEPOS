@@ -5,7 +5,10 @@
 #include <architecture/riscv64/csrs.hpp>
 #include <memory/Memory.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
+
 class SV39_MMU {
   public:
     class TLB {
@@ -144,7 +147,7 @@ class SV39_MMU {
     static void init() {
         riscv64::CPU::barrier();
 
-        if (riscv64::CPU::id() == Traits<::CPU>::BSP) {
+			if (riscv64::CPU::id() == Traits<CPU>::BSP) {
             *s_kernel_page_table = *PageTable::init();
             s_kernel_page_table->map(Traits<MemoryMap>::VirtualRamStart, Traits<MemoryMap>::PhysicalRamStart, Giga,
                                      PageTable::KernelRWX);
@@ -163,4 +166,7 @@ class SV39_MMU {
     static constexpr unsigned long Giga = (1 << 30);
     static inline PageTable *s_kernel_page_table;
 };
+
 } // namespace riscv64
+
+} // namespace DEPOS

@@ -3,8 +3,10 @@
 #include <Scheduler.hpp>
 #include <Spin.hpp>
 #include <Traits.hpp>
-#include <abstractions/CPU.hpp>
+#include <architecture/CPU.hpp>
 #include <memory/Segment.hpp>
+
+namespace DEPOS {
 
 class Thread {
   public:
@@ -64,3 +66,5 @@ class Thread {
         }
     }
 };
+
+} // namespace DEPOS

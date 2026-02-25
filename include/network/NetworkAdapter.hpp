@@ -1,10 +1,10 @@
 #pragma once
 
-#pragma once
-
 #include <Spin.hpp>
 #include <Thread.hpp>
 #include <utils/Observer.hpp>
+
+namespace DEPOS {
 
 template <typename Driver> class NetworkAdapter : public Observed<const unsigned char *, size_t> {
 
@@ -40,3 +40,5 @@ template <typename Driver> class NetworkAdapter : public Observed<const unsigned
   private:
     Spin m_spin;
 };
+
+} // namespace DEPOS

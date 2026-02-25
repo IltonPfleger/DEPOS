@@ -1,9 +1,11 @@
 #pragma once
 
-#include <abstractions/CPU.hpp>
+#include <architecture/CPU.hpp>
 #include <memory/Memory.hpp>
 #include <memory/MemoryMap.hpp>
 #include <utils/string.hpp>
+
+namespace DEPOS {
 
 class BSS {
   public:
@@ -16,3 +18,5 @@ class BSS {
         CPU::barrier();
     }
 };
+
+} // namespace DEPOS

@@ -1,5 +1,7 @@
 #pragma once
 
+namespace DEPOS {
+
 namespace virtio {
 
 class LegacyHeader {
@@ -31,3 +33,5 @@ class LegacyHeader {
 };
 
 } // namespace virtio
+
+} // namespace DEPOS

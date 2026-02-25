@@ -6,7 +6,10 @@
 #include <architecture/riscv64/PLIC.hpp>
 #include <memory/Memory.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
+
 class MIC {
   private:
     static constexpr bool ChangeStack = Traits<Thread>::IsolatedKernelStack || Traits<Kernel>::Multitask;
@@ -46,13 +49,13 @@ class MIC {
             csrw<MachineMode::SCRATCH>(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * CPU::id());
         }
 
-        if constexpr (Traits<::Timer>::Enable && Traits<RISCV>::Supervisor) {
+        if constexpr (Traits<DEPOS::Timer>::Enable && Traits<RISCV>::Supervisor) {
             IC::bind(7, CLINT::forward);
             csrs<MachineMode::IP>(SupervisorMode::TI);
             csrs<MachineMode::MCOUNTEREN>(MachineMode::CY | MachineMode::TIME | MachineMode::INSTRET);
         }
 
-        if constexpr (!Traits<RISCV>::Supervisor && Traits<::PLIC>::Enable) {
+        if constexpr (!Traits<RISCV>::Supervisor && Traits<PLIC>::Enable) {
             PLIC::init();
             csrs<MachineMode::IE>(MachineMode::EI);
         }
@@ -60,3 +63,5 @@ class MIC {
 };
 
 } // namespace riscv64
+
+} // namespace DEPOS

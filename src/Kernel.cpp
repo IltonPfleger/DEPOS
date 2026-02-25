@@ -1,15 +1,15 @@
 #include <Thread.hpp>
-
-#include <architecture/Timer.hpp>
-
 #include <application/Application.hpp>
+#include <architecture/Timer.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Memory.hpp>
 #include <utils/BSS.hpp>
 #include <utils/Debug.hpp>
 #include <utils/Dispatcher.hpp>
 
-extern "C" __attribute__((optimize("O0"))) void init() {
+using namespace DEPOS;
+
+extern "C" void init() {
     if (CPU::id() == Traits<CPU>::BSP) {
         Console::init();
         TraceIn();

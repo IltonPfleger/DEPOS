@@ -3,7 +3,10 @@
 #include <architecture/riscv64/csrs.hpp>
 #include <utils/Debug.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
+
 template <typename Mode = void> class Exception {
   public:
     static void dispatch() {
@@ -16,4 +19,7 @@ template <typename Mode = void> class Exception {
               '\n', prefix, "status: ", status, '\n');
     }
 };
+
 } // namespace riscv64
+
+} // namespace DEPOS

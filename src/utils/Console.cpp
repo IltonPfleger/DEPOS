@@ -1,6 +1,8 @@
-#include <abstractions/CPU.hpp>
+#include <architecture/CPU.hpp>
 #include <machine/Machine.hpp>
 #include <utils/Console.hpp>
+
+namespace DEPOS {
 
 void Console::put(char c) {
     if (panicked()) return;
@@ -31,3 +33,5 @@ bool Console::panicked() {
     if (s_panic && s_panic != (reinterpret_cast<unsigned long>(&G) & ~(Traits<Memory>::StackSize - 1))) return true;
     return false;
 }
+
+} // namespace DEPOS

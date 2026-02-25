@@ -9,6 +9,8 @@
 #include <architecture/riscv64/sbi/StoreAccessFault.hpp>
 #include <architecture/riscv64/sbi/Syscall.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 namespace sbi {
@@ -43,3 +45,5 @@ class SBI {
 } // namespace sbi
 
 } // namespace riscv64
+
+} // namespace DEPOS

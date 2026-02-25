@@ -3,13 +3,13 @@
 #include <Types.hpp>
 #include <architecture/riscv64/Modes.hpp>
 
-#pragma GCC push_options
-#pragma GCC optimize("O0")
-
 // TODO: Meta Template For CSRs
 // TODO: TP For Linux And Supervisor BUG
 
+namespace DEPOS {
+
 namespace riscv64 {
+
 template <typename T> class ContextBase {
   public:
     uint64_t ra, sp, gp, tp;
@@ -247,6 +247,7 @@ template <typename T> class ContextBase {
 
 using MachineContext = ContextBase<MachineMode>;
 using SupervisorContext = ContextBase<SupervisorMode>;
+
 } // namespace riscv64
 
-#pragma GCC pop_options
+} // namespace DEPOS

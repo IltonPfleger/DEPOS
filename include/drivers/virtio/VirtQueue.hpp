@@ -1,5 +1,7 @@
 #pragma once
 
+namespace DEPOS {
+
 namespace virtio {
 
 class VirtQueue {
@@ -64,3 +66,5 @@ class VirtQueue {
 };
 
 } // namespace virtio
+
+} // namespace DEPOS

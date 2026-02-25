@@ -4,6 +4,8 @@
 #include <drivers/uart/UART16550.hpp>
 #include <machine/virt/Traits.hpp>
 
+namespace DEPOS {
+
 class virt {
     template <typename... Ts> static void initializer(Meta::TypeList<Ts...>) { (Ts::init(), ...); }
 
@@ -13,3 +15,5 @@ class virt {
         Meta::ForEachTypeList(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
     }
 };
+
+} // namespace DEPOS

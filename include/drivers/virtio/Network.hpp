@@ -7,6 +7,8 @@
 #include <network/NetworkAdapter.hpp>
 #include <utils/Observer.hpp>
 
+namespace DEPOS {
+
 namespace virtio {
 
 struct NetworkHeader {
@@ -102,3 +104,5 @@ class Network : public Handler<Network<Device, Base>>, public Observer<const uns
 };
 
 } // namespace virtio
+
+} // namespace DEPOS

@@ -2,6 +2,8 @@
 #include <utils/Debug.hpp>
 #include <utils/string.hpp>
 
+namespace DEPOS {
+
 void Memory::init() {
     const auto PageSize = Traits<Memory>::PageSize;
     const auto RamStart = Traits<MemoryMap>::RamStart;
@@ -67,4 +69,4 @@ void Memory::free(void *chunk, size_t size) {
     s_spin.release();
 }
 
-void *operator new(size_t, void *ptr) { return ptr; }
+} // namespace DEPOS

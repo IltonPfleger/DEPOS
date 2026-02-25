@@ -8,6 +8,8 @@
 #include <network/NetworkAdapter.hpp>
 #include <utils/Observer.hpp>
 
+namespace DEPOS {
+
 namespace virtio {
 
 template <typename Device, uintptr_t Base>
@@ -92,3 +94,5 @@ class Console : public Handler<Console<Device, Base>>, public Observer<const uns
 };
 
 } // namespace virtio
+
+} // namespace DEPOS

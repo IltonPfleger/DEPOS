@@ -1,5 +1,7 @@
 #pragma once
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 class SIC {
@@ -38,3 +40,5 @@ class SIC {
 };
 
 } // namespace riscv64
+
+} // namespace DEPOS

@@ -1,6 +1,9 @@
 #pragma once
 
+namespace DEPOS {
+
 namespace riscv64 {
+
 template <int R> static inline auto csrrc(auto c) {
     uint64_t r;
     asm volatile("csrrc %0, %1, %2" : "=r"(r) : "i"(R), "r"(c));
@@ -15,4 +18,7 @@ template <int R> static inline auto csrr() {
 }
 template <int R> static inline void csrs(auto r) { asm volatile("csrs %0, %1" ::"i"(R), "r"(r)); }
 template <int R> static inline void csrc(auto r) { asm volatile("csrc %0, %1" ::"i"(R), "r"(r)); }
+
 } // namespace riscv64
+
+} // namespace DEPOS

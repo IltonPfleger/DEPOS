@@ -2,6 +2,8 @@
 
 #include <memory/Memory.hpp>
 
+namespace DEPOS {
+
 class Segment {
   public:
     Segment() = default;
@@ -24,3 +26,5 @@ class Segment {
     const unsigned int m_size = 0;
     const bool m_owned = false;
 };
+
+} // namespace DEPOS

@@ -5,6 +5,8 @@
 #include <drivers/virtio/VirtQueue.hpp>
 #include <utils/Debug.hpp>
 
+namespace DEPOS {
+
 namespace virtio {
 
 template <typename T> class Handler {
@@ -118,3 +120,5 @@ template <typename T> class Handler {
 };
 
 } // namespace virtio
+
+} // namespace DEPOS

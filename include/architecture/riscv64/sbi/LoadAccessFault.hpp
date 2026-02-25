@@ -5,6 +5,8 @@
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/VirtualCPU.hpp>
 
+namespace DEPOS {
+
 namespace riscv64 {
 
 namespace sbi {
@@ -43,3 +45,5 @@ class LoadAccessFault {
 } // namespace sbi
 
 } // namespace riscv64
+
+} // namespace DEPOS
