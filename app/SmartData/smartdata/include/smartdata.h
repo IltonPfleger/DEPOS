@@ -10,10 +10,9 @@
 #include <utility/observer.h>
 #include <utility/predictor.h>
 #include <utility/math.h>
+#include <memory/Heap.hpp>
 
 #define __UTIL
-
-void *operator new(size_t, void *);
 
 // Scale for Geographic Space used by communication protocols (applications always get CM_32)
 namespace Space_Time {
@@ -1194,7 +1193,7 @@ template<> struct SmartData::Unit::GET<Float64> { enum { NUM = D64 }; };
 #if !defined(__smartdata_h) && !defined(__smartdata_common_only__)
 #define __smartdata_h
 
-#include <time.h>
+//#include <time.h>
 #include <network/tstp/tstp.h>
 #include <system/thread.h>
 
@@ -1209,7 +1208,7 @@ public:
     static const Uncertainty UNCERTAINTY = Transducer::UNCERTAINTY;
     static const bool predictive = (Traits<SmartData>::PREDICTOR != Traits<SmartData>::NONE);
     static const bool active = Transducer::active;
-    static const UInt32 MAX_PAYLOAD_RESPONSE = (Network::Packet::MTU-sizeof(Response))/4; // sockets only have one buffer of MTU size, so, we need to leave space for a read to take place before we send the next value
+    static constexpr UInt32 MAX_PAYLOAD_RESPONSE = (Network::Packet::MTU-sizeof(Response))/4; // sockets only have one buffer of MTU size, so, we need to leave space for a read to take place before we send the next value
 
     typedef typename Unit::Get<UNIT>::Type Value;
     static constexpr UInt16 FRAGMENTS = sizeof(Value)/MAX_PAYLOAD_RESPONSE;
@@ -1276,9 +1275,7 @@ public:
             process(ADVERTISE);
         }
         if(period > 0) {
-			//TODO: REVIEW
-            //struct arg_struct_updater * args = reinterpret_cast<struct arg_struct_updater *>(malloc(sizeof(struct arg_struct_updater)));
-            struct arg_struct_updater * args = new (struct arg_struct_updater);
+            struct arg_struct_updater * args = reinterpret_cast<struct arg_struct_updater *>(malloc(sizeof(struct arg_struct_updater)));
             args->sd = this;
             _thread = new Periodic_Thread(period, 0, &updater, static_cast<void *>(args));
             db<SmartData>(INF) << "SmartData[R]::thread=" << _thread << endl;
@@ -1552,8 +1549,7 @@ private:
             _interesteds.insert(binding->link());
             if(interest->period()) {
                 if(!_thread) {
-                    //struct arg_struct_updater * args = reinterpret_cast<struct arg_struct_updater*>(malloc(sizeof(struct arg_struct_updater)));
-                    struct arg_struct_updater * args = new (struct arg_struct_updater);
+                    struct arg_struct_updater * args = reinterpret_cast<struct arg_struct_updater*>(malloc(sizeof(struct arg_struct_updater)));
                     args->sd = this;
                     _thread = new /*(SYSTEM)*/ Periodic_Thread(Microsecond(interest->period()), Microsecond(interest->expiry()), &updater, reinterpret_cast<void *>(args));
                 } else {
@@ -1605,7 +1601,6 @@ private:
 
     static void* updater(void * args) {
         //UInt32 device, Time expiry, Responsive_SmartData * sd) {
-        //Thread::assignhandler();
         struct arg_struct_updater *arguments = static_cast<struct arg_struct_updater*>(args);
         Responsive_SmartData *sd = arguments->sd;
 

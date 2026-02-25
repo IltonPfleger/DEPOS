@@ -1,4 +1,5 @@
 #include <Types.hpp>
+#include <memory/Heap.hpp>
 #include <utils/string.hpp>
 
 extern "C" {
@@ -144,4 +145,6 @@ long atol(const char *str) {
 
     return result * sign;
 }
+
+void *malloc(unsigned long size) { return new unsigned char[size]; }
 }

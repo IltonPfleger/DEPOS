@@ -6,11 +6,6 @@
 
 #ifdef __tstp__
 
-#include <Alarm.hpp>
-#include <Semaphore.hpp>
-#include <architecture/Timer.hpp>
-#include <utils/Console.hpp>
-
 #include <main_traits.h>
 #include <utility/math.h>
 // #include <utility/string.h>
@@ -19,18 +14,21 @@
 
 // __BEGIN_SYS
 
-TSTP::Security *TSTP::_security;
-TSTP::Timekeeper *TSTP::_timekeeper;
-TSTP::Locator *TSTP::_locator;
-TSTP::Router *TSTP::_router;
-TSTP::Manager *TSTP::_manager;
+TSTP::Security * TSTP::_security;
+TSTP::Timekeeper * TSTP::_timekeeper;
+TSTP::Locator * TSTP::_locator;
+TSTP::Router * TSTP::_router;
+TSTP::Manager * TSTP::_manager;
 
-NIC<TSTP::NIC_Family> *TSTP::_nic;
+NIC<TSTP::NIC_Family> * TSTP::_nic;
 Data_Observed<TSTP::Buffer> TSTP::_parts;
 Data_Observed<TSTP::Buffer> TSTP::_clients;
 
-Debug &operator<<(Debug &db, const TSTP::Packet &p) {
-    switch (p.type()) {
+
+
+Debug & operator<<(Debug & db, const TSTP::Packet & p)
+{
+    switch(p.type()) {
     case TSTP::INTEREST:
         db << reinterpret_cast<const TSTP::Interest &>(p);
         break;
@@ -41,7 +39,7 @@ Debug &operator<<(Debug &db, const TSTP::Packet &p) {
         db << reinterpret_cast<const TSTP::Command &>(p);
         break;
     case TSTP::CONTROL:
-        switch (p.subtype()) {
+        switch(p.subtype()) {
         case TSTP::DH_RESPONSE:
             db << reinterpret_cast<const TSTP::Security::DH_Response &>(p);
             break;
@@ -63,9 +61,9 @@ Debug &operator<<(Debug &db, const TSTP::Packet &p) {
         case TSTP::EPOCH:
             db << reinterpret_cast<const TSTP::Timekeeper::Epoch &>(p);
             break;
-            //        case TSTP::MODEL:
-            //            db << reinterpret_cast<const TSTP::Model &>(p);
-            //            break;
+//        case TSTP::MODEL:
+//            db << reinterpret_cast<const TSTP::Model &>(p);
+//            break;
         default:
             break;
         }
@@ -77,20 +75,21 @@ Debug &operator<<(Debug &db, const TSTP::Packet &p) {
     return db;
 };
 
-void TSTP::update(NIC_Family::Observed *obs, const Protocol &prot, Buffer *buf) {
+void TSTP::update(NIC_Family::Observed * obs, const Protocol & prot, Buffer * buf)
+{
     db<TSTP>(TRC) << "TSTP::update(nic=" << obs << ",prot=" << hex << prot << ",buf=" << buf << ")" << endl;
-    Packet *packet = buf->frame()->data<Packet>();
-    db<TSTP>(INF) << "TSTP::update:packet=" << packet->header()->unit() << "," << packet->header()->device()
-                  << ",will notify=" << buf->destined_to_me << "," << buf->trusted << endl;
+    Packet * packet = buf->frame()->data<Packet>();
+    db<TSTP>(INF) << "TSTP::update:packet=" << packet->header()->unit() << "," << packet->header()->device() << ",will notify=" << buf->destined_to_me << "," << buf->trusted << endl;
     db<TSTP>(INF) << "TSTP::sizeof(packet)=" << sizeof(*packet->header()) << ",buf-size()=" << buf->size() << endl;
+
 
     _parts.notify(buf);
 
-    if (buf->destined_to_me && buf->trusted && packet->type() != CONTROL)
-        _clients.notify(
-            buf); // why was tstp bothering with unit here? --> space time seems ok, but unit is like opening SmartData casquet
-
+    if(buf->destined_to_me && buf->trusted && packet->type() != CONTROL)
+        _clients.notify(buf); // why was tstp bothering with unit here? --> space time seems ok, but unit is like opening SmartData casquet
+    
     _nic->free(buf);
+
 }
 
 //    if(buf->is_microframe || !buf->trusted)
@@ -116,8 +115,7 @@ void TSTP::update(NIC_Family::Observed *obs, const Protocol &prot, Buffer *buf) 
 //                if(list_responsive && !list_responsive->empty()) {
 //                    for(Responsives::Element * el = list_responsive->head(); el; el = el->next()) {
 //                        Responsive * responsive = el->object();
-//                        if(responsive->interest() && responsive->model_listener() &&
-//                        responsive->interest()->region().contains(model->origin(), model->time())){
+//                        if(responsive->interest() && responsive->model_listener() && responsive->interest()->region().contains(model->origin(), model->time())){
 //                            notify(responsive, buf);
 //                        }
 //                    }
@@ -134,12 +132,11 @@ void TSTP::update(NIC_Family::Observed *obs, const Protocol &prot, Buffer *buf) 
 //        Interest * interest = reinterpret_cast<Interest *>(packet);
 //        db<TSTP>(INF) << "TSTP::update:interest=" << interest << " => " << *interest << endl;
 //        // Check for local capability to respond and notify interested observers
-//        Responsives::List * list = _responsives[interest->unit()]; // TODO: What if sensor can answer multiple formats (e.g.
-//        int and float) if(list)
+//        Responsives::List * list = _responsives[interest->unit()]; // TODO: What if sensor can answer multiple formats (e.g. int and float)
+//        if(list)
 //            for(Responsives::Element * el = list->head(); el; el = el->next()) {
 //                Responsive * responsive = el->object();
-//                if((now() < interest->region().t1) && interest->region().contains(responsive->origin(),
-//                interest->region().t1))
+//                if((now() < interest->region().t1) && interest->region().contains(responsive->origin(), interest->region().t1))
 //                    notify(responsive, buf);
 //            }
 //    } break;
@@ -161,8 +158,8 @@ void TSTP::update(NIC_Family::Observed *obs, const Protocol &prot, Buffer *buf) 
 //        Command * command = reinterpret_cast<Command *>(packet);
 //        db<TSTP>(INF) << "TSTP::update:command=" << command << " => " << *command << endl;
 //        // Check for local capability to respond and notify interested observers
-//        Responsives::List * list = _responsives[command->unit()]; // TODO: What if sensor can answer multiple formats (e.g.
-//        int and float) if(list)
+//        Responsives::List * list = _responsives[command->unit()]; // TODO: What if sensor can answer multiple formats (e.g. int and float)
+//        if(list)
 //            for(Responsives::Element * el = list->head(); el; el = el->next()) {
 //                Responsive * responsive = el->object();
 //                if(command->region().contains(responsive->origin(), now()))
@@ -198,9 +195,10 @@ void TSTP::update(NIC_Family::Observed *obs, const Protocol &prot, Buffer *buf) 
 //                    if(report->epoch_request() && (here() == sink())) {
 //                        db<TSTP>(TRC) << "TSTP::update: responding to Epoch request" << endl;
 //                        Buffer * buf = alloc(sizeof(Epoch));
-//                        Epoch * epoch = new (buf->frame()->data<Epoch>()) Epoch(Region(report->origin(), 0, now(), now() +
-//                        10000000)); // TODO: what's the expiry? marshal(buf); db<TSTP>(INF) << "TSTP::update:epoch = " <<
-//                        epoch << " => " << (*epoch) << endl; _nic->send(buf);
+//                        Epoch * epoch = new (buf->frame()->data<Epoch>()) Epoch(Region(report->origin(), 0, now(), now() + 10000000)); // TODO: what's the expiry?
+//                        marshal(buf);
+//                        db<TSTP>(INF) << "TSTP::update:epoch = " << epoch << " => " << (*epoch) << endl;
+//                        _nic->send(buf);
 //                    }
 //                }
 //            } break;
@@ -213,13 +211,12 @@ void TSTP::update(NIC_Family::Observed *obs, const Protocol &prot, Buffer *buf) 
 //                if(here() != sink()) {
 //                    _global_coordinates = epoch->coordinates();
 //                    _reference = epoch->epoch();
-//                    db<TSTP>(INF) << "TSTP::update: Epoch: adjusted epoch Space-Time to: " << _global_coordinates << ", " <<
-//                    _reference << endl;
+//                    db<TSTP>(INF) << "TSTP::update: Epoch: adjusted epoch Space-Time to: " << _global_coordinates << ", " << _reference << endl;
 //                }
 //            } break;
 //            default:
-//                db<TSTP>(WRN) << "TSTP::update: Unrecognized Control subtype: " << buf->frame()->data<Control>()->subtype() <<
-//                endl; break;
+//                db<TSTP>(WRN) << "TSTP::update: Unrecognized Control subtype: " << buf->frame()->data<Control>()->subtype() << endl;
+//                break;
 //        }
 //    } break;
 //    case MODEL: {
@@ -230,7 +227,8 @@ void TSTP::update(NIC_Family::Observed *obs, const Protocol &prot, Buffer *buf) 
 //        break;
 //    }
 
-void TSTP::marshal(Buffer *buf) {
+void TSTP::marshal(Buffer * buf)
+{
     db<TSTP>(TRC) << "TSTP::marshal(buf=" << buf << ")" << endl;
 
     Manager::marshal(buf);
@@ -239,7 +237,7 @@ void TSTP::marshal(Buffer *buf) {
     Timekeeper::marshal(buf);
     Security::marshal(buf);
 
-    Packet *packet = buf->frame()->data<Packet>();
+    Packet * packet = buf->frame()->data<Packet>();
     db<TSTP>(INF) << "TSTP::marshal:packet=" << *packet << ",size=" << buf->size() << endl;
 }
 
