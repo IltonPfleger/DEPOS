@@ -24,7 +24,7 @@ class VirtualPLIC {
         return enabled;
     }
 
-    bool read(unsigned long offset, unsigned int *destination) {
+    bool read(unsigned long offset, unsigned int *destination)  {
         if (offset > ENABLED && offset < THRESHOLD) {
             unsigned int context = (offset - ENABLED) / 0x80;
             unsigned int chunk = ((offset - ENABLED) % 0x80) / 4;
@@ -62,7 +62,7 @@ class VirtualPLIC {
         return false;
     }
 
-    bool write(unsigned long offset, unsigned int source) {
+    bool write(unsigned long offset, unsigned int source)  {
         if (offset > PRIORITY && offset < PENDING) {
             m_priority[offset / 4] = source;
             return true;

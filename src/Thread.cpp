@@ -21,7 +21,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
     }
 }
 
-int Thread::idle(void *) {
+Thread::Return Thread::idle(Argument) {
     while (s_count > Traits<CPU>::Active) {
         reschedule();
     }

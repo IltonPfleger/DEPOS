@@ -59,15 +59,15 @@ class VirtualCPU {
 
     static void reset(unsigned long x) {
         csrc<MachineMode::IP>(SupervisorMode::TI);
-        m_current->m_mtimecmp = x;
+        current()->m_mtimecmp = x;
     }
 
-    static void handler(unsigned int) {
-        if (!m_current) return;
+    static void handler() {
+        if (!current()) return;
         if (CLINT::read() >= m_current->m_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
 
-        if (m_current->m_external_interrupt_pending) {
-            m_current->m_external_interrupt_pending = false;
+        if (current()->m_external_interrupt_pending) {
+            current()->m_external_interrupt_pending = false;
             csrs<MachineMode::IP>(SupervisorMode::EI);
         }
     }
@@ -77,13 +77,13 @@ class VirtualCPU {
     }
 
     static bool read(unsigned long addr, unsigned int *destination) {
-        return m_current->m_plic.read(addr - Address, destination), true;
+        return current()->m_plic.read(addr - Address, destination), true;
     }
 
-    static bool write(unsigned long addr, unsigned int source) { return m_current->m_plic.write(addr - Address, source); }
+    static bool write(unsigned long addr, unsigned int source) { return current()->m_plic.write(addr - Address, source); }
 
   private:
-    static inline VirtualCPU *m_current;
+    static inline VirtualCPU *volatile m_current;
 
   private:
     unsigned long m_mtimecmp;

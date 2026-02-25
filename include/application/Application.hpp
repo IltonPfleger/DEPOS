@@ -9,7 +9,7 @@
 class Application {
   public:
     static void init() {
-        auto main = reinterpret_cast<int (*)(void *)>(__mm.main);
+        auto main = reinterpret_cast<Thread::Return (*)(Thread::Argument)>(__mm.main);
         TraceIn(main);
         if (main) new (Heap::SYSTEM) Thread(main, 0, Thread::Criterion::NORMAL);
         TraceOut();

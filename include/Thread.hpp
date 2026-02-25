@@ -10,8 +10,9 @@ class Thread {
   public:
     enum class State { RUNNING, READY, WAITING, FINISHING, FINISHED };
     using Criterion = typename Scheduler<Thread>::Criterion;
+    using Return = void *;
     using Argument = void *;
-    using Function = int (*)(Argument);
+    using Function = Return (*)(Argument);
     using Link = Node<Thread *, Criterion>;
     using Queue = FIFO<Link>;
     using Context = CPU::Context;
@@ -29,7 +30,7 @@ class Thread {
     static void join(Thread *);
     static void dispatch(Thread *, Thread *, Spin *);
     static void reschedule();
-    static int idle(void *);
+    static Return idle(Argument);
 
   private:
     Segment m_kstack;

@@ -12,7 +12,7 @@ namespace sbi {
 class StoreAccessFault {
 
     struct NoVirtualDevices {
-        static Meta::TypeList<> Devices;
+        using Devices = Meta::TypeList<>;
     };
 
     using ActiveTraits = Meta::IF<Traits<RISCV>::Hypervisor, Traits<Virtual>, NoVirtualDevices>::Result;
@@ -23,7 +23,7 @@ class StoreAccessFault {
 
     template <typename T> struct Dispatcher;
     template <typename... Ts> struct Dispatcher<Meta::TypeList<Ts...>> {
-        static bool run(uintptr_t x, unsigned int y) {
+        static bool run([[maybe_unused]] uintptr_t x, [[maybe_unused]] unsigned int y) {
             return ([&]() {
                 if (x >= Ts::Address && x < (Ts::Address + Ts::Size)) {
                     return Ts::write(x, y);

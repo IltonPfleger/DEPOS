@@ -28,7 +28,7 @@ class HIC {
                 }
                 PLIC::complete(id);
             } else {
-                VirtualCPU::handler(id);
+                VirtualCPU::handler();
                 IC::dispatch(id);
             }
         } else {
@@ -54,7 +54,7 @@ class HIC {
 
         IC::bind(7, [](unsigned int) { CLINT::write(); });
         csrs<MachineMode::IE>(MachineMode::TI);
-        csrs<MachineMode::MCOUNTEREN>(MachineMode::CY | MachineMode::TIME | MachineMode::INSTRET);
+        // csrs<MachineMode::MCOUNTEREN>(~0);
 
         if constexpr (Traits<::PLIC>::Enable) {
             PLIC::init();
