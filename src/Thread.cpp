@@ -37,15 +37,16 @@ Thread::Return Thread::idle(Argument) {
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : m_stack(Traits<Thread>::UserStackSize), m_kstack(Traits<Thread>::KernelStackSize), m_waiting(0), m_link(Link(this, c)),
-      m_criterion(c), m_state(State::READY) {
+    : m_stack(Traits<Thread>::UserStackSize),
+      m_kstack(Traits<Thread>::KernelStackSize),
+      m_waiting(0),
+      m_link(Link(this, c)),
+      m_criterion(c),
+      m_state(State::READY) {
 
     TraceIn(this);
 
-    // new (&m_stack) Segment(Traits<Memory>::StackSize);
-    // new (&m_kstack) Segment(Traits<Memory>::StackSize);
-
-    m_context = reinterpret_cast<Context *>(m_stack.end() - sizeof(Context));
+    m_context  = reinterpret_cast<Context *>(m_stack.end() - sizeof(Context));
     *m_context = Context(m_stack.end(), m_kstack.end(), f, exit, a);
 
     bool enabled = CPU::Interruptions::disable();
@@ -69,7 +70,7 @@ void Thread::exit() {
 
     Thread *previous = running();
 
-    Link *next = s_scheduler.remove();
+    Link *next        = s_scheduler.remove();
     previous->m_state = State::FINISHING;
 
     dispatch(previous, next->value());
@@ -84,9 +85,9 @@ void Thread::init() {
 
 void Thread::run() {
     unsigned char buffer[sizeof(Thread)];
-    Thread *previous = reinterpret_cast<Thread *>(buffer);
+    Thread *previous  = reinterpret_cast<Thread *>(buffer);
     previous->m_state = State::FINISHED;
-    Thread *next = s_scheduler.remove()->value();
+    Thread *next      = s_scheduler.remove()->value();
     dispatch(previous, next);
 }
 
@@ -111,7 +112,7 @@ void Thread::sleep(Queue *m_waiting, Spin *spin) {
 
     Thread *previous = running();
 
-    previous->m_state = State::WAITING;
+    previous->m_state   = State::WAITING;
     previous->m_waiting = m_waiting;
 
     Link *next = s_scheduler.remove();
@@ -124,8 +125,8 @@ void Thread::sleep(Queue *m_waiting, Spin *spin) {
 void Thread::wakeup(Queue *m_waiting) {
     Link *link = m_waiting->remove();
     ERROR(!link);
-    Thread *awake = link->value();
-    awake->m_state = State::READY;
+    Thread *awake    = link->value();
+    awake->m_state   = State::READY;
     awake->m_waiting = nullptr;
 
     bool enabled = CPU::Interruptions::disable();
