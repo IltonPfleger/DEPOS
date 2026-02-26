@@ -2,6 +2,8 @@
 
 #include <network/ethernet/ip/IPv4.hpp>
 
+namespace DEPOS {
+
 class UDP {
   public:
     struct Header {
@@ -46,3 +48,5 @@ class UDP {
         uint16_t m_port;
     };
 };
+
+} // namespace DEPOS

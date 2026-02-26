@@ -17,7 +17,8 @@ namespace riscv64 {
 
 class VirtualCPU {
 
-    template <typename... Args> __attribute__((naked)) static void supervisor([[maybe_unused]] Args... args) {
+    template <typename... Args> __attribute__((naked)) static void supervisor(Args... args) {
+        ((void)args, ...);
         asm volatile("mret");
     }
 
@@ -55,6 +56,7 @@ class VirtualCPU {
 
         m_current = this;
         csrw<MachineMode::EPC>(entry);
+        CPU::mb();
         supervisor(args...);
     }
 
@@ -62,17 +64,18 @@ class VirtualCPU {
 
     static void reset(unsigned long x) {
         csrc<MachineMode::IP>(SupervisorMode::TI);
+        // Console::cout << "RESET" << Console::endl;
         current()->m_mtimecmp = x;
     }
 
     static void handler() {
         if (!current()) return;
-        if (CLINT::read() >= m_current->m_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
-
+        if (CLINT::read() >= current()->m_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
         if (current()->m_external_interrupt_pending) {
             current()->m_external_interrupt_pending = false;
             csrs<MachineMode::IP>(SupervisorMode::EI);
         }
+        // Console::cout << CLINT::read() << " " << current()->m_mtimecmp << Console::endl;
     }
 
     void interrupt(unsigned int id) {
@@ -89,9 +92,9 @@ class VirtualCPU {
     static inline VirtualCPU *volatile m_current;
 
   private:
-    unsigned long m_mtimecmp;
-    bool m_external_interrupt_pending;
-    VirtualPLIC m_plic;
+    unsigned long m_mtimecmp = 0;
+    bool m_external_interrupt_pending = false;
+    VirtualPLIC m_plic = {};
 };
 
 } // namespace riscv64

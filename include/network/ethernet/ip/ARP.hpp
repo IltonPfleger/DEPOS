@@ -5,8 +5,10 @@
 #include <network/ethernet/Ethernet.hpp>
 #include <utils/Observer.hpp>
 
+namespace DEPOS {
+
 template <typename Driver> class ARP : public Observer<const unsigned char *, size_t> {
-    enum OpCode { REQUEST = 1, REPLY = 2 };
+    enum Opcode { REQUEST = 1, REPLY = 2 };
 
     struct Header {
         uint16_t htype;
@@ -138,3 +140,5 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
     Table m_table;
     Spin m_spin;
 };
+
+} // namespace DEPOS

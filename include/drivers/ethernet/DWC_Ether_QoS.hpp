@@ -1,10 +1,12 @@
-#include <abstractions/CPU.hpp>
+#include <architecture/CPU.hpp>
 #include <drivers/Driver.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
 #include <network/GenericAddress.hpp>
 #include <utils/Debug.hpp>
 #include <utils/string.hpp>
+
+namespace DEPOS {
 
 template <unsigned long Base> class DWC_Ether_QoS_MDIO : Driver {
     enum Register { BASE = 0x200, DATA = 0x204 };
@@ -253,13 +255,13 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
         m_registers = reinterpret_cast<volatile Registers *>(MyTraits::Address + 0x1000);
 
         memset(m_tx_descriptors, 0, k_number * sizeof(Descriptor));
-        CacheController::flush(m_tx_descriptors, k_number * sizeof(Descriptor));
+        Cache::flush(m_tx_descriptors, k_number * sizeof(Descriptor));
 
         for (size_t i = 0; i < k_number; i++) {
             m_rx_buffers[i].m_descriptor = &m_rx_descriptors[i];
             m_rx_descriptors[i].buffer(reinterpret_cast<uintptr_t>(m_rx_buffers[i].m_data));
             m_rx_descriptors[i].des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
-            CacheController::flush(&m_rx_descriptors[i], sizeof(Descriptor));
+            Cache::flush(&m_rx_descriptors[i], sizeof(Descriptor));
             m_tx_buffers[i].m_locked = false;
         }
 
@@ -336,7 +338,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
         b->m_descriptor->buffer(reinterpret_cast<uintptr_t>(b->m_data));
         b->m_descriptor->des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
         b->m_descriptor->des2 = 0;
-        CacheController::flush(b->m_descriptor, sizeof(Descriptor));
+        Cache::flush(b->m_descriptor, sizeof(Descriptor));
         m_registers->ch0_rx_tail_pointer = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(b->m_descriptor));
     }
 
@@ -347,8 +349,8 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
         d.des3 = Descriptor::OWN | Descriptor::FD | Descriptor::LD | (s & 0x3FFF);
         d.des2 = s & 0x3FFF;
 
-        CacheController::flush(&d, sizeof(Descriptor));
-        CacheController::flush(p, s);
+        Cache::flush(&d, sizeof(Descriptor));
+        Cache::flush(p, s);
 
         m_tx_head = (m_tx_head + 1) % k_number;
         m_registers->ch0_tx_tail_pointer = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(m_tx_descriptors + m_tx_head));
@@ -358,7 +360,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
                 if (d.des3 & Descriptor::ES) break;
                 return s;
             }
-            CacheController::flush(&d, sizeof(Descriptor));
+            Cache::flush(&d, sizeof(Descriptor));
         }
         return 0;
     }
@@ -368,7 +370,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
 
         Descriptor *descriptor = &m_rx_descriptors[i];
 
-        CacheController::flush(descriptor, sizeof(Descriptor));
+        Cache::flush(descriptor, sizeof(Descriptor));
 
         if (descriptor->des3 & Descriptor::OWN) {
             return nullptr;
@@ -376,7 +378,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
 
         m_rx_head = (m_rx_head + 1) % k_number;
 
-        CacheController::flush(&m_rx_buffers[i], sizeof(Buffer));
+        Cache::flush(&m_rx_buffers[i], sizeof(Buffer));
 
         m_rx_buffers[i].m_locked = true;
 
@@ -459,3 +461,5 @@ template <typename Tag> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<Traits<DW
   private:
     static inline DWC_Ether_QoS *s_instance;
 };
+
+} // namespace DEPOS
