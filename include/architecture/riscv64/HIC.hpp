@@ -22,21 +22,23 @@ class HIC {
 
         if (mcause & IC::INTERRUPT) {
             unsigned int id = mcause & ~IC::INTERRUPT;
-
-            if (id == 11) {
-                id = PLIC::claim();
-                if (id) {
-                    IC::dispatch(id + 11);
+            if constexpr (Traits<PLIC>::Enable) {
+                if (id == 11) {
+                    id = PLIC::claim();
+                    if (id) {
+                        IC::dispatch(id + 11);
+                    }
+                    PLIC::complete(id);
+                    return;
                 }
-                PLIC::complete(id);
-            } else {
-                VirtualCPU::handler();
-                IC::dispatch(id);
             }
-        } else {
-            if (!sbi::SBI::dispatch(c)) {
-                Exception<MachineMode>::dispatch();
-            }
+            VirtualCPU::handler();
+            IC::dispatch(id);
+            return;
+        }
+
+        if (!sbi::SBI::dispatch(c)) {
+            Exception<MachineMode>::dispatch();
         }
     }
 

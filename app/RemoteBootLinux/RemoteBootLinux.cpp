@@ -1,9 +1,7 @@
-#include "Traits.hpp"
 #include <Traits.hpp>
-
-#include <abstractions/CPU.hpp>
 #include <abstractions/Cache.hpp>
 #include <abstractions/VirtualCPU.hpp>
+#include <architecture/CPU.hpp>
 #include <drivers/virtio/Console.hpp>
 #include <machine/Machine.hpp>
 #include <network/NetworkAdapter.hpp>
@@ -13,6 +11,8 @@
 #include <network/ethernet/ip/UDP.hpp>
 #include <utils/Console.hpp>
 #include <utils/string.hpp>
+
+using namespace DEPOS;
 
 class LinuxDeviceTree {
     enum { FDT_BEGIN_NODE = 1, FDT_END_NODE = 2, FDT_PROP = 3, FDT_NOP = 4, FDT_END = 9 };
@@ -129,8 +129,6 @@ int main() {
         Console::cout << "LinuxDeviceTree: Invalid!\n";
         return 1;
     }
-
-    TraceIn(kernel_size, initramfs_size, dtb_size);
 
     unsigned long memory_start_base = reinterpret_cast<long>(buffer);
     unsigned memory_start_hi = static_cast<unsigned>(memory_start_base >> 32);

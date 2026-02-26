@@ -3,6 +3,8 @@
 #include <Semaphore.hpp>
 #include <network/ethernet/ip/UDP.hpp>
 
+namespace DEPOS {
+
 template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> {
 
     enum Opcode : uint16_t {
@@ -113,3 +115,5 @@ template <typename Driver> class TFTP : Observer<const unsigned char *, size_t> 
     size_t m_received_size;
     uint16_t m_server_port;
 };
+
+} // namespace DEPOS

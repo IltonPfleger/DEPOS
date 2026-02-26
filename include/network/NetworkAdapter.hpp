@@ -10,7 +10,7 @@ template <typename Driver> class NetworkAdapter : public Observed<const unsigned
 
     NetworkAdapter() { new Thread(worker, this); };
 
-    static int worker(void *p) {
+    static void *worker(void *p) {
         auto *self = reinterpret_cast<NetworkAdapter *>(p);
         while (1) {
             auto *buffer = Driver::instance()->receive();

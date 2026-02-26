@@ -3,7 +3,9 @@
 #include <Traits.hpp>
 #include <drivers/Driver.hpp>
 
-class CacheController : Driver {
+namespace DEPOS {
+
+class Cache : Driver {
     static constexpr unsigned long Base = Traits<MemoryMap>::CacheController;
 
     enum {
@@ -28,3 +30,5 @@ class CacheController : Driver {
 
     static void barrier() { asm volatile("fence iorw, iorw" ::: "memory"); }
 };
+
+} // namespace DEPOS

@@ -3,6 +3,8 @@
 #include <Meta.hpp>
 #include <Traits.hpp>
 
+namespace DEPOS {
+
 class MemoryMap;
 class Memory;
 class Clock;
@@ -104,3 +106,5 @@ template <> struct Traits<PLIC> {
         {7, 8}   // Hart 4: M->7, S->8
     };
 };
+
+} // namespace DEPOS

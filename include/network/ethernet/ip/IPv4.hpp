@@ -8,6 +8,8 @@
 #include <network/ethernet/Ethernet.hpp>
 #include <network/ethernet/ip/ARP.hpp>
 
+namespace DEPOS {
+
 class IPv4 {
   public:
     typedef unsigned char Protocol;
@@ -80,13 +82,9 @@ class IPv4 {
 
         void send(Address destination, Protocol protocol, void *data, uint16_t length) {
             uint16_t total = sizeof(Ethernet::Header) + sizeof(Header) + length;
-
             Ethernet::Address dmac = (destination == Broadcast) ? Ethernet::Broadcast : ARP<Driver>::resolve(destination);
-
             Ethernet::Header *ethernet = new (data) Ethernet::Header(dmac, Driver::instance()->mac(), Ethernet::IPv4);
-
             new (ethernet + 1) Header(destination, Driver::instance()->ip(), protocol, length);
-
             m_nic->send(data, total);
         }
 
@@ -94,3 +92,5 @@ class IPv4 {
         NetworkAdapter<Driver> *m_nic;
     };
 };
+
+} // namespace DEPOS

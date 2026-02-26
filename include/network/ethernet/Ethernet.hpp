@@ -3,6 +3,8 @@
 #include <network/GenericAddress.hpp>
 #include <utils/Observer.hpp>
 
+namespace DEPOS {
+
 class Ethernet {
 
   public:
@@ -26,3 +28,5 @@ class Ethernet {
 
     static constexpr MAC Broadcast = MAC(255, 255, 255, 255, 255, 255);
 };
+
+} // namespace DEPOS

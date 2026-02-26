@@ -1,15 +1,15 @@
 #pragma once
 
+#include <machine/VisionFive2/Cache.hpp>
+
+#include <Traits.hpp>
 #include <architecture/riscv64/init.hpp>
-
-#include "Cache.hpp"
-#include "Traits.hpp"
-
 #include <drivers/Driver.hpp>
+#include <drivers/ethernet/DWC_Ether_QoS.hpp>
 #include <drivers/uart/UART16550.hpp>
 #include <memory/Memory.hpp>
 
-#include <drivers/ethernet/DWC_Ether_QoS.hpp>
+namespace DEPOS {
 
 class VisionFive2 : Driver {
     static constexpr unsigned long k_sys_crg_base = 0x13020000;
@@ -60,21 +60,16 @@ class VisionFive2 : Driver {
 
   public:
     static void init() {
+        riscv64::init();
+
         if (riscv64::CPU::id() == Traits<CPU>::BSP) {
             syscrg_init();
             aoncrg_init();
         }
 
-        riscv64::CPU::mb();
-
-        riscv64::CPU::barrier();
-
-        riscv64::init();
-
-        riscv64::CPU::mb();
-
         Meta::ForEachTypeList(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
-
-        riscv64::CPU::mb();
+        riscv64::CPU::barrier();
     }
 };
+
+} // namespace DEPOS
