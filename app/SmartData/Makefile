@@ -31,7 +31,7 @@ $(BUILD)/$(APPLICATION)/%.o: %.cc
 	      -Wno-unused-parameter -Wno-pedantic \
 	      -Wno-tautological-compare -Wno-volatile \
 	      -Wno-ignored-qualifiers -Wno-deprecated-copy \
-	      -Wno-return-type
+	      -Wno-return-type -Wno-maybe-uninitialized
 
 $(BUILD)/$(APPLICATION)/%.o: %.cpp
 	@mkdir -p $(dir $@)
@@ -41,7 +41,7 @@ $(BUILD)/$(APPLICATION)/%.o: %.cpp
 	      -Wno-unused-parameter -Wno-pedantic \
 	      -Wno-tautological-compare -Wno-volatile \
 	      -Wno-ignored-qualifiers -Wno-deprecated-copy \
-	      -Wno-return-type
+	      -Wno-return-type -Wno-maybe-uninitialized
 
 
 
