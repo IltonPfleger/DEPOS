@@ -10,11 +10,11 @@ template <typename Device> class NetworkAdapter : public Observed<const unsigned
 
     NetworkAdapter() {
         m_device = Device::instance();
-        new Thread(worker);
+        new Thread(worker, this);
     };
 
-    static void *worker(void *) {
-        auto *self = reinterpret_cast<NetworkAdapter *>(s_instance);
+    static void *worker(void *p) {
+        auto *self = reinterpret_cast<NetworkAdapter *>(p);
         while (1) {
             auto *buffer = self->m_device->receive();
             if (buffer) {
