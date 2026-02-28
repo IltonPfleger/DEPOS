@@ -2,6 +2,7 @@
 
 #include <Spin.hpp>
 #include <Thread.hpp>
+#include <network/ethernet/Ethernet.hpp>
 #include <utils/Observer.hpp>
 
 namespace DEPOS {
@@ -26,6 +27,7 @@ template <typename Derived> class NIC : public Observed<const unsigned char *, s
     }
 
   public:
+    using Frame    = Ethernet::Frame;
     using Observer = DEPOS::Observer<const unsigned char *, size_t>;
     using Observed = DEPOS::Observed<const unsigned char *, size_t>;
     using Device   = Derived;

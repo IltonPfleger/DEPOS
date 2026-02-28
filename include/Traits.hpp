@@ -27,17 +27,17 @@ template <> struct Traits<Kernel> {
 
 template <> struct Traits<Timer> {
     static constexpr unsigned long Frequency = 1'000;
-    static constexpr bool Enable = true;
+    static constexpr bool Enable             = true;
 };
 
 template <> struct Traits<Alarm> {
     static constexpr unsigned long Frequency = Traits<Timer>::Frequency;
-    static constexpr bool Enable = true;
+    static constexpr bool Enable             = true;
 };
 
 template <> struct Traits<Scheduler<Thread>> {
     static constexpr bool Preemptive = true;
-    using Criterion = RR;
+    using Criterion                  = RR;
 };
 
 template <> struct Traits<Debug> {
@@ -58,9 +58,9 @@ namespace DEPOS {
 
 template <> struct Traits<Thread> {
     static constexpr unsigned long RescheduleFrequency = 1'000;
-    static constexpr unsigned int UserStackSize = Traits<Memory>::PageSize;
-    static constexpr unsigned int KernelStackSize = Traits<Memory>::PageSize;
-    static constexpr bool IsolatedKernelStack = true;
+    static constexpr bool IsolatedKernelStack          = true;
+    static constexpr unsigned UserStackSize            = Traits<Memory>::PageSize;
+    static constexpr unsigned KernelStackSize = IsolatedKernelStack ? Traits<Memory>::PageSize : 0;
 };
 
 } // namespace DEPOS
