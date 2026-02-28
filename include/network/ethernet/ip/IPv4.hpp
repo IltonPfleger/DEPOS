@@ -67,16 +67,21 @@ class IPv4 {
     static constexpr Address Broadcast = Address(255, 255, 255, 255);
 
   public:
-    template <typename Driver>
+    template <typename NIC>
     class Connection : public Observer<const unsigned char *, size_t>,
                        public Observed<const unsigned char *, size_t> {
+        using ARP = DEPOS::ARP<NIC, Connection>;
+
       public:
         Connection() {
-            m_nic = NIC<Driver>::instance();
+            m_nic = NIC::instance();
+            m_arp = new ARP(m_nic, this);
             m_nic->attach(this);
         }
 
         ~Connection() { m_nic->detach(this); }
+
+        auto address() { return GenericAddress<4>(Traits<typename NIC::Device>::IP); }
 
         void update(const unsigned char *data, size_t length) {
             if (length < sizeof(Ethernet::Header) + sizeof(Header)) return;
@@ -88,17 +93,17 @@ class IPv4 {
         }
 
         void send(Address destination, Protocol protocol, void *data, uint16_t length) {
-            uint16_t total         = sizeof(Ethernet::Header) + sizeof(Header) + length;
-            Ethernet::Address dmac = (destination == Broadcast) ? Ethernet::Broadcast
-                                                                : ARP<Driver>::resolve(destination);
-            Ethernet::Header *ethernet =
-                new (data) Ethernet::Header(dmac, Driver::instance()->mac(), Ethernet::IPv4);
-            new (ethernet + 1) Header(destination, Driver::instance()->ip(), protocol, length);
+            uint16_t total = sizeof(Ethernet::Header) + sizeof(Header) + length;
+            auto mac =
+                (destination == Broadcast) ? Ethernet::Broadcast : m_arp->resolve(destination);
+            auto *ethernet = new (data) Ethernet::Header(mac, m_nic->address(), Ethernet::IPv4);
+            new (ethernet + 1) Header(destination, address(), protocol, length);
             m_nic->send(data, total);
         }
 
       private:
-        NIC<Driver> *m_nic;
+        NIC *m_nic;
+        ARP *m_arp;
     };
 };
 

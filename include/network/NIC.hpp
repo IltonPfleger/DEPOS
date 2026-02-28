@@ -26,11 +26,15 @@ template <typename Derived> class NIC : public Observed<const unsigned char *, s
     }
 
   public:
+    using Device = Derived;
+
     static void init() { s_instance = new NIC(); }
 
     static auto *instance() { return s_instance; }
 
     int send(const void *b, size_t s) { return m_device->send(b, s); };
+
+    auto address() { return Derived::instance()->address(); }
 
   private:
     static inline NIC *s_instance;
