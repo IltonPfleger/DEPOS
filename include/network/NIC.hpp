@@ -6,15 +6,15 @@
 
 namespace DEPOS {
 
-template <typename Device> class NetworkAdapter : public Observed<const unsigned char *, size_t> {
+template <typename Derived> class NIC : public Observed<const unsigned char *, size_t> {
 
-    NetworkAdapter() {
-        m_device = Device::instance();
+    NIC() {
+        m_device = Derived::instance();
         new Thread(worker, this);
     };
 
     static void *worker(void *p) {
-        auto *self = reinterpret_cast<NetworkAdapter *>(p);
+        auto *self = reinterpret_cast<NIC *>(p);
         while (1) {
             auto *buffer = self->m_device->receive();
             if (buffer) {
@@ -26,18 +26,18 @@ template <typename Device> class NetworkAdapter : public Observed<const unsigned
     }
 
   public:
-    static void init() { s_instance = new NetworkAdapter(); }
+    static void init() { s_instance = new NIC(); }
 
     static auto *instance() { return s_instance; }
 
     int send(const void *b, size_t s) { return m_device->send(b, s); };
 
   private:
-    static inline NetworkAdapter *s_instance;
+    static inline NIC *s_instance;
 
   private:
     Spin m_spin;
-    Device *m_device;
+    Derived *m_device;
 };
 
 } // namespace DEPOS
