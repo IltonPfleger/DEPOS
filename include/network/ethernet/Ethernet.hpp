@@ -14,7 +14,7 @@ class Ethernet {
 
     enum : Ethertype {
         IPv4 = 0x0800,
-        ARP = 0x0806,
+        ARP  = 0x0806,
     };
 
     struct Header {
@@ -22,7 +22,10 @@ class Ethernet {
         Address m_source;
         Ethertype m_type;
 
-        Header(Address d, Address s, Ethertype t) : m_destination(d), m_source(s), m_type(CPU::htobe16(t)) {}
+        Header(Address d, Address s, Ethertype t)
+            : m_destination(d),
+              m_source(s),
+              m_type(CPU::htobe16(t)) {}
 
     } __attribute__((packed));
 

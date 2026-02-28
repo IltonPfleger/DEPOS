@@ -7,141 +7,161 @@
 
 namespace DEPOS {
 
-template <typename NIC, typename Network>
-class ARP : public Observer<const unsigned char *, size_t> {
-    enum Opcode { REQUEST = 1, REPLY = 2 };
+template <typename NIC, typename Network> class ARP : public NIC::Observer {
+  private:
+    enum class Opcode : uint16_t { REQUEST = 1, REPLY = 2 };
 
     struct Header {
-        uint16_t htype;
-        uint16_t ptype;
-        uint8_t hlen;
-        uint8_t plen;
-        uint16_t operation;
-        Ethernet::MAC sha;
-        GenericAddress<4> spa;
-        Ethernet::MAC tha;
-        GenericAddress<4> tpa;
+        uint16_t htype{CPU::htobe16(1)};
+        uint16_t ptype{CPU::htobe16(Network::Protocol)};
+        uint8_t hlen{6};
+        uint8_t plen{sizeof(typename Network::Address)};
+        uint16_t operation{0};
 
-        Header()
-            : htype(CPU::htobe16(1)),
-              ptype(CPU::htobe16(0x0800)),
-              hlen(6),
-              plen(4),
-              operation(0) {}
+        Ethernet::MAC sha;
+        Network::Address spa;
+        Ethernet::MAC tha;
+        Network::Address tpa;
+
     } __attribute__((packed));
 
     class Table {
+      private:
         struct Entry {
-            Ethernet::MAC m_ha;
-            GenericAddress<4> m_pa;
-            Thread::Queue m_waiting;
-            bool m_valid                = false;
-            uint32_t m_pending_requests = 0;
+            Ethernet::MAC mac{};
+            Network::Address ip{};
+            Thread::Queue waiting{};
+            bool valid{false};
+            uint32_t pending{0};
         };
 
-      public:
-        uint8_t hash(GenericAddress<4> pa) { return pa[3]; }
+        static constexpr size_t TABLE_SIZE = 256;
+        Entry table[TABLE_SIZE]{};
 
-        void update(GenericAddress<4> pa, Ethernet::MAC ha) {
-            int id              = hash(pa);
-            m_table[id].m_pa    = pa;
-            m_table[id].m_ha    = ha;
-            m_table[id].m_valid = true;
+        static uint8_t hash(const Network::Address &addr) { return addr[3]; }
+
+      public:
+        void update(const Network::Address &ip, const Ethernet::MAC &mac) {
+            auto &entry = table[hash(ip)];
+            entry.ip    = ip;
+            entry.mac   = mac;
+            entry.valid = true;
         }
 
-        bool resolve(GenericAddress<4> pa, Ethernet::MAC *ha) {
-            int id = hash(pa);
-            if (m_table[id].m_valid && m_table[id].m_pa == pa) {
-                *ha = m_table[id].m_ha;
+        bool resolve(const Network::Address &ip, Ethernet::MAC &mac) {
+            auto &entry = table[hash(ip)];
+
+            if (entry.valid && entry.ip == ip) {
+                mac = entry.mac;
                 return true;
             }
+
             return false;
         }
 
-        void prepare_wait(GenericAddress<4> pa) { m_table[hash(pa)].m_pending_requests++; }
+        void prepare_wait(const Network::Address &ip) { table[hash(ip)].pending++; }
 
-        void wait(GenericAddress<4> pa, Spin *spin) {
-            int id = hash(pa);
-            Thread::sleep(&m_table[id].m_waiting, spin);
+        void wait(const Network::Address &ip, Spin &spin) {
+            Thread::sleep(&table[hash(ip)].waiting, &spin);
         }
 
-        void wakeup(GenericAddress<4> pa) {
-            int id = hash(pa);
-            while (m_table[id].m_pending_requests > 0) {
-                m_table[id].m_pending_requests--;
-                Thread::wakeup(&m_table[id].m_waiting);
+        void wakeup(const Network::Address &ip) {
+            auto &entry = table[hash(ip)];
+
+            while (entry.pending > 0) {
+                entry.pending--;
+                Thread::wakeup(&entry.waiting);
             }
         }
-
-      private:
-        Entry m_table[256] = {};
     };
 
   public:
-    void update(const unsigned char *d, size_t len) override {
-        if (len < sizeof(Ethernet::Header) + sizeof(Header)) return;
-
-        const auto *eth = reinterpret_cast<const Ethernet::Header *>(d);
-        if (CPU::be16toh(eth->m_type) != Ethernet::ARP) return;
-
-        const auto *arp = reinterpret_cast<const Header *>(eth + 1);
-        uint16_t op     = CPU::be16toh(arp->operation);
-
-        if (op == REQUEST) {
-            if (arp->tpa == m_network->address()) {
-                send_packet(arp->sha, arp->spa, REPLY);
-            }
-        } else if (op == REPLY) {
-            m_spin.acquire();
-            m_table.update(arp->spa, arp->sha);
-            m_table.wakeup(arp->spa);
-            m_spin.release();
-        }
-    }
-
-    Ethernet::MAC resolve(GenericAddress<4> pa) {
-        Ethernet::MAC ha;
-
-        while (true) {
-            m_spin.acquire();
-
-            if (m_table.resolve(pa, &ha)) {
-                m_spin.release();
-                return ha;
-            }
-
-            m_table.prepare_wait(pa);
-            send_packet(Ethernet::Broadcast, pa, REQUEST);
-
-            m_table.wait(pa, &m_spin);
-            m_spin.release();
-        }
-    }
-
     ARP(NIC *nic, Network *network)
         : m_nic(nic),
           m_network(network) {
         m_nic->attach(this);
     }
 
+    void update(const unsigned char *data, size_t len) override {
+        if (len < sizeof(Ethernet::Header) + sizeof(Header)) return;
+
+        const auto *eth = reinterpret_cast<const Ethernet::Header *>(data);
+
+        if (CPU::be16toh(eth->m_type) != Ethernet::ARP) return;
+
+        const auto *arp = reinterpret_cast<const Header *>(eth + 1);
+        auto op         = static_cast<Opcode>(CPU::be16toh(arp->operation));
+
+        switch (op) {
+        case Opcode::REQUEST:
+            handle_request(*arp);
+            break;
+
+        case Opcode::REPLY:
+            handle_reply(*arp);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    Ethernet::MAC resolve(const Network::Address &ip) {
+        Ethernet::MAC mac;
+
+        while (true) {
+            m_spin.acquire();
+
+            if (m_table.resolve(ip, mac)) {
+                m_spin.release();
+                return mac;
+            }
+
+            m_table.prepare_wait(ip);
+            send_packet(Ethernet::Broadcast, ip, Opcode::REQUEST);
+
+            m_table.wait(ip, m_spin);
+            m_spin.release();
+        }
+    }
+
   private:
-    void send_packet(Ethernet::MAC tha, GenericAddress<4> tpa, uint16_t op) {
+    void handle_request(const Header &arp) {
+        if (arp.tpa != m_network->address()) return;
+
+        send_packet(arp.sha, arp.spa, Opcode::REPLY);
+    }
+
+    void handle_reply(const Header &arp) {
+        m_spin.acquire();
+
+        m_table.update(arp.spa, arp.sha);
+        m_table.wakeup(arp.spa);
+
+        m_spin.release();
+    }
+
+    void send_packet(const Ethernet::MAC &tha, const Network::Address &tpa, Opcode op) {
+
         alignas(64) unsigned char buffer[sizeof(Ethernet::Header) + sizeof(Header)];
 
         auto *eth = new (buffer) Ethernet::Header(tha, m_nic->address(), Ethernet::ARP);
+
         auto *arp = new (eth + 1) Header();
 
-        arp->operation = CPU::htobe16(op);
+        arp->operation = CPU::htobe16(static_cast<uint16_t>(op));
         arp->sha       = m_nic->address();
         arp->spa       = m_network->address();
-        arp->tha       = (op == REQUEST) ? Ethernet::MAC("00:00:00:00:00:00") : tha;
+        arp->tha       = (op == Opcode::REQUEST) ? Ethernet::MAC("00:00:00:00:00:00") : tha;
         arp->tpa       = tpa;
 
         m_nic->send(buffer, sizeof(buffer));
     }
 
+  private:
     NIC *m_nic;
     Network *m_network;
+
     Table m_table;
     Spin m_spin;
 };

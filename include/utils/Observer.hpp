@@ -2,6 +2,8 @@
 
 #include <utils/Lists.hpp>
 
+namespace DEPOS {
+
 template <typename... Args> class Observer;
 template <typename... Args> class Observed;
 
@@ -16,7 +18,7 @@ template <typename... Args> class Observed {
 
     void detach(Observer<Args...> *o) { m_observers.remove(&o->m_link); }
 
-    void notify(Args ...args) {
+    void notify(Args... args) {
         for (Link *l = m_observers.head(); l; l = l->next()) {
             l->value()->update(args...);
         }
@@ -30,7 +32,8 @@ template <typename... Args> class Observer {
     friend class Observed<Args...>;
 
   public:
-    Observer() : m_link(this) {}
+    Observer()
+        : m_link(this) {}
     virtual ~Observer() = default;
 
     virtual void update(Args... args) = 0;
@@ -38,3 +41,5 @@ template <typename... Args> class Observer {
   private:
     typename Observed<Args...>::Link m_link;
 };
+
+} // namespace DEPOS
