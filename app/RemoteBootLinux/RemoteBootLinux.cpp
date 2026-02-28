@@ -101,8 +101,6 @@ int main() {
 
     NIC<Driver>::init();
 
-    ARP<Driver>::init();
-
     constexpr long MB              = 1024 * 1024;
     constexpr long LinuxMemorySize = 256 * MB;
 
