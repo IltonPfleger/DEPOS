@@ -13,26 +13,34 @@ class UDP {
         uint16_t m_checksum;
     } __attribute__((packed));
 
+    struct Datagram {
+        auto header() const { return &m_header; }
+        uint16_t length() const { return CPU::be16toh(m_header.m_length) - sizeof(Header); }
+        const uint8_t *data() const { return reinterpret_cast<const uint8_t *>(&m_header + 1); }
+
+      private:
+        Header m_header;
+    };
+
     template <typename Driver>
-    class Connection : public Observer<const unsigned char *, size_t>,
-                       public Observed<const unsigned char *, size_t> {
+    class Connection : private Observer<const IPv4::Packet *>, public Observed<const Datagram *> {
+        void update(const IPv4::Packet *packet) {
+            const auto *datagram = reinterpret_cast<const Datagram *>(packet->data());
+
+            if (packet->header()->m_protocol != IPv4::UDP) return;
+
+            if (!m_port || CPU::be16toh(datagram->header()->m_destination) == m_port) {
+                notify(datagram);
+            }
+        }
+
       public:
         Connection(uint16_t port = 0)
             : m_port(port) {
-            m_connection.attach(this);
+            m_handler.attach(this);
         }
-        ~Connection() { m_connection.detach(this); }
 
-        void update(const unsigned char *data, size_t length) {
-            const auto *ip  = reinterpret_cast<const IPv4::Header *>(data);
-            const auto *udp = reinterpret_cast<const Header *>(data + sizeof(IPv4::Header));
-
-            if (ip->m_protocol != IPv4::UDP) return;
-
-            if (!m_port || CPU::be16toh(udp->m_destination) == m_port) {
-                notify(data + sizeof(IPv4::Header), length - sizeof(IPv4::Header));
-            }
-        }
+        ~Connection() { m_handler.detach(this); }
 
         void send(IPv4::Address dip, uint16_t d, void *data, size_t length) {
             auto *ethernet = reinterpret_cast<Ethernet::Header *>(data);
@@ -44,11 +52,11 @@ class UDP {
             header->m_length      = CPU::htobe16(length + sizeof(Header));
             header->m_checksum    = 0;
 
-            m_connection.send(dip, IPv4::UDP, data, length + sizeof(Header));
+            m_handler.send(dip, IPv4::UDP, data, length + sizeof(Header));
         }
 
       private:
-        IPv4::Connection<NIC<Driver>> m_connection;
+        IPv4::Connection<NIC<Driver>> m_handler;
         uint16_t m_port;
     };
 };

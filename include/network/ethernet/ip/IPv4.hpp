@@ -5,6 +5,7 @@
 #include <machine/Traits.hpp>
 #include <network/GenericAddress.hpp>
 #include <network/NIC.hpp>
+#include <network/ethernet/Checksum.hpp>
 #include <network/ethernet/Ethernet.hpp>
 #include <network/ethernet/ip/ARP.hpp>
 
@@ -12,8 +13,7 @@ namespace DEPOS {
 
 class IPv4 {
   public:
-    typedef unsigned char Protocol;
-    enum : Protocol { ICMP = 1, TCP = 6, UDP = 17 };
+    enum : uint8_t { ICMP = 1, TCP = 6, UDP = 17 };
     typedef GenericAddress<4> Address;
 
     struct Header {
@@ -30,7 +30,7 @@ class IPv4 {
 
         Header(Address destination,
                Address source,
-               Protocol protocol,
+               uint8_t protocol,
                uint16_t length,
                uint8_t tos             = 0,
                uint16_t identification = 0,
@@ -46,33 +46,31 @@ class IPv4 {
             m_source         = source;
             m_destination    = destination;
             m_checksum       = 0;
-            m_checksum       = checksum(this, sizeof(Header));
+            m_checksum       = Checksum::calculate(this, sizeof(Header));
         }
+
+        uint8_t length() const { return (m_version & 0x0F) * 4; }
 
     } __attribute__((packed));
 
-    static uint16_t checksum(const void *data, size_t length) {
-        uint32_t sum        = 0;
-        const uint16_t *ptr = reinterpret_cast<const uint16_t *>(data);
+    struct Packet {
+        auto header() const { return &m_header; }
+        auto length() const { return CPU::be16toh(m_header.m_length) - m_header.length(); }
+        auto *data() const { return reinterpret_cast<const uint8_t *>(this) + m_header.length(); }
 
-        for (; length > 1; length -= 2)
-            sum += *ptr++;
-        if (length > 0) sum += *reinterpret_cast<const uint8_t *>(ptr);
-
-        while (sum >> 16)
-            sum = (sum & 0xFFFF) + (sum >> 16);
-        return static_cast<uint16_t>(~sum);
-    }
-
-    static constexpr Address Broadcast = Address(255, 255, 255, 255);
+        Header m_header;
+    };
 
   public:
     template <typename NIC>
-    class Connection : public Observer<const unsigned char *, size_t>,
-                       public Observed<const unsigned char *, size_t> {
+    class Connection : public NIC::Observer, public Observed<const Packet *> {
         using ARP = DEPOS::ARP<NIC, Connection>;
 
       public:
+        using Address                      = IPv4::Address;
+        static constexpr Address Broadcast = Address(255, 255, 255, 255);
+        static constexpr uint16_t Protocol = Ethernet::IPv4;
+
         Connection() {
             m_nic = NIC::instance();
             m_arp = new ARP(m_nic, this);
@@ -83,21 +81,20 @@ class IPv4 {
 
         auto address() { return GenericAddress<4>(Traits<typename NIC::Device>::IP); }
 
-        void update(const unsigned char *data, size_t length) {
-            if (length < sizeof(Ethernet::Header) + sizeof(Header)) return;
+        void update(const unsigned char *data, size_t) {
+            auto *ethernet = reinterpret_cast<const Ethernet::Header *>(data);
+            auto *ipv4     = reinterpret_cast<const Packet *>(ethernet + 1);
 
-            const Ethernet::Header *ethernet = reinterpret_cast<const Ethernet::Header *>(data);
             if (CPU::be16toh(ethernet->m_type) == Ethernet::IPv4) {
-                notify(data + sizeof(Ethernet::Header), length - sizeof(Ethernet::Header));
+                notify(ipv4);
             }
         }
 
-        void send(Address destination, Protocol protocol, void *data, uint16_t length) {
+        void send(Address dip, uint8_t protocol, void *data, uint16_t length) {
             uint16_t total = sizeof(Ethernet::Header) + sizeof(Header) + length;
-            auto mac =
-                (destination == Broadcast) ? Ethernet::Broadcast : m_arp->resolve(destination);
+            auto mac       = (dip == Broadcast) ? Ethernet::Broadcast : m_arp->resolve(dip);
             auto *ethernet = new (data) Ethernet::Header(mac, m_nic->address(), Ethernet::IPv4);
-            new (ethernet + 1) Header(destination, address(), protocol, length);
+            new (ethernet + 1) Header(dip, address(), protocol, length);
             m_nic->send(data, total);
         }
 

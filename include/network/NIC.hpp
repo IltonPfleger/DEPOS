@@ -26,7 +26,9 @@ template <typename Derived> class NIC : public Observed<const unsigned char *, s
     }
 
   public:
-    using Device = Derived;
+    using Observer = DEPOS::Observer<const unsigned char *, size_t>;
+    using Observed = DEPOS::Observed<const unsigned char *, size_t>;
+    using Device   = Derived;
 
     static void init() { s_instance = new NIC(); }
 
