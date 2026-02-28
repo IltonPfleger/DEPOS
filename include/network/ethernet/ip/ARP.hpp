@@ -9,6 +9,7 @@ namespace DEPOS {
 
 template <typename NIC, typename Network> class ARP : public NIC::Observer {
   private:
+    enum { Protocol = 0x0806 };
     enum class Opcode : uint16_t { REQUEST = 1, REPLY = 2 };
 
     struct Header {
@@ -85,9 +86,9 @@ template <typename NIC, typename Network> class ARP : public NIC::Observer {
     void update(const unsigned char *data, size_t len) override {
         if (len < sizeof(Ethernet::Header) + sizeof(Header)) return;
 
-        const auto *eth = reinterpret_cast<const Ethernet::Header *>(data);
+        auto *eth = reinterpret_cast<const Ethernet::Header *>(data);
 
-        if (CPU::be16toh(eth->m_type) != Ethernet::ARP) return;
+        if (eth->protocol() != Protocol) return;
 
         const auto *arp = reinterpret_cast<const Header *>(eth + 1);
         auto op         = static_cast<Opcode>(CPU::be16toh(arp->operation));
@@ -145,7 +146,7 @@ template <typename NIC, typename Network> class ARP : public NIC::Observer {
 
         alignas(64) unsigned char buffer[sizeof(Ethernet::Header) + sizeof(Header)];
 
-        auto *eth = new (buffer) Ethernet::Header(tha, m_nic->address(), Ethernet::ARP);
+        auto *eth = new (buffer) Ethernet::Header(tha, m_nic->address(), Protocol);
 
         auto *arp = new (eth + 1) Header();
 
