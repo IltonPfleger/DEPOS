@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Spin.hpp>
-#include <network/NetworkAdapter.hpp>
+#include <network/NIC.hpp>
 #include <network/ethernet/Ethernet.hpp>
 #include <utils/Observer.hpp>
 
@@ -21,7 +21,12 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
         Ethernet::MAC tha;
         GenericAddress<4> tpa;
 
-        Header() : htype(CPU::htobe16(1)), ptype(CPU::htobe16(0x0800)), hlen(6), plen(4), operation(0) {}
+        Header()
+            : htype(CPU::htobe16(1)),
+              ptype(CPU::htobe16(0x0800)),
+              hlen(6),
+              plen(4),
+              operation(0) {}
     } __attribute__((packed));
 
     class Table {
@@ -29,7 +34,7 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
             Ethernet::MAC m_ha;
             GenericAddress<4> m_pa;
             Thread::Queue m_waiting;
-            bool m_valid = false;
+            bool m_valid                = false;
             uint32_t m_pending_requests = 0;
         };
 
@@ -37,9 +42,9 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
         uint8_t hash(GenericAddress<4> pa) { return pa[3]; }
 
         void update(GenericAddress<4> pa, Ethernet::MAC ha) {
-            int id = hash(pa);
-            m_table[id].m_pa = pa;
-            m_table[id].m_ha = ha;
+            int id              = hash(pa);
+            m_table[id].m_pa    = pa;
+            m_table[id].m_ha    = ha;
             m_table[id].m_valid = true;
         }
 
@@ -81,7 +86,7 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
         if (CPU::be16toh(eth->m_type) != Ethernet::ARP) return;
 
         const auto *arp = reinterpret_cast<const Header *>(eth + 1);
-        uint16_t op = CPU::be16toh(arp->operation);
+        uint16_t op     = CPU::be16toh(arp->operation);
 
         if (op == REQUEST) {
             if (arp->tpa == Driver::instance()->ip()) {
@@ -116,7 +121,7 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
 
   private:
     ARP() {
-        m_adapter = NetworkAdapter<Driver>::instance();
+        m_adapter = NIC<Driver>::instance();
         m_adapter->attach(this);
     }
 
@@ -127,16 +132,16 @@ template <typename Driver> class ARP : public Observer<const unsigned char *, si
         auto *arp = new (eth + 1) Header();
 
         arp->operation = CPU::htobe16(op);
-        arp->sha = Driver::instance()->mac();
-        arp->spa = Driver::instance()->ip();
-        arp->tha = (op == REQUEST) ? Ethernet::MAC("00:00:00:00:00:00") : tha;
-        arp->tpa = tpa;
+        arp->sha       = Driver::instance()->mac();
+        arp->spa       = Driver::instance()->ip();
+        arp->tha       = (op == REQUEST) ? Ethernet::MAC("00:00:00:00:00:00") : tha;
+        arp->tpa       = tpa;
 
         m_adapter->send(buffer, sizeof(buffer));
     }
 
     static inline ARP *s_instance;
-    NetworkAdapter<Driver> *m_adapter;
+    NIC<Driver> *m_adapter;
     Table m_table;
     Spin m_spin;
 };

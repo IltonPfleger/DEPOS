@@ -4,7 +4,7 @@
 #include <machine/Machine.hpp>
 #include <machine/Traits.hpp>
 #include <network/GenericAddress.hpp>
-#include <network/NetworkAdapter.hpp>
+#include <network/NIC.hpp>
 #include <network/ethernet/Ethernet.hpp>
 #include <network/ethernet/ip/ARP.hpp>
 
@@ -28,25 +28,31 @@ class IPv4 {
         Address m_source;
         Address m_destination;
 
-        Header(Address destination, Address source, Protocol protocol, uint16_t length, uint8_t tos = 0,
-               uint16_t identification = 0, uint16_t fragment = 0, uint8_t ttl = 64) {
-            m_version = 0x45;
-            m_tos = tos;
-            m_length = CPU::htobe16(sizeof(Header) + length);
+        Header(Address destination,
+               Address source,
+               Protocol protocol,
+               uint16_t length,
+               uint8_t tos             = 0,
+               uint16_t identification = 0,
+               uint16_t fragment       = 0,
+               uint8_t ttl             = 64) {
+            m_version        = 0x45;
+            m_tos            = tos;
+            m_length         = CPU::htobe16(sizeof(Header) + length);
             m_identification = CPU::htobe16(identification);
-            m_fragment = CPU::htobe16(fragment);
-            m_ttl = ttl;
-            m_protocol = protocol;
-            m_source = source;
-            m_destination = destination;
-            m_checksum = 0;
-            m_checksum = checksum(this, sizeof(Header));
+            m_fragment       = CPU::htobe16(fragment);
+            m_ttl            = ttl;
+            m_protocol       = protocol;
+            m_source         = source;
+            m_destination    = destination;
+            m_checksum       = 0;
+            m_checksum       = checksum(this, sizeof(Header));
         }
 
     } __attribute__((packed));
 
     static uint16_t checksum(const void *data, size_t length) {
-        uint32_t sum = 0;
+        uint32_t sum        = 0;
         const uint16_t *ptr = reinterpret_cast<const uint16_t *>(data);
 
         for (; length > 1; length -= 2)
@@ -62,10 +68,11 @@ class IPv4 {
 
   public:
     template <typename Driver>
-    class Connection : public Observer<const unsigned char *, size_t>, public Observed<const unsigned char *, size_t> {
+    class Connection : public Observer<const unsigned char *, size_t>,
+                       public Observed<const unsigned char *, size_t> {
       public:
         Connection() {
-            m_nic = NetworkAdapter<Driver>::instance();
+            m_nic = NIC<Driver>::instance();
             m_nic->attach(this);
         }
 
@@ -81,15 +88,17 @@ class IPv4 {
         }
 
         void send(Address destination, Protocol protocol, void *data, uint16_t length) {
-            uint16_t total = sizeof(Ethernet::Header) + sizeof(Header) + length;
-            Ethernet::Address dmac = (destination == Broadcast) ? Ethernet::Broadcast : ARP<Driver>::resolve(destination);
-            Ethernet::Header *ethernet = new (data) Ethernet::Header(dmac, Driver::instance()->mac(), Ethernet::IPv4);
+            uint16_t total         = sizeof(Ethernet::Header) + sizeof(Header) + length;
+            Ethernet::Address dmac = (destination == Broadcast) ? Ethernet::Broadcast
+                                                                : ARP<Driver>::resolve(destination);
+            Ethernet::Header *ethernet =
+                new (data) Ethernet::Header(dmac, Driver::instance()->mac(), Ethernet::IPv4);
             new (ethernet + 1) Header(destination, Driver::instance()->ip(), protocol, length);
             m_nic->send(data, total);
         }
 
       private:
-        NetworkAdapter<Driver> *m_nic;
+        NIC<Driver> *m_nic;
     };
 };
 

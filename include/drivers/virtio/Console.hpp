@@ -5,7 +5,6 @@
 #include <drivers/uart/UART16550.hpp>
 #include <drivers/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
-#include <network/NetworkAdapter.hpp>
 #include <utils/Observer.hpp>
 
 namespace DEPOS {
@@ -13,7 +12,8 @@ namespace DEPOS {
 namespace virtio {
 
 template <typename Device, uintptr_t Base>
-class Console : public Handler<Console<Device, Base>>, public Observer<const unsigned char *, size_t> {
+class Console : public Handler<Console<Device, Base>>,
+                public Observer<const unsigned char *, size_t> {
 
   public:
     static Console *instance() {
@@ -28,7 +28,7 @@ class Console : public Handler<Console<Device, Base>>, public Observer<const uns
             int head_id = queue.available();
             if (head_id < 0) return;
 
-            int current_id = head_id;
+            int current_id        = head_id;
             uint32_t total_length = 0;
 
             while (1) {
@@ -51,12 +51,12 @@ class Console : public Handler<Console<Device, Base>>, public Observer<const uns
 
     void update(const unsigned char *buffer, size_t size) override {
         VirtQueue &queue = this->m_queues[k_rx_queue];
-        int id = queue.available();
+        int id           = queue.available();
         if (id < 0) return;
 
-        auto descriptor = queue.get(id);
+        auto descriptor    = queue.get(id);
         descriptor->length = size;
-        descriptor->flags = 0;
+        descriptor->flags  = 0;
 
         auto *destination = reinterpret_cast<unsigned char *>(descriptor->address);
         memcpy(destination, buffer, size);
@@ -69,25 +69,25 @@ class Console : public Handler<Console<Device, Base>>, public Observer<const uns
 
   private:
     Console() {
-        this->m_header.m_magic = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
-        this->m_header.m_version = 1;
-        this->m_header.m_id = 3;
-        this->m_header.m_vendor = 0x554d4551;
-        this->m_header.m_host_features = 1 << 27;
+        this->m_header.m_magic            = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
+        this->m_header.m_version          = 1;
+        this->m_header.m_id               = 3;
+        this->m_header.m_vendor           = 0x554d4551;
+        this->m_header.m_host_features    = 1 << 27;
         this->m_header.m_queue_number_max = NumberOfDescriptors;
-        m_vcpu = VirtualCPU::current();
+        m_vcpu                            = VirtualCPU::current();
         Device::instance()->attach(this);
     }
 
   public:
     static constexpr uintptr_t NumberOfDescriptors = 32;
-    static constexpr uintptr_t Address = Base;
-    static constexpr uintptr_t Size = sizeof(LegacyHeader);
+    static constexpr uintptr_t Address             = Base;
+    static constexpr uintptr_t Size                = sizeof(LegacyHeader);
 
   private:
     static constexpr uintptr_t k_tx_queue = 1;
     static constexpr uintptr_t k_rx_queue = 0;
-    static inline Console *s_instance = nullptr;
+    static inline Console *s_instance     = nullptr;
 
   private:
     VirtualCPU *m_vcpu;
