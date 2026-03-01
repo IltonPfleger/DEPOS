@@ -8,6 +8,7 @@
 #include <network/ethernet/Checksum.hpp>
 #include <network/ethernet/Ethernet.hpp>
 #include <network/ethernet/ip/ARP.hpp>
+#include <network/ethernet/ip/IGMP.hpp>
 
 namespace DEPOS {
 
@@ -26,7 +27,7 @@ struct Header {
     uint8_t m_protocol;
     uint16_t m_checksum;
     Address m_source;
-    Address m_destination;
+    Address m_to;
 
     Header(Address destination,
            Address source,
@@ -44,7 +45,7 @@ struct Header {
         m_ttl            = ttl;
         m_protocol       = protocol;
         m_source         = source;
-        m_destination    = destination;
+        m_to             = destination;
         m_checksum       = 0;
         m_checksum       = Checksum::calculate(this, sizeof(Header));
     }
@@ -64,17 +65,71 @@ class Packet {
     Header m_header;
 };
 
+// namespace IGMP {
+//
+// enum { Protocol = 2, Query = 0x11, Report = 0x16, Leave = 0x17 };
+//
+// struct Header {
+//     uint8_t m_type;
+//     uint8_t m_max;
+//     uint16_t m_checksum;
+//     IPv4::Address m_group;
+//
+//     Header(uint8_t type, IPv4::Address group)
+//         : m_type(type),
+//           m_max(0),
+//           m_checksum(0),
+//           m_group(group) {
+//         m_checksum = Checksum::calculate(this, sizeof(Header));
+//     }
+// } __attribute__((packed));
+//
+// } // namespace IGMP
+//
+class Multicast {
+  public:
+    static bool is_multicast(const Address &addr) { return (addr[0] & 0xF0) == 0xE0; }
+    static Ethernet::Address ip_to_mac(const Address &ip) {
+        return {0x01, 0x00, 0x5E, ip[1] & 0x7F, ip[2], ip[3]};
+    }
+    //
+    //     template <typename Network> static void join(IPv4::Address group) {
+    //         unsigned char buffer[1024];
+    //
+    //         new (buffer + sizeof(Ethernet::Header) + sizeof(IPv4::Header))
+    //             IGMP::Header(IGMP::Report, group);
+    //
+    //         auto dmac = ip_to_mac(group);
+    //         Network::instance()->send(dmac, group, IGMP::Protocol, buffer, sizeof(IGMP::Header));
+    //     }
+    //
+    //     // template <typename Driver> static bool leave(IP group) {
+    //     //     IPv4::Connection<Driver> socket;
+    //     //     unsigned char buffer[sizeof(IGMPv2) + sizeof(IPv4::Header) +
+    //     sizeof(Ethernet::Header)];
+    //
+    //     //    new (buffer) IGMPv2(0x17, group);
+    //     //    // IGMPv2 *report = new (buffer) IGMPv2(0x17, group);
+    //     //    //  report->m_checksum = IPv4::checksum(report, sizeof(IGMPv2));
+    //
+    //     //    MAC mac   = convert_multicast_group_ip_to_mac(All);
+    //     //    MAC mymac = Driver::instance()->mac();
+    //     //    IP myip   = Driver::instance()->ip();
+    //
+    //     //    return socket.send(mac, All, mymac, myip, IPv4::IGMP, buffer, sizeof(IGMPv2));
+    //     //}
+};
+
 template <typename NIC> class Network : public NIC::Observer, public Observed<const Packet *> {
     using ARP = DEPOS::ARP<NIC, Network>;
 
   public:
-    using Packet                       = IPv4::Packet;
-    using Header                       = IPv4::Header;
-    using Address                      = IPv4::Address;
-    static constexpr Address Broadcast = Address(255, 255, 255, 255);
-    static constexpr uint16_t Protocol = IPv4::Protocol;
+    enum { Protocol = IPv4::Protocol };
+    using Packet  = IPv4::Packet;
+    using Header  = IPv4::Header;
+    using Address = IPv4::Address;
 
-  private:
+  protected:
     Network() {
         m_nic = NIC::instance();
         m_arp = new ARP(m_nic, this);
@@ -85,10 +140,10 @@ template <typename NIC> class Network : public NIC::Observer, public Observed<co
 
     void update(const unsigned char *data, size_t) {
         auto *ethernet = reinterpret_cast<const Ethernet::Header *>(data);
-        auto *ipv4     = reinterpret_cast<const Packet *>(ethernet + 1);
+        auto *packet   = reinterpret_cast<const Packet *>(ethernet + 1);
 
         if (ethernet->protocol() == Protocol) {
-            this->notify(ipv4);
+            if (accepts(packet)) this->notify(packet);
         }
     }
 
@@ -98,22 +153,42 @@ template <typename NIC> class Network : public NIC::Observer, public Observed<co
         return s_instance;
     }
 
-    auto address() { return GenericAddress<4>(Traits<typename NIC::Device>::IP); }
+    bool accepts(const Packet *packet) const {
+        // const Header *header = packet->header();
+        // if (Multicast::is_multicast(header->m_to) || header->m_to == Address::broadcast() ||
+        //     header->m_to == address())
+        //     return true;
+        return true;
+    }
 
-    void send(Address address, uint8_t protocol, void *data, uint16_t length) {
+    auto address() const { return GenericAddress<4>(Traits<typename NIC::Device>::IP); }
+
+    void send(Address dip, uint8_t protocol, void *data, uint16_t length) {
+        Ethernet::Address mac;
+        if (dip == Address::broadcast()) {
+            mac = Ethernet::Broadcast;
+        } else if (Multicast::is_multicast(dip)) {
+            mac = Multicast::ip_to_mac(dip);
+        } else {
+            mac = m_arp->resolve(dip);
+        }
+
+        send(mac, dip, protocol, data, length);
+    }
+
+    void send(Ethernet::Address dmac, Address dip, uint8_t protocol, void *data, uint16_t length) {
         uint16_t total = sizeof(Ethernet::Header) + sizeof(Header) + length;
-        auto mac       = (address == Broadcast) ? Ethernet::Broadcast : m_arp->resolve(address);
-        auto *ethernet = new (data) Ethernet::Header(mac, m_nic->address(), Protocol);
-        new (ethernet + 1) Header(address, this->address(), protocol, length);
+        auto *ethernet = new (data) Ethernet::Header(dmac, m_nic->address(), Protocol);
+        new (ethernet + 1) Header(dip, this->address(), protocol, length);
         m_nic->send(data, total);
     }
 
-  private:
-    static inline Network *s_instance;
-
-  private:
+  protected:
     NIC *m_nic;
     ARP *m_arp;
+
+  private:
+    static inline Network *s_instance;
 };
 
 } // namespace IPv4

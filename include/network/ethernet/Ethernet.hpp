@@ -33,20 +33,20 @@ class Ethernet {
 
     } __attribute__((packed));
 
-    class Frame {
-      public:
-        Frame(Address to, Address from, Protocol protocol)
-            : m_header(to, from, protocol) {}
+    // class Frame {
+    //   public:
+    //     Frame(Address to, Address from, Protocol protocol)
+    //         : m_header(to, from, protocol) {}
 
-        const Header *header() const { return &m_header; }
-        const Data &data() const { return m_data; }
-        Data &data() { return m_data; }
+    //    const Header *header() const { return &m_header; }
+    //    const Data &data() const { return m_data; }
+    //    Data &data() { return m_data; }
 
-      private:
-        Header m_header;
-        Data m_data;
-        CRC m_crc;
-    } __attribute__((packed));
+    //  private:
+    //    Header m_header;
+    //    Data m_data;
+    //    CRC m_crc;
+    //} __attribute__((packed));
 
     static constexpr MAC Broadcast = MAC(255, 255, 255, 255, 255, 255);
 };

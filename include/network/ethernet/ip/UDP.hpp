@@ -26,8 +26,8 @@ struct Datagram {
 };
 
 template <typename Network>
-class Socket : private Observer<const typename Network::Packet *>,
-               public Observed<const Datagram *> {
+class Channel : private Observer<const typename Network::Packet *>,
+                public Observed<const Datagram *> {
 
     void update(const Network::Packet *packet) {
         const auto *datagram = reinterpret_cast<const Datagram *>(packet->data());
@@ -40,21 +40,24 @@ class Socket : private Observer<const typename Network::Packet *>,
     }
 
   public:
-    Socket(uint16_t port = 0)
+    typedef Datagram Buffer;
+    typedef DEPOS::Observer<const Datagram *> Observer;
+
+    Channel(uint16_t port = 0)
         : m_network(Network::instance()),
           m_port(port) {
         m_network->attach(this);
     }
 
-    ~Socket() { m_network->detach(this); }
+    ~Channel() { m_network->detach(this); }
 
-    void send(Network::Address address, uint16_t d, void *data, size_t length) {
+    void send(Network::Address address, uint16_t port, unsigned char *data, size_t length) {
         auto *ethernet = reinterpret_cast<Ethernet::Header *>(data);
         auto *ip       = reinterpret_cast<Network::Header *>(ethernet + 1);
         auto *header   = reinterpret_cast<Header *>(ip + 1);
 
         header->m_source      = CPU::htobe16(m_port);
-        header->m_destination = CPU::htobe16(d);
+        header->m_destination = CPU::htobe16(port);
         header->m_length      = CPU::htobe16(length + sizeof(Header));
         header->m_checksum    = 0;
 

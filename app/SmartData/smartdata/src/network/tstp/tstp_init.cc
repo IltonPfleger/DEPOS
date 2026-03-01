@@ -9,7 +9,7 @@
 #include <network/tstp/tstp.h>
 
 TSTP* TSTP::_tstp;
-UDP_Socket* UDPNIC::soc;
+//UDP_Socket* UDPNIC::soc;
 UDPNIC::_AES UDPNIC::_aes;
 unsigned char UDPNIC::GRP_KEY[16];
 

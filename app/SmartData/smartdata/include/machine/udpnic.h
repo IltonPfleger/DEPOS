@@ -1,23 +1,32 @@
 #pragma once
 
+#include <Meta.hpp>
+#include <architecture/Timer.hpp>
 #include <machine/aes.h>
 #include <machine/nic.h>
+#include <memory/Memory.hpp>
+#include <network/ethernet/ip/UDP.hpp>
 #include <utility/observer.h>
 #include <utility/ostream.h>
 
-class UDP_Socket : public Observed {};
+typedef DEPOS::Meta::GetFromTypeList<DEPOS::Traits<DEPOS::Ethernet>::Devices, 0>::Result Device;
+typedef DEPOS::IPv4::Network<DEPOS::NIC<Device>> LocalNetwork;
+typedef DEPOS::UDP::Channel<LocalNetwork> Channel;
 
-class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Observer {
-    static const UInt32 KEY_SIZE = Traits<TSTP>::KEY_SIZE;
-    static const UInt32 MTU      = NIC<Only_Data_UDP_Wrapper>::MTU;
+class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Channel::Observer {
+    static constexpr const char *GROUP_ADDRESS = "224.1.1.1";
+    static const UInt32 PORT                   = 5000;
+    static const UInt32 KEY_SIZE               = Traits<TSTP>::KEY_SIZE;
+    static const UInt32 MTU                    = NIC<Only_Data_UDP_Wrapper>::MTU;
 
     typedef AES<KEY_SIZE> _AES;
     static _AES _aes;
 
   public:
-    UDPNIC() {
+    UDPNIC()
+        : m_channel(PORT) {
         db<NIC>(TRC) << "UDPNIC::UDPNIC()" << endl;
-        DEPOS::CPU::halt();
+        m_channel.attach(this);
     }
 
     ~UDPNIC() override {
@@ -44,7 +53,9 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Observer {
                   UInt32 always,
                   UInt32 payload) override {
         db<NIC>(TRC) << "UDPNIC::alloc(dst=" << dst << ", payload=" << payload << ")" << endl;
-        Buffer *buf = new Buffer(this, 0);
+        // Buffer *buf = new Buffer(this, 0);
+        void *teste = DEPOS::Memory::alloc(1024 * 8);
+        Buffer *buf = new (teste) Buffer(this, 0);
         buf->fill(once + always + payload, m_configuration.address, dst, prot);
         buf->is_microframe           = false;
         buf->trusted                 = false;
@@ -57,12 +68,17 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Observer {
     }
 
     int send(Buffer *buf) override {
-        db<NIC>(TRC) << "UDPNIC::send(buf=" << buf << ")" << endl;
-        DEPOS::CPU::halt();
-        return 0;
+        db<NIC>(TRC) << "UDPNIC::send(buf=" << buf << ") size: " << buf->size() << endl;
+        unsigned char *buffer = reinterpret_cast<unsigned char *>(DEPOS::Memory::alloc(1024 * 8));
+        memcpy(buffer + 42, buf->frame()->data<const unsigned char>(), buf->size());
+        m_channel.send(GROUP_ADDRESS, PORT, buffer, buf->size());
+        return buf->size();
     }
 
-    void free(Buffer *buf) override { db<NIC>(TRC) << "UDPNIC::free(buf=" << buf << ")" << endl; }
+    void free(Buffer *buf) override {
+        db<NIC>(TRC) << "UDPNIC::free(buf=" << buf << ")" << endl;
+        // delete buf;
+    }
 
     const Address &address() override {
         db<NIC>(TRC) << "UDPNIC::address() [get]" << endl;
@@ -71,7 +87,7 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Observer {
 
     void address(const Address &addr) override {
         db<NIC>(TRC) << "UDPNIC::address(addr=" << addr << ") [set]" << endl;
-        DEPOS::CPU::halt();
+        // m_configuration.address = addr;
     }
 
     bool reconfigure(const Configuration *c = nullptr) override {
@@ -91,16 +107,25 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Observer {
         return m_statistics;
     }
 
-    void update(typename UDP_Socket::Observed *obs) override {
-        db<NIC>(TRC) << "UDPNIC::update(obs=" << obs << ")" << endl;
-        DEPOS::CPU::halt();
+    void update(const Channel::Buffer *buffer) {
+        db<NIC>(TRC) << "UDPNIC::update " << buffer->length() << endl;
+        const unsigned char *data = buffer->data();
+        Protocol prot             = PROTO_TSTP;
+        UInt32 size               = buffer->length();
+        TSC::Time_Stamp ts        = DEPOS::Timer::time();
+        void *teste               = DEPOS::Memory::alloc(1024 * 8);
+        Buffer *buf               = new (teste) Buffer(this, 0);
+        // Buffer *buf               = new Buffer(this, 0);
+        buf->fill(size, address(), address(), prot, reinterpret_cast<const void *>(data), size);
+        buf->sfdts = ts;
+        notify(prot, buf);
     }
 
   private:
-    static UDP_Socket *soc;
     static unsigned char GRP_KEY[16];
 
   private:
+    Channel m_channel;
     Configuration m_configuration;
     Statistics m_statistics;
 };

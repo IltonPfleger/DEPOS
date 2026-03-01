@@ -99,3 +99,6 @@ int OStream::ptoa(const void * p, char * s)
 // SETUP does not handle global constructors, so kout and kerr must be
 // manually initialized before use (at setup())
 OStream kout, kerr;
+
+//pthread_mutex_t OStream::MutexHandle;
+//bool OStream::MutexInitialized = false;

@@ -10,7 +10,7 @@
 #ifdef __tstp__
 
 // Class attributes
-DEPOS::Semaphore TSTP::Security::_mtx;
+DEPOS::Semaphore TSTP::Security::_mtx(1);
 TSTP::Security::_AES TSTP::Security::_aes;
 TSTP::Security::_AES & TSTP::Security::_cipher = TSTP::Security::_aes;
 TSTP::Security::Node_Id TSTP::Security::_id;

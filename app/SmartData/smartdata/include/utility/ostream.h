@@ -17,9 +17,10 @@ class OStream {
     struct Err {};
 
   private:
-
   public:
-    OStream() : _base(10), _error(false) {
+    OStream()
+        : _base(10),
+          _error(false) {
         // if (!MutexInitialized)
         //{
         //	pthread_mutexattr_t mutexAttr;
@@ -41,6 +42,7 @@ class OStream {
         // if(Traits<System>::multicore)
         //     _print_trailler(_error);
         // print("\n");
+        DEPOS::Console::cout << DEPOS::Console::endl;
         _base = 10;
         return *this;
     }
@@ -94,7 +96,9 @@ class OStream {
 
     OStream &operator<<(unsigned short s) { return operator<<(static_cast<unsigned int>(s)); }
 
-    OStream &operator<<(unsigned long l) { return operator<<(static_cast<unsigned long long int>(l)); }
+    OStream &operator<<(unsigned long l) {
+        return operator<<(static_cast<unsigned long long int>(l));
+    }
 
     OStream &operator<<(long long u) {
         char buf[64];
@@ -136,7 +140,7 @@ class OStream {
         (*this) << b << ".";
 
         int precision = 8;
-        float diff = (f - b) * 10;
+        float diff    = (f - b) * 10;
         precision--;
         while (diff < 1 && precision > 0) {
             (*this) << "0";
@@ -166,7 +170,7 @@ class OStream {
         (*this) << b << ".";
 
         int precision = 9;
-        double diff = (d - b) * 10;
+        double diff   = (d - b) * 10;
         precision--;
         while (diff < 1 && precision > 0) {
             (*this) << "0";
@@ -182,7 +186,7 @@ class OStream {
     }
 
   private:
-    void print(const char *s) { DEPOS::Console::cout << s << DEPOS::Console::endl; }
+    void print(const char *s) { DEPOS::Console::cout << s; }
 
     int itoa(int v, char *s);
     int utoa(unsigned int v, char *s, unsigned int i = 0);

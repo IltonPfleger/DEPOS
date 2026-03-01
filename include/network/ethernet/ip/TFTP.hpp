@@ -20,7 +20,7 @@ template <typename Driver> class TFTP : Observer<const UDP::Datagram *> {
   public:
     TFTP(Network::Address server_ip)
         : m_server_ip(server_ip) {
-        m_socket.attach(this);
+        m_channel.attach(this);
     }
 
     void *header(uint8_t *buffer) {
@@ -58,7 +58,7 @@ template <typename Driver> class TFTP : Observer<const UDP::Datagram *> {
         size_t tftp_payload_size =
             reinterpret_cast<uint8_t *>(ptr) - reinterpret_cast<uint8_t *>(opcode);
 
-        m_socket.send(m_server_ip, m_server_port, packet, tftp_payload_size);
+        m_channel.send(m_server_ip, m_server_port, packet, tftp_payload_size);
 
         m_semaphore.p();
 
@@ -105,7 +105,7 @@ template <typename Driver> class TFTP : Observer<const UDP::Datagram *> {
         auto *packet = reinterpret_cast<uint16_t *>(header(buffer));
         packet[0]    = CPU::htobe16(static_cast<uint16_t>(Opcode::ACK));
         packet[1]    = CPU::htobe16(block);
-        m_socket.send(m_server_ip, m_server_port, buffer, 4);
+        m_channel.send(m_server_ip, m_server_port, buffer, 4);
     }
 
   private:
@@ -113,7 +113,7 @@ template <typename Driver> class TFTP : Observer<const UDP::Datagram *> {
     static constexpr const unsigned int k_blksize_int = 1468;
 
   private:
-    UDP::Socket<Network> m_socket;
+    UDP::Channel<Network> m_channel;
     Semaphore m_semaphore;
     Network::Address m_server_ip;
     uint16_t m_expected_block;
