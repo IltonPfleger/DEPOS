@@ -2,6 +2,8 @@
 
 #define offsetof(type, member) ((unsigned long)&(((type *)0)->member))
 
+namespace DEPOS {
+
 namespace Meta {
 
 struct Empty {};
@@ -67,11 +69,14 @@ template <typename Head, typename... Tail> struct GetFromTypeList<TypeList<Head,
     using Result = Head;
 };
 
-template <typename Head, typename... Tail, unsigned int Index> struct GetFromTypeList<TypeList<Head, Tail...>, Index> {
+template <typename Head, typename... Tail, unsigned int Index>
+struct GetFromTypeList<TypeList<Head, Tail...>, Index> {
     using Result = typename GetFromTypeList<TypeList<Tail...>, Index - 1>::Result;
 };
 
-template <typename... Ts, typename F> void ForEachTypeList(Meta::TypeList<Ts...>, F &&f) { (f.template operator()<Ts>(), ...); }
+template <typename... Ts, typename F> void ForEachTypeList(Meta::TypeList<Ts...>, F &&f) {
+    (f.template operator()<Ts>(), ...);
+}
 
 template <typename T>
 concept Integer = requires(T a) {
@@ -83,3 +88,5 @@ template <typename T>
 concept Pointer = requires(T t) { []<typename U>(U *) {}(t); };
 
 } // namespace Meta
+
+} // namespace DEPOS

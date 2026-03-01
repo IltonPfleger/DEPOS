@@ -1,10 +1,13 @@
 #pragma once
 #include <utils/Lists.hpp>
 
+namespace DEPOS {
+
 namespace Allocators {
+
 template <size_t Max> class Buddy {
     using Entry = Node<void>;
-    using List = FIFO<Entry>;
+    using List  = FIFO<Entry>;
 
     static size_t level(size_t size) {
         if (size <= 1) return 0;
@@ -17,8 +20,8 @@ template <size_t Max> class Buddy {
 
     void *remove(size_t size) {
         Entry *node = nullptr;
-        size_t n = level(size);
-        size_t i = n;
+        size_t n    = level(size);
+        size_t i    = n;
         for (; i <= Max; ++i) {
             node = m_free[i].remove();
             if (node) break;
@@ -26,7 +29,7 @@ template <size_t Max> class Buddy {
         if (!node) return nullptr;
         while (i > n) {
             i--;
-            size_t half = 1 << i;
+            size_t half     = 1 << i;
             uintptr_t buddy = reinterpret_cast<uintptr_t>(node) + half;
             m_free[i].insert(reinterpret_cast<Entry *>(buddy));
         }
@@ -34,12 +37,12 @@ template <size_t Max> class Buddy {
     }
 
     void insert(void *ptr, size_t size) {
-        size_t n = level(size);
+        size_t n       = level(size);
         uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
 
         while (n < Max) {
             uintptr_t buddy = addr ^ (1U << n);
-            Entry *node = reinterpret_cast<Entry *>(buddy);
+            Entry *node     = reinterpret_cast<Entry *>(buddy);
 
             if (m_free[n].remove(node)) {
                 if (buddy < addr) addr = buddy;
@@ -57,3 +60,5 @@ template <size_t Max> class Buddy {
 };
 
 } // namespace Allocators
+
+} // namespace DEPOS

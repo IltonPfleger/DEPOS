@@ -278,8 +278,8 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
         // INTERRUPT_ENABLE_RBUE; m_registers->interrupt_enable |=
         // INTERRUPT_ENABLE_RIE;
 
-        for (auto i : MyTraits::IRQs)
-            IC::bind(i, interrupt);
+        // for (auto i : MyTraits::IRQs)
+        //     IC::bind(i, interrupt);
 
         m_registers->ch0_rx_tail_pointer =
             static_cast<uint32_t>(reinterpret_cast<uintptr_t>(m_rx_descriptors + k_number));

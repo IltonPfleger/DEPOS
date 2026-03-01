@@ -27,7 +27,31 @@ template <typename Derived> class NIC : public Observed<const unsigned char *, s
     }
 
   public:
-    using Frame    = Ethernet::Frame;
+    // class Buffer {
+    //   public:
+    //     Buffer()
+    //         : m_offset(0),
+    //           m_length(0) {}
+
+    //    void push(unsigned int size) {
+    //        m_offset -= size;
+    //        m_length += size;
+    //    };
+    //    void pop(unsigned int size) {
+    //        m_offset += size;
+    //        m_length -= size;
+    //    };
+
+    //    size_t length() const { return m_length; }
+
+    //    unsigned char *data() { return m_data + m_offset; };
+
+    //  private:
+    //    unsigned char m_data[2048];
+    //    unsigned int m_offset;
+    //    unsigned int m_length;
+    //};
+
     using Observer = DEPOS::Observer<const unsigned char *, size_t>;
     using Observed = DEPOS::Observed<const unsigned char *, size_t>;
     using Device   = Derived;

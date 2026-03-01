@@ -42,7 +42,7 @@ template <> struct Traits<Scheduler<Thread>> {
 
 template <> struct Traits<Debug> {
     static const bool Error = true;
-    static const bool Trace = true;
+    static const bool Trace = false;
 };
 
 template <> struct Traits<Console> {

@@ -3,9 +3,13 @@
 #include <Meta.hpp>
 #include <Types.hpp>
 
-template <typename V, typename P> using ValueType = typename Meta::IF<Meta::Void<V>::Result, Meta::Empty, V>::Result;
+namespace DEPOS {
 
-template <typename V, typename P> using PriorityType = typename Meta::IF<Meta::Void<P>::Result, Meta::Empty, P>::Result;
+template <typename V, typename P>
+using ValueType = typename Meta::IF<Meta::Void<V>::Result, Meta::Empty, V>::Result;
+
+template <typename V, typename P>
+using PriorityType = typename Meta::IF<Meta::Void<P>::Result, Meta::Empty, P>::Result;
 
 template <typename Value = void, typename Priority = void> struct Node {
     template <typename T> friend class LinkedList;
@@ -16,8 +20,11 @@ template <typename Value = void, typename Priority = void> struct Node {
     auto priority() const { return m_priority; }
     auto value() const { return m_value; }
 
-    Node(auto v) : m_value(v) {}
-    Node(auto v, auto p) : m_value(v), m_priority(p) {}
+    Node(auto v)
+        : m_value(v) {}
+    Node(auto v, auto p)
+        : m_value(v),
+          m_priority(p) {}
 
   private:
     ValueType<Value, Priority> m_value;
@@ -54,7 +61,7 @@ template <typename T> class LIFO : public LinkedList<T> {
 
     T *remove() {
         if (!this->m_head) return nullptr;
-        T *node = this->m_head;
+        T *node      = this->m_head;
         this->m_head = node->m_next;
         return node;
     }
@@ -63,7 +70,7 @@ template <typename T> class LIFO : public LinkedList<T> {
         T *previous = nullptr, *current = this->m_head;
         while (current && current != node) {
             previous = current;
-            current = current->m_next;
+            current  = current->m_next;
         }
         if (!current) return false;
         if (previous)
@@ -88,7 +95,7 @@ template <typename T> class FIFO : public LinkedList<T> {
 
     T *remove() {
         if (!this->m_head) return nullptr;
-        T *node = this->m_head;
+        T *node      = this->m_head;
         this->m_head = this->m_head->m_next;
         if (!this->m_head) m_tail = nullptr;
         return node;
@@ -98,7 +105,7 @@ template <typename T> class FIFO : public LinkedList<T> {
         T *previous = nullptr, *current = this->m_head;
         while (current && current != node) {
             previous = current;
-            current = current->m_next;
+            current  = current->m_next;
         }
         if (!current) return false;
 
@@ -114,3 +121,5 @@ template <typename T> class FIFO : public LinkedList<T> {
   protected:
     T *m_tail = nullptr;
 };
+
+} // namespace DEPOS

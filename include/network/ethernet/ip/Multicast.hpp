@@ -1,40 +1,26 @@
 #pragma once
 
+#include <network/ethernet/ip/IGMP.hpp>
 #include <network/ethernet/ip/IPv4.hpp>
 
 namespace DEPOS {
 
 class Multicast {
-    typedef IPv4::IP IP;
-    typedef Ethernet::MAC MAC;
 
-    struct IGMPv2 {
-        uint8_t m_type;
-        uint8_t m_time;
-        uint16_t m_checksum;
-        IP m_group;
-
-        IGMPv2(uint8_t type, IP group)
-            : m_type(type),
-              m_time(0),
-              m_checksum(0),
-              m_group(group) {}
-    } __attribute__((packed));
-
-    static constexpr IP All = IP(224, 0, 0, 2);
-
-    static MAC convert_multicast_group_ip_to_mac(const IP &group) {
-        return MAC(0x01, 0x00, 0x5E, group[1] & 0x7F, group[2], group[3]);
+    static Ethernet::Address ip_to_mac(const IPv4::Address &ip) {
+        return {0x01, 0x00, 0x5E, ip[1] & 0x7F, ip[2], ip[3]};
     }
 
   public:
-    template <typename Driver> static void join(IPv4::Connection<Driver> *socket, IP group) {
+    template <typename Device> static void join(IPv4::Address group) {
         unsigned char buffer[1024];
-        new (buffer + sizeof(Ethernet::Header) + sizeof(IPv4::Header)) IGMPv2(0x16, group);
-        MAC mac   = convert_multicast_group_ip_to_mac(group);
-        MAC mymac = Driver::instance()->mac();
-        IP myip   = Driver::instance()->ip();
-        socket->send(mac, group, mymac, myip, IPv4::IGMP, buffer, sizeof(IGMPv2));
+
+        new (buffer + sizeof(Ethernet::Header) + sizeof(IPv4::Header))
+            IGMP::Header(IGMP::Report, group);
+
+        auto dmac = mac(group);
+        IPv4::Network<NIC<Device>>::instance()->send(dmac, group, IGMP::Protocol, buffer,
+                                                     sizeof(IGMP::Header));
     }
 
     // template <typename Driver> static bool leave(IP group) {

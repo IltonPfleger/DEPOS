@@ -939,7 +939,7 @@ public:
 
         const Unit & unit() const { return _unit; }
         void unit(const Unit & u) { _unit = u; }
-        const Device_Id & device() const { return const_cast<const Device_Id &>(_device); }
+        const Device_Id device() const { return _device; }
         void device(const Device_Id & u) { _device = u; }
         const Signature & signature() const { return const_cast<const Signature &>(_signature); }
         void signature(const Signature & s) { _signature = s; }
@@ -1208,7 +1208,7 @@ public:
     static const Uncertainty UNCERTAINTY = Transducer::UNCERTAINTY;
     static const bool predictive = (Traits<SmartData>::PREDICTOR != Traits<SmartData>::NONE);
     static const bool active = Transducer::active;
-    static constexpr UInt32 MAX_PAYLOAD_RESPONSE = (Network::Packet::MTU-sizeof(Response))/4; // sockets only have one buffer of MTU size, so, we need to leave space for a read to take place before we send the next value
+    static const UInt32 MAX_PAYLOAD_RESPONSE = (Network::Packet::MTU-sizeof(Response))/4; // sockets only have one buffer of MTU size, so, we need to leave space for a read to take place before we send the next value
 
     typedef typename Unit::Get<UNIT>::Type Value;
     static constexpr UInt16 FRAGMENTS = sizeof(Value)/MAX_PAYLOAD_RESPONSE;
@@ -1601,6 +1601,7 @@ private:
 
     static void* updater(void * args) {
         //UInt32 device, Time expiry, Responsive_SmartData * sd) {
+        //Thread::assignhandler();
         struct arg_struct_updater *arguments = static_cast<struct arg_struct_updater*>(args);
         Responsive_SmartData *sd = arguments->sd;
 
