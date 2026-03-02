@@ -60,7 +60,7 @@ public:
     Timekeeper();
     ~Timekeeper();
 
-    static Time now() { return ts2us(time_stamp()) + _skew; }
+    static Time now() { return time_stamp() + _skew; }
     static bool synchronized() { return (_next_sync > now()); }
     static Time reference() { return _reference; }
 
