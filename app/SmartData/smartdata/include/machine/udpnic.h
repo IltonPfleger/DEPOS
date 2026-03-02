@@ -53,10 +53,8 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Channel::Observer {
                   UInt32 always,
                   UInt32 payload) override {
         db<NIC>(TRC) << "UDPNIC::alloc(dst=" << dst << ", payload=" << payload << ")" << endl;
-        // Buffer *buf = new Buffer(this, 0);
-        void *teste = DEPOS::Memory::alloc(1024 * 8);
-        Buffer *buf = new (teste) Buffer(this, 0);
-        buf->fill(once + always + payload, m_configuration.address, dst, prot);
+        Buffer *buf = new Buffer(this, 0);
+        buf->size(once + always + payload);
         buf->is_microframe           = false;
         buf->trusted                 = false;
         buf->is_new                  = true;
@@ -69,15 +67,18 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Channel::Observer {
 
     int send(Buffer *buf) override {
         db<NIC>(TRC) << "UDPNIC::send(buf=" << buf << ") size: " << buf->size() << endl;
-        unsigned char *buffer = reinterpret_cast<unsigned char *>(DEPOS::Memory::alloc(1024 * 8));
+        unsigned int size     = buf->size();
+        unsigned char *buffer = new unsigned char[2048];
         memcpy(buffer + 42, buf->frame()->data<const unsigned char>(), buf->size());
         m_channel.send(GROUP_ADDRESS, PORT, buffer, buf->size());
-        return buf->size();
+        delete buf;
+        delete[] buffer;
+        return size;
     }
 
     void free(Buffer *buf) override {
         db<NIC>(TRC) << "UDPNIC::free(buf=" << buf << ")" << endl;
-        // delete buf;
+        delete buf;
     }
 
     const Address &address() override {
@@ -113,9 +114,7 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Channel::Observer {
         Protocol prot             = PROTO_TSTP;
         UInt32 size               = buffer->length();
         TSC::Time_Stamp ts        = DEPOS::Timer::time();
-        void *teste               = DEPOS::Memory::alloc(1024 * 8);
-        Buffer *buf               = new (teste) Buffer(this, 0);
-        // Buffer *buf               = new Buffer(this, 0);
+        Buffer *buf               = new Buffer(this, 0);
         buf->fill(size, address(), address(), prot, reinterpret_cast<const void *>(data), size);
         buf->sfdts = ts;
         notify(prot, buf);
