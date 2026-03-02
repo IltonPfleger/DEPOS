@@ -153,7 +153,7 @@ template <typename NIC> class Network : public NIC::Observer, public Observed<co
         return s_instance;
     }
 
-    bool accepts(const Packet *packet) const {
+    bool accepts(const Packet *) const {
         // const Header *header = packet->header();
         // if (Multicast::is_multicast(header->m_to) || header->m_to == Address::broadcast() ||
         //     header->m_to == address())

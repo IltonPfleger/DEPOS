@@ -60,9 +60,6 @@ class VisionFive2 : Driver {
         Reg32(k_aon_crg_base, AONCRG_GMAC0_TX_INV) |= INVERTER;
         Reg32(k_aon_crg_base, AONCRG_GMAC0_AHB) |= GATE;
         Reg32(k_aon_crg_base, AONCRG_GMAC0_AXI) |= GATE;
-        Console::cout << Console::hex
-                      << Reg32(k_aon_crg_base, AONCRG_RESET_STATUS)
-                      << Console::endl;
         Reg32(k_aon_crg_base, AONCRG_SOFTWARE_RESET) |= 3;
         while ((Reg32(k_aon_crg_base, AONCRG_RESET_STATUS) & 3))
             ;
@@ -80,8 +77,7 @@ class VisionFive2 : Driver {
             aoncrg_init();
         }
 
-        Meta::ForEachTypeList(Traits<UART>::Devices{},
-                              []<typename T>() { T::init(); });
+        Meta::ForEachTypeList(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
         riscv64::CPU::barrier();
     }
 };
