@@ -164,8 +164,7 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
     }
 };
 
-template <typename MyTraits> class DWC_Ether_QoS_DMA {
-
+template <typename Buffer, typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
     struct Descriptor {
         uint32_t des0;
         uint32_t des1;
@@ -181,48 +180,30 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
             BUF1V = 1 << 24,
         };
 
+        auto length() const { return des3 & 0x3FFF; }
         uint64_t buffer() const { return (static_cast<uint64_t>(des1) << 32) | des0; }
-
         void buffer(uint64_t addr) {
             des0 = static_cast<uint32_t>(addr);
             des1 = static_cast<uint32_t>(addr >> 32);
         }
     };
 
-    struct Buffer {
-        friend DWC_Ether_QoS_DMA;
-
-        auto data() { return m_data; }
-        auto length() { return m_descriptor->des3 & 0x3FFF; }
-
-      private:
-        Descriptor *m_descriptor;
-        unsigned char m_data[1518];
-        bool m_locked;
-    };
-
-    struct Registers {
-        uint32_t mode;                         // 0x1000
-        uint32_t sysbus_mode;                  // 0x1004
-        uint32_t _1008[(0x1100 - 0x1008) / 4]; // 0x1008
-        uint32_t ch0_control;                  // 0x1100
-        uint32_t ch0_tx_control;               // 0x1104
-        uint32_t ch0_rx_control;               // 0x1108
-        uint32_t _110c;                        // 0x110c
-        uint32_t ch0_txdesc_list_haddress;     // 0x1110
-        uint32_t ch0_txdesc_list_address;      // 0x1114
-        uint32_t ch0_rxdesc_list_haddress;     // 0x1118
-        uint32_t ch0_rxdesc_list_address;      // 0x111c
-        uint32_t ch0_tx_tail_pointer;          // 0x1120
-        uint32_t _1124;                        // 0x1124
-        uint32_t ch0_rx_tail_pointer;          // 0x1128
-        uint32_t ch0_txdesc_ring_length;       // 0x112c
-        uint32_t ch0_rxdesc_ring_length;       // 0x1130
-        uint32_t interrupt_enable;             // 0x1134
-        uint32_t _1138[(0x114c - 0x1138) / 4]; // 0x1138
-        uint32_t current_rx_descriptor;        // 0x114c
-        uint32_t _1150[(0x1160 - 0x1150) / 4]; // 0x1150
-        uint32_t interrupt_status;             // 0x1160
+    enum Registers {
+        DMA_MODE               = 0x1000,
+        DMA_SYSBUS_MODE        = 0x1004,
+        CH0_CONTROL            = 0x1100,
+        CH0_TX_CONTROL         = 0x1104,
+        CH0_RX_CONTROL         = 0x1108,
+        CH0_TXDESC_LIST_HADDR  = 0x1110,
+        CH0_TXDESC_LIST_ADDR   = 0x1114,
+        CH0_RXDESC_LIST_HADDR  = 0x1118,
+        CH0_RXDESC_LIST_ADDR   = 0x111c,
+        CH0_TX_TAIL_POINTER    = 0x1120,
+        CH0_RX_TAIL_POINTER    = 0x1128,
+        CH0_TXDESC_RING_LENGTH = 0x112c,
+        CH0_RXDESC_RING_LENGTH = 0x1130,
+        CH0_INTERRUPT_ENABLE   = 0x1134,
+        CH0_INTERRUPT_STATUS   = 0x1160,
     };
 
     enum Bits {
@@ -239,95 +220,83 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
     };
 
   public:
-    DWC_Ether_QoS_DMA() {
+    DWC_Ether_QoS_DMA()
+        : m_tx_head(0),
+          m_rx_head(0) {
         TraceIn();
-
-        s_instance  = this;
-        m_tx_head   = 0;
-        m_rx_head   = 0;
-        m_registers = reinterpret_cast<volatile Registers *>(MyTraits::Address + 0x1000);
 
         memset(m_tx_descriptors, 0, k_number * sizeof(Descriptor));
         Cache::flush(m_tx_descriptors, k_number * sizeof(Descriptor));
 
         for (size_t i = 0; i < k_number; i++) {
-            m_rx_buffers[i].m_descriptor = &m_rx_descriptors[i];
-            m_rx_descriptors[i].buffer(reinterpret_cast<uintptr_t>(m_rx_buffers[i].m_data));
-            m_rx_descriptors[i].des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
-            Cache::flush(&m_rx_descriptors[i], sizeof(Descriptor));
-            m_tx_buffers[i].m_locked = false;
+            Buffer &buffer         = m_rx_buffers[i];
+            Descriptor &descriptor = m_rx_descriptors[i];
+            buffer.m_references    = 0;
+            descriptor.buffer(reinterpret_cast<uintptr_t>(buffer.m_data));
+            descriptor.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
+            Cache::flush(&descriptor, sizeof(Descriptor));
         }
 
-        m_registers->sysbus_mode |= SYSBUS_MODE_EAME;
+        Reg32(m_address, DMA_SYSBUS_MODE) |= SYSBUS_MODE_EAME;
 
-        m_registers->ch0_rxdesc_list_address =
-            reinterpret_cast<uintptr_t>(m_rx_descriptors) & 0xFFFFFFFF;
-        m_registers->ch0_rxdesc_list_haddress = reinterpret_cast<uintptr_t>(m_rx_descriptors) >> 32;
-        m_registers->ch0_rxdesc_ring_length   = k_number - 1;
+        uintptr_t rx_addr                        = reinterpret_cast<uintptr_t>(m_rx_descriptors);
+        Reg32(m_address, CH0_RXDESC_LIST_ADDR)   = static_cast<uint32_t>(rx_addr);
+        Reg32(m_address, CH0_RXDESC_LIST_HADDR)  = static_cast<uint32_t>(rx_addr >> 32);
+        Reg32(m_address, CH0_RXDESC_RING_LENGTH) = k_number - 1;
 
-        m_registers->ch0_txdesc_list_address =
-            reinterpret_cast<uintptr_t>(m_tx_descriptors) & 0xFFFFFFFF;
-        m_registers->ch0_txdesc_list_haddress = reinterpret_cast<uintptr_t>(m_tx_descriptors) >> 32;
-        m_registers->ch0_txdesc_ring_length   = k_number - 1;
+        uintptr_t tx_addr                        = reinterpret_cast<uintptr_t>(m_tx_descriptors);
+        Reg32(m_address, CH0_TXDESC_LIST_ADDR)   = static_cast<uint32_t>(tx_addr);
+        Reg32(m_address, CH0_TXDESC_LIST_HADDR)  = static_cast<uint32_t>(tx_addr >> 32);
+        Reg32(m_address, CH0_TXDESC_RING_LENGTH) = k_number - 1;
 
-        m_registers->ch0_tx_control |= 1;
-        m_registers->ch0_rx_control |= 1;
+        Reg32(m_address, CH0_TX_CONTROL) |= 1;
+        Reg32(m_address, CH0_RX_CONTROL) |= 1;
 
-        // m_registers->interrupt_enable = INTERRUPT_ENABLE_NIE |
-        // INTERRUPT_ENABLE_AIE; m_registers->interrupt_enable |=
-        // INTERRUPT_ENABLE_RBUE; m_registers->interrupt_enable |=
-        // INTERRUPT_ENABLE_RIE;
-
-        // for (auto i : MyTraits::IRQs)
-        //     IC::bind(i, interrupt);
-
-        m_registers->ch0_rx_tail_pointer =
-            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(m_rx_descriptors + k_number));
+        Reg32(m_address, CH0_RX_TAIL_POINTER) =
+            static_cast<uint32_t>(rx_addr + (k_number * sizeof(Descriptor)));
 
         TraceOut();
-    }
-
-    static void interrupt(unsigned int) { s_instance->interrupt(); }
-
-    void interrupt() {
-        volatile unsigned int &status = m_registers->interrupt_status;
-        unsigned int done             = 0;
-
-        // TraceIn();
-
-        // if (status & INTERRUPT_STATUS_RI) {
-        // done |= INTERRUPT_STATUS_RI;
-        // }
-
-        // if (status & INTERRUPT_STATUS_RBU) {
-        // Descriptor *current = reinterpret_cast<Descriptor
-        // *>(m_registers->current_rx_descriptor); unsigned int i =
-        // reinterpret_cast<long>(current - m_rx_descriptors); if
-        // (!m_rx_buffers[i].m_locked) { free(&m_rx_buffers[i]);
-        //}
-        // done |= INTERRUPT_STATUS_RBU;
-        // }
-
-        status |= done;
     }
 
     static void reset() {
-        TraceIn();
-        auto &reg = *reinterpret_cast<volatile unsigned int *>(MyTraits::Address + 0x1000);
-        reg |= MODE_SOFTWARE_RESET;
-        while (reg & MODE_SOFTWARE_RESET)
+        Reg32(m_address, DMA_MODE) |= MODE_SOFTWARE_RESET;
+        while (Reg32(m_address, DMA_MODE) & MODE_SOFTWARE_RESET)
             ;
-        TraceOut();
     }
 
-    void free(Buffer *b) {
-        b->m_locked = false;
-        b->m_descriptor->buffer(reinterpret_cast<uintptr_t>(b->m_data));
-        b->m_descriptor->des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
-        b->m_descriptor->des2 = 0;
-        Cache::flush(b->m_descriptor, sizeof(Descriptor));
-        m_registers->ch0_rx_tail_pointer =
-            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(b->m_descriptor));
+    // static void interrupt(unsigned int) { s_instance->interrupt(); }
+
+    // void interrupt() {
+    //     volatile unsigned int &status = m_registers->interrupt_status;
+    //     unsigned int done             = 0;
+
+    //    // TraceIn();
+
+    //    // if (status & INTERRUPT_STATUS_RI) {
+    //    // done |= INTERRUPT_STATUS_RI;
+    //    // }
+
+    //    // if (status & INTERRUPT_STATUS_RBU) {
+    //    // Descriptor *current = reinterpret_cast<Descriptor
+    //    // *>(m_registers->current_rx_descriptor); unsigned int i =
+    //    // reinterpret_cast<long>(current - m_rx_descriptors); if
+    //    // (!m_rx_buffers[i].m_locked) { free(&m_rx_buffers[i]);
+    //    //}
+    //    // done |= INTERRUPT_STATUS_RBU;
+    //    // }
+
+    //    status |= done;
+    //}
+
+    void release(Buffer *b) {
+        Descriptor &d = m_rx_descriptors[b->m_id];
+        d.buffer(reinterpret_cast<uintptr_t>(b->m_data));
+        d.des2 = 0;
+        d.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
+        Cache::flush(&d, sizeof(Descriptor));
+
+        Reg32(m_address, CH0_RX_TAIL_POINTER) =
+            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&d));
     }
 
     int send(const void *p, size_t s) {
@@ -341,45 +310,42 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA {
         Cache::flush(p, s);
 
         m_tx_head = (m_tx_head + 1) % k_number;
-        m_registers->ch0_tx_tail_pointer =
+
+        Reg32(m_address, CH0_TX_TAIL_POINTER) =
             static_cast<uint32_t>(reinterpret_cast<uintptr_t>(m_tx_descriptors + m_tx_head));
 
-        while (1) {
-            if (!(d.des3 & Descriptor::OWN)) {
-                if (d.des3 & Descriptor::ES) break;
-                return s;
-            }
+        while (true) {
             Cache::flush(&d, sizeof(Descriptor));
+            if (!(d.des3 & Descriptor::OWN)) {
+                return (d.des3 & Descriptor::ES) ? 0 : s;
+            }
         }
-        return 0;
     }
 
     Buffer *receive() {
-        unsigned int i = m_rx_head;
-
-        Descriptor *descriptor = &m_rx_descriptors[i];
+        Descriptor *descriptor = &m_rx_descriptors[m_rx_head];
+        Buffer *buffer         = &m_rx_buffers[m_rx_head];
 
         Cache::flush(descriptor, sizeof(Descriptor));
 
-        if (descriptor->des3 & Descriptor::OWN) {
-            return nullptr;
-        }
+        if (descriptor->des3 & Descriptor::OWN) return nullptr;
+
+        Cache::flush(buffer, sizeof(Buffer));
+
+        buffer->m_length     = descriptor->length();
+        buffer->m_references = 1;
+        buffer->m_id         = m_rx_head;
 
         m_rx_head = (m_rx_head + 1) % k_number;
-
-        Cache::flush(&m_rx_buffers[i], sizeof(Buffer));
-
-        m_rx_buffers[i].m_locked = true;
-
-        return &m_rx_buffers[i];
+        return buffer;
     }
 
   private:
+    static constexpr uintptr_t m_address = MyTraits::Address;
     static inline DWC_Ether_QoS_DMA *s_instance;
     static constexpr size_t k_number = 10;
 
   private:
-    volatile Registers *m_registers;
     Descriptor m_tx_descriptors[k_number];
     Descriptor m_rx_descriptors[k_number];
     Buffer m_rx_buffers[k_number];
@@ -415,15 +381,26 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     }
 };
 
-template <typename Tag> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<Traits<DWC_Ether_QoS<Tag>>> {
-    using MyTraits = Traits<DWC_Ether_QoS<Tag>>;
-    using DMA      = DWC_Ether_QoS_DMA<MyTraits>;
-    using MTL      = DWC_Ether_QoS_MTL<MyTraits::Address>;
-    using PHY      = DWC_Ether_QoS_PHY<MyTraits::Address>;
-    using MAC      = DWC_Ether_QoS_MAC<MyTraits::Address>;
+template <typename Tag> class DWC_Ether_QoS {
 
-    DWC_Ether_QoS()
-        : DMA() {}
+    using MyTraits = Traits<DWC_Ether_QoS<Tag>>;
+
+    class Buffer {
+      public:
+        auto data() { return m_data; }
+        auto length() { return m_length; }
+        size_t m_length;
+        unsigned int m_id;
+        unsigned char m_data[Ethernet::MTU + sizeof(typename Ethernet::Header)];
+        unsigned int m_references;
+    };
+
+    using DMA = DWC_Ether_QoS_DMA<Buffer, MyTraits>;
+    using MTL = DWC_Ether_QoS_MTL<MyTraits::Address>;
+    using PHY = DWC_Ether_QoS_PHY<MyTraits::Address>;
+    using MAC = DWC_Ether_QoS_MAC<MyTraits::Address>;
+
+    DWC_Ether_QoS() { m_dma = new DMA(); }
 
   public:
     static void init() {
@@ -433,7 +410,6 @@ template <typename Tag> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<Traits<DW
         MTL::init();
         s_instance = new (Heap::SYSTEM) DWC_Ether_QoS();
         MAC::init();
-        // Alarm::udelay(10);
         TraceOut();
     }
 
@@ -442,10 +418,16 @@ template <typename Tag> class DWC_Ether_QoS : public DWC_Ether_QoS_DMA<Traits<DW
         return s_instance;
     }
 
-    auto address() { return GenericAddress<6>(MyTraits::MAC); }
+    auto send(const void *d, size_t s) { return m_dma->send(d, s); }
+    Buffer *receive() { return m_dma->receive(); }
+    void release(Buffer *b) { m_dma->release(b); }
+    Ethernet::Address address() { return MyTraits::MAC; }
 
   private:
     static inline DWC_Ether_QoS *s_instance;
+
+  private:
+    DMA *m_dma;
 };
 
 } // namespace DEPOS
