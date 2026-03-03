@@ -2,47 +2,45 @@
 
 #include <Spin.hpp>
 #include <Thread.hpp>
-#include <network/ethernet/Ethernet.hpp>
 #include <utils/Observer.hpp>
 
 namespace DEPOS {
 
-template <typename Derived> class NIC : public Observed<const unsigned char *, size_t> {
+template <typename Family> class NIC : public Observed<const unsigned char *, size_t> {
   public:
     using Observer = DEPOS::Observer<const unsigned char *, size_t>;
     using Observed = DEPOS::Observed<const unsigned char *, size_t>;
-    using Device   = Derived;
 
-  private:
-    NIC() {
-        m_device = Derived::instance();
-        new Thread(worker, this);
+    class Buffer {
+      public:
+        auto data() { return m_data; }
+        auto length() { return m_length; }
+        size_t m_length;
+        unsigned int m_id;
+        unsigned char m_data[sizeof(typename Family::Frame)];
+        unsigned int m_references;
     };
 
+    virtual ~NIC() {}
+    virtual int send(const void *b, size_t s) = 0;
+    virtual void release(Buffer *b)           = 0;
+    virtual Buffer *receive()                 = 0;
+
+  protected:
+    void init() { new Thread(worker, this); }
+
+  private:
     static void *worker(void *p) {
         auto *self = reinterpret_cast<NIC *>(p);
         while (1) {
-            auto *buffer = self->m_device->receive();
+            auto *buffer = self->receive();
             if (buffer) {
                 self->notify(buffer->data(), buffer->length());
-                self->m_device->release(buffer);
+                self->release(buffer);
             }
         }
         return 0;
     }
-
-  public:
-    static void init() { s_instance = new NIC(); }
-    static auto *instance() { return s_instance; }
-    int send(const void *b, size_t s) { return m_device->send(b, s); };
-    auto address() { return m_device->address(); }
-
-  private:
-    static inline NIC *s_instance;
-
-  private:
-    Spin m_spin;
-    Derived *m_device;
 };
 
 } // namespace DEPOS

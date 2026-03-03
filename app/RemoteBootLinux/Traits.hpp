@@ -5,7 +5,6 @@
 
 namespace DEPOS {
 
-template <typename> class NIC;
 class Virtual;
 namespace virtio {
 template <typename, unsigned long> class Console;
@@ -24,7 +23,7 @@ template <> struct Traits<Application> {
 
 template <> struct Traits<Virtual> {
     typedef Meta::TypeList<virtio::Console<UART16550<UART0>, 0x30000000>,
-                           virtio::Network<NIC<DWC_Ether_QoS<GMAC0>>, 0x30200000>,
+                           virtio::Network<DWC_Ether_QoS<GMAC0>, 0x30200000>,
                            riscv64::VirtualCPU>
         Devices;
 

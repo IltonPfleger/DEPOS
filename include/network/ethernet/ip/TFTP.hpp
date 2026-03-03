@@ -5,8 +5,8 @@
 
 namespace DEPOS {
 
-template <typename Driver> class TFTP : Observer<const UDP::Datagram *> {
-    using Network = IPv4::Network<NIC<Driver>>;
+template <typename Device> class TFTP : Observer<const UDP::Datagram *> {
+    using Network = IPv4::Network<Device>;
 
     enum Opcode : uint16_t {
         RRQ   = 1,

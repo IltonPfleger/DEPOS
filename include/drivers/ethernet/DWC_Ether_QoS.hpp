@@ -4,6 +4,7 @@
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
 #include <network/GenericAddress.hpp>
+#include <network/ethernet/Ethernet.hpp>
 #include <utils/Debug.hpp>
 #include <utils/string.hpp>
 
@@ -381,50 +382,35 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     }
 };
 
-template <typename Tag> class DWC_Ether_QoS {
-
+template <typename Tag> class DWC_Ether_QoS final : public NIC<Ethernet> {
     using MyTraits = Traits<DWC_Ether_QoS<Tag>>;
+    using DMA      = DWC_Ether_QoS_DMA<Buffer, MyTraits>;
+    using MTL      = DWC_Ether_QoS_MTL<MyTraits::Address>;
+    using PHY      = DWC_Ether_QoS_PHY<MyTraits::Address>;
+    using MAC      = DWC_Ether_QoS_MAC<MyTraits::Address>;
 
-    class Buffer {
-      public:
-        auto data() { return m_data; }
-        auto length() { return m_length; }
-        size_t m_length;
-        unsigned int m_id;
-        unsigned char m_data[Ethernet::MTU + sizeof(typename Ethernet::Header)];
-        unsigned int m_references;
-    };
-
-    using DMA = DWC_Ether_QoS_DMA<Buffer, MyTraits>;
-    using MTL = DWC_Ether_QoS_MTL<MyTraits::Address>;
-    using PHY = DWC_Ether_QoS_PHY<MyTraits::Address>;
-    using MAC = DWC_Ether_QoS_MAC<MyTraits::Address>;
-
-    DWC_Ether_QoS() { m_dma = new DMA(); }
-
-  public:
-    static void init() {
+    DWC_Ether_QoS() {
         TraceIn();
         DMA::reset();
         PHY::init();
         MTL::init();
-        s_instance = new (Heap::SYSTEM) DWC_Ether_QoS();
+        m_dma = new DMA();
         MAC::init();
+        NIC::init();
         TraceOut();
     }
 
-    static auto *instance() {
-        ERROR(!s_instance);
-        return s_instance;
-    }
+  public:
+    int send(const void *d, size_t s) override { return m_dma->send(d, s); }
+    Buffer *receive() override { return m_dma->receive(); }
+    void release(Buffer *b) override { m_dma->release(b); }
 
-    auto send(const void *d, size_t s) { return m_dma->send(d, s); }
-    Buffer *receive() { return m_dma->receive(); }
-    void release(Buffer *b) { m_dma->release(b); }
     Ethernet::Address address() { return MyTraits::MAC; }
 
-  private:
-    static inline DWC_Ether_QoS *s_instance;
+    static auto *instance() {
+        static DWC_Ether_QoS instance;
+        return &instance;
+    }
 
   private:
     DMA *m_dma;
