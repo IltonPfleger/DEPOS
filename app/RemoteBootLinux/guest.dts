@@ -8,7 +8,7 @@
 
     chosen {
 		bootargs = "console=hvc0 loglevel=8";
-        stdout-path = "/soc/virtio_mmio@30000000";
+		stdout-path = "virtio_mmio@1";
 		linux,initrd-start = <0x0 0x0>;
         linux,initrd-end = <0x0 0x0>;
     };
@@ -36,10 +36,24 @@
         };
     };
 
-    memory {
+    memory@0 {
         device_type = "memory";
         reg = <0x00 0x00 0x00 0x00>;
     };
+
+	virtio_mmio@1 {
+		compatible = "-----------";
+		reg = <0x0 0x0 0x0 0x0>;
+		interrupts = <0>;
+		interrupt-parent = <0x2>;
+	};
+
+	virtio_mmio@2 {
+		compatible = "-----------";
+		reg = <0x0 0x0 0x0 0x0>;
+		interrupts = <0>;
+		interrupt-parent = <0x2>;
+	};
 
     soc {
         #address-cells = <0x02>;
@@ -56,19 +70,5 @@
             interrupts-extended = <&cpu0_intc 0x0b &cpu0_intc 0x09>;
             phandle = <0x02>; 
         };
-
-        virtio_mmio@30000000 {
-            compatible = "virtio,mmio";
-            reg = <0x00 0x30000000 0x00 0x1000>;
-			interrupts = <32>;
-			interrupt-parent = <&plic>;
-		};
-
-		virtio_mmio@30200000 {
-			compatible = "virtio,mmio";
-			reg = <0x0 0x30200000 0x0 0x1000>;
-			interrupts = <50>;
-			interrupt-parent = <&plic>;
-		};
     };
 };

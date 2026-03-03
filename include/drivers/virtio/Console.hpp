@@ -82,6 +82,7 @@ class Console : public Handler<Console<Device, Base>>,
   public:
     static constexpr uintptr_t NumberOfDescriptors = 32;
     static constexpr uintptr_t Address             = Base;
+    static constexpr uintptr_t IRQ                 = 10;
     static constexpr uintptr_t Size                = sizeof(LegacyHeader);
 
   private:

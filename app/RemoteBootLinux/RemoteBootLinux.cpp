@@ -20,7 +20,7 @@ class LinuxDeviceTree {
   public:
     bool valid() { return CPU::be32toh(m_magic) == 0xD00DFEED; }
 
-    bool edit(const char *node, const char *property, void *value, unsigned size) {
+    void edit(const char *node, const char *property, const void *value, unsigned size) {
         unsigned structs_offset = CPU::be32toh(m_off_dt_struct);
         unsigned structs_size   = CPU::be32toh(m_size_dt_struct);
         unsigned strings_offset = CPU::be32toh(m_off_dt_strings);
@@ -36,7 +36,6 @@ class LinuxDeviceTree {
 
             if (token == FDT_BEGIN_NODE) {
                 const char *name = (const char *)current;
-                // Usando strcmp simples como solicitado
                 if (strcmp(name, node) == 0) {
                     is_target_node = true;
                 } else {
@@ -52,17 +51,11 @@ class LinuxDeviceTree {
                 if (is_target_node && strcmp(prop_name, property) == 0) {
                     if (prop_len == size) {
                         memcpy(current, value, size);
-                        // Não damos return true aqui imediatamente para manter
-                        // o ponteiro 'current' íntegro, ou garantimos que ele
-                        // pule o valor antes de retornar.
                         current += (prop_len + 3) & ~3;
-                        return true;
+                        return;
                     }
                 }
 
-                // --- O ERRO ESTAVA AQUI ---
-                // Você precisa pular o conteúdo da propriedade (alinhado a 4
-                // bytes) mesmo que não seja a propriedade que você quer editar.
                 current += (prop_len + 3) & ~3;
             } else if (token == FDT_END_NODE) {
                 is_target_node = false;
@@ -70,7 +63,7 @@ class LinuxDeviceTree {
                 break;
             }
         }
-        return false;
+        ERROR(node, property, const_cast<void *>(value), size);
     }
 
   private:
@@ -105,60 +98,81 @@ int main() {
     constexpr long LinuxMemorySize = 256 * MB;
 
     unsigned char *buffer = reinterpret_cast<unsigned char *>(Memory::alloc(LinuxMemorySize));
+    uintptr_t address     = reinterpret_cast<uintptr_t>(buffer);
+
     memset(buffer, 0, LinuxMemorySize);
 
     unsigned char *current = buffer;
+    unsigned int remaining = LinuxMemorySize;
 
     TFTP<Driver> tftp("192.168.1.100");
 
     unsigned char *kernel = current;
-    size_t kernel_size    = tftp.request("Image", kernel, LinuxMemorySize);
+    size_t kernel_size    = tftp.request("Image", kernel, remaining);
     current += kernel_size;
+    remaining -= kernel_size;
 
     current              = align(current, MB);
     LinuxDeviceTree *dtb = reinterpret_cast<LinuxDeviceTree *>(current);
-    size_t dtb_size      = tftp.request("guest.dtb", dtb, LinuxMemorySize - kernel_size);
+    size_t dtb_size      = tftp.request("guest.dtb", dtb, remaining);
     current += dtb_size;
+    remaining -= kernel_size;
 
     current                  = align(current, MB);
     unsigned char *initramfs = current;
-    size_t initramfs_size =
-        tftp.request("initramfs.cpio", initramfs, LinuxMemorySize - kernel_size - dtb_size);
+    size_t initramfs_size    = tftp.request("initramfs.cpio", initramfs, remaining);
+    remaining -= initramfs_size;
 
     if (!dtb->valid()) {
         Console::cout << "LinuxDeviceTree: Invalid!\n";
         return 1;
     }
 
-    unsigned long memory_start_base = reinterpret_cast<long>(buffer);
-    unsigned memory_start_hi        = static_cast<unsigned>(memory_start_base >> 32);
-    unsigned memory_start_lo        = static_cast<unsigned>(memory_start_base & 0xFFFFFFFF);
-    unsigned memory_size_hi         = static_cast<unsigned>(LinuxMemorySize >> 32);
-    unsigned memory_size_lo         = static_cast<unsigned>(LinuxMemorySize & 0xFFFFFFFF);
-    unsigned memory[]               = {CPU::htobe32(memory_start_hi), CPU::htobe32(memory_start_lo),
-                                       CPU::htobe32(memory_size_hi), CPU::htobe32(memory_size_lo)};
+    unsigned int irq;
+    unsigned int regs[4];
 
-    long initramfs_start = CPU::htobe64(reinterpret_cast<long>(initramfs));
-    long initramfs_end   = CPU::htobe64(reinterpret_cast<long>(initramfs) + initramfs_size);
+    // Memory
+    regs[0] = CPU::htobe32(address >> 32);
+    regs[1] = CPU::htobe32(address);
+    regs[2] = CPU::htobe32(LinuxMemorySize >> 32);
+    regs[3] = CPU::htobe32(LinuxMemorySize);
+    dtb->edit("memory@0", "reg", regs, sizeof(regs));
 
-    if (!dtb->edit("chosen", "linux,initrd-start", &initramfs_start, sizeof(initramfs_start))) {
-        Console::cout << "LinuxDeviceTree: failed to update linux,initrd-start\n";
-    };
+    // Initramfs
+    regs[0] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs) >> 32);
+    regs[1] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs));
+    regs[2] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs + initramfs_size) >> 32);
+    regs[3] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs + initramfs_size));
+    dtb->edit("chosen", "linux,initrd-start", regs, sizeof(regs[0]) * 2);
+    dtb->edit("chosen", "linux,initrd-end", &regs[2], sizeof(regs[0]) * 2);
 
-    if (!dtb->edit("chosen", "linux,initrd-end", &initramfs_end, sizeof(initramfs_end))) {
-        Console::cout << "LinuxDeviceTree: failed to update linux,initrd-end\n";
-    }
+    // Serial
+    typedef Meta::GetFromTypeList<Traits<Virtual>::Devices, 0>::Result Serial;
+    irq     = CPU::htobe32(Serial::IRQ);
+    regs[0] = CPU::htobe32(Serial::Address >> 32);
+    regs[1] = CPU::htobe32(Serial::Address);
+    regs[2] = CPU::htobe32(0x0);
+    regs[3] = CPU::htobe32(0x1000);
+    dtb->edit("virtio_mmio@1", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
+    dtb->edit("virtio_mmio@1", "reg", regs, sizeof(regs));
+    dtb->edit("virtio_mmio@1", "interrupts", &irq, sizeof(irq));
 
-    if (!dtb->edit("memory", "reg", &memory, sizeof(memory))) {
-        Console::cout << "LinuxDeviceTree: failed to update memory\n";
-    }
+    // Network
+    typedef Meta::GetFromTypeList<Traits<Virtual>::Devices, 1>::Result Network;
+    irq     = CPU::htobe32(Network::IRQ);
+    regs[0] = CPU::htobe32(Network::Address >> 32);
+    regs[1] = CPU::htobe32(Network::Address);
+    regs[2] = CPU::htobe32(0x0);
+    regs[3] = CPU::htobe32(0x1000);
+    dtb->edit("virtio_mmio@2", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
+    dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
+    dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
 
     Entry entry = reinterpret_cast<Entry>(kernel);
 
     Console::cout << "\n *** Linux ***\n";
 
-    new VirtualCPU(entry, MemoryMap::Entry{memory_start_base, memory_start_base + LinuxMemorySize},
-                   0, dtb);
+    new VirtualCPU(entry, MemoryMap::Entry{address, address + LinuxMemorySize}, 0, dtb);
 
     TraceOut();
 

@@ -23,9 +23,9 @@ template <> struct Traits<Application> {
 };
 
 template <> struct Traits<Virtual> {
-    typedef Meta::TypeList<riscv64::VirtualCPU,
-                           virtio::Console<UART16550<UART0>, 0x30000000>,
-                           virtio::Network<NIC<DWC_Ether_QoS<GMAC0>>, 0x30200000>>
+    typedef Meta::TypeList<virtio::Console<UART16550<UART0>, 0x30000000>,
+                           virtio::Network<NIC<DWC_Ether_QoS<GMAC0>>, 0x30200000>,
+                           riscv64::VirtualCPU>
         Devices;
 
     // typedef Meta::TypeList<riscv64::VirtualCPU, virtio::Console<UART16550<UART0>, 0x30000000>>
