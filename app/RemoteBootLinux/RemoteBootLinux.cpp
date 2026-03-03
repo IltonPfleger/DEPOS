@@ -63,7 +63,7 @@ class LinuxDeviceTree {
                 break;
             }
         }
-        ERROR(node, property, const_cast<void *>(value), size);
+        ERROR(true, node, property, const_cast<void *>(value), size);
     }
 
   private:
@@ -87,12 +87,12 @@ unsigned char *align(unsigned char *p, long alignment) {
 
 int main() {
 
-    typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Driver;
+    typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
     typedef void (*Entry)(int, LinuxDeviceTree *);
 
-    Driver::init();
+    // Driver::init();
 
-    NIC<Driver>::init();
+    // NIC<Driver>::init();
 
     constexpr long MB              = 1024 * 1024;
     constexpr long LinuxMemorySize = 256 * MB;
@@ -105,7 +105,7 @@ int main() {
     unsigned char *current = buffer;
     unsigned int remaining = LinuxMemorySize;
 
-    TFTP<Driver> tftp("192.168.1.100");
+    TFTP<Device> tftp("192.168.1.100");
 
     unsigned char *kernel = current;
     size_t kernel_size    = tftp.request("Image", kernel, remaining);
@@ -123,10 +123,7 @@ int main() {
     size_t initramfs_size    = tftp.request("initramfs.cpio", initramfs, remaining);
     remaining -= initramfs_size;
 
-    if (!dtb->valid()) {
-        Console::cout << "LinuxDeviceTree: Invalid!\n";
-        return 1;
-    }
+    ERROR(!dtb->valid(), "Invalid Device Tree!\n");
 
     unsigned int irq;
     unsigned int regs[4];
@@ -168,13 +165,10 @@ int main() {
     dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
     dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
 
-    Entry entry = reinterpret_cast<Entry>(kernel);
-
     Console::cout << "\n *** Linux ***\n";
 
+    Entry entry = reinterpret_cast<Entry>(kernel);
     new VirtualCPU(entry, MemoryMap::Entry{address, address + LinuxMemorySize}, 0, dtb);
-
-    TraceOut();
 
     return 0;
 }

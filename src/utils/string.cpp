@@ -5,7 +5,7 @@
 extern "C" {
 
 void *memcpy(void *destination, const void *source, size_t n) {
-    uint8_t *d = static_cast<uint8_t *>(destination);
+    uint8_t *d       = static_cast<uint8_t *>(destination);
     const uint8_t *s = static_cast<const uint8_t *>(source);
 
     while (n--) {
@@ -126,7 +126,7 @@ char *strchr(const char *str, int ch) {
 
 long atol(const char *str) {
     long result = 0;
-    int sign = 1;
+    int sign    = 1;
 
     while (*str == ' ' || *str == '\t' || *str == '\n')
         ++str;
@@ -147,4 +147,5 @@ long atol(const char *str) {
 }
 
 void *malloc(unsigned long size) { return new unsigned char[size]; }
+int atexit(void (*)(void)) { return 0; }
 }

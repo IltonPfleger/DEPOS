@@ -19,9 +19,9 @@ template <typename NIC, typename Network> class ARP : public NIC::Observer {
         uint8_t plen{sizeof(typename Network::Address)};
         uint16_t operation{0};
 
-        Ethernet::MAC sha;
+        Ethernet::Address sha;
         Network::Address spa;
-        Ethernet::MAC tha;
+        Ethernet::Address tha;
         Network::Address tpa;
 
     } __attribute__((packed));
@@ -29,7 +29,7 @@ template <typename NIC, typename Network> class ARP : public NIC::Observer {
     class Table {
       private:
         struct Entry {
-            Ethernet::MAC mac{};
+            Ethernet::Address mac{};
             Network::Address ip{};
             Thread::Queue waiting{};
             bool valid{false};
@@ -42,14 +42,14 @@ template <typename NIC, typename Network> class ARP : public NIC::Observer {
         static uint8_t hash(const Network::Address &addr) { return addr[3]; }
 
       public:
-        void update(const Network::Address &ip, const Ethernet::MAC &mac) {
+        void update(const Network::Address &ip, const Ethernet::Address &mac) {
             auto &entry = table[hash(ip)];
             entry.ip    = ip;
             entry.mac   = mac;
             entry.valid = true;
         }
 
-        bool resolve(const Network::Address &ip, Ethernet::MAC &mac) {
+        bool resolve(const Network::Address &ip, Ethernet::Address &mac) {
             auto &entry = table[hash(ip)];
 
             if (entry.valid && entry.ip == ip) {
@@ -107,8 +107,8 @@ template <typename NIC, typename Network> class ARP : public NIC::Observer {
         }
     }
 
-    Ethernet::MAC resolve(const Network::Address &ip) {
-        Ethernet::MAC mac;
+    Ethernet::Address resolve(const Network::Address &ip) {
+        Ethernet::Address mac;
 
         while (true) {
             m_spin.acquire();
@@ -142,7 +142,7 @@ template <typename NIC, typename Network> class ARP : public NIC::Observer {
         m_spin.release();
     }
 
-    void send_packet(const Ethernet::MAC &tha, const Network::Address &tpa, Opcode op) {
+    void send_packet(const Ethernet::Address &tha, const Network::Address &tpa, Opcode op) {
 
         alignas(64) unsigned char buffer[sizeof(Ethernet::Header) + sizeof(Header)];
 
@@ -153,7 +153,7 @@ template <typename NIC, typename Network> class ARP : public NIC::Observer {
         arp->operation = CPU::htobe16(static_cast<uint16_t>(op));
         arp->sha       = m_nic->address();
         arp->spa       = m_network->address();
-        arp->tha       = (op == Opcode::REQUEST) ? Ethernet::MAC("00:00:00:00:00:00") : tha;
+        arp->tha       = (op == Opcode::REQUEST) ? Ethernet::Address("00:00:00:00:00:00") : tha;
         arp->tpa       = tpa;
 
         m_nic->send(buffer, sizeof(buffer));

@@ -161,7 +161,7 @@ template <typename NIC> class Network : public NIC::Observer, public Observed<co
         return true;
     }
 
-    auto address() const { return GenericAddress<4>(Traits<typename NIC::Device>::IP); }
+    auto address() const { return GenericAddress<4>(Traits<NIC>::IP); }
 
     void send(Address dip, uint8_t protocol, void *data, uint16_t length) {
         Ethernet::Address mac;

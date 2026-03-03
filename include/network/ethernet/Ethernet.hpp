@@ -10,7 +10,6 @@ class Ethernet {
   public:
     enum { MTU = 1500 };
     typedef GenericAddress<6> Address;
-    typedef Address MAC;
     typedef uint16_t Protocol;
     typedef unsigned char Data[MTU];
     typedef uint32_t CRC;
@@ -30,25 +29,16 @@ class Ethernet {
         Address m_to;
         Address m_from;
         Protocol m_protocol;
-
     } __attribute__((packed));
 
-    // class Frame {
-    //   public:
-    //     Frame(Address to, Address from, Protocol protocol)
-    //         : m_header(to, from, protocol) {}
+    class Frame {
+      private:
+        Header m_header;
+        Data m_data;
+        CRC m_crc;
+    };
 
-    //    const Header *header() const { return &m_header; }
-    //    const Data &data() const { return m_data; }
-    //    Data &data() { return m_data; }
-
-    //  private:
-    //    Header m_header;
-    //    Data m_data;
-    //    CRC m_crc;
-    //} __attribute__((packed));
-
-    static constexpr MAC Broadcast = MAC(255, 255, 255, 255, 255, 255);
+    static constexpr auto Broadcast = Address(255, 255, 255, 255, 255, 255);
 };
 
 } // namespace DEPOS
