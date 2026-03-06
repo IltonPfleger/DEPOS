@@ -5,12 +5,6 @@
 
 namespace DEPOS {
 
-template <typename V, typename P>
-using ValueType = typename Meta::IF<Meta::Void<V>::Result, Meta::Empty, V>::Result;
-
-template <typename V, typename P>
-using PriorityType = typename Meta::IF<Meta::Void<P>::Result, Meta::Empty, P>::Result;
-
 template <typename Value = void, typename Priority = void> struct Node {
     template <typename T> friend class LinkedList;
     template <typename T> friend class LIFO;
@@ -27,8 +21,8 @@ template <typename Value = void, typename Priority = void> struct Node {
           m_priority(p) {}
 
   private:
-    ValueType<Value, Priority> m_value;
-    PriorityType<Value, Priority> m_priority;
+    Meta::IF<Meta::Void<Value>::Result, Meta::Empty, Value>::Result m_value;
+    Meta::IF<Meta::Void<Priority>::Result, Meta::Empty, Priority>::Result m_priority;
     Node *m_next = nullptr;
 };
 

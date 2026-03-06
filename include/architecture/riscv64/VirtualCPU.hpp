@@ -31,7 +31,6 @@ class VirtualCPU {
     template <typename... Args>
     VirtualCPU(void (*entry)(Args...), MemoryMap::Entry memory, Args... args)
         : m_mtimecmp(0),
-          m_external_interrupt_pending(false),
           m_plic() {
 
         CPU::Interruptions::disable();

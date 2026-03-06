@@ -49,7 +49,6 @@ class VirtQueue {
 
     bool available() { return m_last_available_index != m_available->index; }
     int alloc() { return m_available->ring()[m_last_available_index++ % m_size]; }
-
     RingDescriptor *get(unsigned int id) { return &m_descriptors[id]; }
 
     void free(unsigned int id, unsigned int length = 0) {
