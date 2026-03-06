@@ -7,6 +7,7 @@ namespace DEPOS {
 class Thread;
 class Machine;
 class Timer;
+class FixedCPU;
 class RR;
 class Kernel;
 class Application;
@@ -35,11 +36,6 @@ template <> struct Traits<Alarm> {
     static constexpr bool Enable             = true;
 };
 
-template <> struct Traits<Scheduler<Thread>> {
-    static constexpr bool Preemptive = true;
-    using Criterion                  = RR;
-};
-
 template <> struct Traits<Debug> {
     static const bool Error = true;
     static const bool Trace = true;
@@ -61,6 +57,7 @@ template <> struct Traits<Thread> {
     static constexpr bool IsolatedKernelStack          = true;
     static constexpr unsigned UserStackSize            = Traits<Memory>::PageSize;
     static constexpr unsigned KernelStackSize = IsolatedKernelStack ? Traits<Memory>::PageSize : 0;
+    using Criterion                           = FixedCPU;
 };
 
 } // namespace DEPOS
