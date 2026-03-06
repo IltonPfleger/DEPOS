@@ -12,7 +12,7 @@ namespace DEPOS {
 namespace virtio {
 
 struct NetworkHeader {
-    unsigned char _[10];
+    unsigned char padding[10];
 };
 
 template <typename Device, uintptr_t Base>
@@ -87,8 +87,8 @@ class Network : public Handler<Network<Device, Base>>,
         this->m_header.m_id                        = 1;
         this->m_header.m_vendor                    = 0x554d4551;
         this->m_header.m_max_number_of_descriptors = k_number;
-        m_vcpu                                     = VirtualCPU::current();
         m_device                                   = Device::instance();
+        m_vcpu                                     = VirtualCPU::current();
         m_device->attach(this);
     }
 

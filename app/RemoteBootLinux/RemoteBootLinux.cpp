@@ -86,13 +86,7 @@ unsigned char *align(unsigned char *p, long alignment) {
 }
 
 int main() {
-
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
-    typedef void (*Entry)(int, LinuxDeviceTree *);
-
-    // Driver::init();
-
-    // NIC<Driver>::init();
 
     constexpr long MB              = 1024 * 1024;
     constexpr long LinuxMemorySize = 256 * MB;
@@ -165,10 +159,9 @@ int main() {
     dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
     dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
 
-    Console::cout << "\n *** Linux ***\n";
+    Console::cout << "\n *** Linux is at core " << CPU::id() << " ***\n";
 
-    Entry entry = reinterpret_cast<Entry>(kernel);
-    new VirtualCPU(entry, MemoryMap::Entry{address, address + LinuxMemorySize}, 0, dtb);
-
+    auto Linux = reinterpret_cast<void (*)(int, LinuxDeviceTree *)>(kernel);
+    new VirtualCPU(address, LinuxMemorySize, Linux, 0, dtb);
     return 0;
 }

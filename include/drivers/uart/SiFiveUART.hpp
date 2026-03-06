@@ -1,23 +1,39 @@
 #pragma once
 
+#include <abstractions/IC.hpp>
 #include <drivers/Driver.hpp>
+#include <utils/Observer.hpp>
 
-template <unsigned long Addr> struct SiFiveUART : Driver {
-    // static volatile unsigned int &TXDATA() { return *(Addr + 0); }
-    // static volatile unsigned int &RXDATA() { return *(Addr + 1); }
-    // static volatile unsigned int &TXCTRL() { return *(Addr + 2); }
-    // static volatile unsigned int &RXCTRL() { return *(Addr + 3); }
-    // static volatile unsigned int &IE() { return *(Addr + 4); }
-    // static volatile unsigned int &IP() { return *(Addr + 5); }
-    // static volatile unsigned int &DIV() { return *(Addr + 6); }
-    // static constexpr unsigned int RX_EMPTY_MASK = 0x80000000;
-    static constexpr unsigned int TX_EMPTY_MASK = (1 << 31);
+namespace DEPOS {
 
-    enum Registers { TXDATA = 0 };
+template <typename Tag>
+class SiFiveUART : public Driver, public Observed<const unsigned char *, size_t> {
+    using MyTraits                         = Traits<SiFiveUART<Tag>>;
+    static constexpr unsigned long Address = MyTraits::Address;
 
-    static void put(char c) {
-        while (Reg32(Addr, TXDATA) & TX_EMPTY_MASK)
+  private:
+    SiFiveUART() = default;
+
+    enum Registers { TXDATA = 0, TX_EMPTY_MASK = 1 << 31 };
+
+    static void handler(unsigned int) {}
+
+  public:
+    static void init() {
+        for (auto IRQ : MyTraits::IRQs)
+            IC::bind(IRQ, handler);
+    }
+
+    static SiFiveUART *instance() {
+        static SiFiveUART instance;
+        return &instance;
+    }
+
+    void putc(char c) {
+        while (Reg32(Address, TXDATA) & TX_EMPTY_MASK)
             ;
-        Reg32(Addr, TXDATA) = c;
+        Reg32(Address, TXDATA) = c;
     }
 };
+
+} // namespace DEPOS

@@ -7,6 +7,7 @@ TOOLS        := $(HERE)/tools
 
 SYSTEM       := $(BUILD)/DEPOS
 IMAGE       := $(BUILD)/Image.bin
+APPLICATION_STAMP       := $(BUILD)/.stamp
 
 TRAITS := $(BUILD)/Traits
 MAPPER   := $(BUILD)/Mapper
@@ -28,13 +29,24 @@ CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -D__MACHINE=$(MACHINE) -D__APPLICATI
 
 build: $(IMAGE)
 
-$(TRAITS).mk: $(TRAITS)
+OLD_APPLICATION_STAMP := $(shell cat $(APPLICATION_STAMP) 2>/dev/null)
+
+ifneq ($(OLD_APPLICATION_STAMP),$(APPLICATION))
+.PHONY: $(APPLICATION_STAMP)
+endif
+
+$(APPLICATION_STAMP):
+	@mkdir -p $(dir $@)
+	@echo "$(APPLICATION)" > $@
+
+$(TRAITS).mk: $(TRAITS) $(APPLICATION_STAMP)
 	@mkdir -p $(dir $@)
 	$< > $@
 
 $(TRAITS): tools/Traits.cpp
 	@mkdir -p $(dir $@)
 	g++ $(CCFLAGS) $< -o $@
+
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(TRAITS).mk

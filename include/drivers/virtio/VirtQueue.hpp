@@ -47,8 +47,16 @@ class VirtQueue {
         m_used  = reinterpret_cast<RingUsed *>(address);
     }
 
-    bool available() { return m_last_available_index != m_available->index; }
-    int alloc() { return m_available->ring()[m_last_available_index++ % m_size]; }
+    bool available() {
+        CPU::mb();
+        return m_last_available_index != m_available->index;
+    }
+
+    int alloc() {
+        CPU::mb();
+        return m_available->ring()[m_last_available_index++ % m_size];
+    }
+
     RingDescriptor *get(unsigned int id) { return &m_descriptors[id]; }
 
     void free(unsigned int id, unsigned int length = 0) {
@@ -56,6 +64,7 @@ class VirtQueue {
         m_used->ring()[index].id     = id;
         m_used->ring()[index].length = length;
         m_used->index++;
+        CPU::mb();
     }
 
   public:

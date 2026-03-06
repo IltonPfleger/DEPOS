@@ -29,7 +29,7 @@ class VirtualCPU {
     static constexpr unsigned long Size    = Traits<MemoryMap>::PLIC;
 
     template <typename... Args>
-    VirtualCPU(void (*entry)(Args...), MemoryMap::Entry memory, Args... args)
+    VirtualCPU(uintptr_t address, size_t size, void (*entry)(Args...), Args... args)
         : m_mtimecmp(0),
           m_plic() {
 
@@ -37,7 +37,7 @@ class VirtualCPU {
 
         csrw<SupervisorMode::SATP>(0);
 
-        PMP::NAPOT<0>(memory.start, memory.end - memory.start, PMP::R | PMP::W | PMP::X);
+        PMP::NAPOT<0>(address, size, PMP::R | PMP::W | PMP::X);
 
         unsigned long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt
@@ -55,7 +55,8 @@ class VirtualCPU {
         medeleg |= 1 << 15; // Store Page Fault
         csrw<MachineMode::MEDELEG>(medeleg);
 
-        csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
+        csrc<MachineMode::STATUS>(MachineMode::PP);
+        csrs<MachineMode::STATUS>(MachineMode::PP_S | MachineMode::PIRQE);
         csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
 
         m_current = this;

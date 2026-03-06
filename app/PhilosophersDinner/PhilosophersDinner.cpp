@@ -1,12 +1,13 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
+#include <Traits.hpp>
 #include <architecture/Timer.hpp>
 #include <utils/Console.hpp>
 #include <utils/Debug.hpp>
 
 using namespace DEPOS;
 
-static constexpr int Number = 100;
+static constexpr int Number     = 100;
 static constexpr int Iterations = 100;
 
 Semaphore *forks[Number];
@@ -17,13 +18,14 @@ void *philosopher(void *p) {
     unsigned int id = (unsigned int)(unsigned long)p;
 
     int iterations = Iterations;
-    int left = id;
-    int right = (id + 1) % Number;
+    int left       = id;
+    int right      = (id + 1) % Number;
 
     while (iterations--) {
         console->p();
 
-        Console::cout << "<" << CPU::id() << ">" << " Filósofo " << id << " está pensando!" << Console::endl;
+        Console::cout << "<" << CPU::id() << ">" << " Filósofo " << id << " está pensando!"
+                      << Console::endl;
 
         console->v();
 
@@ -37,7 +39,8 @@ void *philosopher(void *p) {
 
         console->p();
 
-        Console::cout << "<" << CPU::id() << ">" << " Filósofo " << id << " está comendo!" << Console::endl;
+        Console::cout << "<" << CPU::id() << ">" << " Filósofo " << id << " está comendo!"
+                      << Console::endl;
 
         console->v();
 
@@ -54,7 +57,7 @@ int main(int, char *[]) {
     Thread *threads[Number];
 
     console = new Semaphore(0);
-    finish = new Semaphore(0);
+    finish  = new Semaphore(0);
 
     for (long i = 0; i < Number; i++) {
         forks[i] = new Semaphore(1);

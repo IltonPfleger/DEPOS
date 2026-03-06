@@ -396,7 +396,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NIC<Ethernet> {
         MTL::init();
         m_dma = new DMA();
         MAC::init();
-        Alarm::udelay(100'000);
+        Alarm::udelay(1'000'000);
         NIC::init();
         TraceOut();
     }

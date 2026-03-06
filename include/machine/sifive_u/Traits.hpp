@@ -1,60 +1,96 @@
 #pragma once
 
 #include <Meta.hpp>
-#include <Traits.hpp>
 
+namespace DEPOS {
+
+class Machine;
 class MemoryMap;
 class Memory;
-class CPUS;
+class CPU;
 class CLINT;
 class PLIC;
 class UART;
+class UART0;
+class RISCV;
+class IC;
 
-template <unsigned long> class SiFiveUART;
+template <typename> class SiFiveUART;
 
-template <> struct Traits<CPUS> {
-    static constexpr int XLEN = 64;
-    static constexpr int COUNT = 3;
-    static constexpr int ACTIVE = Traits<System>::Multitask ? COUNT - 1 : COUNT;
-    static constexpr int BSP = 1;
+template <> struct Traits<Machine> {
+    static constexpr const char NAME[] = "sifive_u";
+};
+
+template <> struct Traits<CPU> {
+    static constexpr const char Architecture[] = "riscv64";
+    static constexpr int Count                 = 5;
+    static constexpr int Active                = 4;
+    static constexpr int Offset                = 1;
+    static constexpr int BSP                   = 0;
 };
 
 template <> struct Traits<Memory> {
-    static constexpr unsigned Order = 30;
-    static constexpr unsigned Size = (1 << Order);
-    static constexpr unsigned PageOrder = 12;
-    static constexpr unsigned PageSize = (1 << PageOrder);
+    static constexpr unsigned Order     = 30;
+    static constexpr unsigned Size      = (1 << Order);
+    static constexpr unsigned PageSize  = 4096;
+    static constexpr unsigned StackSize = PageSize;
 };
 
 template <> struct Traits<MemoryMap> {
     static constexpr unsigned long PhysicalRamStart = 0x80000000;
-    static constexpr unsigned long PhysicalRamEnd = PhysicalRamStart + Traits<Memory>::Size;
+    static constexpr unsigned long PhysicalRamEnd   = PhysicalRamStart + Traits<Memory>::Size;
 
     static constexpr unsigned long VirtualRamStart = 0xffffffff80000000;
-    static constexpr unsigned long VirtualRamEnd = VirtualRamStart + Traits<Memory>::Size;
+    static constexpr unsigned long VirtualRamEnd   = VirtualRamStart + Traits<Memory>::Size;
 
-    static constexpr unsigned long RamStart = Traits<System>::Multitask ? VirtualRamStart : PhysicalRamStart;
-    static constexpr unsigned long RamEnd = Traits<System>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
+    static constexpr unsigned long RamStart =
+        Traits<Kernel>::Multitask ? VirtualRamStart : PhysicalRamStart;
+    static constexpr unsigned long RamEnd =
+        Traits<Kernel>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
 
-    static constexpr unsigned long SystemAddr = RamStart;
-    static constexpr unsigned long ApplicationAddr = RamStart + 128 * 1024;
+    static constexpr unsigned long KernelAddr = RamStart;
 
+    static constexpr unsigned long MMIO  = 0x00000000;
     static constexpr unsigned long UART0 = 0x10010000;
     static constexpr unsigned long CLINT = 0x02000000;
-    static constexpr unsigned long PLIC = 0;
+    static constexpr unsigned long PLIC  = 0xc000000;
+};
+
+template <> struct Traits<SiFiveUART<UART0>> {
+    static constexpr unsigned long Address = Traits<MemoryMap>::UART0;
+    // static constexpr unsigned int Clock    = 10'000'000;
+    // static constexpr unsigned int BaudRate = 115200;
+    // static constexpr unsigned int Shift  = 0;
+    // static constexpr unsigned int IRQs[] = {21};
 };
 
 template <> struct Traits<UART> {
-    typedef Meta::TypeList<SiFiveUART<Traits<MemoryMap>::UART0>> Devices;
+    typedef Meta::TypeList<SiFiveUART<UART0>> Devices;
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 
 template <> struct Traits<CLINT> {
-    static constexpr bool Enable = Traits<Timer>::Enable;
-    static constexpr unsigned long Addr = Traits<MemoryMap>::CLINT;
-    static constexpr unsigned long Clock = 1'000'000;
+    static constexpr bool Enable         = Traits<Timer>::Enable;
+    static constexpr unsigned long Addr  = Traits<MemoryMap>::CLINT;
+    static constexpr unsigned long Clock = 10'000'000;
+};
+
+template <> struct Traits<IC> {
+    static constexpr unsigned long First = 0;
+    static constexpr unsigned long Last  = 10 + 11;
 };
 
 template <> struct Traits<PLIC> {
-    static constexpr bool Enable = false;
+    static constexpr bool Enable           = true;
+    using ContextsType                     = Meta::Array<Traits<CPU>::Count, Meta::Array<2, int>>;
+    static constexpr ContextsType Contexts = []() {
+        ContextsType contexts{};
+        for (int i = 0; i < Traits<CPU>::Count; i++) {
+            contexts[i][0] = i * 2;
+            contexts[i][1] = i * 2 + 1;
+        }
+        return contexts;
+    }();
 };
+
+} // namespace DEPOS

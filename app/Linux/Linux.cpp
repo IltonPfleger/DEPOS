@@ -96,7 +96,6 @@ int main() {
 
     constexpr long MB              = 1024 * 1024;
     constexpr long LinuxMemorySize = 256 * 1024 * 1024;
-    typedef void (*Entry)(int, LinuxDeviceTree *);
 
     unsigned char *memory_start = reinterpret_cast<unsigned char *>(Memory::alloc(LinuxMemorySize));
     uintptr_t address           = reinterpret_cast<uintptr_t>(memory_start);
@@ -150,10 +149,9 @@ int main() {
     dtb->edit("virtio_mmio@1", "reg", regs, sizeof(regs));
     dtb->edit("virtio_mmio@1", "interrupts", &irq, sizeof(irq));
 
-    auto entry = reinterpret_cast<Entry>(kernel);
-
     Console::cout << "\n *** Linux is at core " << CPU::id() << " ***\n ";
-    new VirtualCPU(entry, MemoryMap::Entry{address, address + LinuxMemorySize}, 0, dtb);
+    auto Linux = reinterpret_cast<void (*)(int, LinuxDeviceTree *)>(kernel);
+    new VirtualCPU(address, LinuxMemorySize, Linux, 0, dtb);
 
     return 0;
 }
