@@ -12,12 +12,12 @@ class Thread {
   public:
     enum class State { RUNNING, READY, WAITING, FINISHING, FINISHED };
     using Criterion = typename Scheduler<Thread>::Criterion;
-    using Return = void *;
-    using Argument = void *;
-    using Function = Return (*)(Argument);
-    using Link = Node<Thread *, Criterion>;
-    using Queue = FIFO<Link>;
-    using Context = CPU::Context;
+    using Return    = void *;
+    using Argument  = void *;
+    using Function  = Return (*)(Argument);
+    using Link      = Node<Thread *, Criterion>;
+    using Queue     = FIFO<Link>;
+    using Context   = CPU::Context;
 
     Thread(Function, Argument = 0, Criterion = Criterion::NORMAL);
     ~Thread();

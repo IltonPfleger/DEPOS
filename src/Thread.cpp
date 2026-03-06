@@ -11,6 +11,7 @@ namespace DEPOS {
 Thread *Thread::running() { return s_scheduler.current(); }
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
+    CPU::mb();
     ERROR(!previous);
     ERROR(!next);
     ERROR(next == previous);

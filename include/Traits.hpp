@@ -26,7 +26,7 @@ template <> struct Traits<Kernel> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr unsigned long Frequency = 1'000;
+    static constexpr unsigned long Frequency = 1'000'000;
     static constexpr bool Enable             = true;
 };
 
@@ -57,7 +57,7 @@ template <> struct Traits<Console> {
 namespace DEPOS {
 
 template <> struct Traits<Thread> {
-    static constexpr unsigned long RescheduleFrequency = 1'000;
+    static constexpr unsigned long RescheduleFrequency = Traits<Timer>::Frequency;
     static constexpr bool IsolatedKernelStack          = true;
     static constexpr unsigned UserStackSize            = Traits<Memory>::PageSize;
     static constexpr unsigned KernelStackSize = IsolatedKernelStack ? Traits<Memory>::PageSize : 0;
