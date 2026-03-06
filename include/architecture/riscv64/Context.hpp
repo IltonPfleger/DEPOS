@@ -215,33 +215,33 @@ template <typename T> class ContextBase {
             [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)),
             [s11] "i"(offsetof(ContextBase, s11)));
 
-        asm volatile("ld ra, %[ra](sp)\n"
-                     "ld gp, %[gp](sp)\n"
-                     "ld t0, %[t0](sp)\n"
-                     "ld t1, %[t1](sp)\n"
-                     "ld t2, %[t2](sp)\n"
-                     "ld t3,  %[t3](sp)\n"
-                     "ld t4,  %[t4](sp)\n"
-                     "ld t5,  %[t5](sp)\n"
-                     "ld t6,  %[t6](sp)\n"
-                     "ld a0, %[a0](sp)\n"
-                     "ld a1, %[a1](sp)\n"
-                     "ld a2, %[a2](sp)\n"
-                     "ld a3, %[a3](sp)\n"
-                     "ld a4, %[a4](sp)\n"
-                     "ld a5, %[a5](sp)\n"
-                     "ld a6, %[a6](sp)\n"
-                     "ld a7, %[a7](sp)\n"
-                     :
-                     : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
-                       [tp] "i"(offsetof(ContextBase, tp)), [t0] "i"(offsetof(ContextBase, t0)),
-                       [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)),
-                       [t3] "i"(offsetof(ContextBase, t3)), [t4] "i"(offsetof(ContextBase, t4)),
-                       [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)),
-                       [a0] "i"(offsetof(ContextBase, a0)), [a1] "i"(offsetof(ContextBase, a1)),
-                       [a2] "i"(offsetof(ContextBase, a2)), [a3] "i"(offsetof(ContextBase, a3)),
-                       [a4] "i"(offsetof(ContextBase, a4)), [a5] "i"(offsetof(ContextBase, a5)),
-                       [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7)));
+        asm("ld ra, %[ra](sp)\n"
+            "ld gp, %[gp](sp)\n"
+            "ld t0, %[t0](sp)\n"
+            "ld t1, %[t1](sp)\n"
+            "ld t2, %[t2](sp)\n"
+            "ld t3,  %[t3](sp)\n"
+            "ld t4,  %[t4](sp)\n"
+            "ld t5,  %[t5](sp)\n"
+            "ld t6,  %[t6](sp)\n"
+            "ld a0, %[a0](sp)\n"
+            "ld a1, %[a1](sp)\n"
+            "ld a2, %[a2](sp)\n"
+            "ld a3, %[a3](sp)\n"
+            "ld a4, %[a4](sp)\n"
+            "ld a5, %[a5](sp)\n"
+            "ld a6, %[a6](sp)\n"
+            "ld a7, %[a7](sp)\n"
+            :
+            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
+              [tp] "i"(offsetof(ContextBase, tp)), [t0] "i"(offsetof(ContextBase, t0)),
+              [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)),
+              [t3] "i"(offsetof(ContextBase, t3)), [t4] "i"(offsetof(ContextBase, t4)),
+              [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)),
+              [a0] "i"(offsetof(ContextBase, a0)), [a1] "i"(offsetof(ContextBase, a1)),
+              [a2] "i"(offsetof(ContextBase, a2)), [a3] "i"(offsetof(ContextBase, a3)),
+              [a4] "i"(offsetof(ContextBase, a4)), [a5] "i"(offsetof(ContextBase, a5)),
+              [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7)));
 
         asm("addi sp, sp, %[size]\n" ::[size] "i"(sizeof(ContextBase)));
 
