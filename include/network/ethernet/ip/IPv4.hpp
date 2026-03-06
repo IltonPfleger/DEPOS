@@ -85,40 +85,42 @@ class Packet {
 // } __attribute__((packed));
 //
 // } // namespace IGMP
-//
+
 class Multicast {
   public:
-    static bool is_multicast(const Address &addr) { return (addr[0] & 0xF0) == 0xE0; }
-    static Ethernet::Address ip_to_mac(const Address &ip) {
+    static bool valid(const Address &address) { return (address[0] & 0xF0) == 0xE0; }
+    static Ethernet::Address mac(const Address &ip) {
         return {0x01, 0x00, 0x5E, ip[1] & 0x7F, ip[2], ip[3]};
     }
-    //
-    //     template <typename Network> static void join(IPv4::Address group) {
-    //         unsigned char buffer[1024];
-    //
-    //         new (buffer + sizeof(Ethernet::Header) + sizeof(IPv4::Header))
-    //             IGMP::Header(IGMP::Report, group);
-    //
-    //         auto dmac = ip_to_mac(group);
-    //         Network::instance()->send(dmac, group, IGMP::Protocol, buffer, sizeof(IGMP::Header));
-    //     }
-    //
-    //     // template <typename Driver> static bool leave(IP group) {
-    //     //     IPv4::Connection<Driver> socket;
-    //     //     unsigned char buffer[sizeof(IGMPv2) + sizeof(IPv4::Header) +
-    //     sizeof(Ethernet::Header)];
-    //
-    //     //    new (buffer) IGMPv2(0x17, group);
-    //     //    // IGMPv2 *report = new (buffer) IGMPv2(0x17, group);
-    //     //    //  report->m_checksum = IPv4::checksum(report, sizeof(IGMPv2));
-    //
-    //     //    MAC mac   = convert_multicast_group_ip_to_mac(All);
-    //     //    MAC mymac = Driver::instance()->mac();
-    //     //    IP myip   = Driver::instance()->ip();
-    //
-    //     //    return socket.send(mac, All, mymac, myip, IPv4::IGMP, buffer, sizeof(IGMPv2));
-    //     //}
 };
+
+//
+//     template <typename Network> static void join(IPv4::Address group) {
+//         unsigned char buffer[1024];
+//
+//         new (buffer + sizeof(Ethernet::Header) + sizeof(IPv4::Header))
+//             IGMP::Header(IGMP::Report, group);
+//
+//         auto dmac = mac(group);
+//         Network::instance()->send(dmac, group, IGMP::Protocol, buffer, sizeof(IGMP::Header));
+//     }
+//
+//     // template <typename Driver> static bool leave(IP group) {
+//     //     IPv4::Connection<Driver> socket;
+//     //     unsigned char buffer[sizeof(IGMPv2) + sizeof(IPv4::Header) +
+//     sizeof(Ethernet::Header)];
+//
+//     //    new (buffer) IGMPv2(0x17, group);
+//     //    // IGMPv2 *report = new (buffer) IGMPv2(0x17, group);
+//     //    //  report->m_checksum = IPv4::checksum(report, sizeof(IGMPv2));
+//
+//     //    MAC mac   = convert_multicast_group_mac(All);
+//     //    MAC mymac = Driver::instance()->mac();
+//     //    IP myip   = Driver::instance()->ip();
+//
+//     //    return socket.send(mac, All, mymac, myip, IPv4::IGMP, buffer, sizeof(IGMPv2));
+//     //}
+//};
 
 template <typename NIC> class Network : public NIC::Observer, public Observed<const Packet *> {
     using ARP = DEPOS::ARP<NIC, Network>;
@@ -155,7 +157,7 @@ template <typename NIC> class Network : public NIC::Observer, public Observed<co
 
     bool accepts(const Packet *) const {
         // const Header *header = packet->header();
-        // if (Multicast::is_multicast(header->m_to) || header->m_to == Address::broadcast() ||
+        // if (Multicast::valid(header->m_to) || header->m_to == Address::broadcast() ||
         //     header->m_to == address())
         //     return true;
         return true;
@@ -167,8 +169,8 @@ template <typename NIC> class Network : public NIC::Observer, public Observed<co
         Ethernet::Address mac;
         if (dip == Address::broadcast()) {
             mac = Ethernet::Broadcast;
-        } else if (Multicast::is_multicast(dip)) {
-            mac = Multicast::ip_to_mac(dip);
+        } else if (Multicast::valid(dip)) {
+            mac = Multicast::mac(dip);
         } else {
             mac = m_arp->resolve(dip);
         }
