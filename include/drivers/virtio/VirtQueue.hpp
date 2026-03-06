@@ -16,7 +16,9 @@ class VirtQueue {
     struct RingAvailable {
         uint16_t flags;
         uint16_t index;
-        uint16_t *ring() { return reinterpret_cast<uint16_t *>(reinterpret_cast<uintptr_t>(this) + 4); };
+        uint16_t *ring() {
+            return reinterpret_cast<uint16_t *>(reinterpret_cast<uintptr_t>(this) + 4);
+        };
     } __attribute__((packed));
 
     struct RingUsedElement {
@@ -27,31 +29,32 @@ class VirtQueue {
     struct RingUsed {
         uint16_t flags;
         uint16_t index;
-        RingUsedElement *ring() { return reinterpret_cast<RingUsedElement *>(reinterpret_cast<uintptr_t>(this) + 4); };
+        RingUsedElement *ring() {
+            return reinterpret_cast<RingUsedElement *>(reinterpret_cast<uintptr_t>(this) + 4);
+        };
     } __attribute__((packed));
 
     VirtQueue() = default;
-    VirtQueue(uintptr_t address, uint32_t size, uint32_t align) : m_address(address), m_size(size) {
+    VirtQueue(uintptr_t address, uint32_t size, uint32_t align)
+        : m_address(address),
+          m_size(size),
+          m_last_available_index(0) {
         m_descriptors = reinterpret_cast<RingDescriptor *>(address);
         address += size * sizeof(RingDescriptor);
         m_available = reinterpret_cast<RingAvailable *>(address);
         address += 2 + 2 + (2 * size) + 2;
         address = (address + align - 1) & ~(align - 1);
-        m_used = reinterpret_cast<RingUsed *>(address);
+        m_used  = reinterpret_cast<RingUsed *>(address);
     }
 
-    int available() {
-        if (m_last_available_index == m_available->index) return -1;
-        uint16_t id = m_available->ring()[m_last_available_index % m_size];
-        m_last_available_index++;
-        return id;
-    }
+    bool available() { return m_last_available_index != m_available->index; }
+    int alloc() { return m_available->ring()[m_last_available_index++ % m_size]; }
 
     RingDescriptor *get(unsigned int id) { return &m_descriptors[id]; }
 
     void free(unsigned int id, unsigned int length = 0) {
-        uint16_t index = m_used->index % m_size;
-        m_used->ring()[index].id = id;
+        uint16_t index               = m_used->index % m_size;
+        m_used->ring()[index].id     = id;
         m_used->ring()[index].length = length;
         m_used->index++;
     }
@@ -59,7 +62,7 @@ class VirtQueue {
   public:
     uintptr_t m_address;
     uint32_t m_size;
-    uint32_t m_last_available_index;
+    uint16_t m_last_available_index;
     RingDescriptor *m_descriptors;
     RingAvailable *m_available;
     RingUsed *m_used;

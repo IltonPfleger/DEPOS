@@ -17,8 +17,7 @@ namespace riscv64 {
 
 class VirtualCPU {
 
-    template <typename... Args>
-    __attribute__((naked)) static void supervisor(Args... args) {
+    template <typename... Args> __attribute__((naked)) static void supervisor(Args... args) {
         ((void)args, ...);
         asm volatile("mret");
     }
@@ -39,8 +38,7 @@ class VirtualCPU {
 
         csrw<SupervisorMode::SATP>(0);
 
-        PMP::NAPOT<0>(memory.start, memory.end - memory.start,
-                      PMP::R | PMP::W | PMP::X);
+        PMP::NAPOT<0>(memory.start, memory.end - memory.start, PMP::R | PMP::W | PMP::X);
 
         unsigned long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt
@@ -58,8 +56,7 @@ class VirtualCPU {
         medeleg |= 1 << 15; // Store Page Fault
         csrw<MachineMode::MEDELEG>(medeleg);
 
-        csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR |
-                                  MachineMode::PIRQE);
+        csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
         csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
 
         m_current = this;
@@ -77,17 +74,11 @@ class VirtualCPU {
 
     static void handler() {
         if (!current()) return;
-        if (CLINT::read() >= current()->m_mtimecmp)
-            csrs<MachineMode::IP>(SupervisorMode::TI);
-        if (current()->m_external_interrupt_pending) {
-            current()->m_external_interrupt_pending = false;
-            csrs<MachineMode::IP>(SupervisorMode::EI);
-        }
+        if (CLINT::read() >= current()->m_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
+        if (current()->m_plic.pending()) csrs<MachineMode::IP>(SupervisorMode::EI);
     }
 
-    void interrupt(unsigned int id) {
-        if (m_plic.interrupt(id - 11)) m_external_interrupt_pending = true;
-    }
+    void interrupt(unsigned int id) { m_plic.interrupt(id); }
 
     static bool read(unsigned long addr, unsigned int *destination) {
         return current()->m_plic.read(addr - Address, destination), true;
@@ -102,7 +93,6 @@ class VirtualCPU {
 
   private:
     unsigned long m_mtimecmp;
-    bool m_external_interrupt_pending;
     VirtualPLIC m_plic;
 };
 
