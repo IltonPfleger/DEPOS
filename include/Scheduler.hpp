@@ -11,7 +11,8 @@ namespace DEPOS {
 class Policy {
   public:
     using Rank = int;
-    Policy(Rank r, ...) : m_rank(r) {}
+    Policy(Rank r, ...)
+        : m_rank(r) {}
     operator Rank() const { return m_rank; }
 
   private:
@@ -20,30 +21,31 @@ class Policy {
 
 class RR : public Policy {
   public:
-    static constexpr bool Preemptive = true;
+    static constexpr bool Preemptive  = true;
     template <typename T> using Queue = FIFO<T>;
     enum : Rank { IDLE = 0, NORMAL = 1, Levels = 2 };
-    RR(Rank r = NORMAL, ...) : Policy(r) {}
+    RR(Rank r = NORMAL, ...)
+        : Policy(r) {}
 };
 
 template <typename T> class Scheduler {
 
   public:
     using Criterion = typename Traits<Scheduler<T>>::Criterion;
-    using Element = Node<Thread *, Criterion>;
-    using Queue = typename Criterion::template Queue<Element>;
+    using Element   = Node<Thread *, Criterion>;
+    using Queue     = typename Criterion::template Queue<Element>;
 
     Scheduler() = default;
 
     Element *remove(Criterion::Rank threshold = Criterion::IDLE) {
         Element *next = nullptr;
-        int i = Criterion::Levels - 1;
+        int i         = Criterion::Levels - 1;
+        m_spin.acquire();
         while (i >= threshold && !next) {
-            m_spin.acquire();
             next = m_levels[i].remove();
-            m_spin.release();
-            i = i - 1;
+            i    = i - 1;
         }
+        m_spin.release();
         if (next) m_heads[CPU::id()] = next->value();
         return next;
     }
