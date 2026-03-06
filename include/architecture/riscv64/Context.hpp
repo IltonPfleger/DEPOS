@@ -2,6 +2,7 @@
 
 #include <Types.hpp>
 #include <architecture/riscv64/Modes.hpp>
+#include <architecture/riscv64/csrs.hpp>
 
 // TODO: Meta Template For CSRs
 // TODO: TP For Linux And Supervisor BUG
@@ -18,7 +19,7 @@ template <typename T> class ContextBase {
     uint64_t a0, a1, a2, a3, a4, a5, a6, a7;
     uint64_t s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
     uint64_t t3, t4, t5, t6;
-    uint64_t status, scratch, pc;
+    uint64_t status, scratch, cause, pc;
 
     uint64_t &operator[](size_t i) { return (reinterpret_cast<uint64_t *>(&ra))[i - 1]; }
 
@@ -119,95 +120,110 @@ template <typename T> class ContextBase {
 
     template <bool ChangeStack = false>
     __attribute__((always_inline)) static inline ContextBase *push() {
+
         if constexpr (ChangeStack) {
             asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
         }
 
-        asm volatile("addi sp, sp, %[size]\n"
-                     "sd ra, %[ra](sp)\n"
-                     "sd gp, %[gp](sp)\n"
-                     //"sd tp, %[tp](sp)\n"
-                     "sd t0, %[t0](sp)\n"
-                     "sd t1, %[t1](sp)\n"
-                     "sd t2, %[t2](sp)\n"
-                     "sd t3, %[t3](sp)\n"
-                     "sd t4, %[t4](sp)\n"
-                     "sd t5, %[t5](sp)\n"
-                     "sd t6, %[t6](sp)\n"
-                     :
-                     : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
-                       [tp] "i"(offsetof(ContextBase, tp)), [t0] "i"(offsetof(ContextBase, t0)),
-                       [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)),
-                       [t3] "i"(offsetof(ContextBase, t3)), [t4] "i"(offsetof(ContextBase, t4)),
-                       [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)),
-                       [size] "i"(-sizeof(ContextBase))
-                     : "memory");
+        asm("addi sp, sp, %[size]\n" ::[size] "i"(-sizeof(ContextBase)));
 
-        asm volatile("sd a0, %[a0](sp)\n"
-                     "sd a1, %[a1](sp)\n"
-                     "sd a2, %[a2](sp)\n"
-                     "sd a3, %[a3](sp)\n"
-                     "sd a4, %[a4](sp)\n"
-                     "sd a5, %[a5](sp)\n"
-                     "sd a6, %[a6](sp)\n"
-                     "sd a7, %[a7](sp)\n"
-                     :
-                     : [a0] "i"(offsetof(ContextBase, a0)), [a1] "i"(offsetof(ContextBase, a1)),
-                       [a2] "i"(offsetof(ContextBase, a2)), [a3] "i"(offsetof(ContextBase, a3)),
-                       [a4] "i"(offsetof(ContextBase, a4)), [a5] "i"(offsetof(ContextBase, a5)),
-                       [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7))
-                     : "memory");
+        asm("sd ra, %[ra](sp)\n"
+            "sd gp, %[gp](sp)\n"
+            "sd t0, %[t0](sp)\n"
+            "sd t1, %[t1](sp)\n"
+            "sd t2, %[t2](sp)\n"
+            "sd t3, %[t3](sp)\n"
+            "sd t4, %[t4](sp)\n"
+            "sd t5, %[t5](sp)\n"
+            "sd t6, %[t6](sp)\n"
+            "sd a0, %[a0](sp)\n"
+            "sd a1, %[a1](sp)\n"
+            "sd a2, %[a2](sp)\n"
+            "sd a3, %[a3](sp)\n"
+            "sd a4, %[a4](sp)\n"
+            "sd a5, %[a5](sp)\n"
+            "sd a6, %[a6](sp)\n"
+            "sd a7, %[a7](sp)\n"
+            :
+            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
+              [tp] "i"(offsetof(ContextBase, tp)), [t0] "i"(offsetof(ContextBase, t0)),
+              [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)),
+              [t3] "i"(offsetof(ContextBase, t3)), [t4] "i"(offsetof(ContextBase, t4)),
+              [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)),
+              [a0] "i"(offsetof(ContextBase, a0)), [a1] "i"(offsetof(ContextBase, a1)),
+              [a2] "i"(offsetof(ContextBase, a2)), [a3] "i"(offsetof(ContextBase, a3)),
+              [a4] "i"(offsetof(ContextBase, a4)), [a5] "i"(offsetof(ContextBase, a5)),
+              [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7))
+            : "memory");
 
-        asm volatile("sd s0,  %[s0](sp)\n"
-                     "sd s1,  %[s1](sp)\n"
-                     "sd s2,  %[s2](sp)\n"
-                     "sd s3,  %[s3](sp)\n"
-                     "sd s4,  %[s4](sp)\n"
-                     "sd s5,  %[s5](sp)\n"
-                     "sd s6,  %[s6](sp)\n"
-                     "sd s7,  %[s7](sp)\n"
-                     "sd s8,  %[s8](sp)\n"
-                     "sd s9,  %[s9](sp)\n"
-                     "sd s10, %[s10](sp)\n"
-                     "sd s11, %[s11](sp)\n"
-                     :
-                     : [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
-                       [s2] "i"(offsetof(ContextBase, s2)), [s3] "i"(offsetof(ContextBase, s3)),
-                       [s4] "i"(offsetof(ContextBase, s4)), [s5] "i"(offsetof(ContextBase, s5)),
-                       [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)),
-                       [s8] "i"(offsetof(ContextBase, s8)), [s9] "i"(offsetof(ContextBase, s9)),
-                       [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11))
-                     : "memory");
+        asm("csrr t0, %[status]\n"
+            "blt t0, zero, 1f\n"
+            "sd s0,  %[s0](sp)\n"
+            "sd s1,  %[s1](sp)\n"
+            "sd s2,  %[s2](sp)\n"
+            "sd s3,  %[s3](sp)\n"
+            "sd s4,  %[s4](sp)\n"
+            "sd s5,  %[s5](sp)\n"
+            "sd s6,  %[s6](sp)\n"
+            "sd s7,  %[s7](sp)\n"
+            "sd s8,  %[s8](sp)\n"
+            "sd s9,  %[s9](sp)\n"
+            "sd s10, %[s10](sp)\n"
+            "sd s11, %[s11](sp)\n"
+            "1:"
+            :
+            : [status] "i"(T::STATUS), [s0] "i"(offsetof(ContextBase, s0)),
+              [s1] "i"(offsetof(ContextBase, s1)), [s2] "i"(offsetof(ContextBase, s2)),
+              [s3] "i"(offsetof(ContextBase, s3)), [s4] "i"(offsetof(ContextBase, s4)),
+              [s5] "i"(offsetof(ContextBase, s5)), [s6] "i"(offsetof(ContextBase, s6)),
+              [s7] "i"(offsetof(ContextBase, s7)), [s8] "i"(offsetof(ContextBase, s8)),
+              [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)),
+              [s11] "i"(offsetof(ContextBase, s11))
+            : "memory");
 
-        asm volatile("csrr t0, %[statusr]\n"
-                     "csrr t1, %[epcr]\n"
-                     "sd t0, %[statuso](sp)\n"
-                     "sd t1, %[pc](sp)" ::[statusr] "i"(T::STATUS),
-                     [epcr] "i"(T::EPC), [statuso] "i"(offsetof(ContextBase, status)),
-                     [pc] "i"(offsetof(ContextBase, pc)));
+        asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::STATUS), "i"(offsetof(ContextBase, status)));
+        asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::EPC), "i"(offsetof(ContextBase, pc)));
+        asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::CAUSE), "i"(offsetof(ContextBase, cause)));
+
         register ContextBase *sp asm("sp");
         return sp;
     }
 
     template <bool ChangeStack = false> __attribute__((naked)) static void pop() {
-        asm volatile(
-            "ld t0, %[statuso](sp)\n"
-            "ld t1, %[pc](sp)\n"
-            "csrw %[statusr], t0\n"
-            "csrw %[epcr], t1"
-            :
-            : [statusr] "i"(T::STATUS), [epcr] "i"(T::EPC), [pc] "i"(offsetof(ContextBase, pc)),
-              [statuso] "i"(offsetof(ContextBase, status))
-            : "t0");
+        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(offsetof(ContextBase, status)), "i"(T::STATUS));
+        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(offsetof(ContextBase, pc)), "i"(T::EPC));
+        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(offsetof(ContextBase, cause)), "i"(T::CAUSE));
+
+        asm("blt t0, zero, 1f\n"
+            "ld s0, %[s0](sp)\n"
+            "ld s1, %[s1](sp)\n"
+            "ld s2,  %[s2](sp)\n"
+            "ld s3,  %[s3](sp)\n"
+            "ld s4,  %[s4](sp)\n"
+            "ld s5,  %[s5](sp)\n"
+            "ld s6,  %[s6](sp)\n"
+            "ld s7,  %[s7](sp)\n"
+            "ld s8,  %[s8](sp)\n"
+            "ld s9,  %[s9](sp)\n"
+            "ld s10, %[s10](sp)\n"
+            "ld s11, %[s11](sp)\n"
+            "1:" ::[s0] "i"(offsetof(ContextBase, s0)),
+            [s1] "i"(offsetof(ContextBase, s1)), [s2] "i"(offsetof(ContextBase, s2)),
+            [s3] "i"(offsetof(ContextBase, s3)), [s4] "i"(offsetof(ContextBase, s4)),
+            [s5] "i"(offsetof(ContextBase, s5)), [s6] "i"(offsetof(ContextBase, s6)),
+            [s7] "i"(offsetof(ContextBase, s7)), [s8] "i"(offsetof(ContextBase, s8)),
+            [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)),
+            [s11] "i"(offsetof(ContextBase, s11)));
 
         asm volatile("ld ra, %[ra](sp)\n"
                      "ld gp, %[gp](sp)\n"
-                     //"ld tp, %[tp](sp)\n"
                      "ld t0, %[t0](sp)\n"
                      "ld t1, %[t1](sp)\n"
                      "ld t2, %[t2](sp)\n"
-                     "ld s0, %[s0](sp)\n"
-                     "ld s1, %[s1](sp)\n"
+                     "ld t3,  %[t3](sp)\n"
+                     "ld t4,  %[t4](sp)\n"
+                     "ld t5,  %[t5](sp)\n"
+                     "ld t6,  %[t6](sp)\n"
                      "ld a0, %[a0](sp)\n"
                      "ld a1, %[a1](sp)\n"
                      "ld a2, %[a2](sp)\n"
@@ -220,38 +236,14 @@ template <typename T> class ContextBase {
                      : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
                        [tp] "i"(offsetof(ContextBase, tp)), [t0] "i"(offsetof(ContextBase, t0)),
                        [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)),
-                       [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
+                       [t3] "i"(offsetof(ContextBase, t3)), [t4] "i"(offsetof(ContextBase, t4)),
+                       [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)),
                        [a0] "i"(offsetof(ContextBase, a0)), [a1] "i"(offsetof(ContextBase, a1)),
                        [a2] "i"(offsetof(ContextBase, a2)), [a3] "i"(offsetof(ContextBase, a3)),
                        [a4] "i"(offsetof(ContextBase, a4)), [a5] "i"(offsetof(ContextBase, a5)),
-                       [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7))
-                     : "memory");
+                       [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7)));
 
-        asm volatile("ld s2,  %[s2](sp)\n"
-                     "ld s3,  %[s3](sp)\n"
-                     "ld s4,  %[s4](sp)\n"
-                     "ld s5,  %[s5](sp)\n"
-                     "ld s6,  %[s6](sp)\n"
-                     "ld s7,  %[s7](sp)\n"
-                     "ld s8,  %[s8](sp)\n"
-                     "ld s9,  %[s9](sp)\n"
-                     "ld s10, %[s10](sp)\n"
-                     "ld s11, %[s11](sp)\n"
-                     "ld t3,  %[t3](sp)\n"
-                     "ld t4,  %[t4](sp)\n"
-                     "ld t5,  %[t5](sp)\n"
-                     "ld t6,  %[t6](sp)\n"
-                     "addi sp, sp, %[size]\n"
-                     :
-                     : [s2] "i"(offsetof(ContextBase, s2)), [s3] "i"(offsetof(ContextBase, s3)),
-                       [s4] "i"(offsetof(ContextBase, s4)), [s5] "i"(offsetof(ContextBase, s5)),
-                       [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)),
-                       [s8] "i"(offsetof(ContextBase, s8)), [s9] "i"(offsetof(ContextBase, s9)),
-                       [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11)),
-                       [t3] "i"(offsetof(ContextBase, t3)), [t4] "i"(offsetof(ContextBase, t4)),
-                       [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)),
-                       [size] "i"(sizeof(ContextBase))
-                     : "memory");
+        asm("addi sp, sp, %[size]\n" ::[size] "i"(sizeof(ContextBase)));
 
         if constexpr (ChangeStack) {
             asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
