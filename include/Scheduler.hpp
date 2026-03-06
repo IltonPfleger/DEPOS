@@ -21,17 +21,50 @@ class Policy {
 
 class RR : public Policy {
   public:
-    static constexpr bool Preemptive  = true;
+    using Policy::Policy;
     template <typename T> using Queue = FIFO<T>;
-    enum : Rank { IDLE = 0, NORMAL = 1, Levels = 2 };
-    RR(Rank r = NORMAL, ...)
-        : Policy(r) {}
+    static constexpr int Width        = 1;
+    static constexpr int Depth        = 2;
+    static constexpr bool Preemptive  = true;
+    enum { IDLE = 0, NORMAL = 1 };
+    static int affinity(RR &&) { return 0; }
+    static int affinity() { return 0; }
+};
+
+class FixedCPU : public Policy {
+  public:
+    enum { IDLE = 0, NORMAL = 1, ANY = ~0 };
+
+    static constexpr int Width       = (Traits<CPU>::Active > 0) ? Traits<CPU>::Active : 1;
+    static constexpr int Depth       = 2;
+    static constexpr bool Preemptive = true;
+
+    FixedCPU(Rank r, int width = ANY, ...)
+        : Policy(r) {
+        if ((int)*this == IDLE) {
+            m_width = CPU::Atomic::finc(m_idles) % Width;
+        } else if (width == ANY) {
+            m_width = CPU::Atomic::finc(m_counter) % Width;
+        } else {
+            m_width = width % Width;
+        }
+    }
+
+    template <typename T> using Queue = FIFO<T>;
+
+    static int affinity(const FixedCPU &self) { return self.m_width; }
+    static int affinity() { return CPU::id(); }
+
+  private:
+    static inline int m_idles   = 0;
+    static inline int m_counter = 0;
+    int m_width                 = 0;
 };
 
 template <typename T> class Scheduler {
 
   public:
-    using Criterion = typename Traits<Scheduler<T>>::Criterion;
+    using Criterion = typename Traits<T>::Criterion;
     using Element   = Node<Thread *, Criterion>;
     using Queue     = typename Criterion::template Queue<Element>;
 
@@ -39,31 +72,38 @@ template <typename T> class Scheduler {
 
     Element *remove(Criterion::Rank threshold = Criterion::IDLE) {
         Element *next = nullptr;
-        int i         = Criterion::Levels - 1;
-        m_spin.acquire();
+        int i         = Criterion::Depth - 1;
+
         while (i >= threshold && !next) {
-            next = m_levels[i].remove();
-            i    = i - 1;
+            m_lock[Criterion::affinity()].acquire();
+            next = m_levels[Criterion::affinity()][i].remove();
+            m_lock[Criterion::affinity()].release();
+            i = i - 1;
         }
-        m_spin.release();
-        if (next) m_heads[CPU::id()] = next->value();
+
+        if (next) m_heads[head()] = next->value();
+
         return next;
     }
 
     void insert(Element *node) {
         ERROR(!node);
-        ERROR(node->priority() >= Criterion::Levels);
-        m_spin.acquire();
-        m_levels[node->priority()].insert(node);
-        m_spin.release();
+        m_lock[Criterion::affinity(node->priority())].acquire();
+        m_levels[Criterion::affinity(node->priority())][node->priority()].insert(node);
+        m_lock[Criterion::affinity(node->priority())].release();
     }
 
-    T *current() { return m_heads[CPU::id()]; }
+    auto head() { return CPU::id(); }
+
+    auto *current() { return m_heads[head()]; }
 
   private:
-    T *m_heads[Traits<CPU>::Active];
-    Queue m_levels[Criterion::Levels];
-    Spin m_spin;
+    static const unsigned int CPUS = Traits<CPU>::Active;
+
+  private:
+    T *m_heads[CPUS] = {nullptr};
+    Queue m_levels[Criterion::Width][Criterion::Depth];
+    Spin m_lock[Criterion::Width];
 };
 
 } // namespace DEPOS
