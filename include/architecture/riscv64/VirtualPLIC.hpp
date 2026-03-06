@@ -8,56 +8,66 @@ namespace riscv64 {
 
 class VirtualPLIC {
     enum {
-        PRIORITY = 0x000000,
-        PENDING = 0x001000,
-        ENABLED = 0x002000,
+        PRIORITY  = 0x000000,
+        PENDING   = 0x001000,
+        ENABLED   = 0x002000,
         THRESHOLD = 0x200000,
-        CLAIM = 0x200004,
+        CLAIM     = 0x200004,
     };
 
   public:
     VirtualPLIC() = default;
 
-    bool interrupt(unsigned int id) {
-        unsigned int bank = id / 32;
-        unsigned int bit = id % 32;
-        bool enabled = (m_enabled[1][bank] >> bit) & 1;
-        if (enabled) m_pending[bank] |= (1 << bit);
-        return enabled;
+    bool pending() { return m_irq; }
+
+    void interrupt(uint32_t id) {
+        uint32_t bank = id >> 5;
+        uint32_t bit  = id & 31;
+        uint32_t mask = (1U << bit);
+
+        for (uint32_t c = 0; c < k_number_of_contexts; ++c) {
+            if (m_enabled[c][bank] & mask) {
+                m_pending[bank] |= mask;
+                m_irq = true;
+                break;
+            }
+        }
+    }
+
+    uint32_t claim(uint32_t context) {
+        for (uint32_t i = 0; i < 32; ++i) {
+            uint32_t active = m_pending[i] & m_enabled[context][i];
+
+            if (i == 0) active &= ~1U;
+
+            if (active) {
+                uint32_t bit = static_cast<uint32_t>(__builtin_ctz(active));
+                m_pending[i] &= ~(1U << bit);
+                m_irq = false;
+                return (i << 5) | bit;
+            }
+        }
+        return 0;
     }
 
     bool read(unsigned long offset, unsigned int *destination) {
-        if (offset > ENABLED && offset < THRESHOLD) {
+        if (offset >= ENABLED && offset < THRESHOLD) {
             unsigned int context = (offset - ENABLED) / 0x80;
-            unsigned int chunk = ((offset - ENABLED) % 0x80) / 4;
-            *destination = m_enabled[context][chunk];
+            unsigned int chunk   = ((offset - ENABLED) % 0x80) / 4;
+            *destination         = m_enabled[context][chunk];
             return true;
         } else if (offset >= THRESHOLD) {
-            unsigned int off = offset - THRESHOLD;
-            unsigned int ctx = off / 0x1000;
-            unsigned int reg = off % 0x1000;
+            unsigned int off     = offset - THRESHOLD;
+            unsigned int context = off / 0x1000;
+            unsigned int reg     = off % 0x1000;
 
-            if (ctx >= k_number_of_contexts) return false;
+            if (context >= k_number_of_contexts) return false;
 
             if (reg == 0) {
-                *destination = m_threshold[ctx];
+                *destination = m_threshold[context];
                 return true;
-            }
-
-            if (reg == 4) {
-                *destination = 0;
-                for (unsigned int i = 0; i < 32; ++i) {
-                    uint32_t active = m_pending[i] & m_enabled[ctx][i];
-
-                    if (i == 0) active &= ~1;
-
-                    if (active) {
-                        unsigned int bit = __builtin_ctz(active);
-                        m_pending[i] &= ~(1 << bit);
-                        *destination = (i * 32) + bit;
-                        return true;
-                    }
-                }
+            } else if (reg == 4) {
+                *destination = claim(context);
                 return true;
             }
         }
@@ -65,23 +75,26 @@ class VirtualPLIC {
     }
 
     bool write(unsigned long offset, unsigned int source) {
-        if (offset > PRIORITY && offset < PENDING) {
+        if (offset >= PRIORITY && offset < PENDING) {
             m_priority[offset / 4] = source;
             return true;
-        } else if (offset > ENABLED && offset < THRESHOLD) {
+        } else if (offset >= ENABLED && offset < THRESHOLD) {
             offset -= ENABLED;
-            unsigned int context = offset / 0x80;
-            unsigned int chunk = (offset % 0x80) / 4;
+            unsigned int context      = offset / 0x80;
+            unsigned int chunk        = (offset % 0x80) / 4;
             m_enabled[context][chunk] = source;
             return true;
         } else if (offset >= THRESHOLD) {
-            offset -= THRESHOLD;
-            if (offset % 0x1000 == 0) {
-                m_threshold[offset / 0x1000] = source;
-            } else {
+            unsigned int off     = offset - THRESHOLD;
+            unsigned int context = off / 0x1000;
+            unsigned int reg     = off % 0x1000;
+            if (reg == 0) {
+                m_threshold[context] = source;
+                return true;
+            } else if (reg == 4) {
                 csrc<MachineMode::IP>(SupervisorMode::EI);
+                return true;
             }
-            return true;
         }
 
         return false;
@@ -89,10 +102,11 @@ class VirtualPLIC {
 
   private:
     static constexpr unsigned int k_number_of_contexts = 2;
-    uint32_t m_priority[1024] = {}; // 32 Bits For Each IRQ
-    uint32_t m_pending[32] = {};    // One Bit For Each IRQ
-    uint32_t m_enabled[k_number_of_contexts][32] = {};
-    uint32_t m_threshold[k_number_of_contexts] = {}; // Threshold Per Context
+    uint32_t m_priority[1024]                          = {0}; // 32 Bits For Each IRQ
+    uint32_t m_pending[32]                             = {0}; // One Bit For Each IRQ
+    uint32_t m_enabled[k_number_of_contexts][32]       = {0};
+    uint32_t m_threshold[k_number_of_contexts]         = {0}; // Threshold Per Context
+    bool m_irq                                         = false;
 };
 
 } // namespace riscv64

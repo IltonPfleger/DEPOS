@@ -53,12 +53,12 @@ class HIC {
 
         csrw<MachineMode::TVEC>(entry);
 
-        char *stack = reinterpret_cast<char *>(Memory::alloc(Traits<Memory>::StackSize)) + Traits<Memory>::StackSize;
+        char *stack = reinterpret_cast<char *>(Memory::alloc(Traits<Memory>::StackSize)) +
+                      Traits<Memory>::StackSize;
         csrw<Mode::SCRATCH>(stack);
 
         IC::bind(7, [](unsigned int) { CLINT::write(); });
         csrs<MachineMode::IE>(MachineMode::TI);
-        // csrs<MachineMode::MCOUNTEREN>(~0);
 
         if constexpr (Traits<PLIC>::Enable) {
             PLIC::init();
