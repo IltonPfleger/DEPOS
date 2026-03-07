@@ -26,7 +26,7 @@ class VirtualCPU {
     using Context = MachineContext;
 
     static constexpr unsigned long Address = Traits<MemoryMap>::PLIC;
-    static constexpr unsigned long Size    = Traits<MemoryMap>::PLIC;
+    static constexpr unsigned long Size    = 0x4000000;
 
     template <typename... Args>
     VirtualCPU(uintptr_t address, size_t size, void (*entry)(Args...), Args... args)
@@ -37,7 +37,10 @@ class VirtualCPU {
 
         csrw<SupervisorMode::SATP>(0);
 
-        PMP::NAPOT<0>(address, size, PMP::R | PMP::W | PMP::X);
+		(void)address;
+		(void)size;
+        PMP::NAPOT<2>(0, 0, PMP::R | PMP::W | PMP::X);
+        //PMP::NAPOT<0>(address, size, PMP::R | PMP::W | PMP::X);
 
         unsigned long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt

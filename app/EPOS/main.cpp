@@ -25,8 +25,8 @@ int main() {
     memcpy(buffer, EPOS, sizeof(EPOS));
 
     Console::cout << "\n *** EPOS is at core " << CPU::id() << " ***\n ";
-    auto Entry = reinterpret_cast<void (*)()>(buffer);
-    new VirtualCPU(address, MemorySize, Entry);
+    auto Entry = reinterpret_cast<void (*)(int)>(buffer);
+    new VirtualCPU(address, MemorySize, Entry, 1);
 
     return 0;
 }

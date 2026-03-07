@@ -22,8 +22,8 @@ template <> struct Traits<Application> {
 };
 
 template <> struct Traits<Virtual> {
-    typedef Meta::TypeList<virtio::Console<UART16550<UART0>, 0x30000000>, riscv64::VirtualCPU>
-        Devices;
+    typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result Serial;
+    typedef Meta::TypeList<virtio::Console<Serial, 0x30000000>, riscv64::VirtualCPU> Devices;
 
     // typedef Meta::TypeList<riscv64::VirtualCPU, virtio::Console<UART16550<UART0>, 0x30000000>>
     // Devices;
