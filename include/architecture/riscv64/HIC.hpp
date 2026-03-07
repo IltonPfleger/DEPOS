@@ -24,9 +24,7 @@ class HIC {
             unsigned int id = mcause & ~IC::INTERRUPT;
             if (id == 11) {
                 id = PLIC::claim();
-                if (id) {
-                    IC::dispatch(id + 11);
-                }
+                if (id) IC::dispatch(id + 11);
                 PLIC::complete(id);
                 return;
             }

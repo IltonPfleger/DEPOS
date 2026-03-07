@@ -1,7 +1,6 @@
 include ../../Makedefs.mk
 
-INFO := $(BUILD)/$(APPLICATION).info
-BIN := $(BUILD)/$(APPLICATION).bin
+ELF := $(BUILD)/$(APPLICATION).elf
 BUILD := $(BUILD)/$(APPLICATION)
 
 SOURCES := $(wildcard $(APPLICATION)/*.cpp)
@@ -16,13 +15,9 @@ KERNEL_BLOB = $(BUILD)/$(KERNEL).inc
 INITRAMFS_BLOB = $(BUILD)/$(INITRAMFS).inc
 INITRAMFS_ADDR=$(shell cat Traits.hpp | grep "DTB =" | sed -E 's/.*= (0x[0-9A-Fa-f]+);.*/\1/')
 
-all: $(BIN)
+all: $(ELF)
 
-$(BIN): $(INFO)
-	@mkdir -p $(dir $@)
-	$(OBJCOPY) -O binary $< $@
-
-$(INFO): $(BUILD)/$(APPLICATION).o
+$(ELF): $(BUILD)/$(APPLICATION).o
 	@mkdir -p $(dir $@)
 	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(APPLICATION_ADDR) --image-base=$(APPLICATION_ADDR) -o $@ $^
 

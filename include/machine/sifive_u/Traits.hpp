@@ -58,10 +58,9 @@ template <> struct Traits<MemoryMap> {
 
 template <> struct Traits<SiFiveUART<UART0>> {
     static constexpr unsigned long Address = Traits<MemoryMap>::UART0;
-    // static constexpr unsigned int Clock    = 10'000'000;
-    // static constexpr unsigned int BaudRate = 115200;
-    // static constexpr unsigned int Shift  = 0;
-    // static constexpr unsigned int IRQs[] = {21};
+    static constexpr unsigned int IRQs[]   = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+    static constexpr unsigned int Clock    = 10'000'000;
+    static constexpr unsigned int BaudRate = 115200;
 };
 
 template <> struct Traits<UART> {
@@ -81,13 +80,19 @@ template <> struct Traits<IC> {
 };
 
 template <> struct Traits<PLIC> {
-    static constexpr bool Enable           = true;
-    using ContextsType                     = Meta::Array<Traits<CPU>::Count, Meta::Array<2, int>>;
+    static constexpr bool Enable = true;
+    using ContextsType           = Meta::Array<Traits<CPU>::Count, Meta::Array<2, int>>;
+
     static constexpr ContextsType Contexts = []() {
         ContextsType contexts{};
         for (int i = 0; i < Traits<CPU>::Count; i++) {
-            contexts[i][0] = i * 2;
-            contexts[i][1] = i * 2 + 1;
+            if (i == 0) {
+                contexts[i][0] = 0;
+                contexts[i][1] = -1;
+            } else {
+                contexts[i][0] = i * 2 - 1; // M-Mode
+                contexts[i][1] = i * 2;
+            }
         }
         return contexts;
     }();

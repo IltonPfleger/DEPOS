@@ -17,8 +17,9 @@ class IC : public DispatchTable<Traits<IC>::First, Traits<IC>::Last, IC> {
         DispatchTable<Traits<IC>::First, Traits<IC>::Last, IC>::bind(id, handler);
 
         if (id > 11) {
-            PLIC::priority(id - 11, 1);
-            PLIC::enable(id - 11);
+            id -= 11;
+            PLIC::priority(id, 10);
+            PLIC::enable(id);
         }
     }
 };

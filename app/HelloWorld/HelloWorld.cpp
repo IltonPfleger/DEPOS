@@ -7,7 +7,8 @@ using namespace DEPOS;
 
 class Waiter : public Observer<const unsigned char *, size_t> {
   public:
-    Waiter() : m_done(false) {}
+    Waiter()
+        : m_done(false) {}
 
     void update(const unsigned char *buffer, size_t size) override {
         Console::cout << "Pressed Key: " << buffer[size - 1] << '\n';

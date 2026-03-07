@@ -7,11 +7,12 @@
 
 namespace DEPOS {
 
-template <typename Tag> class UART16550 : public Driver, public Observed<const unsigned char *, size_t> {
-    using MyTraits = Traits<UART16550<Tag>>;
-    static constexpr unsigned long Address = MyTraits::Address;
-    static constexpr unsigned int Clock = MyTraits::Clock;
-    static constexpr unsigned int BaudRate = MyTraits::BaudRate;
+template <typename Tag>
+class UART16550 : public Driver, public Observed<const unsigned char *, size_t> {
+    using MyTraits                            = Traits<UART16550<Tag>>;
+    static constexpr unsigned long Address    = MyTraits::Address;
+    static constexpr unsigned int Clock       = MyTraits::Clock;
+    static constexpr unsigned int BaudRate    = MyTraits::BaudRate;
     static constexpr unsigned int BaudDivisor = Clock / (16 * BaudRate);
 
   private:
@@ -42,21 +43,21 @@ template <typename Tag> class UART16550 : public Driver, public Observed<const u
     };
 
     enum Bits {
-        LCR_DLAB = 1 << 7,
-        LCR_8N1 = 0x03,
-        FCR_ENABLE = 0x01,
-        FCR_CLEAR = 0x06,
-        IER_RX = 0x01,
+        LCR_DLAB     = 1 << 7,
+        LCR_8N1      = 0x03,
+        FCR_ENABLE   = 0x01,
+        FCR_CLEAR    = 0x06,
+        IER_RX       = 0x01,
         LSR_RX_READY = 1 << 0,
         LSR_TX_EMPTY = 1 << 5,
     };
 
     static void handler(unsigned int) {
-        unsigned char buffer[32];
+        unsigned char buffer[8];
         unsigned int i = 0;
         while (Reg8(Address, LSR) & LSR_RX_READY && i < sizeof(buffer)) {
             unsigned char c = Reg8(Address, RBR);
-            buffer[i] = c;
+            buffer[i]       = c;
             i++;
         }
         instance()->notify(buffer, i);
