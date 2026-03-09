@@ -7,7 +7,7 @@
     if constexpr (Traits<Debug>::Error) {                                                          \
         if (expr) {                                                                                \
             Console::cout << Console::panic;                                                       \
-            Console::cout << "\n <" << CPU::id() << "> [ERROR] " << __PRETTY_FUNCTION__            \
+            Console::cout << "\n<" << CPU::id() << "> [ERROR] " << __PRETTY_FUNCTION__            \
                           << "\nExpression: " << #expr << "\n";                                    \
             __VA_OPT__([&](auto &&...args) { ((Console::cout << args), ...); }(__VA_ARGS__);)      \
             for (;;)                                                                               \

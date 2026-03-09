@@ -37,10 +37,13 @@ class StoreAccessFault {
     };
 
     static bool handler(MachineContext *c) {
-        uintptr_t addr           = PageTable::virt2phys(csrr<MachineMode::TVAL>());
+        uintptr_t address        = PageTable::virt2phys(csrr<MachineMode::TVAL>());
         unsigned int instruction = *reinterpret_cast<unsigned int *>(PageTable::virt2phys(c->pc));
         unsigned int i           = (instruction >> 20) & 0x1F;
-        return c->pc += 4, Dispatcher<ActiveTraits::Devices>::run(addr, (*c)[i]);
+        bool response            = Dispatcher<ActiveTraits::Devices>::run(address, (*c)[i]);
+        c->pc += 4;
+        return response;
+        // return c->pc += 4, Dispatcher<ActiveTraits::Devices>::run(addr, (*c)[i]);
     }
 };
 

@@ -99,6 +99,7 @@ template <typename T> class Handler {
     }
 
     void pfn(uint32_t source) {
+		DEPOS::Console::cout << "PFN: " << source << DEPOS::Console::endl;
         auto &queue            = m_queues[m_header.m_queue_selector];
         const uint32_t address = source * m_header.m_guest_page_size;
 
