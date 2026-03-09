@@ -37,10 +37,11 @@ class VirtualCPU {
 
         csrw<SupervisorMode::SATP>(0);
 
-		(void)address;
-		(void)size;
+        (void)address;
+        (void)size;
         PMP::NAPOT<2>(0, 0, PMP::R | PMP::W | PMP::X);
-        //PMP::NAPOT<0>(address, size, PMP::R | PMP::W | PMP::X);
+        PMP::NAPOT<2>(0, 0, PMP::R | PMP::W | PMP::X);
+        // PMP::NAPOT<0>(address, size, PMP::R | PMP::W | PMP::X);
 
         unsigned long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt

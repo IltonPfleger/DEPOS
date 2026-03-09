@@ -14,18 +14,20 @@ namespace riscv64 {
 class CPU {
   public:
     using Context = ContextBase<KernelMode>;
-    using Atomic = ArchitectureCommon::Atomic;
+    using Atomic  = ArchitectureCommon::Atomic;
 
     static uint64_t htobe64(uint64_t x) {
-        return ((x & 0xFF00000000000000ULL) >> 56) | ((x & 0x00FF000000000000ULL) >> 40) | ((x & 0x0000FF0000000000ULL) >> 24) |
-               ((x & 0x000000FF00000000ULL) >> 8) | ((x & 0x00000000FF000000ULL) << 8) | ((x & 0x0000000000FF0000ULL) << 24) |
+        return ((x & 0xFF00000000000000ULL) >> 56) | ((x & 0x00FF000000000000ULL) >> 40) |
+               ((x & 0x0000FF0000000000ULL) >> 24) | ((x & 0x000000FF00000000ULL) >> 8) |
+               ((x & 0x00000000FF000000ULL) << 8) | ((x & 0x0000000000FF0000ULL) << 24) |
                ((x & 0x000000000000FF00ULL) << 40) | ((x & 0x00000000000000FFULL) << 56);
     }
 
     static uint64_t be64toh(uint64_t x) { return htobe64(x); }
 
     static uint32_t htobe32(uint32_t x) {
-        return ((x & 0xFF000000) >> 24) | ((x & 0x00FF0000) >> 8) | ((x & 0x0000FF00) << 8) | ((x & 0x000000FF) << 24);
+        return ((x & 0xFF000000) >> 24) | ((x & 0x00FF0000) >> 8) | ((x & 0x0000FF00) << 8) |
+               ((x & 0x000000FF) << 24);
     }
 
     static uint32_t be32toh(uint32_t x) { return htobe32(x); }
@@ -77,11 +79,13 @@ class CPU {
         }
 
         // Get A Stack
-        asm volatile("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::StackSize * core));
+        asm volatile("mv sp, %0" ::"r"(Traits<MemoryMap>::PhysicalRamEnd -
+                                       Traits<Memory>::StackSize * core));
 
         // Setup Boot Memory
         if (id() == Traits<CPU>::BSP) {
-            __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::StackSize * Traits<CPU>::Active - 1;
+            __bmm.start =
+                Traits<MemoryMap>::RamEnd - Traits<Memory>::StackSize * Traits<CPU>::Active - 1;
             __bmm.end = Traits<MemoryMap>::RamEnd;
         }
 
@@ -95,15 +99,15 @@ class CPU {
     static void mb() { asm volatile("fence iorw, iorw" ::: "memory"); }
 
     static void barrier() {
-        __attribute__((section(".barrier"))) static volatile unsigned char gsense = 0;
+        __attribute__((section(".barrier"))) static volatile unsigned char gsense  = 0;
         __attribute__((section(".barrier"))) static volatile unsigned int ready[2] = {0};
 
-        unsigned char sense = gsense;
+        unsigned char sense  = gsense;
         unsigned int arrived = Atomic::finc(ready[sense]);
 
         if (arrived == Traits<CPU>::Active - 1) {
             ready[sense] = 0;
-            gsense = !sense;
+            gsense       = !sense;
         } else {
             while (gsense == sense)
                 mb();
