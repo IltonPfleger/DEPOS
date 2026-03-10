@@ -4,7 +4,7 @@ namespace DEPOS {
 
 namespace virtio {
 
-class VirtQueue {
+class Queue {
   public:
     struct RingDescriptor {
         uint64_t address;
@@ -34,8 +34,8 @@ class VirtQueue {
         };
     } __attribute__((packed));
 
-    VirtQueue() = default;
-    VirtQueue(uintptr_t address, uint32_t size, uint32_t align)
+    Queue() = default;
+    Queue(uintptr_t address, uint32_t size, uint32_t align)
         : m_address(address),
           m_size(size),
           m_last_available_index(0) {

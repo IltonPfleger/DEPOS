@@ -27,7 +27,7 @@ class Network : public Handler<Network<Device, Base>>,
     void notify(unsigned int source) {
         if (source != k_tx_queue) return;
 
-        VirtQueue &queue = this->m_queues[k_tx_queue];
+        auto &queue = this->m_queues[k_tx_queue];
 
         while (queue.available()) {
             int head              = queue.alloc();
@@ -36,9 +36,9 @@ class Network : public Handler<Network<Device, Base>>,
             bool first_descriptor = true;
 
             while (true) {
-                VirtQueue::RingDescriptor *descriptor = queue.get(current);
-                uint8_t *data = reinterpret_cast<uint8_t *>(descriptor->address);
-                uint32_t len  = descriptor->length;
+                auto *descriptor = queue.get(current);
+                uint8_t *data    = reinterpret_cast<uint8_t *>(descriptor->address);
+                uint32_t len     = descriptor->length;
 
                 if (first_descriptor) {
                     data += sizeof(NetworkHeader);
@@ -61,7 +61,7 @@ class Network : public Handler<Network<Device, Base>>,
     }
 
     void update(const unsigned char *buffer, size_t size) override {
-        VirtQueue &queue = this->m_queues[k_rx_queue];
+        auto &queue = this->m_queues[k_rx_queue];
 
         if (!queue.available()) return;
 

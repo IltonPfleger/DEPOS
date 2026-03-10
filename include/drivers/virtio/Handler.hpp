@@ -2,7 +2,7 @@
 
 #include <Traits.hpp>
 #include <drivers/virtio/LegacyHeader.hpp>
-#include <drivers/virtio/VirtQueue.hpp>
+#include <drivers/virtio/Queue.hpp>
 #include <utils/Debug.hpp>
 
 namespace DEPOS {
@@ -99,11 +99,10 @@ template <typename T> class Handler {
     }
 
     void pfn(uint32_t source) {
-		DEPOS::Console::cout << "PFN: " << source << DEPOS::Console::endl;
         auto &queue            = m_queues[m_header.m_queue_selector];
         const uint32_t address = source * m_header.m_guest_page_size;
 
-        queue = VirtQueue(address, m_header.m_max_number_of_descriptors, m_header.m_queue_align);
+        queue = Queue(address, m_header.m_queue_number, m_header.m_queue_align);
         m_header.m_queue_page_frame_number = source;
     }
 
@@ -118,7 +117,7 @@ template <typename T> class Handler {
   protected:
     static constexpr size_t MaxQueues = 2;
 
-    VirtQueue m_queues[MaxQueues];
+    Queue m_queues[MaxQueues];
     LegacyHeader m_header;
 };
 

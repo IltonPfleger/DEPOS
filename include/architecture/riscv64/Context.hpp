@@ -21,7 +21,11 @@ template <typename T> class ContextBase {
     uint64_t t3, t4, t5, t6;
     uint64_t status, scratch, cause, pc;
 
-    uint64_t &operator[](size_t i) { return (reinterpret_cast<uint64_t *>(&ra))[i - 1]; }
+    uint64_t &operator[](size_t i) {
+        static uint64_t zero;
+        if (i == 0) return zero;
+        return (reinterpret_cast<uint64_t *>(&ra))[i - 1];
+    }
 
     ContextBase() = default;
 

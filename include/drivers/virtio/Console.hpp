@@ -25,7 +25,7 @@ class Console : public Handler<Console<Device, Base>>,
     void notify(unsigned int source) {
         if (source != k_tx_queue) return;
 
-        VirtQueue &queue = this->m_queues[source];
+        auto &queue = this->m_queues[source];
         if (!queue.available()) return;
 
         int head        = queue.alloc();
@@ -48,7 +48,7 @@ class Console : public Handler<Console<Device, Base>>,
     }
 
     void update(const unsigned char *buffer, size_t size) override {
-        VirtQueue &queue = this->m_queues[k_rx_queue];
+        auto &queue = this->m_queues[k_rx_queue];
 
         if (!queue.available()) return;
 
