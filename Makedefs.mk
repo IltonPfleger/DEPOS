@@ -22,13 +22,19 @@ DD      := dd
 TRUNCATE := truncate
 QEMU    := qemu-system-riscv64
 
+ARCH ?= riscv64
 MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
 CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic -Wfatal-errors
 CCFLAGS += -D__MACHINE=$(MACHINE) -D__ARCH=$(ARCH) -D__APPLICATION=$(APPLICATION)
 
+ifeq ($(MAKELEVEL),0)
+run norun debug: $(CONFIG)
+	$(MAKE) $@
+else
 build: $(IMAGE)
+endif
 
 .PHONY: $(CONFIG)
 $(CONFIG): $(TRAITS)
@@ -39,6 +45,7 @@ $(CONFIG): $(TRAITS)
 $(TRAITS): tools/Traits.cpp
 	@mkdir -p $(dir $@)
 	g++ $(CCFLAGS) $< -o $@
+
 
 
 MARCH_CCFLAGS = $(CCFLAGS)
