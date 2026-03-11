@@ -7,7 +7,7 @@ TOOLS        := $(HERE)/tools
 
 SYSTEM      := $(BUILD)/DEPOS
 IMAGE       := $(BUILD)/Image.bin
-CONFIG      := $(BUILD)Config
+CONFIG      := $(BUILD)/Config
 
 TRAITS := $(BUILD)/Traits
 MAPPER   := $(BUILD)/Mapper
@@ -25,7 +25,8 @@ QEMU    := qemu-system-riscv64
 MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
-CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -Wall -Wextra -Werror -pedantic -Wfatal-errors
+CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic -Wfatal-errors
+CCFLAGS += -D__MACHINE=$(MACHINE) -D__ARCH=$(ARCH) -D__APPLICATION=$(APPLICATION)
 
 build: $(IMAGE)
 
@@ -40,19 +41,9 @@ $(TRAITS): tools/Traits.cpp
 	g++ $(CCFLAGS) $< -o $@
 
 
+MARCH_CCFLAGS = $(CCFLAGS)
 ifneq ($(MAKECMDGOALS),clean)
-include $(HERE)/include/machine/$(MACHINE)/Makedefs.mk
 -include $(CONFIG)
+include $(HERE)/include/machine/$(MACHINE)/Makedefs.mk
+include $(HERE)/include/architecture/$(ARCH)/Makedefs.mk
 endif
-
-
-
-#MARCH_CCFLAGS = $(CCFLAGS)
-#MARCH_CCFLAGS += -D__ARCH=$(ARCH)
-#MARCH_CCFLAGS += -mcmodel=medany
-#MARCH_CCFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
-#MARCH_CCFLAGS += -msmall-data-limit=0 -fno-threadsafe-statics -fno-use-cxa-atexit
-#MARCH_CCFLAGS += -march=rv64g_zicsr -mabi=lp64
-#MARCH_CCFLAGS += -g -O3
-
-
