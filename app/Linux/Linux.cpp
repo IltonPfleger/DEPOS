@@ -71,6 +71,9 @@ class LinuxDeviceTree {
     unsigned m_size_dt_struct;
 };
 
+#define ___STR(X) #X
+#define __STR(X) ___STR(X)
+
 struct LinuxImage {
     alignas(2 * 1024 * 1024) static constexpr unsigned char Kernel[] = {
 #include __STR(__KERNEL__)

@@ -1,6 +1,8 @@
 #pragma once
 
-#include <Macros.hpp>
+#include <headers.hpp>
+
+#ifdef __VIRTUAL_CPU_HEADER
 
 #include __VIRTUAL_CPU_HEADER
 
@@ -9,3 +11,5 @@ namespace DEPOS {
 using VirtualCPU = __ARCH::VirtualCPU;
 
 }
+
+#endif

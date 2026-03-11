@@ -1,6 +1,6 @@
 #pragma once
 
-#include <abstractions/IC.hpp>
+#include <architecture/IC.hpp>
 #include <drivers/Driver.hpp>
 #include <utils/Observer.hpp>
 
