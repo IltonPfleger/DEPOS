@@ -1,6 +1,8 @@
-#include <Types.hpp>
 #include <memory/Heap.hpp>
+#include <types.hpp>
 #include <utils/string.hpp>
+
+using namespace DEPOS;
 
 extern "C" {
 

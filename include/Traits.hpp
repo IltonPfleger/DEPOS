@@ -2,6 +2,7 @@
 
 #include <Meta.hpp>
 #include <headers.hpp>
+#include <types.hpp>
 
 namespace DEPOS {
 
@@ -28,13 +29,13 @@ template <> struct Traits<Kernel> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr unsigned long Frequency = 100;
-    static constexpr bool Enable             = true;
+    static constexpr Hz Frequency = 100;
+    static constexpr bool Enable  = true;
 };
 
 template <> struct Traits<Alarm> {
-    static constexpr unsigned long Frequency = Traits<Timer>::Frequency;
-    static constexpr bool Enable             = true;
+    static constexpr Hz Frequency = Traits<Timer>::Frequency;
+    static constexpr bool Enable  = true;
 };
 
 template <> struct Traits<Debug> {
@@ -54,9 +55,9 @@ template <> struct Traits<Console> {
 namespace DEPOS {
 
 template <> struct Traits<Thread> {
-    static constexpr unsigned long RescheduleFrequency = Traits<Timer>::Frequency / 10;
-    static constexpr bool IsolatedKernelStack          = true;
-    static constexpr unsigned UserStackSize            = Traits<Memory>::PageSize;
+    static constexpr Hz RescheduleFrequency   = Traits<Timer>::Frequency / 10;
+    static constexpr bool IsolatedKernelStack = true;
+    static constexpr unsigned UserStackSize   = Traits<Memory>::PageSize;
     static constexpr unsigned KernelStackSize = IsolatedKernelStack ? Traits<Memory>::PageSize : 0;
     using Criterion                           = RR;
     // using Criterion                           = FixedCPU;

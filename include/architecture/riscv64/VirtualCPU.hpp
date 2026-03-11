@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Traits.hpp>
-#include <Types.hpp>
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/CPU.hpp>
 #include <architecture/riscv64/Context.hpp>

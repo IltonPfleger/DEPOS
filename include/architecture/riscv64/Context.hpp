@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Types.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/csrs.hpp>
 

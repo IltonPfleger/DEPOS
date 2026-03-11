@@ -3,7 +3,6 @@
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
 #include <utils/Debug.hpp>
-#include <utils/Guard.hpp>
 #include <utils/Lists.hpp>
 
 namespace DEPOS {
