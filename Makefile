@@ -49,7 +49,7 @@ $(BUILD)/%: tools/%.cpp
 	mkdir -p $(dir $@)
 	g++ $(CCFLAGS) -o $@ $<
 
-$(BUILD)/%.o: src/%.cpp 
+$(BUILD)/%.o: src/%.cpp $(CONFIG)
 	mkdir -p $(dir $@)
 	$(CC) $(MARCH_CCFLAGS) -MMD -MP -c $< -o $@
 

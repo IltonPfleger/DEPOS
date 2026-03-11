@@ -5,8 +5,9 @@ BUILD        := $(HERE)/build
 APPLICATIONS := $(HERE)/app
 TOOLS        := $(HERE)/tools
 
-SYSTEM       := $(BUILD)/DEPOS
+SYSTEM      := $(BUILD)/DEPOS
 IMAGE       := $(BUILD)/Image.bin
+CONFIG      := $(BUILD)Config
 
 TRAITS := $(BUILD)/Traits
 MAPPER   := $(BUILD)/Mapper
@@ -28,24 +29,30 @@ CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -D__MACHINE=$(MACHINE) -D__APPLICATI
 
 build: $(IMAGE)
 
-$(TRAITS).mk: $(TRAITS)
+.PHONY: $(CONFIG)
+$(CONFIG): $(TRAITS)
 	@mkdir -p $(dir $@)
-	$< > $@
+	@$< > $@.tmp
+	@cmp -s $@ $@.tmp && rm -f $@.tmp || (mv -f $@.tmp $@)
 
 $(TRAITS): tools/Traits.cpp
 	@mkdir -p $(dir $@)
 	g++ $(CCFLAGS) $< -o $@
 
+
 ifneq ($(MAKECMDGOALS),clean)
--include $(TRAITS).mk
+include $(HERE)/include/machine/$(MACHINE)/Makedefs.mk
+-include $(CONFIG)
 endif
 
-MARCH_CCFLAGS = $(CCFLAGS)
-MARCH_CCFLAGS += -D__ARCH=$(ARCH)
-MARCH_CCFLAGS += -mcmodel=medany
-MARCH_CCFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
-MARCH_CCFLAGS += -msmall-data-limit=0 -fno-threadsafe-statics -fno-use-cxa-atexit
-MARCH_CCFLAGS += -march=rv64g_zicsr -mabi=lp64
-MARCH_CCFLAGS += -g -O3
+
+
+#MARCH_CCFLAGS = $(CCFLAGS)
+#MARCH_CCFLAGS += -D__ARCH=$(ARCH)
+#MARCH_CCFLAGS += -mcmodel=medany
+#MARCH_CCFLAGS += -ffreestanding -fno-pic -fno-pie -fno-exceptions -fno-rtti -nostdlib -nostartfiles -mno-relax
+#MARCH_CCFLAGS += -msmall-data-limit=0 -fno-threadsafe-statics -fno-use-cxa-atexit
+#MARCH_CCFLAGS += -march=rv64g_zicsr -mabi=lp64
+#MARCH_CCFLAGS += -g -O3
 
 
