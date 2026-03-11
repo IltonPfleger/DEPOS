@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Meta.hpp>
+#include <headers.hpp>
 
 namespace DEPOS {
 
@@ -53,7 +54,7 @@ template <> struct Traits<Console> {
 namespace DEPOS {
 
 template <> struct Traits<Thread> {
-    static constexpr unsigned long RescheduleFrequency = Traits<Timer>::Frequency / 100;
+    static constexpr unsigned long RescheduleFrequency = Traits<Timer>::Frequency / 10;
     static constexpr bool IsolatedKernelStack          = true;
     static constexpr unsigned UserStackSize            = Traits<Memory>::PageSize;
     static constexpr unsigned KernelStackSize = IsolatedKernelStack ? Traits<Memory>::PageSize : 0;

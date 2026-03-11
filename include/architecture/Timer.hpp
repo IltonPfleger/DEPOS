@@ -1,10 +1,9 @@
 #pragma once
 
-
 #include <Alarm.hpp>
-#include <Macros.hpp>
 #include <Thread.hpp>
 #include <Traits.hpp>
+#include <headers.hpp>
 #include <utils/Ticker.hpp>
 
 #include __TIMER_HEADER
