@@ -65,7 +65,6 @@ $(BUILD)/%.o: src/%.cpp $(CONFIG)
 	$(CC) $(MARCH_CCFLAGS) -MMD -MP -c $< -o $@
 
 clean:
-	rm -rf $(APPLICATIONS)/build
 	rm -rf build
 
 -include $(DEPENDENCIES)

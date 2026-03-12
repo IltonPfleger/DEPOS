@@ -1,7 +1,7 @@
 include ../Makedefs.mk
 
 ELF := $(BUILD)/$(APPLICATION).elf
-BUILD := build
+BUILD := $(BUILD)/$(APPLICATION)
 
 ifneq ($(wildcard $(APPLICATION)/Makefile),)
 all:
