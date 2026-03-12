@@ -17,7 +17,7 @@ class MIC {
 
     static void dispatch(MachineContext *c) {
         intmax_t mcause = csrr<MachineMode::CAUSE>();
-        uint32_t id  = mcause & ~IC::INTERRUPT;
+        uint32_t id     = mcause & ~IC::INTERRUPT;
 
         if (mcause < 0) {
             if (id == 11) {
@@ -54,8 +54,8 @@ class MIC {
         if constexpr (Traits<DEPOS::Timer>::Enable && Traits<RISCV>::Supervisor) {
             IC::bind(7, CLINT::forward);
             csrs<MachineMode::IP>(SupervisorMode::TI);
-            csrs<MachineMode::MCOUNTEREN>(MachineMode::CY | MachineMode::TIME |
-                                          MachineMode::INSTRET);
+            //csrs<MachineMode::MCOUNTEREN>(MachineMode::CY | MachineMode::TIME |
+            //                              MachineMode::INSTRET);
         }
 
         if constexpr (!Traits<RISCV>::Supervisor && Traits<PLIC>::Enable) {
