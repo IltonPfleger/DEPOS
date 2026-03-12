@@ -12,13 +12,14 @@ namespace riscv64 {
 
 class MIC {
   private:
-    static constexpr bool ChangeStack = Traits<Thread>::IsolatedKernelStack || Traits<Kernel>::Multitask;
+    static constexpr bool ChangeStack =
+        Traits<Thread>::IsolatedKernelStack || Traits<Kernel>::Multitask;
 
     static void dispatch(MachineContext *c) {
-        uintmax_t mcause = csrr<MachineMode::CAUSE>();
+        intmax_t mcause = csrr<MachineMode::CAUSE>();
+        uint32_t id  = mcause & ~IC::INTERRUPT;
 
-        if (mcause & IC::INTERRUPT) {
-            unsigned int id = mcause & ~IC::INTERRUPT;
+        if (mcause < 0) {
             if (id == 11) {
                 id = PLIC::claim();
                 if (id) IC::dispatch(id + 11);
@@ -46,13 +47,15 @@ class MIC {
 
         if constexpr (Traits<Kernel>::Multitask) {
             /* Keep Boot Stack For Handle M-Mode IRQs */
-            csrw<MachineMode::SCRATCH>(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * CPU::id());
+            csrw<MachineMode::SCRATCH>(Traits<MemoryMap>::PhysicalRamEnd -
+                                       Traits<Memory>::PageSize * CPU::id());
         }
 
         if constexpr (Traits<DEPOS::Timer>::Enable && Traits<RISCV>::Supervisor) {
             IC::bind(7, CLINT::forward);
             csrs<MachineMode::IP>(SupervisorMode::TI);
-            csrs<MachineMode::MCOUNTEREN>(MachineMode::CY | MachineMode::TIME | MachineMode::INSTRET);
+            csrs<MachineMode::MCOUNTEREN>(MachineMode::CY | MachineMode::TIME |
+                                          MachineMode::INSTRET);
         }
 
         if constexpr (!Traits<RISCV>::Supervisor && Traits<PLIC>::Enable) {
