@@ -5,7 +5,6 @@
 #include <memory/Memory.hpp>
 #include <utils/BSS.hpp>
 #include <utils/Debug.hpp>
-#include <utils/Dispatcher.hpp>
 
 using namespace DEPOS;
 

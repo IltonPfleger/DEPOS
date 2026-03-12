@@ -5,7 +5,7 @@ using namespace std;
 using namespace DEPOS;
 
 int main() {
-    cout << "\nMULTITASK := " << Traits<Kernel>::Multitask;
+    cout << "MULTITASK := " << Traits<Kernel>::Multitask;
     cout << "\nMACHINE_NAME := " << Traits<Machine>::NAME;
     cout << "\nARCH := " << Traits<CPU>::Architecture;
     cout << "\nCPUS := " << Traits<CPU>::Count;
@@ -15,4 +15,5 @@ int main() {
     cout << "\nRAM_END := 0x" << hex << Traits<MemoryMap>::RamEnd;
     cout << "\nKERNEL_ADDR := 0x" << hex << Traits<MemoryMap>::KernelAddr;
     cout << "\nAPPLICATION_ADDR := 0x" << hex << Traits<Application>::Addr;
+    cout << endl;
 }
