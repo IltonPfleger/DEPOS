@@ -3,7 +3,6 @@
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/csrs.hpp>
 
-// TODO: Meta Template For CSRs
 // TODO: TP For Linux And Supervisor BUG
 
 namespace DEPOS {
