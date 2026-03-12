@@ -1,13 +1,13 @@
 include Makedefs.mk
 
-TOOLS_OBJECTS := $(patsubst $(TOOLS)/%.cpp,$(BUILD)/%, $(wildcard $(TOOLS)/*.cpp))
+COMPILED_TOOLS := $(patsubst $(TOOLS)/%.cpp,$(BUILD)/%, $(wildcard $(TOOLS)/*.cpp))
 SOURCES       := $(shell find src -name '*.cpp')
 OBJECTS       := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SOURCES))
 DEPENDENCIES  := $(OBJECTS:.o=.d)
 MAP           := $(BUILD)/MemoryMap
 
-PAYLOAD_INFO       := $(BUILD)/$(APPLICATION).info
-PAYLOAD_BIN       := $(BUILD)/$(APPLICATION).bin
+ELF       := $(BUILD)/$(APPLICATION).elf
+BINARY       := $(BUILD)/$(APPLICATION).bin
 
 ifneq ($(MAKELEVEL),0)
 
@@ -35,23 +35,28 @@ endif
 	#		#-ex "set confirm off"
 #		#-ex "file $(SYSTEM).elf"
 #
-$(IMAGE): $(SYSTEM).bin $(PAYLOAD)
+$(IMAGE): $(SYSTEM).bin $(BINARY)
 	$(DD) bs=1M conv=notrunc if=$(SYSTEM).bin of=$(IMAGE)
-	$(DD) bs=1M conv=notrunc if=$(PAYLOAD_BIN) of=$(IMAGE) oflag=seek_bytes seek=$$(( $(APPLICATION_ADDR) - $(RAM_START) ))
+	$(DD) bs=1M conv=notrunc if=$(BINARY) of=$(IMAGE) oflag=seek_bytes seek=$$(( $(APPLICATION_ADDR) - $(RAM_START) ))
 	$(TRUNCATE) -s %$(PAGE_SIZE) $(IMAGE)
 
-$(SYSTEM).bin : $(SYSTEM).elf $(TOOLS_OBJECTS)
-	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS) all
-	$(MAPPER) $(PAYLOAD_INFO) $(MAP)
+$(SYSTEM).bin : $(SYSTEM).elf $(ELF) $(COMPILED_TOOLS)
+	$(MAPPER) $(ELF) $(MAP)
 	$(OBJCOPY) --update-section .__app_mm__=$(MAP) $(SYSTEM).elf
 	$(MAPPER) $(SYSTEM).elf $(MAP)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MAP) $(SYSTEM).elf
 	$(OBJCOPY) -O binary $(SYSTEM).elf $(SYSTEM).bin
 
+$(BINARY): $(ELF)
+	$(OBJCOPY) -O binary $< $@
+
+$(ELF): $(SYSTEM).elf
+	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS) all
+
 $(SYSTEM).elf: $(OBJECTS)
 	$(LD) --no-gc-sections -e _init --section-start=.init=$(KERNEL_ADDR) --image-base=$(KERNEL_ADDR) -o $@ $(OBJECTS)
 
-$(BUILD)/%: tools/%.cpp 
+$(BUILD)/%: $(TOOLS)/%.cpp 
 	mkdir -p $(dir $@)
 	g++ $(CCFLAGS) -o $@ $<
 

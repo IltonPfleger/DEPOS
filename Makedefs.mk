@@ -22,7 +22,6 @@ DD      := dd
 TRUNCATE := truncate
 QEMU    := qemu-system-riscv64
 
-ARCH ?= riscv64
 MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
@@ -37,20 +36,14 @@ build: $(IMAGE)
 endif
 
 .PHONY: $(CONFIG)
-$(CONFIG): $(TRAITS)
-	@mkdir -p $(dir $@)
-	@$< > $@.tmp
+$(CONFIG):
+	mkdir -p $(dir $@)
+	g++ $(CCFLAGS) tools/Traits.cpp -o $(TRAITS)
+	$(TRAITS) > $@.tmp
 	@cmp -s $@ $@.tmp && rm -f $@.tmp || (mv -f $@.tmp $@)
-
-$(TRAITS): tools/Traits.cpp
-	@mkdir -p $(dir $@)
-	g++ $(CCFLAGS) $< -o $@
-
-
 
 MARCH_CCFLAGS = $(CCFLAGS)
 ifneq ($(MAKECMDGOALS),clean)
 -include $(CONFIG)
 include $(HERE)/include/machine/$(MACHINE)/Makedefs.mk
-include $(HERE)/include/architecture/$(ARCH)/Makedefs.mk
 endif
