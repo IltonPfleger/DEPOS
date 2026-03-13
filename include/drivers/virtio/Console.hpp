@@ -26,6 +26,7 @@ class Console : public Handler<Console<Device, Base>>,
         if (source != k_tx_queue) return;
 
         auto &queue = this->m_queues[source];
+
         if (!queue.available()) return;
 
         int head        = queue.alloc();

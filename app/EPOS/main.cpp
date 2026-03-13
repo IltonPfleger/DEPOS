@@ -3,16 +3,18 @@
 #include <architecture/CPU.hpp>
 #include <drivers/virtio/Console.hpp>
 #include <machine/Machine.hpp>
+#include <network/ethernet/ip/TFTP.hpp>
 #include <utils/Console.hpp>
 #include <utils/string.hpp>
 
 using namespace DEPOS;
 
-static constexpr unsigned char EPOS[] = {
-#include __STR(__KERNEL__)
-};
+// static constexpr unsigned char EPOS[] = {
+// #include __STR(__KERNEL__)
+// };
 
 int main() {
+
     TraceIn();
 
     constexpr long MB         = 1024 * 1024;
@@ -22,7 +24,11 @@ int main() {
     uintptr_t address     = reinterpret_cast<uintptr_t>(buffer);
 
     memset(buffer, 0, MemorySize);
-    memcpy(buffer, EPOS, sizeof(EPOS));
+    // memcpy(buffer, EPOS, sizeof(EPOS));
+
+    typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
+    TFTP<Device> tftp("192.168.1.100");
+    tftp.request("EPOS.bin", buffer, MemorySize);
 
     Console::cout << "\n *** EPOS is at core " << CPU::id() << " ***\n ";
     auto Entry = reinterpret_cast<void (*)(int)>(buffer);

@@ -223,7 +223,8 @@ template <typename Buffer, typename MyTraits> class DWC_Ether_QoS_DMA : public D
   public:
     DWC_Ether_QoS_DMA()
         : m_tx_head(0),
-          m_rx_head(0) {
+          m_rx_head(0),
+		  m_mtu(1518) {
         TraceIn();
 
         memset(m_tx_descriptors, 0, k_number * sizeof(Descriptor));
@@ -301,6 +302,7 @@ template <typename Buffer, typename MyTraits> class DWC_Ether_QoS_DMA : public D
     }
 
     int send(const void *p, size_t s) {
+        s             = s > m_mtu ? m_mtu : s;
         Descriptor &d = m_tx_descriptors[m_tx_head];
 
         d.buffer(reinterpret_cast<uint64_t>(p));
@@ -353,6 +355,7 @@ template <typename Buffer, typename MyTraits> class DWC_Ether_QoS_DMA : public D
     Buffer m_tx_buffers[k_number];
     unsigned int m_tx_head;
     unsigned int m_rx_head;
+    unsigned int m_mtu;
 };
 
 template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {

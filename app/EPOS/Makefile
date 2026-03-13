@@ -27,7 +27,9 @@ $(KERNEL):
 	make -C EPOS veryclean APPLICATION=
 	make -C EPOS APPLICATION=philosophers_dinner
 	$(OBJCOPY) -O binary EPOS/img/philosophers_dinner EPOS/img/philosophers_dinner.bin
-	xxd -i EPOS/img/philosophers_dinner.bin | sed '1d' | head -n -2 > $@
+	sudo rm /srv/tftp/EPOS.bin
+	sudo mv EPOS/img/philosophers_dinner.bin /srv/tftp/EPOS.bin
+	#xxd -i EPOS/img/philosophers_dinner.bin | sed '1d' | head -n -2 > $@
 
 clean:
 	rm -rf $(BUILD)

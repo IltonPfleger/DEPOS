@@ -68,6 +68,7 @@ class VirtualPLIC {
                 return true;
             } else if (reg == 4) {
                 *destination = claim(context);
+                Console::cout << *destination << Console::endl;
                 return true;
             }
         }
@@ -80,8 +81,9 @@ class VirtualPLIC {
             return true;
         } else if (offset >= ENABLED && offset < THRESHOLD) {
             offset -= ENABLED;
-            unsigned int context      = offset / 0x80;
-            unsigned int chunk        = (offset % 0x80) / 4;
+            unsigned int context = offset / 0x80;
+            unsigned int chunk   = (offset % 0x80) / 4;
+            Console::cout << chunk << " " << source << Console::endl;
             m_enabled[context][chunk] = source;
             return true;
         } else if (offset >= THRESHOLD) {
@@ -104,7 +106,7 @@ class VirtualPLIC {
     static constexpr unsigned int k_number_of_contexts = 2;
     uint32_t m_priority[1024]                          = {0}; // 32 Bits For Each IRQ
     uint32_t m_pending[32]                             = {0}; // One Bit For Each IRQ
-    uint32_t m_enabled[k_number_of_contexts][32]       = {0};
+    uint32_t m_enabled[k_number_of_contexts][32]       = {0}; // One Bit For Each IRQ
     uint32_t m_threshold[k_number_of_contexts]         = {0}; // Threshold Per Context
     bool m_irq                                         = false;
 };
