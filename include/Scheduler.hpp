@@ -26,7 +26,7 @@ class RR : public Policy {
     static constexpr int Depth        = 2;
     static constexpr bool Preemptive  = true;
     enum { IDLE = 0, NORMAL = 1 };
-    static int affinity(RR &&) { return 0; }
+    int affinity(RR &&) { return 0; }
     static int affinity() { return 0; }
 };
 
@@ -41,9 +41,9 @@ class FixedCPU : public Policy {
     FixedCPU(Rank r, int width = ANY, ...)
         : Policy(r) {
         if ((int)*this == IDLE) {
-            m_width = CPU::Atomic::finc(m_idles) % Width;
+            m_width = CPU::Atomic::finc(s_idles) % Width;
         } else if (width == ANY) {
-            m_width = CPU::Atomic::finc(m_counter) % Width;
+            m_width = CPU::Atomic::finc(s_counter) % Width;
         } else {
             m_width = width % Width;
         }
@@ -55,8 +55,8 @@ class FixedCPU : public Policy {
     static int affinity() { return CPU::id(); }
 
   private:
-    static inline int m_idles   = 0;
-    static inline int m_counter = 0;
+    static inline int s_idles   = 0;
+    static inline int s_counter = 0;
     int m_width                 = 0;
 };
 
@@ -64,14 +64,14 @@ template <typename T> class Scheduler {
 
   public:
     using Criterion = typename Traits<T>::Criterion;
-    using Element   = Node<Thread *, Criterion>;
-    using Queue     = typename Criterion::template Queue<Element>;
+    using Link      = Node<Thread *, Criterion &>;
+    using Queue     = typename Criterion::template Queue<Link>;
 
     Scheduler() = default;
 
-    Element *remove(Criterion::Rank threshold = Criterion::IDLE) {
-        Element *next = nullptr;
-        int i         = Criterion::Depth - 1;
+    Link *remove(Criterion::Rank threshold = Criterion::IDLE) {
+        Link *next = nullptr;
+        int i      = Criterion::Depth - 1;
 
         while (i >= threshold && !next) {
             m_lock[Criterion::affinity()].acquire();
@@ -85,11 +85,11 @@ template <typename T> class Scheduler {
         return next;
     }
 
-    void insert(Element *node) {
+    void insert(Link *node) {
         ERROR(!node);
-        m_lock[Criterion::affinity(node->priority())].acquire();
-        m_levels[Criterion::affinity(node->priority())][node->priority()].insert(node);
-        m_lock[Criterion::affinity(node->priority())].release();
+        m_lock[node->priority().affinity()].acquire();
+        m_levels[node->priority().affinity()][node->priority()].insert(node);
+        m_lock[node->priority().affinity()].release();
     }
 
     auto head() { return CPU::id(); }
@@ -97,7 +97,7 @@ template <typename T> class Scheduler {
     auto *current() { return m_heads[head()]; }
 
   private:
-    static const unsigned int CPUS = Traits<CPU>::Active;
+    static constexpr int CPUS = Traits<CPU>::Active;
 
   private:
     T *m_heads[CPUS] = {nullptr};

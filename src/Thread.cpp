@@ -41,8 +41,8 @@ Thread::Thread(Function f, Argument a, Criterion c)
     : m_stack(Traits<Thread>::UserStackSize),
       m_kstack(Traits<Thread>::KernelStackSize),
       m_waiting(0),
-      m_link(Link(this, c)),
       m_criterion(c),
+      m_link(Link(this, m_criterion)),
       m_state(State::READY) {
 
     TraceIn(this);

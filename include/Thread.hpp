@@ -11,12 +11,13 @@ namespace DEPOS {
 class Thread {
   public:
     enum class State { RUNNING, READY, WAITING, FINISHING, FINISHED };
-    using Criterion = typename Scheduler<Thread>::Criterion;
+    using Scheduler = DEPOS::Scheduler<Thread>;
+    using Criterion = Scheduler::Criterion;
+    using Link      = Scheduler::Link;
+    using Queue     = Scheduler::Queue;
     using Return    = void *;
     using Argument  = void *;
     using Function  = Return (*)(Argument);
-    using Link      = Node<Thread *, Criterion>;
-    using Queue     = FIFO<Link>;
     using Context   = CPU::Context;
 
     Thread(Function, Argument = 0, Criterion = Criterion::NORMAL);
@@ -38,13 +39,13 @@ class Thread {
     Segment m_stack;
     Segment m_kstack;
     Queue *m_waiting;
-    Link m_link;
     Criterion m_criterion;
+    Link m_link;
     volatile State m_state;
     Context *m_context;
 
   private:
-    static inline Scheduler<Thread> s_scheduler;
+    static inline Scheduler s_scheduler;
     static inline volatile unsigned int s_count;
 
   private:

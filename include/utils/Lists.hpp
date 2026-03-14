@@ -11,14 +11,21 @@ template <typename Value = void, typename Priority = void> struct Node {
     template <typename T> friend class FIFO;
 
     Node *next() const { return m_next; }
-    auto priority() const { return m_priority; }
-    auto value() const { return m_value; }
 
-    Node(auto v)
-        : m_value(v) {}
-    Node(auto v, auto p)
-        : m_value(v),
-          m_priority(p) {}
+    auto &value() { return m_value; }
+    const auto &value() const { return m_value; }
+
+    auto &priority() { return m_priority; }
+    const auto &priority() const { return m_priority; }
+
+    template <typename V, typename P>
+    Node(V &&v, P &&p)
+        : m_value(static_cast<V &&>(v)),
+          m_priority(static_cast<P &&>(p)) {}
+
+    template <typename V>
+    Node(V &&v)
+        : m_value(static_cast<V &&>(v)) {}
 
   private:
     Meta::IF<Meta::Void<Value>::Result, Meta::Empty, Value>::Result m_value;
