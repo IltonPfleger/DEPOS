@@ -17,27 +17,27 @@ class HIC {
     static_assert(Traits<Thread>::IsolatedKernelStack);
 
   private:
-    static void dispatch(MachineContext *c) {
-        uintmax_t mcause = csrr<MachineMode::CAUSE>();
+    static void dispatch(MachineContext *) {
+        // uintmax_t mcause = csrr<MachineMode::CAUSE>();
 
-        if (mcause & IC::INTERRUPT) {
-            unsigned int id = mcause & ~IC::INTERRUPT;
-            if (id == 11) {
-                id = PLIC::claim();
-                if (id) {
-                    IC::dispatch(id + 11);
-                }
-                PLIC::complete(id);
-                return;
-            }
-            VirtualCPU::handler();
-            IC::dispatch(id);
-            return;
-        }
+        // if (mcause & IC::INTERRUPT) {
+        //     unsigned int id = mcause & ~IC::INTERRUPT;
+        //     if (id == 11) {
+        //         id = PLIC::claim();
+        //         if (id) {
+        //             IC::dispatch(id + 11);
+        //         }
+        //         PLIC::complete(id);
+        //         return;
+        //     }
+        //     VirtualCPU::handler();
+        //     IC::dispatch(id);
+        //     return;
+        // }
 
-        if (!sbi::SBI::dispatch(c)) {
-            Exception<MachineMode>::dispatch();
-        }
+        // if (!sbi::SBI::dispatch(c)) {
+        //     Exception<MachineMode>::dispatch();
+        // }
     }
 
     __attribute__((naked, optimize("O0"), aligned(4))) static void entry() {

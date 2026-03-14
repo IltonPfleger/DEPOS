@@ -2,30 +2,48 @@
 
 #include <architecture/riscv64/PLIC.hpp>
 #include <utils/Debug.hpp>
-#include <utils/DispatchTable.hpp>
 
 namespace DEPOS {
 
 namespace riscv64 {
 
 class IC {
-    using Handler                 = void (*)(unsigned int);
-    static constexpr int External = Traits<PLIC>::NumberOfInterruptions;
-    static constexpr int Total    = 11 + External;
+
+    /*
+     * -----------------------------
+     * | PLIC | Exceptions | CLINT |
+     * -----------------------------
+     * 0      N         N+Exceptions
+     * -----------------------------
+     */
+
+    using Handler                   = void (*)(unsigned int);
+    static constexpr int Exceptions = 16;
+    static constexpr int Internal   = 16;
+    static constexpr int External   = Traits<PLIC>::NumberOfInterruptions;
+    static constexpr int Offset     = External;
+    static constexpr int Total      = Exceptions + Internal + External;
 
   public:
     enum { INTERRUPT = 1UL << 63 };
 
-    static void dispatch(unsigned int id) {
-        ERROR(!s_handlers[id]);
-        s_handlers[id](id);
+    static void dispatch(unsigned int id, bool interruption, bool external) {
+        unsigned int index = irq2index(id, interruption, external);
+        ERROR(!s_handlers[index], "ID: ", id, " Index: ", index);
+        s_handlers[index](id);
     }
 
-    static void bind(unsigned int id, Handler handler) {
-        s_handlers[id] = handler;
-        if (id > 11) {
-            PLIC::priority(id - 11, 1);
-            PLIC::enable(id - 11);
+    static unsigned int irq2index(unsigned int id, bool interruption, bool external) {
+        if (!interruption) return id + External;
+        if (external) return id;
+        return id + External + Exceptions;
+    }
+
+    static void bind(unsigned int id, Handler handler, bool interruption = true, bool external = true) {
+        s_handlers[irq2index(id, interruption, external)] = handler;
+        if (interruption && external) {
+            PLIC::priority(id, 1);
+            PLIC::enable(id);
         }
     }
 

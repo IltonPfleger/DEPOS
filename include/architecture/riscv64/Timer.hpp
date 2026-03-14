@@ -25,11 +25,11 @@ template <typename... Tickers> class Timer : public ArchitectureCommon::TimerTem
 
     static void init() {
         if constexpr (!Traits<RISCV>::Supervisor) {
-            IC::bind(7, machine);
+            IC::bind(7, machine, true, false);
             csrs<MachineMode::IE>(MachineMode::TI);
             CLINT::write();
         } else {
-            IC::bind(5, supervisor);
+			IC::bind(5, supervisor, true, false);
             csrs<SupervisorMode::IE>(SupervisorMode::TI);
         }
     }

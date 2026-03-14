@@ -14,25 +14,18 @@ class MIC {
   private:
     static constexpr bool ChangeStack = Traits<Thread>::IsolatedKernelStack || Traits<Kernel>::Multitask;
 
-    static void dispatch(MachineContext *c) {
-        intmax_t mcause = csrr<MachineMode::CAUSE>();
-        uint32_t id     = mcause & ~IC::INTERRUPT;
+    static void external(unsigned int) {
+        unsigned int id = PLIC::claim();
+        IC::dispatch(id, true, true);
+        PLIC::complete(id);
+    }
 
-        if (mcause < 0) {
-            if (id == 11) {
-                id = PLIC::claim();
-                if (id) IC::dispatch(id + 11);
-                PLIC::complete(id);
-            } else {
-                IC::dispatch(id);
-            }
-        } else {
-            if (mcause == 9) {
-                CLINT::syscall();
-                c->pc += 4;
-            } else
-                Exception<MachineMode>::dispatch();
-        }
+    static void dispatch(MachineContext *) {
+        intmax_t mcause   = csrr<MachineMode::CAUSE>();
+        bool interruption = mcause >> 63;
+        bool external     = false;
+        mcause &= ~(1ULL << 63);
+        IC::dispatch(mcause, interruption, external);
     }
 
     __attribute__((naked, optimize("O0"), aligned(4))) static void entry() {
@@ -50,12 +43,13 @@ class MIC {
         }
 
         if constexpr (Traits<DEPOS::Timer>::Enable && Traits<RISCV>::Supervisor) {
-            IC::bind(7, CLINT::forward);
+            IC::bind(7, CLINT::forward, true, false);
             csrs<MachineMode::IP>(SupervisorMode::TI);
         }
 
         if constexpr (!Traits<RISCV>::Supervisor && Traits<PLIC>::Enable) {
             PLIC::init();
+            IC::bind(11, external, true, false);
             csrs<MachineMode::IE>(MachineMode::EI);
         }
     }

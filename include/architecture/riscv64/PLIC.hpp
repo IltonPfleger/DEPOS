@@ -4,7 +4,6 @@
 #include <architecture/riscv64/CPU.hpp>
 #include <drivers/Driver.hpp>
 #include <utils/Debug.hpp>
-#include <utils/DispatchTable.hpp>
 
 namespace DEPOS {
 
