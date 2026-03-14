@@ -68,56 +68,52 @@ template <typename T> class ContextBase {
                        [s7] "i"(offsetof(ContextBase, s7)), [s8] "i"(offsetof(ContextBase, s8)),
                        [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)),
                        [s11] "i"(offsetof(ContextBase, s11)), [pc] "i"(offsetof(ContextBase, pc)),
-                       [status] "i"(offsetof(ContextBase, status)),
-                       [scratch] "i"(offsetof(ContextBase, scratch)), [epcr] "i"(T::EPC),
-                       [scratchr] "i"(T::SCRATCH), [statusr] "i"(T::STATUS));
+                       [status] "i"(offsetof(ContextBase, status)), [scratch] "i"(offsetof(ContextBase, scratch)),
+                       [epcr] "i"(T::EPC), [scratchr] "i"(T::SCRATCH), [statusr] "i"(T::STATUS));
         T::ret();
     }
 
     __attribute__((naked)) bool save() {
-        asm volatile("sd ra, %[ra](a0)\n"
-                     "sd gp, %[gp](a0)\n"
-                     "sd sp, %[sp](a0)\n"
-                     "sd zero,%[a0](a0)\n"
-                     "sd s0, %[s0](a0)\n"
-                     "sd s1, %[s1](a0)\n"
-                     "sd s2, %[s2](a0)\n"
-                     "sd s3, %[s3](a0)\n"
-                     "sd s4, %[s4](a0)\n"
-                     "sd s5, %[s5](a0)\n"
-                     "sd s6, %[s6](a0)\n"
-                     "sd s7, %[s7](a0)\n"
-                     "sd s8, %[s8](a0)\n"
-                     "sd s9, %[s9](a0)\n"
-                     "sd s10, %[s10](a0)\n"
-                     "sd s11, %[s11](a0)\n"
-                     "sd ra, %[pc](a0)\n"
-                     "csrr t0, %[scratchr]\n"
-                     "sd t0, %[scratch](a0)\n"
-                     "csrr t1, %[csrstatus]\n"
-                     "or t1, t1, %[me2me]\n"
-                     "and t1, t1, %[pirqe]\n"
-                     "sd t1, %[status](a0)\n"
-                     "li a0, 1\n"
-                     "ret"
-                     :
-                     : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
-                       [sp] "i"(offsetof(ContextBase, sp)), [a0] "i"(offsetof(ContextBase, a0)),
-                       [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
-                       [s2] "i"(offsetof(ContextBase, s2)), [s3] "i"(offsetof(ContextBase, s3)),
-                       [s4] "i"(offsetof(ContextBase, s4)), [s5] "i"(offsetof(ContextBase, s5)),
-                       [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)),
-                       [s8] "i"(offsetof(ContextBase, s8)), [s9] "i"(offsetof(ContextBase, s9)),
-                       [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11)),
-                       [pc] "i"(offsetof(ContextBase, pc)), [csrstatus] "i"(T::STATUS),
-                       [scratch] "i"(offsetof(ContextBase, scratch)), [scratchr] "i"(T::SCRATCH),
-                       [me2me] "r"(T::ME2ME), [pirqe] "r"(~T::PIRQE),
-                       [status] "i"(offsetof(ContextBase, status))
-                     : "memory");
+        asm("sd ra, %[ra](a0)\n"
+            "sd gp, %[gp](a0)\n"
+            "sd sp, %[sp](a0)\n"
+            "sd zero,%[a0](a0)\n"
+            "sd s0, %[s0](a0)\n"
+            "sd s1, %[s1](a0)\n"
+            "sd s2, %[s2](a0)\n"
+            "sd s3, %[s3](a0)\n"
+            "sd s4, %[s4](a0)\n"
+            "sd s5, %[s5](a0)\n"
+            "sd s6, %[s6](a0)\n"
+            "sd s7, %[s7](a0)\n"
+            "sd s8, %[s8](a0)\n"
+            "sd s9, %[s9](a0)\n"
+            "sd s10, %[s10](a0)\n"
+            "sd s11, %[s11](a0)\n"
+            "sd ra, %[pc](a0)\n"
+            :
+            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
+              [sp] "i"(offsetof(ContextBase, sp)), [a0] "i"(offsetof(ContextBase, a0)),
+              [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
+              [s2] "i"(offsetof(ContextBase, s2)), [s3] "i"(offsetof(ContextBase, s3)),
+              [s4] "i"(offsetof(ContextBase, s4)), [s5] "i"(offsetof(ContextBase, s5)),
+              [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)),
+              [s8] "i"(offsetof(ContextBase, s8)), [s9] "i"(offsetof(ContextBase, s9)),
+              [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11)),
+              [pc] "i"(offsetof(ContextBase, pc)));
+
+        asm("csrr t0, %0\nsd t0, %1(a0)" ::"i"(T::SCRATCH), "i"(offsetof(ContextBase, scratch)));
+        asm("csrr t0, %[id]\n"
+            "or t0, t0, %[me2me]\n"
+            "andi t0, t0, %[pirqe]\n"
+            "sd t0, %[offset](a0)\n" ::[id] "i"(T::STATUS),
+            [me2me] "r"(T::ME2ME), [pirqe] "i"(~T::PIRQE), [offset] "i"(offsetof(ContextBase, status))
+            : "a0");
+
+        asm("li a0, 1\nret");
     }
 
-    template <bool ChangeStack = false>
-    __attribute__((always_inline)) static inline ContextBase *push() {
+    template <bool ChangeStack = false> __attribute__((always_inline)) static inline ContextBase *push() {
 
         if constexpr (ChangeStack) {
             asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
@@ -170,13 +166,12 @@ template <typename T> class ContextBase {
             "sd s11, %[s11](sp)\n"
             "1:"
             :
-            : [status] "i"(T::STATUS), [s0] "i"(offsetof(ContextBase, s0)),
-              [s1] "i"(offsetof(ContextBase, s1)), [s2] "i"(offsetof(ContextBase, s2)),
-              [s3] "i"(offsetof(ContextBase, s3)), [s4] "i"(offsetof(ContextBase, s4)),
-              [s5] "i"(offsetof(ContextBase, s5)), [s6] "i"(offsetof(ContextBase, s6)),
-              [s7] "i"(offsetof(ContextBase, s7)), [s8] "i"(offsetof(ContextBase, s8)),
-              [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)),
-              [s11] "i"(offsetof(ContextBase, s11))
+            : [status] "i"(T::STATUS), [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
+              [s2] "i"(offsetof(ContextBase, s2)), [s3] "i"(offsetof(ContextBase, s3)),
+              [s4] "i"(offsetof(ContextBase, s4)), [s5] "i"(offsetof(ContextBase, s5)),
+              [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)),
+              [s8] "i"(offsetof(ContextBase, s8)), [s9] "i"(offsetof(ContextBase, s9)),
+              [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11))
             : "memory");
 
         asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::STATUS), "i"(offsetof(ContextBase, status)));
