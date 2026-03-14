@@ -23,6 +23,5 @@ template <> struct Traits<RISCV> {
 template <> struct Traits<riscv64::CPU> : Traits<CPU> {};
 template <> struct Traits<riscv64::CLINT> : Traits<CLINT> {};
 template <> struct Traits<riscv64::PLIC> : Traits<PLIC> {};
-template <> struct Traits<riscv64::IC> : Traits<IC> {};
 
 } // namespace DEPOS

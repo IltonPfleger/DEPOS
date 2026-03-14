@@ -43,10 +43,8 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long VirtualRamStart = 0xffffffff80000000;
     static constexpr unsigned long VirtualRamEnd   = VirtualRamStart + Traits<Memory>::Size;
 
-    static constexpr unsigned long RamStart =
-        Traits<Kernel>::Multitask ? VirtualRamStart : PhysicalRamStart;
-    static constexpr unsigned long RamEnd =
-        Traits<Kernel>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
+    static constexpr unsigned long RamStart = Traits<Kernel>::Multitask ? VirtualRamStart : PhysicalRamStart;
+    static constexpr unsigned long RamEnd   = Traits<Kernel>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
 
     static constexpr unsigned long KernelAddr = RamStart;
 
@@ -70,20 +68,16 @@ template <> struct Traits<UART> {
 };
 
 template <> struct Traits<CLINT> {
-    static constexpr bool Enable         = Traits<Timer>::Enable;
-    static constexpr unsigned long Address  = Traits<MemoryMap>::CLINT;
-    static constexpr unsigned long Clock = 10'000'000;
-};
-
-template <> struct Traits<IC> {
-    static constexpr unsigned long First = 0;
-    static constexpr unsigned long Last  = 10 + 11;
+    static constexpr bool Enable           = Traits<Timer>::Enable;
+    static constexpr unsigned long Address = Traits<MemoryMap>::CLINT;
+    static constexpr unsigned long Clock   = 10'000'000;
 };
 
 template <> struct Traits<PLIC> {
-    static constexpr bool Enable           = true;
-    using ContextsType                     = Meta::Array<Traits<CPU>::Count, Meta::Array<2, int>>;
-    static constexpr ContextsType Contexts = []() {
+    static constexpr bool Enable               = true;
+    static constexpr int NumberOfInterruptions = 30;
+    using ContextsType                         = Meta::Array<Traits<CPU>::Count, Meta::Array<2, int>>;
+    static constexpr ContextsType Contexts     = []() {
         ContextsType contexts{};
         for (int i = 0; i < Traits<CPU>::Count; i++) {
             contexts[i][0] = i * 2;
