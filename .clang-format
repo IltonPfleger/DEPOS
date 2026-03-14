@@ -1,0 +1,10 @@
+BasedOnStyle: LLVM
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AllowShortIfStatementsOnASingleLine: true
+PackConstructorInitializers: Never
+BinPackParameters: OnePerLine
+AlignConsecutiveAssignments: true
+ColumnLimit: 120

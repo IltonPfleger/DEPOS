@@ -17,11 +17,11 @@ class CLINT : Driver {
     };
 
   public:
-    static uint64_t read() { return Reg64(Addr, MTIME); }
+    static uint64_t read() { return Reg64(Address, MTIME); }
 
     static void write(uint64_t ticks    = read() + Ticks,
                       unsigned int core = csrr<MachineMode::HARTID>()) {
-        Reg64(Addr, MTIMECMP + core * 8) = ticks;
+        Reg64(Address, MTIMECMP + core * 8) = ticks;
     }
 
     static void forward(unsigned int = 0) {
@@ -37,7 +37,7 @@ class CLINT : Driver {
     }
 
   public:
-    static constexpr unsigned long Addr  = Traits<CLINT>::Addr;
+    static constexpr unsigned long Address  = Traits<CLINT>::Address;
     static constexpr unsigned long Clock = Traits<CLINT>::Clock;
     static constexpr unsigned long Ticks = Clock / Traits<Timer>::Frequency;
 };

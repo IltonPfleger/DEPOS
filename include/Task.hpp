@@ -44,7 +44,7 @@ class Task {
     //         // };
     //
     //         // attach(k, AddressSpace::KernelRW);
-    //         // as->map(Machine::IO::Addr, AddressSpace::KernelRW);
+    //         // as->map(Machine::IO::Address, AddressSpace::KernelRW);
     //     }
     //     // Task() : heap(new Heap()), as(new(Heap::SYSTEM) AddressSpace()) {}
     //     //       uintptr_t PAGE_SIZE    = Traits<Memory>::Page::SIZE;
@@ -56,7 +56,7 @@ class Task {
     //     (uintptr_t pa
     //     //       = KERNEL_START; pa < KERNEL_END; pa += PAGE_SIZE)
     //     as->map(pa, pa,
-    //     //       SV39_MMU::X); as->map(Machine::IO::Addr, Machine::IO::Addr);
+    //     //       SV39_MMU::X); as->map(Machine::IO::Address, Machine::IO::Address);
     //     //   }
     //     //
     //   public:
@@ -82,7 +82,7 @@ class Task {
     //         // new (buffer) Segment(Traits<Memory>::RAM_BASE,
     //         Traits<Memory>::SIZE);
     //         // SYSTEM->attach(*s, AddressSpace::Flags::KernelRW);
-    //         // new (buffer) Segment(Machine::IO::Addr,
+    //         // new (buffer) Segment(Machine::IO::Address,
     //         AddressSpace::PageSize);
     //         // SYSTEM->attach(*s, AddressSpace::Flags::KernelRW);
     //         // SYSTEM->load();

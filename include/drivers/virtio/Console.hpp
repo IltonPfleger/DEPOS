@@ -13,8 +13,7 @@ namespace DEPOS {
 namespace virtio {
 
 template <typename Device, uintptr_t Base>
-class Console : public Handler<Console<Device, Base>>,
-                public Observer<const unsigned char *, size_t> {
+class Console : public Handler<Console<Device, Base>>, public Observer<const unsigned char *, size_t> {
 
   public:
     static Console *instance() {
@@ -80,13 +79,13 @@ class Console : public Handler<Console<Device, Base>>,
 
   public:
     static constexpr uintptr_t Address = Base;
-    static constexpr unsigned int IRQ  = 32;
-    static constexpr unsigned int Size = sizeof(LegacyHeader);
+    static constexpr int IRQ           = 32;
+    static constexpr size_t Size       = sizeof(LegacyHeader);
 
   private:
-    static constexpr unsigned int k_number = 32;
-    static constexpr uintptr_t k_tx_queue  = 1;
-    static constexpr uintptr_t k_rx_queue  = 0;
+    static const int k_number   = 32;
+    static const int k_tx_queue = 1;
+    static const int k_rx_queue = 0;
 
   private:
     VirtualCPU *m_vcpu;

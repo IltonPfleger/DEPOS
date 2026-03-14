@@ -28,14 +28,6 @@ template <unsigned N, typename T> struct Array {
     T m_data[N];
 };
 
-// template <typename T, typename U> struct SAME {
-//     static constexpr bool Result = false;
-// };
-//
-// template <typename T> struct SAME<T, T> {
-//     static constexpr bool Result = true;
-// };
-
 template <typename T> struct Void {
     static constexpr bool Result = false;
 };
@@ -69,8 +61,7 @@ template <typename Head, typename... Tail> struct GetFromTypeList<TypeList<Head,
     using Result = Head;
 };
 
-template <typename Head, typename... Tail, unsigned int Index>
-struct GetFromTypeList<TypeList<Head, Tail...>, Index> {
+template <typename Head, typename... Tail, unsigned int Index> struct GetFromTypeList<TypeList<Head, Tail...>, Index> {
     using Result = typename GetFromTypeList<TypeList<Tail...>, Index - 1>::Result;
 };
 
