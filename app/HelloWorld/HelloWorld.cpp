@@ -19,7 +19,6 @@ class Waiter : public Observer<const unsigned char *, size_t> {
 };
 
 int main(int, char *[]) {
-    //*(int *)(void *)0x0 = 1;
     typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result Device;
     TraceIn();
     Waiter *w = new Waiter();

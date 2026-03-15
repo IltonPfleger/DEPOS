@@ -28,13 +28,12 @@ class Exception {
     };
 
   public:
-    static void dispatch(unsigned int = 0) {
-        Context *c = (Context *)CPU::gp();
+    static void dispatch(unsigned int id, Context *c) {
         Console::cout << Console::panic;
         Console::cout << "Ohh, It's a Trap!" << Console::endl;
         Console::cout << Descriptions[c->cause] << Console::endl;
         Console::cout << "PC: " << Console::hex << c->pc << Console::endl;
-        Console::cout << "Cause: " << Console::hex << c->cause << Console::endl;
+        Console::cout << "Cause: " << id << Console::endl;
         Console::cout << "Status: " << Console::hex << c->status << Console::endl;
         CPU::halt();
     }

@@ -116,7 +116,7 @@ template <typename T> class ContextHandler : public Context {
         asm("li a0, 1\nret");
     }
 
-	template <bool ChangeStack = false> __attribute__((always_inline)) static inline Context *push() {
+    template <bool ChangeStack = false> __attribute__((always_inline)) static inline Context *push() {
 
         if constexpr (ChangeStack) {
             asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));

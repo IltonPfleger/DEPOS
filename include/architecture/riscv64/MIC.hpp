@@ -16,17 +16,16 @@ class MIC {
 
     static void external(unsigned int) {
         unsigned int id = PLIC::claim();
-        if (id) IC::dispatch(id, true, true);
+        IC::dispatch(id, 0, true, true);
         PLIC::complete(id);
     }
 
     static void dispatch(Context *context) {
-        intmax_t mcause = csrr<MachineMode::CAUSE>();
-        CPU::gp(context);
+        intmax_t mcause   = csrr<MachineMode::CAUSE>();
         bool interruption = mcause >> 63;
         bool external     = false;
         mcause &= ~(1ULL << 63);
-        IC::dispatch(mcause, interruption, external);
+        IC::dispatch(mcause, context, interruption, external);
     }
 
     __attribute__((naked, optimize("O0"), aligned(4))) static void entry() {
@@ -37,6 +36,9 @@ class MIC {
   public:
     static void init() {
         csrw<MachineMode::TVEC>(MIC::entry);
+
+        for (int i = 0; i < 16; i++)
+            IC::bind(i, Exception::dispatch, false, false);
 
         if constexpr (Traits<Kernel>::Multitask) {
             /* Keep Boot Stack For Handle M-Mode IRQs */
@@ -50,6 +52,7 @@ class MIC {
 
         if constexpr (!Traits<RISCV>::Supervisor && Traits<PLIC>::Enable) {
             PLIC::init();
+            IC::bind(0, +[](unsigned int) {}, true, true);
             IC::bind(11, external, true, false);
             csrs<MachineMode::IE>(MachineMode::EI);
         }

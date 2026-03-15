@@ -17,6 +17,8 @@ namespace sbi {
 
 class SBI {
   public:
+    static void init() {}
+
     static bool dispatch(MachineContext *c) {
         uintmax_t mcause = csrr<MachineMode::CAUSE>();
         switch (mcause) {
@@ -24,7 +26,6 @@ class SBI {
             return sbi::Syscall::handler(c);
         case IllegalInstruction::CODE:
             return sbi::IllegalInstruction::handler(c);
-
         case LoadAccessFault::CODE:
             return sbi::LoadAccessFault::handler(c);
         case StoreAccessFault::CODE:
