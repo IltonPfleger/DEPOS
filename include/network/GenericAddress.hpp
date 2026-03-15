@@ -1,6 +1,9 @@
 #pragma once
 
+#include <types.hpp>
 #include <utils/string.hpp>
+
+namespace DEPOS {
 
 template <size_t Length> struct GenericAddress {
 
@@ -42,3 +45,5 @@ template <size_t Length> struct GenericAddress {
   private:
     unsigned char m_data[Length];
 } __attribute__((packed));
+
+} // namespace DEPOS

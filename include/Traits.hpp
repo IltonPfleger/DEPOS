@@ -56,7 +56,7 @@ namespace DEPOS {
 
 template <> struct Traits<Thread> {
     static constexpr Hz RescheduleFrequency   = Traits<Timer>::Frequency;
-    static constexpr bool IsolatedKernelStack = false;
+    static constexpr bool IsolatedKernelStack = true;
     static constexpr unsigned UserStackSize   = Traits<Memory>::PageSize;
     static constexpr unsigned KernelStackSize = IsolatedKernelStack ? Traits<Memory>::PageSize : 0;
     using Criterion                           = RR;

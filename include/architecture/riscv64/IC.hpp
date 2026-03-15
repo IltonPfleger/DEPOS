@@ -23,7 +23,7 @@ class IC {
      */
 
     using GenericHandler = void (*)(unsigned int, Context *);
-	using DeviceHandler  = void (*)(unsigned int);
+    using DeviceHandler  = void (*)(unsigned int);
 
     static constexpr int Exceptions = 16;
     static constexpr int Internal   = 16;
@@ -34,7 +34,7 @@ class IC {
   public:
     static void dispatch(unsigned int id, Context *c, bool interruption, bool external) {
         unsigned int index = irq2index(id, interruption, external);
-        ERROR(!s_handlers[index], "ID: ", id, " Index: ", index);
+        ERROR(!s_handlers[index], "ID: ", id, " Index: ", index, " ", interruption, " ", external);
         s_handlers[index](id, c);
     }
 

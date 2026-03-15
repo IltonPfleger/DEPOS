@@ -21,7 +21,7 @@ $(BUILD)/$(APPLICATION).o: $(OBJECTS)
 	@mkdir -p $(dir $@)
 	$(LD) -e main -r $(OBJECTS) -o $@
 
-$(BUILD)/%.cpp.o: %.cpp
+$(BUILD)/%.cpp.o: %.cpp $(CONFIG)
 	@mkdir -p $(dir $@)
 	$(CC) $(MARCH_CCFLAGS) -I../include -MMD -MP -c $< -o $@
 

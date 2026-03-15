@@ -38,7 +38,7 @@ endif
 .PHONY: $(CONFIG)
 $(CONFIG):
 	mkdir -p $(dir $@)
-	g++ $(CCFLAGS) tools/Traits.cpp -o $(TRAITS)
+	g++ $(CCFLAGS) $(TOOLS)/Traits.cpp -o $(TRAITS)
 	$(TRAITS) > $@.tmp
 	@cmp -s $@ $@.tmp && rm -f $@.tmp || (mv -f $@.tmp $@)
 

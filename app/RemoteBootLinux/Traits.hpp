@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Macros.hpp>
 #include <Traits.hpp>
 
 namespace DEPOS {

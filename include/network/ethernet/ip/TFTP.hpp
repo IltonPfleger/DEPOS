@@ -24,8 +24,7 @@ template <typename Device> class TFTP : Observer<const UDP::Datagram *> {
     }
 
     void *header(uint8_t *buffer) {
-        return buffer + sizeof(Ethernet::Header) + sizeof(typename Network::Header) +
-               sizeof(UDP::Header);
+        return buffer + sizeof(Ethernet::Header) + sizeof(typename Network::Header) + sizeof(UDP::Header);
     }
 
     size_t request(const char *filename, void *buffer, size_t size) {
@@ -55,8 +54,7 @@ template <typename Device> class TFTP : Observer<const UDP::Datagram *> {
         memcpy(ptr, k_blksize_string, sizeof(k_blksize_string));
         ptr += sizeof(k_blksize_string);
 
-        size_t tftp_payload_size =
-            reinterpret_cast<uint8_t *>(ptr) - reinterpret_cast<uint8_t *>(opcode);
+        size_t tftp_payload_size = reinterpret_cast<uint8_t *>(ptr) - reinterpret_cast<uint8_t *>(opcode);
 
         m_channel.send(m_server_ip, m_server_port, packet, tftp_payload_size);
 
@@ -68,8 +66,8 @@ template <typename Device> class TFTP : Observer<const UDP::Datagram *> {
     void update(const UDP::Datagram *datagram) {
         const uint8_t *tftp = datagram->data();
         size_t length       = datagram->length();
-        auto opcode = static_cast<Opcode>(CPU::be16toh(*reinterpret_cast<const uint16_t *>(tftp)));
-        m_server_port = CPU::be16toh(datagram->header()->m_source);
+        auto opcode         = static_cast<Opcode>(CPU::be16toh(*reinterpret_cast<const uint16_t *>(tftp)));
+        m_server_port       = CPU::be16toh(datagram->header()->m_source);
 
         if (opcode == OACK) {
             ack(0);

@@ -18,7 +18,6 @@ namespace sbi {
 class SBI {
   public:
     static void init() {
-        // Overwrite To Trap-and-Emulate
         IC::bind(Syscall::CODE, Syscall::dispatch, false, false);
         IC::bind(IllegalInstruction::CODE, IllegalInstruction::dispatch, false, false);
         IC::bind(LoadAccessFault::CODE, LoadAccessFault::dispatch, false, false);
