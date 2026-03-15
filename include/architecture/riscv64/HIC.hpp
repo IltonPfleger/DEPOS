@@ -15,7 +15,6 @@ namespace DEPOS {
 namespace riscv64 {
 
 class HIC : MIC {
-    static_assert(Traits<Thread>::IsolatedKernelStack);
 
   private:
     static void dispatch(Context *context) {
@@ -30,6 +29,8 @@ class HIC : MIC {
 
   public:
     static void init() {
+        static_assert(!Traits<Application>::Virtualized || Traits<Thread>::IsolatedKernelStack);
+
         csrw<MachineMode::TVEC>(entry);
 
         for (int i = 0; i < 16; i++)
