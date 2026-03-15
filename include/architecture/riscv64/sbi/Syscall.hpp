@@ -13,7 +13,7 @@ class Syscall {
   public:
     static constexpr unsigned int CODE = 9;
 
-    static bool handler(MachineContext *c) {
+    static bool handler(Context *c) {
         switch (c->a7) {
         case Base::EID:
             c->pc += 4;

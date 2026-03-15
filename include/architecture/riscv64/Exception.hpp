@@ -35,6 +35,7 @@ class Exception {
         Console::cout << "PC: " << Console::hex << c->pc << Console::endl;
         Console::cout << "Cause: " << id << Console::endl;
         Console::cout << "Status: " << Console::hex << c->status << Console::endl;
+        Console::cout << "Value: " << Console::hex << c->tval << Console::endl;
         CPU::halt();
     }
 };

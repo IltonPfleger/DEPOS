@@ -156,6 +156,7 @@ int main() {
     auto entry = reinterpret_cast<Entry>(kernel);
 
     Console::cout << "\n *** Linux is at core " << CPU::id() << " ***\n ";
+    CPU::mb();
     new VirtualCPU(entry, MemoryMap::Entry{address, address + LinuxMemorySize}, 0, dtb);
 
     return 0;

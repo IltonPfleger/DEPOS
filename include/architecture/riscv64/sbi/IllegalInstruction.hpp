@@ -20,13 +20,13 @@ class IllegalInstruction {
     enum Mask {
         OPCODE_MASK = 0x7F,
         FUNCT3_MASK = 0x7000,
-        RD_MASK = 0xF80,
+        RD_MASK     = 0xF80,
     };
 
     static constexpr uint32_t RDTIME_PATTERN = 0xC0102073;
-    static constexpr uint32_t RDTIME_MASK = 0xFFF0707F;
+    static constexpr uint32_t RDTIME_MASK    = 0xFFF0707F;
 
-    static bool handler(MachineContext *c) {
+    static bool handler(Context *c) {
         uint32_t tval = static_cast<uint32_t>(csrr<MachineMode::TVAL>());
 
         if ((tval & RDTIME_MASK) == RDTIME_PATTERN) {

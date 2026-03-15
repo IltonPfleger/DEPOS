@@ -17,13 +17,13 @@ class Context {
     uint64_t a0, a1, a2, a3, a4, a5, a6, a7;
     uint64_t s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
     uint64_t t3, t4, t5, t6;
-    uint64_t status, scratch, cause, pc;
+    uint64_t status, scratch, cause, tval, pc;
+
+    uint64_t &operator[](size_t i) { return (reinterpret_cast<uint64_t *>(&ra))[i - 1]; }
 };
 
 template <typename T> class ContextHandler : public Context {
   public:
-    uint64_t &operator[](size_t i) { return (reinterpret_cast<uint64_t *>(&ra))[i - 1]; }
-
     ContextHandler() = default;
 
     ContextHandler(auto usp, auto ksp, auto pc, auto ra, auto a0) {
@@ -180,6 +180,7 @@ template <typename T> class ContextHandler : public Context {
         asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::STATUS), "i"(offsetof(ContextHandler, status)));
         asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::EPC), "i"(offsetof(ContextHandler, pc)));
         asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::CAUSE), "i"(offsetof(ContextHandler, cause)));
+        asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::TVAL), "i"(offsetof(ContextHandler, tval)));
 
         register Context *sp asm("sp");
         return sp;

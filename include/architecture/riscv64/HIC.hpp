@@ -27,15 +27,16 @@ class HIC {
         intmax_t mcause = csrr<MachineMode::CAUSE>();
         if (!(mcause >> 63)) {
             if (!sbi::SBI::dispatch(context)) {
-                Exception::dispatch();
+                Exception::dispatch(mcause, context);
             }
-        } else {
-            bool interruption = mcause >> 63;
-            bool external     = false;
-            mcause &= ~(1ULL << 63);
-            IC::dispatch(mcause, context, interruption, external);
-            VirtualCPU::handler();
+            return;
         }
+
+        bool interruption = mcause >> 63;
+        bool external     = false;
+        mcause &= ~(1ULL << 63);
+        IC::dispatch(mcause, context, interruption, external);
+        VirtualCPU::handler();
     }
 
     __attribute__((naked, optimize("O0"), aligned(4))) static void entry() {
@@ -47,7 +48,10 @@ class HIC {
     static void init() {
         csrw<MachineMode::TVEC>(entry);
 
-        IC::bind(7, [](unsigned int) { CLINT::write(); }, true, false);
+        for (int i = 0; i < 16; i++)
+            IC::bind(i, Exception::dispatch, false, false);
+
+        IC::bind(7, +[](unsigned int) { CLINT::write(); }, true, false);
         csrs<MachineMode::IE>(MachineMode::TI);
 
         PLIC::init();

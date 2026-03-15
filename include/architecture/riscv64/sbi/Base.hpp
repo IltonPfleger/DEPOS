@@ -14,16 +14,16 @@ class Base {
     static constexpr unsigned int EID = 0x10;
 
     enum {
-        GET_SPEC_VERSION = 0,
-        GET_IMPLEMENTATION_ID = 1,
+        GET_SPEC_VERSION           = 0,
+        GET_IMPLEMENTATION_ID      = 1,
         GET_IMPLEMENTATION_VERSION = 2,
-        PROBE_EXTENSION = 3,
-        GET_MVENDORID = 4,
-        GET_MARCHID = 5,
-        GET_MIMPID = 6,
+        PROBE_EXTENSION            = 3,
+        GET_MVENDORID              = 4,
+        GET_MARCHID                = 5,
+        GET_MIMPID                 = 6,
     };
 
-    static bool handler(MachineContext *c) {
+    static bool handler(Context *c) {
         bool handle = true;
         switch (c->a6) {
         case GET_MVENDORID: {

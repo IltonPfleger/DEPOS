@@ -17,22 +17,12 @@ namespace sbi {
 
 class SBI {
   public:
-    static void init() {}
-
-    static bool dispatch(MachineContext *c) {
-        uintmax_t mcause = csrr<MachineMode::CAUSE>();
-        switch (mcause) {
-        case Syscall::CODE:
-            return sbi::Syscall::handler(c);
-        case IllegalInstruction::CODE:
-            return sbi::IllegalInstruction::handler(c);
-        case LoadAccessFault::CODE:
-            return sbi::LoadAccessFault::handler(c);
-        case StoreAccessFault::CODE:
-            return sbi::StoreAccessFault::handler(c);
-        default:
-            return false;
-        }
+    static void init() {
+        // Overwrite To Trap-and-Emulate
+        IC::bind(Syscall::CODE, Syscall::dispatch, false, false);
+        IC::bind(IllegalInstruction::CODE, IllegalInstruction::dispatch, false, false);
+        IC::bind(LoadAccessFault::CODE, LoadAccessFault::dispatch, false, false);
+        IC::bind(StoreAccessFault::CODE, StoreAccessFault::dispatch, false, false);
     }
 };
 
