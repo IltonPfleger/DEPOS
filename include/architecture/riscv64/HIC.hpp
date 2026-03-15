@@ -37,9 +37,6 @@ class HIC : MIC {
 
         sbi::SBI::init();
 
-        IC::bind(7, +[](unsigned int) { CLINT::write(); }, true, false);
-        csrs<MachineMode::IE>(MachineMode::TI);
-
         PLIC::init();
         IC::bind(0, +[](unsigned int) {}, true, true);
         IC::bind(11, MIC::external, true, false);
