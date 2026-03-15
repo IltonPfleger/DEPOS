@@ -116,7 +116,7 @@ template <typename T> class ContextHandler : public Context {
         asm("li a0, 1\nret");
     }
 
-    template <bool ChangeStack = false> __attribute__((always_inline)) static inline ContextHandler *push() {
+	template <bool ChangeStack = false> __attribute__((always_inline)) static inline Context *push() {
 
         if constexpr (ChangeStack) {
             asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
@@ -181,7 +181,7 @@ template <typename T> class ContextHandler : public Context {
         asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::EPC), "i"(offsetof(ContextHandler, pc)));
         asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::CAUSE), "i"(offsetof(ContextHandler, cause)));
 
-        register ContextHandler *sp asm("sp");
+        register Context *sp asm("sp");
         return sp;
     }
 

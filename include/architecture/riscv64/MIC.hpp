@@ -20,9 +20,9 @@ class MIC {
         PLIC::complete(id);
     }
 
-    static void dispatch(MachineContext *context) {
+    static void dispatch(Context *context) {
         intmax_t mcause = csrr<MachineMode::CAUSE>();
-        CPU::gp(static_cast<Context *>(context));
+        CPU::gp(context);
         bool interruption = mcause >> 63;
         bool external     = false;
         mcause &= ~(1ULL << 63);

@@ -23,20 +23,20 @@ class HIC {
         PLIC::complete(id);
     }
 
-    static void dispatch(MachineContext *context) {
-        intmax_t mcause = csrr<MachineMode::CAUSE>();
-        CPU::gp(static_cast<Context *>(context));
-        if (!(mcause >> 63)) {
-            if (!sbi::SBI::dispatch(context)) {
-				Exception::dispatch();
-            }
-        } else {
-            bool interruption = mcause >> 63;
-            bool external     = false;
-            mcause &= ~(1ULL << 63);
-            IC::dispatch(mcause, interruption, external);
-            VirtualCPU::handler();
-        }
+    static void dispatch(Context *) {
+        //    intmax_t mcause = csrr<MachineMode::CAUSE>();
+        //    CPU::gp(static_cast<Context *>(context));
+        //    if (!(mcause >> 63)) {
+        //        if (!sbi::SBI::dispatch(context)) {
+        //            Exception::dispatch();
+        //        }
+        //    } else {
+        //        bool interruption = mcause >> 63;
+        //        bool external     = false;
+        //        mcause &= ~(1ULL << 63);
+        //        IC::dispatch(mcause, interruption, external);
+        //        VirtualCPU::handler();
+        //    }
     }
 
     // static void dispatch(MachineContext *) {
