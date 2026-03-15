@@ -26,6 +26,8 @@ __attribute__((naked)) static void supervisor() {
 inline void init() {
     csrw<MachineMode::IE>(0);
 
+    IC::init();
+
     if constexpr (Traits<RISCV>::Hypervisor)
         HIC::init();
     else

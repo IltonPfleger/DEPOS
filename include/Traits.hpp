@@ -29,7 +29,7 @@ template <> struct Traits<Kernel> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr Hz Frequency = 1'000;
+    static constexpr Hz Frequency = 100;
     static constexpr bool Enable  = true;
 };
 
@@ -44,7 +44,7 @@ template <> struct Traits<Debug> {
 };
 
 template <> struct Traits<Console> {
-    static constexpr unsigned int Columns = 70;
+    static constexpr unsigned int Columns = 80;
 };
 
 } // namespace DEPOS
@@ -55,7 +55,7 @@ template <> struct Traits<Console> {
 namespace DEPOS {
 
 template <> struct Traits<Thread> {
-    static constexpr Hz RescheduleFrequency   = Traits<Timer>::Frequency / 10;
+    static constexpr Hz RescheduleFrequency   = Traits<Timer>::Frequency;
     static constexpr bool IsolatedKernelStack = true;
     static constexpr unsigned UserStackSize   = Traits<Memory>::PageSize;
     static constexpr unsigned KernelStackSize = IsolatedKernelStack ? Traits<Memory>::PageSize : 0;

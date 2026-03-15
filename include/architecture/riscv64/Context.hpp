@@ -9,7 +9,7 @@ namespace DEPOS {
 
 namespace riscv64 {
 
-template <typename T> class ContextBase {
+class Context {
   public:
     uint64_t ra, sp, gp, tp;
     uint64_t t0, t1, t2;
@@ -18,12 +18,15 @@ template <typename T> class ContextBase {
     uint64_t s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
     uint64_t t3, t4, t5, t6;
     uint64_t status, scratch, cause, pc;
+};
 
+template <typename T> class ContextHandler : public Context {
+  public:
     uint64_t &operator[](size_t i) { return (reinterpret_cast<uint64_t *>(&ra))[i - 1]; }
 
-    ContextBase() = default;
+    ContextHandler() = default;
 
-    ContextBase(auto usp, auto ksp, auto pc, auto ra, auto a0) {
+    ContextHandler(auto usp, auto ksp, auto pc, auto ra, auto a0) {
         this->ra      = reinterpret_cast<uint64_t>(ra);
         this->pc      = reinterpret_cast<uint64_t>(pc);
         this->status  = static_cast<uint64_t>(T::ME2ME | T::PIRQE);
@@ -34,10 +37,10 @@ template <typename T> class ContextBase {
 
     template <typename F, typename... Args> __attribute__((naked)) void load(F f, Args... args) {
         asm volatile("mv s11, a0");
-        asm("ld sp, %[sp](s11)" ::[sp] "i"(offsetof(ContextBase, sp)));
-        asm("addi sp, sp, %0" ::"i"(-sizeof(ContextBase)));
+        asm("ld sp, %[sp](s11)" ::[sp] "i"(offsetof(ContextHandler, sp)));
+        asm("addi sp, sp, %0" ::"i"(-sizeof(ContextHandler)));
         f(args...);
-        asm("addi sp, sp, %0" ::"i"(sizeof(ContextBase)));
+        asm("addi sp, sp, %0" ::"i"(sizeof(ContextHandler)));
         asm volatile("ld ra, %[ra](s11)\n"
                      "ld gp, %[gp](s11)\n"
                      "ld s0, %[s0](s11)\n"
@@ -60,15 +63,15 @@ template <typename T> class ContextBase {
                      "csrw %[scratchr], t3\n"
                      "ld s11, %[s11](s11)\n"
                      :
-                     : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
-                       [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
-                       [a0] "i"(offsetof(ContextBase, a0)), [s2] "i"(offsetof(ContextBase, s2)),
-                       [s3] "i"(offsetof(ContextBase, s3)), [s4] "i"(offsetof(ContextBase, s4)),
-                       [s5] "i"(offsetof(ContextBase, s5)), [s6] "i"(offsetof(ContextBase, s6)),
-                       [s7] "i"(offsetof(ContextBase, s7)), [s8] "i"(offsetof(ContextBase, s8)),
-                       [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)),
-                       [s11] "i"(offsetof(ContextBase, s11)), [pc] "i"(offsetof(ContextBase, pc)),
-                       [status] "i"(offsetof(ContextBase, status)), [scratch] "i"(offsetof(ContextBase, scratch)),
+                     : [ra] "i"(offsetof(ContextHandler, ra)), [gp] "i"(offsetof(ContextHandler, gp)),
+                       [s0] "i"(offsetof(ContextHandler, s0)), [s1] "i"(offsetof(ContextHandler, s1)),
+                       [a0] "i"(offsetof(ContextHandler, a0)), [s2] "i"(offsetof(ContextHandler, s2)),
+                       [s3] "i"(offsetof(ContextHandler, s3)), [s4] "i"(offsetof(ContextHandler, s4)),
+                       [s5] "i"(offsetof(ContextHandler, s5)), [s6] "i"(offsetof(ContextHandler, s6)),
+                       [s7] "i"(offsetof(ContextHandler, s7)), [s8] "i"(offsetof(ContextHandler, s8)),
+                       [s9] "i"(offsetof(ContextHandler, s9)), [s10] "i"(offsetof(ContextHandler, s10)),
+                       [s11] "i"(offsetof(ContextHandler, s11)), [pc] "i"(offsetof(ContextHandler, pc)),
+                       [status] "i"(offsetof(ContextHandler, status)), [scratch] "i"(offsetof(ContextHandler, scratch)),
                        [epcr] "i"(T::EPC), [scratchr] "i"(T::SCRATCH), [statusr] "i"(T::STATUS));
         T::ret();
     }
@@ -92,34 +95,34 @@ template <typename T> class ContextBase {
             "sd s11, %[s11](a0)\n"
             "sd ra, %[pc](a0)\n"
             :
-            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
-              [sp] "i"(offsetof(ContextBase, sp)), [a0] "i"(offsetof(ContextBase, a0)),
-              [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
-              [s2] "i"(offsetof(ContextBase, s2)), [s3] "i"(offsetof(ContextBase, s3)),
-              [s4] "i"(offsetof(ContextBase, s4)), [s5] "i"(offsetof(ContextBase, s5)),
-              [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)),
-              [s8] "i"(offsetof(ContextBase, s8)), [s9] "i"(offsetof(ContextBase, s9)),
-              [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11)),
-              [pc] "i"(offsetof(ContextBase, pc)));
+            : [ra] "i"(offsetof(ContextHandler, ra)), [gp] "i"(offsetof(ContextHandler, gp)),
+              [sp] "i"(offsetof(ContextHandler, sp)), [a0] "i"(offsetof(ContextHandler, a0)),
+              [s0] "i"(offsetof(ContextHandler, s0)), [s1] "i"(offsetof(ContextHandler, s1)),
+              [s2] "i"(offsetof(ContextHandler, s2)), [s3] "i"(offsetof(ContextHandler, s3)),
+              [s4] "i"(offsetof(ContextHandler, s4)), [s5] "i"(offsetof(ContextHandler, s5)),
+              [s6] "i"(offsetof(ContextHandler, s6)), [s7] "i"(offsetof(ContextHandler, s7)),
+              [s8] "i"(offsetof(ContextHandler, s8)), [s9] "i"(offsetof(ContextHandler, s9)),
+              [s10] "i"(offsetof(ContextHandler, s10)), [s11] "i"(offsetof(ContextHandler, s11)),
+              [pc] "i"(offsetof(ContextHandler, pc)));
 
-        asm("csrr t0, %0\nsd t0, %1(a0)" ::"i"(T::SCRATCH), "i"(offsetof(ContextBase, scratch)));
+        asm("csrr t0, %0\nsd t0, %1(a0)" ::"i"(T::SCRATCH), "i"(offsetof(ContextHandler, scratch)));
         asm("csrr t0, %[id]\n"
             "or t0, t0, %[me2me]\n"
             "andi t0, t0, %[pirqe]\n"
             "sd t0, %[offset](a0)\n" ::[id] "i"(T::STATUS),
-            [me2me] "r"(T::ME2ME), [pirqe] "i"(~T::PIRQE), [offset] "i"(offsetof(ContextBase, status))
+            [me2me] "r"(T::ME2ME), [pirqe] "i"(~T::PIRQE), [offset] "i"(offsetof(ContextHandler, status))
             : "a0");
 
         asm("li a0, 1\nret");
     }
 
-    template <bool ChangeStack = false> __attribute__((always_inline)) static inline ContextBase *push() {
+    template <bool ChangeStack = false> __attribute__((always_inline)) static inline ContextHandler *push() {
 
         if constexpr (ChangeStack) {
             asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
         }
 
-        asm("addi sp, sp, %[size]\n" ::[size] "i"(-sizeof(ContextBase)));
+        asm("addi sp, sp, %[size]\n" ::[size] "i"(-sizeof(ContextHandler)));
 
         asm("sd ra, %[ra](sp)\n"
             "sd gp, %[gp](sp)\n"
@@ -139,15 +142,15 @@ template <typename T> class ContextBase {
             "sd a6, %[a6](sp)\n"
             "sd a7, %[a7](sp)\n"
             :
-            : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
-              [tp] "i"(offsetof(ContextBase, tp)), [t0] "i"(offsetof(ContextBase, t0)),
-              [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)),
-              [t3] "i"(offsetof(ContextBase, t3)), [t4] "i"(offsetof(ContextBase, t4)),
-              [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)),
-              [a0] "i"(offsetof(ContextBase, a0)), [a1] "i"(offsetof(ContextBase, a1)),
-              [a2] "i"(offsetof(ContextBase, a2)), [a3] "i"(offsetof(ContextBase, a3)),
-              [a4] "i"(offsetof(ContextBase, a4)), [a5] "i"(offsetof(ContextBase, a5)),
-              [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7))
+            : [ra] "i"(offsetof(ContextHandler, ra)), [gp] "i"(offsetof(ContextHandler, gp)),
+              [tp] "i"(offsetof(ContextHandler, tp)), [t0] "i"(offsetof(ContextHandler, t0)),
+              [t1] "i"(offsetof(ContextHandler, t1)), [t2] "i"(offsetof(ContextHandler, t2)),
+              [t3] "i"(offsetof(ContextHandler, t3)), [t4] "i"(offsetof(ContextHandler, t4)),
+              [t5] "i"(offsetof(ContextHandler, t5)), [t6] "i"(offsetof(ContextHandler, t6)),
+              [a0] "i"(offsetof(ContextHandler, a0)), [a1] "i"(offsetof(ContextHandler, a1)),
+              [a2] "i"(offsetof(ContextHandler, a2)), [a3] "i"(offsetof(ContextHandler, a3)),
+              [a4] "i"(offsetof(ContextHandler, a4)), [a5] "i"(offsetof(ContextHandler, a5)),
+              [a6] "i"(offsetof(ContextHandler, a6)), [a7] "i"(offsetof(ContextHandler, a7))
             : "memory");
 
         asm("csrr t0, %[status]\n"
@@ -166,26 +169,26 @@ template <typename T> class ContextBase {
             "sd s11, %[s11](sp)\n"
             "1:"
             :
-            : [status] "i"(T::STATUS), [s0] "i"(offsetof(ContextBase, s0)), [s1] "i"(offsetof(ContextBase, s1)),
-              [s2] "i"(offsetof(ContextBase, s2)), [s3] "i"(offsetof(ContextBase, s3)),
-              [s4] "i"(offsetof(ContextBase, s4)), [s5] "i"(offsetof(ContextBase, s5)),
-              [s6] "i"(offsetof(ContextBase, s6)), [s7] "i"(offsetof(ContextBase, s7)),
-              [s8] "i"(offsetof(ContextBase, s8)), [s9] "i"(offsetof(ContextBase, s9)),
-              [s10] "i"(offsetof(ContextBase, s10)), [s11] "i"(offsetof(ContextBase, s11))
+            : [status] "i"(T::STATUS), [s0] "i"(offsetof(ContextHandler, s0)), [s1] "i"(offsetof(ContextHandler, s1)),
+              [s2] "i"(offsetof(ContextHandler, s2)), [s3] "i"(offsetof(ContextHandler, s3)),
+              [s4] "i"(offsetof(ContextHandler, s4)), [s5] "i"(offsetof(ContextHandler, s5)),
+              [s6] "i"(offsetof(ContextHandler, s6)), [s7] "i"(offsetof(ContextHandler, s7)),
+              [s8] "i"(offsetof(ContextHandler, s8)), [s9] "i"(offsetof(ContextHandler, s9)),
+              [s10] "i"(offsetof(ContextHandler, s10)), [s11] "i"(offsetof(ContextHandler, s11))
             : "memory");
 
-        asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::STATUS), "i"(offsetof(ContextBase, status)));
-        asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::EPC), "i"(offsetof(ContextBase, pc)));
-        asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::CAUSE), "i"(offsetof(ContextBase, cause)));
+        asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::STATUS), "i"(offsetof(ContextHandler, status)));
+        asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::EPC), "i"(offsetof(ContextHandler, pc)));
+        asm("csrr t0, %0\nsd t0, %1(sp)" ::"i"(T::CAUSE), "i"(offsetof(ContextHandler, cause)));
 
-        register ContextBase *sp asm("sp");
+        register ContextHandler *sp asm("sp");
         return sp;
     }
 
     template <bool ChangeStack = false> __attribute__((naked)) static void pop() {
-        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(offsetof(ContextBase, status)), "i"(T::STATUS));
-        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(offsetof(ContextBase, pc)), "i"(T::EPC));
-        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(offsetof(ContextBase, cause)), "i"(T::CAUSE));
+        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(offsetof(ContextHandler, status)), "i"(T::STATUS));
+        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(offsetof(ContextHandler, pc)), "i"(T::EPC));
+        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(offsetof(ContextHandler, cause)), "i"(T::CAUSE));
 
         asm("blt t0, zero, 1f\n"
             "ld s0, %[s0](sp)\n"
@@ -200,13 +203,13 @@ template <typename T> class ContextBase {
             "ld s9,  %[s9](sp)\n"
             "ld s10, %[s10](sp)\n"
             "ld s11, %[s11](sp)\n"
-            "1:" ::[s0] "i"(offsetof(ContextBase, s0)),
-            [s1] "i"(offsetof(ContextBase, s1)), [s2] "i"(offsetof(ContextBase, s2)),
-            [s3] "i"(offsetof(ContextBase, s3)), [s4] "i"(offsetof(ContextBase, s4)),
-            [s5] "i"(offsetof(ContextBase, s5)), [s6] "i"(offsetof(ContextBase, s6)),
-            [s7] "i"(offsetof(ContextBase, s7)), [s8] "i"(offsetof(ContextBase, s8)),
-            [s9] "i"(offsetof(ContextBase, s9)), [s10] "i"(offsetof(ContextBase, s10)),
-            [s11] "i"(offsetof(ContextBase, s11)));
+            "1:" ::[s0] "i"(offsetof(ContextHandler, s0)),
+            [s1] "i"(offsetof(ContextHandler, s1)), [s2] "i"(offsetof(ContextHandler, s2)),
+            [s3] "i"(offsetof(ContextHandler, s3)), [s4] "i"(offsetof(ContextHandler, s4)),
+            [s5] "i"(offsetof(ContextHandler, s5)), [s6] "i"(offsetof(ContextHandler, s6)),
+            [s7] "i"(offsetof(ContextHandler, s7)), [s8] "i"(offsetof(ContextHandler, s8)),
+            [s9] "i"(offsetof(ContextHandler, s9)), [s10] "i"(offsetof(ContextHandler, s10)),
+            [s11] "i"(offsetof(ContextHandler, s11)));
 
         asm volatile("ld ra, %[ra](sp)\n"
                      "ld gp, %[gp](sp)\n"
@@ -226,17 +229,17 @@ template <typename T> class ContextBase {
                      "ld a6, %[a6](sp)\n"
                      "ld a7, %[a7](sp)\n"
                      :
-                     : [ra] "i"(offsetof(ContextBase, ra)), [gp] "i"(offsetof(ContextBase, gp)),
-                       [tp] "i"(offsetof(ContextBase, tp)), [t0] "i"(offsetof(ContextBase, t0)),
-                       [t1] "i"(offsetof(ContextBase, t1)), [t2] "i"(offsetof(ContextBase, t2)),
-                       [t3] "i"(offsetof(ContextBase, t3)), [t4] "i"(offsetof(ContextBase, t4)),
-                       [t5] "i"(offsetof(ContextBase, t5)), [t6] "i"(offsetof(ContextBase, t6)),
-                       [a0] "i"(offsetof(ContextBase, a0)), [a1] "i"(offsetof(ContextBase, a1)),
-                       [a2] "i"(offsetof(ContextBase, a2)), [a3] "i"(offsetof(ContextBase, a3)),
-                       [a4] "i"(offsetof(ContextBase, a4)), [a5] "i"(offsetof(ContextBase, a5)),
-                       [a6] "i"(offsetof(ContextBase, a6)), [a7] "i"(offsetof(ContextBase, a7)));
+                     : [ra] "i"(offsetof(ContextHandler, ra)), [gp] "i"(offsetof(ContextHandler, gp)),
+                       [tp] "i"(offsetof(ContextHandler, tp)), [t0] "i"(offsetof(ContextHandler, t0)),
+                       [t1] "i"(offsetof(ContextHandler, t1)), [t2] "i"(offsetof(ContextHandler, t2)),
+                       [t3] "i"(offsetof(ContextHandler, t3)), [t4] "i"(offsetof(ContextHandler, t4)),
+                       [t5] "i"(offsetof(ContextHandler, t5)), [t6] "i"(offsetof(ContextHandler, t6)),
+                       [a0] "i"(offsetof(ContextHandler, a0)), [a1] "i"(offsetof(ContextHandler, a1)),
+                       [a2] "i"(offsetof(ContextHandler, a2)), [a3] "i"(offsetof(ContextHandler, a3)),
+                       [a4] "i"(offsetof(ContextHandler, a4)), [a5] "i"(offsetof(ContextHandler, a5)),
+                       [a6] "i"(offsetof(ContextHandler, a6)), [a7] "i"(offsetof(ContextHandler, a7)));
 
-        asm("addi sp, sp, %[size]\n" ::[size] "i"(sizeof(ContextBase)));
+        asm("addi sp, sp, %[size]\n" ::[size] "i"(sizeof(ContextHandler)));
 
         if constexpr (ChangeStack) {
             asm volatile("csrrw sp, %0, sp" ::"i"(T::SCRATCH));
@@ -246,8 +249,8 @@ template <typename T> class ContextBase {
     }
 };
 
-using MachineContext    = ContextBase<MachineMode>;
-using SupervisorContext = ContextBase<SupervisorMode>;
+using MachineContext    = ContextHandler<MachineMode>;
+using SupervisorContext = ContextHandler<SupervisorMode>;
 
 } // namespace riscv64
 

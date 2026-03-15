@@ -29,7 +29,7 @@ template <typename... Tickers> class Timer : public ArchitectureCommon::TimerTem
             csrs<MachineMode::IE>(MachineMode::TI);
             CLINT::write();
         } else {
-			IC::bind(5, supervisor, true, false);
+            IC::bind(5, supervisor, true, false);
             csrs<SupervisorMode::IE>(SupervisorMode::TI);
         }
     }

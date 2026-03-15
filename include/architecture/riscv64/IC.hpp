@@ -1,5 +1,6 @@
 #pragma once
 
+#include <architecture/riscv64/Exception.hpp>
 #include <architecture/riscv64/PLIC.hpp>
 #include <utils/Debug.hpp>
 
@@ -25,8 +26,6 @@ class IC {
     static constexpr int Total      = Exceptions + Internal + External;
 
   public:
-    enum { INTERRUPT = 1UL << 63 };
-
     static void dispatch(unsigned int id, bool interruption, bool external) {
         unsigned int index = irq2index(id, interruption, external);
         ERROR(!s_handlers[index], "ID: ", id, " Index: ", index);
@@ -45,6 +44,11 @@ class IC {
             PLIC::priority(id, 1);
             PLIC::enable(id);
         }
+    }
+
+    static void init() {
+        for (int i = 0; i < Exceptions; i++)
+            bind(i, Exception::dispatch, false, false);
     }
 
   private:

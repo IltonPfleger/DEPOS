@@ -1,9 +1,16 @@
 #pragma once
 
+#include <types.hpp>
+
 namespace DEPOS {
 
 namespace riscv64 {
 
+template <int R> static inline uint64_t csrrw(auto v) {
+    uint64_t old;
+    asm volatile("csrrw %0, %1, %2" : "=r"(old) : "i"(R), "r"(v) : "memory");
+    return old;
+}
 template <int R> static inline auto csrrc(auto c) {
     uint64_t r;
     asm volatile("csrrc %0, %1, %2" : "=r"(r) : "i"(R), "r"(c));

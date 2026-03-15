@@ -1,4 +1,4 @@
-#include <include/Traits.hpp>
+#include <Traits.hpp>
 #include <machine/Machine.hpp>
 #include <utils/Console.hpp>
 #include <utils/Observer.hpp>
@@ -7,7 +7,8 @@ using namespace DEPOS;
 
 class Waiter : public Observer<const unsigned char *, size_t> {
   public:
-    Waiter() : m_done(false) {}
+    Waiter()
+        : m_done(false) {}
 
     void update(const unsigned char *buffer, size_t size) override {
         Console::cout << "Pressed Key: " << buffer[size - 1] << '\n';
@@ -18,6 +19,7 @@ class Waiter : public Observer<const unsigned char *, size_t> {
 };
 
 int main(int, char *[]) {
+    //*(int *)(void *)0x0 = 1;
     typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result Device;
     TraceIn();
     Waiter *w = new Waiter();

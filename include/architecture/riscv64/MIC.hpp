@@ -16,12 +16,13 @@ class MIC {
 
     static void external(unsigned int) {
         unsigned int id = PLIC::claim();
-        IC::dispatch(id, true, true);
+        if (id) IC::dispatch(id, true, true);
         PLIC::complete(id);
     }
 
-    static void dispatch(MachineContext *) {
-        intmax_t mcause   = csrr<MachineMode::CAUSE>();
+    static void dispatch(MachineContext *context) {
+        intmax_t mcause = csrr<MachineMode::CAUSE>();
+        CPU::gp(static_cast<Context *>(context));
         bool interruption = mcause >> 63;
         bool external     = false;
         mcause &= ~(1ULL << 63);

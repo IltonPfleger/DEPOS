@@ -1,6 +1,6 @@
 include ../../Makedefs.mk
 
-INFO := $(BUILD)/$(APPLICATION).info
+ELF := $(BUILD)/$(APPLICATION).elf
 BIN := $(BUILD)/$(APPLICATION).bin
 BUILD := $(BUILD)/$(APPLICATION)
 
@@ -18,11 +18,11 @@ INITRAMFS_ADDR=$(shell cat Traits.hpp | grep "DTB =" | sed -E 's/.*= (0x[0-9A-Fa
 
 all: $(BIN)
 
-$(BIN): $(INFO)
+$(BIN): $(ELF)
 	@mkdir -p $(dir $@)
 	$(OBJCOPY) -O binary $< $@
 
-$(INFO): $(BUILD)/$(APPLICATION).o
+$(ELF): $(BUILD)/$(APPLICATION).o
 	@mkdir -p $(dir $@)
 	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(APPLICATION_ADDR) --image-base=$(APPLICATION_ADDR) -o $@ $^
 

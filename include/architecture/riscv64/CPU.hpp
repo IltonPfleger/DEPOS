@@ -13,12 +13,13 @@ namespace riscv64 {
 
 class CPU {
   public:
-    using Context = ContextBase<KernelMode>;
-    using Atomic = ArchitectureCommon::Atomic;
+    using Context = Meta::IF<Traits<RISCV>::Supervisor, SupervisorContext, MachineContext>::Result;
+    using Atomic  = ArchitectureCommon::Atomic;
 
     static uint64_t htobe64(uint64_t x) {
-        return ((x & 0xFF00000000000000ULL) >> 56) | ((x & 0x00FF000000000000ULL) >> 40) | ((x & 0x0000FF0000000000ULL) >> 24) |
-               ((x & 0x000000FF00000000ULL) >> 8) | ((x & 0x00000000FF000000ULL) << 8) | ((x & 0x0000000000FF0000ULL) << 24) |
+        return ((x & 0xFF00000000000000ULL) >> 56) | ((x & 0x00FF000000000000ULL) >> 40) |
+               ((x & 0x0000FF0000000000ULL) >> 24) | ((x & 0x000000FF00000000ULL) >> 8) |
+               ((x & 0x00000000FF000000ULL) << 8) | ((x & 0x0000000000FF0000ULL) << 24) |
                ((x & 0x000000000000FF00ULL) << 40) | ((x & 0x00000000000000FFULL) << 56);
     }
 
@@ -38,6 +39,14 @@ class CPU {
     static auto halt() { asm volatile("1: wfi\n j 1b"); }
 
     static void syscall() { asm volatile("ecall"); }
+
+    static void gp(auto r) { asm("mv gp, %0" ::"r"(r)); }
+
+    static auto gp() {
+        uintmax_t *r;
+        asm volatile("mv %0, gp" : "=r"(r));
+        return r;
+    }
 
     static auto stack() {
         unsigned char *sp;
@@ -82,7 +91,7 @@ class CPU {
         // Setup Boot Memory
         if (id() == Traits<CPU>::BSP) {
             __bmm.start = Traits<MemoryMap>::RamEnd - Traits<Memory>::StackSize * Traits<CPU>::Active - 1;
-            __bmm.end = Traits<MemoryMap>::RamEnd;
+            __bmm.end   = Traits<MemoryMap>::RamEnd;
         }
 
         // Restore Return Address
@@ -95,15 +104,15 @@ class CPU {
     static void mb() { asm volatile("fence iorw, iorw" ::: "memory"); }
 
     static void barrier() {
-        __attribute__((section(".barrier"))) static volatile unsigned char gsense = 0;
+        __attribute__((section(".barrier"))) static volatile unsigned char gsense  = 0;
         __attribute__((section(".barrier"))) static volatile unsigned int ready[2] = {0};
 
-        unsigned char sense = gsense;
+        unsigned char sense  = gsense;
         unsigned int arrived = Atomic::finc(ready[sense]);
 
         if (arrived == Traits<CPU>::Active - 1) {
             ready[sense] = 0;
-            gsense = !sense;
+            gsense       = !sense;
         } else {
             while (gsense == sense)
                 mb();
