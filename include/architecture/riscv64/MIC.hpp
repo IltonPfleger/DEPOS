@@ -43,6 +43,7 @@ class MIC {
 
         if constexpr (Traits<Kernel>::Multitask) {
             /* Keep Boot Stack For Handle M-Mode IRQs */
+            static_assert(ChangeStack);
             csrw<MachineMode::SCRATCH>(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * CPU::id());
         }
 
