@@ -23,8 +23,7 @@ class Base {
         GET_MIMPID                 = 6,
     };
 
-    static bool handler(Context *c) {
-        bool handle = true;
+    static void handler(Context *c) {
         switch (c->a6) {
         case GET_MVENDORID: {
             c->a0 = 0;
@@ -62,10 +61,7 @@ class Base {
             c->a0 = 0;
             break;
         }
-        default:
-            handle = false;
         }
-        return handle;
     }
 };
 

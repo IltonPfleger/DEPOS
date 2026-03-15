@@ -13,34 +13,18 @@ class IllegalInstruction {
   public:
     static constexpr unsigned int CODE = 2;
 
-    enum Opcode {
-        SYSTEM = 0x73,
-    };
+    enum { RDTIME = 0xC0102073, RDTIME_MASK = 0xFFF0707F };
 
-    enum Mask {
-        OPCODE_MASK = 0x7F,
-        FUNCT3_MASK = 0x7000,
-        RD_MASK     = 0xF80,
-    };
-
-    static constexpr uint32_t RDTIME_PATTERN = 0xC0102073;
-    static constexpr uint32_t RDTIME_MASK    = 0xFFF0707F;
-
-    static bool handler(Context *c) {
+    static void dispatch(unsigned int id, Context *c) {
         uint32_t tval = static_cast<uint32_t>(csrr<MachineMode::TVAL>());
 
-        if ((tval & RDTIME_MASK) == RDTIME_PATTERN) {
+        if ((tval & RDTIME_MASK) == RDTIME) {
             unsigned int rd = (tval >> 7) & 0x1F;
-
-            if (rd != 0) {
-                (*c)[rd] = CLINT::read();
-            }
-
+            if (rd != 0) (*c)[rd] = CLINT::read();
             c->pc += 4;
-            return true;
+        } else {
+            Exception::dispatch(id, c);
         }
-
-        return false;
     }
 };
 

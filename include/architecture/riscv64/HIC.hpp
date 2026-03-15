@@ -24,14 +24,7 @@ class HIC {
     }
 
     static void dispatch(Context *context) {
-        intmax_t mcause = csrr<MachineMode::CAUSE>();
-        if (!(mcause >> 63)) {
-            if (!sbi::SBI::dispatch(context)) {
-                Exception::dispatch(mcause, context);
-            }
-            return;
-        }
-
+        intmax_t mcause   = csrr<MachineMode::CAUSE>();
         bool interruption = mcause >> 63;
         bool external     = false;
         mcause &= ~(1ULL << 63);
@@ -50,6 +43,8 @@ class HIC {
 
         for (int i = 0; i < 16; i++)
             IC::bind(i, Exception::dispatch, false, false);
+
+        sbi::SBI::init();
 
         IC::bind(7, +[](unsigned int) { CLINT::write(); }, true, false);
         csrs<MachineMode::IE>(MachineMode::TI);

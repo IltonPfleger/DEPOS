@@ -13,16 +13,18 @@ class Syscall {
   public:
     static constexpr unsigned int CODE = 9;
 
-    static bool handler(Context *c) {
+    static void dispatch(unsigned int id, Context *c) {
         switch (c->a7) {
         case Base::EID:
-            c->pc += 4;
-            return Base::handler(c);
+            Base::handler(c);
+            break;
         case Time::EID:
-            c->pc += 4;
-            return Time::handler(c);
+            Time::handler(c);
+            break;
+        default:
+            Exception::dispatch(id, c);
         }
-        return false;
+        c->pc += 4;
     }
 };
 

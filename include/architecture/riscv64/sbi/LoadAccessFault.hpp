@@ -34,11 +34,15 @@ class LoadAccessFault {
   public:
     static constexpr unsigned int CODE = 5;
 
-    static bool handler(Context *c) {
+    static void dispatch(unsigned int id, Context *c) {
         uintptr_t addr           = PageTable::virt2phys(csrr<MachineMode::TVAL>());
         unsigned int instruction = *reinterpret_cast<unsigned int *>(PageTable::virt2phys(c->pc));
         unsigned int i           = (instruction >> 7) & 0x1F;
-        return c->pc += 4, Dispatcher<ActiveTraits::Devices>::run(addr, reinterpret_cast<unsigned int *>(&(*c)[i]));
+        if (Dispatcher<ActiveTraits::Devices>::run(addr, reinterpret_cast<unsigned int *>(&(*c)[i]))) {
+            c->pc += 4;
+        } else {
+            Exception::dispatch(id, c);
+        }
     }
 };
 
