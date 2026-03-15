@@ -3,6 +3,7 @@
 #include <Traits.hpp>
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/Exception.hpp>
+#include <architecture/riscv64/IC.hpp>
 #include <architecture/riscv64/PLIC.hpp>
 #include <memory/Memory.hpp>
 
@@ -11,9 +12,9 @@ namespace DEPOS {
 namespace riscv64 {
 
 class MIC {
-  private:
     static constexpr bool ChangeStack = Traits<Thread>::IsolatedKernelStack || Traits<Kernel>::Multitask;
 
+  protected:
     static void external(unsigned int) {
         unsigned int id = PLIC::claim();
         IC::dispatch(id, 0, true, true);

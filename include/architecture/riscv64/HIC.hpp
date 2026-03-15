@@ -3,6 +3,7 @@
 #include <Traits.hpp>
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/Exception.hpp>
+#include <architecture/riscv64/MIC.hpp>
 #include <architecture/riscv64/Timer.hpp>
 #include <architecture/riscv64/VirtualCPU.hpp>
 #include <architecture/riscv64/sbi/SBI.hpp>
@@ -13,22 +14,12 @@ namespace DEPOS {
 
 namespace riscv64 {
 
-class HIC {
+class HIC : MIC {
     static_assert(Traits<Thread>::IsolatedKernelStack);
 
   private:
-    static void external(unsigned int) {
-        unsigned int id = PLIC::claim();
-        IC::dispatch(id, 0, true, true);
-        PLIC::complete(id);
-    }
-
     static void dispatch(Context *context) {
-        intmax_t mcause   = csrr<MachineMode::CAUSE>();
-        bool interruption = mcause >> 63;
-        bool external     = false;
-        mcause &= ~(1ULL << 63);
-        IC::dispatch(mcause, context, interruption, external);
+        MIC::dispatch(context);
         VirtualCPU::handler();
     }
 
@@ -51,7 +42,7 @@ class HIC {
 
         PLIC::init();
         IC::bind(0, +[](unsigned int) {}, true, true);
-        IC::bind(11, external, true, false);
+        IC::bind(11, MIC::external, true, false);
         csrs<MachineMode::IE>(MachineMode::EI);
     }
 };
