@@ -26,7 +26,7 @@ class RR : public Policy {
     static constexpr int Depth        = 2;
     static constexpr bool Preemptive  = true;
     enum { IDLE = 0, NORMAL = 1 };
-    int affinity(RR &&) { return 0; }
+    static int affinity(RR &&) { return 0; }
     static int affinity() { return 0; }
 };
 
@@ -64,32 +64,34 @@ template <typename T> class Scheduler {
 
   public:
     using Criterion = typename Traits<T>::Criterion;
-    using Link      = Node<Thread *, Criterion &>;
+    using Link      = Node<Thread *, Criterion>;
     using Queue     = typename Criterion::template Queue<Link>;
 
     Scheduler() = default;
 
     Link *remove(Criterion::Rank threshold = Criterion::IDLE) {
-        Link *next = nullptr;
-        int i      = Criterion::Depth - 1;
+        int i        = Criterion::Depth - 1;
+        int affinity = Criterion::affinity();
 
-        while (i >= threshold && !next) {
-            m_lock[Criterion::affinity()].acquire();
-            next = m_levels[Criterion::affinity()][i].remove();
-            m_lock[Criterion::affinity()].release();
-            i = i - 1;
+        while (i >= threshold) {
+            m_lock[affinity].acquire();
+            if (Link *next = m_levels[affinity][i].remove()) {
+                m_lock[affinity].release();
+                m_heads[head()] = next->value();
+                return next;
+            }
+            m_lock[affinity].release();
+            i--;
         }
 
-        if (next) m_heads[head()] = next->value();
-
-        return next;
+        return nullptr;
     }
 
     void insert(Link *node) {
         ERROR(!node);
-        m_lock[node->priority().affinity()].acquire();
-        m_levels[node->priority().affinity()][node->priority()].insert(node);
-        m_lock[node->priority().affinity()].release();
+        m_lock[Criterion::affinity(node->priority())].acquire();
+        m_levels[Criterion::affinity(node->priority())][node->priority()].insert(node);
+        m_lock[Criterion::affinity(node->priority())].release();
     }
 
     auto head() { return CPU::id(); }
@@ -97,7 +99,7 @@ template <typename T> class Scheduler {
     auto *current() { return m_heads[head()]; }
 
   private:
-    static constexpr int CPUS = Traits<CPU>::Active;
+    static constexpr unsigned int CPUS = Traits<CPU>::Active;
 
   private:
     T *m_heads[CPUS] = {nullptr};

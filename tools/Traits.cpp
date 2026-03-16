@@ -6,7 +6,7 @@ using namespace DEPOS;
 
 int main() {
     cout << "MULTITASK := " << Traits<Kernel>::Multitask;
-    cout << "\nMACHINE := " << Traits<Machine>::NAME;
+    cout << "\nMACHINE_NAME := " << Traits<Machine>::NAME;
     cout << "\nARCH := " << Traits<CPU>::Architecture;
     cout << "\nCPUS := " << Traits<CPU>::Count;
     cout << "\nMEMORY_SIZE := " << Traits<Memory>::Size;

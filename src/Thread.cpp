@@ -18,9 +18,12 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
 
     CPU::Context context;
     previous->m_context = &context;
-    next->m_state       = State::RUNNING;
 
-    if (context.save()) next->m_context->load(epilogue, previous, spin);
+    if (context.save()) {
+        next->m_state = State::RUNNING;
+        CPU::mb();
+        next->m_context->load(epilogue, previous, spin);
+    }
 }
 
 Thread::Return Thread::idle(Argument) {
