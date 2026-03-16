@@ -35,52 +35,54 @@ template <typename T> class ContextHandler : public Context {
         this->scratch = reinterpret_cast<uint64_t>(ksp);
     }
 
+    template <typename Function, typename... Args>
+    __attribute__((naked)) static void swap(ContextHandler *previous, ContextHandler *next, Function f, Args... args) {
+        previous->save();
+        next->load(f, args...);
+    }
+
     template <typename F, typename... Args> __attribute__((naked)) void load(F f, Args... args) {
-        asm volatile("mv s11, a0");
-        asm("ld sp, %[sp](s11)" ::[sp] "i"(offsetof(ContextHandler, sp)));
+        asm("ld sp, %0(a0)" ::[sp] "i"(offsetof(ContextHandler, sp)));
         asm("addi sp, sp, %0" ::"i"(-sizeof(ContextHandler)));
         f(args...);
         asm("addi sp, sp, %0" ::"i"(sizeof(ContextHandler)));
-        asm volatile("ld ra, %[ra](s11)\n"
-                     "ld gp, %[gp](s11)\n"
-                     "ld s0, %[s0](s11)\n"
-                     "ld a0, %[a0](s11)\n"
-                     "ld s1, %[s1](s11)\n"
-                     "ld s2, %[s2](s11)\n"
-                     "ld s3, %[s3](s11)\n"
-                     "ld s4, %[s4](s11)\n"
-                     "ld s5, %[s5](s11)\n"
-                     "ld s6, %[s6](s11)\n"
-                     "ld s7, %[s7](s11)\n"
-                     "ld s8, %[s8](s11)\n"
-                     "ld s9, %[s9](s11)\n"
-                     "ld s10, %[s10](s11)\n"
-                     "ld t0, %[pc](s11)\n"
-                     "ld t1, %[status](s11)\n"
-                     "ld t3, %[scratch](s11)\n"
-                     "csrw %[epcr], t0\n"
-                     "csrw %[statusr], t1\n"
-                     "csrw %[scratchr], t3\n"
-                     "ld s11, %[s11](s11)\n"
-                     :
-                     : [ra] "i"(offsetof(ContextHandler, ra)), [gp] "i"(offsetof(ContextHandler, gp)),
-                       [s0] "i"(offsetof(ContextHandler, s0)), [s1] "i"(offsetof(ContextHandler, s1)),
-                       [a0] "i"(offsetof(ContextHandler, a0)), [s2] "i"(offsetof(ContextHandler, s2)),
-                       [s3] "i"(offsetof(ContextHandler, s3)), [s4] "i"(offsetof(ContextHandler, s4)),
-                       [s5] "i"(offsetof(ContextHandler, s5)), [s6] "i"(offsetof(ContextHandler, s6)),
-                       [s7] "i"(offsetof(ContextHandler, s7)), [s8] "i"(offsetof(ContextHandler, s8)),
-                       [s9] "i"(offsetof(ContextHandler, s9)), [s10] "i"(offsetof(ContextHandler, s10)),
-                       [s11] "i"(offsetof(ContextHandler, s11)), [pc] "i"(offsetof(ContextHandler, pc)),
-                       [status] "i"(offsetof(ContextHandler, status)), [scratch] "i"(offsetof(ContextHandler, scratch)),
-                       [epcr] "i"(T::EPC), [scratchr] "i"(T::SCRATCH), [statusr] "i"(T::STATUS));
+
+        asm("mv s11, %0" ::"r"(this));
+        asm("ld t0, %0(s11)\ncsrw %1, t0" ::"i"(offsetof(ContextHandler, status)), "i"(T::STATUS));
+        asm("ld t0, %0(s11)\ncsrw %1, t0" ::"i"(offsetof(ContextHandler, pc)), "i"(T::EPC));
+        asm("ld t0, %0(s11)\ncsrw %1, t0" ::"i"(offsetof(ContextHandler, scratch)), "i"(T::SCRATCH));
+
+        asm("ld ra, %[ra](s11)\n"
+            "ld gp, %[gp](s11)\n"
+            "ld s0, %[s0](s11)\n"
+            "ld a0, %[a0](s11)\n"
+            "ld s1, %[s1](s11)\n"
+            "ld s2, %[s2](s11)\n"
+            "ld s3, %[s3](s11)\n"
+            "ld s4, %[s4](s11)\n"
+            "ld s5, %[s5](s11)\n"
+            "ld s6, %[s6](s11)\n"
+            "ld s7, %[s7](s11)\n"
+            "ld s8, %[s8](s11)\n"
+            "ld s9, %[s9](s11)\n"
+            "ld s10, %[s10](s11)\n"
+            "ld s11, %[s11](s11)\n"
+            :
+            : [ra] "i"(offsetof(ContextHandler, ra)), [gp] "i"(offsetof(ContextHandler, gp)),
+              [s0] "i"(offsetof(ContextHandler, s0)), [s1] "i"(offsetof(ContextHandler, s1)),
+              [a0] "i"(offsetof(ContextHandler, a0)), [s2] "i"(offsetof(ContextHandler, s2)),
+              [s3] "i"(offsetof(ContextHandler, s3)), [s4] "i"(offsetof(ContextHandler, s4)),
+              [s5] "i"(offsetof(ContextHandler, s5)), [s6] "i"(offsetof(ContextHandler, s6)),
+              [s7] "i"(offsetof(ContextHandler, s7)), [s8] "i"(offsetof(ContextHandler, s8)),
+              [s9] "i"(offsetof(ContextHandler, s9)), [s10] "i"(offsetof(ContextHandler, s10)),
+              [s11] "i"(offsetof(ContextHandler, s11)));
         T::ret();
     }
 
-    __attribute__((naked)) bool save() {
+    __attribute__((always_inline)) void save() {
         asm("sd ra,  %[ra](%[self])\n"
             "sd gp,  %[gp](%[self])\n"
             "sd sp,  %[sp](%[self])\n"
-            "sd zero,  %[a0](%[self])\n"
             "sd s0,  %[s0](%[self])\n"
             "sd s1,  %[s1](%[self])\n"
             "sd s2,  %[s2](%[self])\n"
@@ -110,8 +112,6 @@ template <typename T> class ContextHandler : public Context {
         t0 |= T::ME2ME;
         t0 &= ~T::PIRQE;
         asm("sd %0, %1(%2)" ::"r"(t0), "i"(offsetof(Context, status)), "r"(this));
-
-        asm("li a0, 1\nret");
     }
 
     template <bool ChangeStack = false> __attribute__((always_inline)) static inline Context *push() {

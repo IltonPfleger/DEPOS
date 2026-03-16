@@ -15,6 +15,8 @@ template <unsigned int N> class Data {
         if (m_index < N) m_buffer[m_index++] = ts;
         if (m_index >= N) {
             CPU::Interruptions::disable();
+            Console::cout << Console::endl;
+            Console::cout << "*** Start ***" << Console::endl;
             flush();
             Console::cout << "*** End ***" << Console::endl;
             while (1)
@@ -63,9 +65,9 @@ class PeriodicThread : Semaphore, Thread {
 
     static void wait() {
         PeriodicThread *self = static_cast<PeriodicThread *>(Thread::running());
-        self->m_data.collect(Timer::now());
         Alarm::at(self->m_next);
         self->m_next += self->m_period;
+        self->m_data.collect(Timer::now());
     }
 
   private:

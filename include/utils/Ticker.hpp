@@ -9,17 +9,11 @@ template <unsigned long Duration, void (*Handler)(), unsigned int Channels> clas
     }
 
     void tick(unsigned int channel) {
-        if (channel >= Channels) return;
-
         if (--m_current[channel] <= 0) {
             Handler();
             m_current[channel] = Duration;
         }
     }
-
-  public:
-    static constexpr unsigned int k_channels = Channels;
-    static constexpr unsigned int k_duration = Duration;
 
   private:
     long m_current[Channels];

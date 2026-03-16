@@ -4,16 +4,12 @@
 using namespace DEPOS;
 
 Thread::Return init(Thread::Argument) {
-    // Microsecond last;
+	PeriodicThread::wait();
     while (1) {
         volatile unsigned int i = 500;
         while (i)
             i = i - 1;
-        // last = Timer::now();
         PeriodicThread::wait();
-        // Microsecond now = Timer::now();
-        // Console::cout << now - last << Console::endl;
-        // last = now;
     }
     return Thread::Return{};
 }

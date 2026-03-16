@@ -6,26 +6,27 @@ namespace DEPOS {
 bool Alarm::elapsed(Microsecond us) { return static_cast<intmax_t>(Timer::now() - us) >= 0; }
 
 void Alarm::at(Microsecond us) {
+    int core = CPU::id();
     Thread::Queue queue;
+    Spin spin;
+
     Link link(&queue, us);
-    s_spin.acquire();
-    s_delays.insert(&link);
-    Thread::sleep(&queue, &s_spin);
+    s_delays[core].insert(&link);
+    Thread::sleep(&queue, &spin);
 }
 
 void Alarm::udelay(Microsecond us) { Alarm::at(Timer::now() + us); }
 
 void Alarm::handler() {
-    s_spin.acquire();
+    int core   = CPU::id();
+    List &list = s_delays[core];
 
-    Link *head = s_delays.head();
+    Link *head = list.head();
     while (head && elapsed(head->criterion())) {
         Thread::wakeup(head->value());
-        s_delays.remove();
-        head = s_delays.head();
+        list.remove();
+        head = list.head();
     }
-
-    s_spin.release();
 }
 
 } // namespace DEPOS
