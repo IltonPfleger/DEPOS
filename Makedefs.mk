@@ -26,7 +26,7 @@ MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
 CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic -Wfatal-errors
-CCFLAGS += -D__MACHINE=$(MACHINE) -D__ARCH=$(ARCH) -D__APPLICATION=$(APPLICATION) 
+CCFLAGS += -D__MACHINE=$(MACHINE) -D__ARCH=$(ARCH) -D__APPLICATION=$(APPLICATION) -O3
 
 ifeq ($(MAKELEVEL),0)
 run norun debug: $(CONFIG)

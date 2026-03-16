@@ -77,41 +77,39 @@ template <typename T> class ContextHandler : public Context {
     }
 
     __attribute__((naked)) bool save() {
-        asm("sd ra, %[ra](a0)\n"
-            "sd gp, %[gp](a0)\n"
-            "sd sp, %[sp](a0)\n"
-            "sd zero,%[a0](a0)\n"
-            "sd s0, %[s0](a0)\n"
-            "sd s1, %[s1](a0)\n"
-            "sd s2, %[s2](a0)\n"
-            "sd s3, %[s3](a0)\n"
-            "sd s4, %[s4](a0)\n"
-            "sd s5, %[s5](a0)\n"
-            "sd s6, %[s6](a0)\n"
-            "sd s7, %[s7](a0)\n"
-            "sd s8, %[s8](a0)\n"
-            "sd s9, %[s9](a0)\n"
-            "sd s10, %[s10](a0)\n"
-            "sd s11, %[s11](a0)\n"
-            "sd ra, %[pc](a0)\n"
+        asm("sd ra,  %[ra](%[self])\n"
+            "sd gp,  %[gp](%[self])\n"
+            "sd sp,  %[sp](%[self])\n"
+            "sd zero,  %[a0](%[self])\n"
+            "sd s0,  %[s0](%[self])\n"
+            "sd s1,  %[s1](%[self])\n"
+            "sd s2,  %[s2](%[self])\n"
+            "sd s3,  %[s3](%[self])\n"
+            "sd s4,  %[s4](%[self])\n"
+            "sd s5,  %[s5](%[self])\n"
+            "sd s6,  %[s6](%[self])\n"
+            "sd s7,  %[s7](%[self])\n"
+            "sd s8,  %[s8](%[self])\n"
+            "sd s9,  %[s9](%[self])\n"
+            "sd s10, %[s10](%[self])\n"
+            "sd s11, %[s11](%[self])\n"
+            "sd ra,  %[pc](%[self])\n"
             :
-            : [ra] "i"(offsetof(ContextHandler, ra)), [gp] "i"(offsetof(ContextHandler, gp)),
-              [sp] "i"(offsetof(ContextHandler, sp)), [a0] "i"(offsetof(ContextHandler, a0)),
-              [s0] "i"(offsetof(ContextHandler, s0)), [s1] "i"(offsetof(ContextHandler, s1)),
-              [s2] "i"(offsetof(ContextHandler, s2)), [s3] "i"(offsetof(ContextHandler, s3)),
-              [s4] "i"(offsetof(ContextHandler, s4)), [s5] "i"(offsetof(ContextHandler, s5)),
-              [s6] "i"(offsetof(ContextHandler, s6)), [s7] "i"(offsetof(ContextHandler, s7)),
-              [s8] "i"(offsetof(ContextHandler, s8)), [s9] "i"(offsetof(ContextHandler, s9)),
-              [s10] "i"(offsetof(ContextHandler, s10)), [s11] "i"(offsetof(ContextHandler, s11)),
-              [pc] "i"(offsetof(ContextHandler, pc)));
+            : [self] "r"(this), [ra] "i"(offsetof(Context, ra)), [gp] "i"(offsetof(Context, gp)),
+              [sp] "i"(offsetof(Context, sp)), [a0] "i"(offsetof(Context, a0)), [s0] "i"(offsetof(Context, s0)),
+              [s1] "i"(offsetof(Context, s1)), [s2] "i"(offsetof(Context, s2)), [s3] "i"(offsetof(Context, s3)),
+              [s4] "i"(offsetof(Context, s4)), [s5] "i"(offsetof(Context, s5)), [s6] "i"(offsetof(Context, s6)),
+              [s7] "i"(offsetof(Context, s7)), [s8] "i"(offsetof(Context, s8)), [s9] "i"(offsetof(Context, s9)),
+              [s10] "i"(offsetof(Context, s10)), [s11] "i"(offsetof(Context, s11)), [pc] "i"(offsetof(Context, pc)));
 
-        asm("csrr t0, %0\nsd t0, %1(a0)" ::"i"(T::SCRATCH), "i"(offsetof(ContextHandler, scratch)));
-        asm("csrr t0, %[id]\n"
-            "or t0, t0, %[me2me]\n"
-            "andi t0, t0, %[pirqe]\n"
-            "sd t0, %[offset](a0)\n" ::[id] "i"(T::STATUS),
-            [me2me] "r"(T::ME2ME), [pirqe] "i"(~T::PIRQE), [offset] "i"(offsetof(ContextHandler, status))
-            : "a0");
+        asm("csrr t0, %0" ::"i"(T::SCRATCH));
+        asm("sd t0, %0(%1)" ::"i"(offsetof(Context, scratch)), "r"(this));
+
+        register uintmax_t t0 asm("t0");
+        asm("csrr t0, %0" ::"i"(T::STATUS));
+        t0 |= T::ME2ME;
+        t0 &= ~T::PIRQE;
+        asm("sd %0, %1(%2)" ::"r"(t0), "i"(offsetof(Context, status)), "r"(this));
 
         asm("li a0, 1\nret");
     }
