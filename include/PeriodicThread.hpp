@@ -6,6 +6,34 @@
 
 namespace DEPOS {
 
+template <unsigned int N> class Data {
+  public:
+    Data()
+        : m_index(0) {}
+
+    void collect(Microsecond ts) {
+        if (m_index < N) m_buffer[m_index++] = ts;
+        if (m_index >= N) {
+            CPU::Interruptions::disable();
+            flush();
+            Console::cout << "*** End ***" << Console::endl;
+            while (1)
+                ;
+        }
+    }
+
+    void flush() {
+        for (unsigned int i = 0; i < m_index; i++) {
+            Console::cout << m_buffer[i] << Console::endl;
+        }
+        m_index = 0;
+    }
+
+  private:
+    Microsecond m_buffer[N];
+    unsigned int m_index;
+};
+
 class PeriodicThread : Semaphore, Thread {
     using Thread::Argument;
     using Thread::Criterion;
@@ -35,11 +63,13 @@ class PeriodicThread : Semaphore, Thread {
 
     static void wait() {
         PeriodicThread *self = static_cast<PeriodicThread *>(Thread::running());
+        self->m_data.collect(Timer::now());
         Alarm::at(self->m_next);
         self->m_next += self->m_period;
     }
 
   private:
+    Data<10'000> m_data;
     Arguments m_arguments;
     Microsecond m_period;
     Microsecond m_next;
