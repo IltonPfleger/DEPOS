@@ -89,9 +89,9 @@ template <typename T> class Scheduler {
 
     void insert(Link *node) {
         ERROR(!node);
-        m_lock[Criterion::affinity(node->priority())].acquire();
-        m_levels[Criterion::affinity(node->priority())][node->priority()].insert(node);
-        m_lock[Criterion::affinity(node->priority())].release();
+        m_lock[Criterion::affinity(node->criterion())].acquire();
+        m_levels[Criterion::affinity(node->criterion())][node->criterion()].insert(node);
+        m_lock[Criterion::affinity(node->criterion())].release();
     }
 
     auto head() { return CPU::id(); }

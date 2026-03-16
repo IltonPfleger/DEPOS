@@ -9,19 +9,20 @@ template <typename Value = void, typename Priority = void> struct Node {
     template <typename T> friend class LinkedList;
     template <typename T> friend class LIFO;
     template <typename T> friend class FIFO;
+    template <typename T> friend class POLO;
 
     Node *next() const { return m_next; }
 
     auto &value() { return m_value; }
     const auto &value() const { return m_value; }
 
-    auto &priority() { return m_priority; }
-    const auto &priority() const { return m_priority; }
+    auto &criterion() { return m_criterion; }
+    const auto &criterion() const { return m_criterion; }
 
     template <typename V, typename P>
     Node(V &&v, P &&p)
         : m_value(static_cast<V &&>(v)),
-          m_priority(static_cast<P &&>(p)) {}
+          m_criterion(static_cast<P &&>(p)) {}
 
     template <typename V>
     Node(V &&v)
@@ -29,7 +30,7 @@ template <typename Value = void, typename Priority = void> struct Node {
 
   private:
     Meta::IF<Meta::Void<Value>::Result, Meta::Empty, Value>::Result m_value;
-    Meta::IF<Meta::Void<Priority>::Result, Meta::Empty, Priority>::Result m_priority;
+    Meta::IF<Meta::Void<Priority>::Result, Meta::Empty, Priority>::Result m_criterion;
     Node *m_next = nullptr;
 };
 
@@ -121,6 +122,26 @@ template <typename T> class FIFO : public LinkedList<T> {
 
   protected:
     T *m_tail = nullptr;
+};
+
+template <typename T> class POLO : public LIFO<T> {
+  public:
+    using Element = T;
+    using LinkedList<T>::m_head;
+
+    void insert(T *node) {
+        if (!m_head || node->criterion() < m_head->criterion()) {
+            LIFO<T>::insert(node);
+        } else {
+            T *current = m_head;
+            while (current->m_next && current->m_next->criterion() <= node->criterion()) {
+                current = current->m_next;
+            }
+
+            node->m_next    = current->m_next;
+            current->m_next = node;
+        }
+    }
 };
 
 } // namespace DEPOS

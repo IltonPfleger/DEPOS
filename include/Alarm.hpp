@@ -1,23 +1,25 @@
 #pragma once
 
+#include <Semaphore.hpp>
 #include <Spin.hpp>
 #include <Thread.hpp>
 
 namespace DEPOS {
 
 class Alarm {
-    struct Delay {
-        Thread::Queue queue;
-        unsigned long ticks;
-        Delay *next;
-    };
+    using Link = Node<Thread::Queue *, Microsecond>;
+    using List = DEPOS::POLO<Link>;
 
   public:
-    static void udelay(unsigned int);
+    static void at(Microsecond);
+    static void udelay(Microsecond);
     static void handler();
 
   private:
-    static inline Delay *s_delays = nullptr;
+    static bool elapsed(Microsecond);
+
+  private:
+    static inline List s_delays;
     static inline Spin s_spin;
 };
 
