@@ -57,13 +57,14 @@ class VirtualCPU {
         csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
         csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
 
-        m_current = this;
+        current(this);
         csrw<MachineMode::EPC>(entry);
         CPU::mb();
         supervisor(args...);
     }
 
-    static auto current() { return m_current; }
+    static auto current() { return s_current[CPU::id()]; }
+    static void current(VirtualCPU *c) { s_current[CPU::id()] = c; }
 
     static void reset(unsigned long x) {
         csrc<MachineMode::IP>(SupervisorMode::TI);
@@ -87,7 +88,7 @@ class VirtualCPU {
     }
 
   private:
-    static inline VirtualCPU *volatile m_current;
+    static inline VirtualCPU *volatile s_current[Traits<CPU>::Active];
 
   private:
     unsigned long m_mtimecmp;
