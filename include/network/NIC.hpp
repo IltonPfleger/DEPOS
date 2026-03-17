@@ -6,19 +6,25 @@
 
 namespace DEPOS {
 
-template <typename Family> class NIC : public Observed<const unsigned char *, size_t> {
+class NIC : public Observed<const unsigned char *, size_t> {
   public:
     using Observer = DEPOS::Observer<const unsigned char *, size_t>;
     using Observed = DEPOS::Observed<const unsigned char *, size_t>;
 
     class Buffer {
       public:
-        auto data() { return m_data; }
-        auto length() { return m_length; }
+        Buffer() = default;
+        Buffer(unsigned char *data, size_t length)
+            : m_data(data),
+              m_length(length) {}
+        auto &data() { return m_data; }
+        auto &length() { return m_length; }
+        auto &id() { return m_id; }
+
+      private:
+        unsigned char *m_data;
         size_t m_length;
-        unsigned int m_id;
-        unsigned char m_data[sizeof(typename Family::Frame)];
-        unsigned int m_references;
+        int m_id;
     };
 
     virtual ~NIC() {}

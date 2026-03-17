@@ -12,12 +12,11 @@ namespace DEPOS {
 namespace virtio {
 
 struct NetworkHeader {
-    unsigned char _[10];
+    unsigned char padding[10];
 };
 
 template <typename Device, uintptr_t Base>
-class Network : public Handler<Network<Device, Base>>,
-                public Observer<const unsigned char *, size_t> {
+class Network : public Handler<Network<Device, Base>>, public Observer<const unsigned char *, size_t> {
   public:
     static Network *instance() {
         static Network instance;
@@ -37,8 +36,8 @@ class Network : public Handler<Network<Device, Base>>,
 
             while (true) {
                 VirtQueue::RingDescriptor *descriptor = queue.get(current);
-                uint8_t *data = reinterpret_cast<uint8_t *>(descriptor->address);
-                uint32_t len  = descriptor->length;
+                uint8_t *data                         = reinterpret_cast<uint8_t *>(descriptor->address);
+                uint32_t len                          = descriptor->length;
 
                 if (first_descriptor) {
                     data += sizeof(NetworkHeader);
