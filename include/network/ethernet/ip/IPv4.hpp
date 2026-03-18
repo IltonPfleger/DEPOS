@@ -89,9 +89,7 @@ class Packet {
 class Multicast {
   public:
     static bool valid(const Address &address) { return (address[0] & 0xF0) == 0xE0; }
-    static Ethernet::Address mac(const Address &ip) {
-        return {0x01, 0x00, 0x5E, ip[1] & 0x7F, ip[2], ip[3]};
-    }
+    static Ethernet::Address mac(const Address &ip) { return {0x01, 0x00, 0x5E, ip[1] & 0x7F, ip[2], ip[3]}; }
 };
 
 //
@@ -140,7 +138,8 @@ template <typename NIC> class Network : public NIC::Observer, public Observed<co
 
     ~Network() { m_nic->detach(this); }
 
-    void update(const unsigned char *data, size_t) {
+    void update(const NIC::Buffer *buffer) {
+        auto data      = buffer->data();
         auto *ethernet = reinterpret_cast<const Ethernet::Header *>(data);
         auto *packet   = reinterpret_cast<const Packet *>(ethernet + 1);
 

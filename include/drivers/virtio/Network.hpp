@@ -15,8 +15,7 @@ struct NetworkHeader {
     unsigned char padding[10];
 };
 
-template <typename Device, uintptr_t Base>
-class Network : public Handler<Network<Device, Base>>, public Observer<const unsigned char *, size_t> {
+template <typename Device, uintptr_t Base> class Network : public Handler<Network<Device, Base>>, public NIC::Observer {
   public:
     static Network *instance() {
         static Network instance;
@@ -59,7 +58,10 @@ class Network : public Handler<Network<Device, Base>>, public Observer<const uns
         }
     }
 
-    void update(const unsigned char *buffer, size_t size) override {
+    void update(const NIC::Buffer *buffer) override {
+        auto data   = buffer->data();
+        auto length = buffer->length();
+
         VirtQueue &queue = this->m_queues[k_rx_queue];
 
         if (!queue.available()) return;
@@ -70,9 +72,9 @@ class Network : public Handler<Network<Device, Base>>, public Observer<const uns
         auto *destination = reinterpret_cast<uint8_t *>(descriptor->address);
 
         memset(destination, 0, sizeof(NetworkHeader));
-        memcpy(destination + sizeof(NetworkHeader), buffer, size);
+        memcpy(destination + sizeof(NetworkHeader), data, length);
 
-        descriptor->length = size + sizeof(NetworkHeader);
+        descriptor->length = length + sizeof(NetworkHeader);
 
         queue.free(id, descriptor->length);
         this->interrupts(0x1);

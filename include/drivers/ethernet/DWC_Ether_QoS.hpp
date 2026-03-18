@@ -393,7 +393,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NIC {
   public:
     int send(const void *d, size_t s) override { return m_dma->send(d, s); }
     Buffer *receive() override { return m_dma->receive(); }
-    void release(Buffer *b) override { m_dma->release(b); }
+    void free(Buffer *b) override { m_dma->release(b); }
 
     Ethernet::Address address() { return MyTraits::MAC; }
 

@@ -62,9 +62,7 @@ template <typename NIC, typename Network> class ARP : public NIC::Observer {
 
         void prepare_wait(const Network::Address &ip) { table[hash(ip)].pending++; }
 
-        void wait(const Network::Address &ip, Spin &spin) {
-            Thread::sleep(&table[hash(ip)].waiting, &spin);
-        }
+        void wait(const Network::Address &ip, Spin &spin) { Thread::sleep(&table[hash(ip)].waiting, &spin); }
 
         void wakeup(const Network::Address &ip) {
             auto &entry = table[hash(ip)];
@@ -83,8 +81,11 @@ template <typename NIC, typename Network> class ARP : public NIC::Observer {
         m_nic->attach(this);
     }
 
-    void update(const unsigned char *data, size_t len) override {
-        if (len < sizeof(Ethernet::Header) + sizeof(Header)) return;
+    void update(const NIC::Buffer *buffer) override {
+        auto data   = buffer->data();
+        auto length = buffer->length();
+
+        if (length < sizeof(Ethernet::Header) + sizeof(Header)) return;
 
         auto *eth = reinterpret_cast<const Ethernet::Header *>(data);
 
