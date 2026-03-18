@@ -161,7 +161,9 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
     }
 };
 
-template <typename Buffer, typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
+template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
+    typedef NIC::Buffer Buffer;
+
     struct Descriptor {
         uint32_t des0;
         uint32_t des1;
@@ -217,7 +219,7 @@ template <typename Buffer, typename MyTraits> class DWC_Ether_QoS_DMA : public D
     };
 
   public:
-    DWC_Ether_QoS_DMA()
+    DWC_Ether_QoS_DMA(NIC *owner)
         : m_tx_head(0),
           m_rx_head(0) {
         TraceIn();
@@ -229,7 +231,7 @@ template <typename Buffer, typename MyTraits> class DWC_Ether_QoS_DMA : public D
             Buffer &buffer         = m_rx_buffers[i];
             Descriptor &descriptor = m_rx_descriptors[i];
 
-            buffer = Buffer(new unsigned char[MTU], MTU);
+            buffer = Buffer(new unsigned char[MTU], MTU, owner);
 
             descriptor.buffer(reinterpret_cast<uintptr_t>(buffer.data()));
             descriptor.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
@@ -373,7 +375,7 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
 
 template <typename Tag> class DWC_Ether_QoS final : public NIC {
     using MyTraits = Traits<DWC_Ether_QoS<Tag>>;
-    using DMA      = DWC_Ether_QoS_DMA<Buffer, MyTraits>;
+    using DMA      = DWC_Ether_QoS_DMA<MyTraits>;
     using MTL      = DWC_Ether_QoS_MTL<MyTraits::Address>;
     using PHY      = DWC_Ether_QoS_PHY<MyTraits::Address>;
     using MAC      = DWC_Ether_QoS_MAC<MyTraits::Address>;
@@ -383,7 +385,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NIC {
         DMA::reset();
         PHY::init();
         MTL::init();
-        m_dma = new DMA();
+        m_dma = new DMA(this);
         MAC::init();
         Alarm::udelay(1'000'000);
         NIC::init();
