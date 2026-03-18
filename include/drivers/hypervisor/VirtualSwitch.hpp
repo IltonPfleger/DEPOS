@@ -1,87 +1,107 @@
 #pragma once
 
+#include <Spin.hpp>
 #include <Traits.hpp>
-#include <machine/Machine.hpp>
+#include <drivers/ethernet/DWC_Ether_QoS.hpp>
+#include <network/NIC.hpp>
 
 namespace DEPOS {
 
 namespace hypervisor {
 
-class VirtualSwitch : NIC::Observer, NIC::Observed {
-    struct Devices {
-      public:
-        Devices() { init<typename Traits<Ethernet>::Devices>(); }
+template <typename Device> class VirtualSwitch : public NIC::Observer, public NIC::Observed {
+    static constexpr unsigned int FrameSize = 1518;
+    static constexpr int InternalQueueSize  = 16;
 
-        template <typename... Args> void send(Args &&...args) {
-            for (unsigned int i = 0; i < NumberOfDevices; ++i)
-                m_devices[i]->send(args...);
-        }
+    struct InternalBuffer {
+        unsigned char data[FrameSize];
+        unsigned int size;
 
-        void attach(NIC::Observer *observer) {
-            for (unsigned int i = 0; i < NumberOfDevices; ++i)
-                m_devices[i]->attach(observer);
-        }
-
-      private:
-        template <typename List, unsigned int Index = 0> void init();
-        template <unsigned int Index> void init<Meta::TypeList<>, Index>() {}
-        template <typename Head, typename... Tail, unsigned int Index>
-        void init<Meta::TypeList<Head, Tail...>, Index>() {
-            m_devices[Index] = new Head();
-            init<Meta::TypeList<Tail...>, Index + 1>();
-        }
-
-      private:
-        static constexpr int NumberOfDevices = Traits<Ethernet>::NumberOfDevices;
-        NIC *m_devices[NumberOfDevices];
+        InternalBuffer()
+            : size(0) {}
     };
 
-    VirtualSwitch() {
+  public:
+    static auto instance() {
+        static VirtualSwitch instance;
+        return &instance;
+    }
+
+  public:
+    VirtualSwitch()
+        : m_worker_thread(nullptr) {
+
         for (int i = 0; i < InternalQueueSize; i++) {
             m_free.insert(&m_links[i]);
         }
-        m_devices.attach(this);
-        worker = new Thread(worker, this);
+
+        m_devices = Device::instance();
+        m_devices->attach(this);
+        m_worker_thread = new Thread(entry, this);
     }
 
-    void receive(const void *data, size_t length) {
-        Link *link       = m_free.remove();
-        Buffer &buffer   = link->value();
-        buffer->data()   = data;
-        buffer->length() = length();
-        m_received.insert(&buffer);
+    int send(const unsigned char *data, unsigned int length) {
+        m_devices->send(data, length);
+        return enqueue_copy(data, length);
     }
 
-    int send(const void *data, size_t length) {
-        receive(data, length);
-        m_devices.send(data, length);
+    void update(const NIC::Buffer *buffer) {
+        enqueue_copy(reinterpret_cast<const unsigned char *>(buffer->data()), buffer->length());
     }
 
-    void update(const unsigned char *data, size_t length) { receive(data, length); }
+  private:
+    int enqueue_copy(const unsigned char *data, unsigned int length) {
+        m_spin.acquire();
+        Link *link = m_free.remove();
+        m_spin.release();
+        if (!link) return -1;
 
-    void *worker(void *pointer) {
-        auto *self = reinterpret_cast<VirtualSwitch *>(pointer);
-        while (1) {
+        InternalBuffer &buf = link->value();
+        buf.size            = (length > FrameSize) ? FrameSize : length;
+        memcpy(buf.data, data, buf.size);
+
+        m_spin.acquire();
+        m_received.insert(link);
+        m_spin.release();
+        return buf.size;
+    }
+
+    static void *entry(void *p) { return reinterpret_cast<VirtualSwitch *>(p)->run(); }
+
+    void *run() {
+        while (true) {
+            CPU::Interruptions::disable();
+            m_spin.acquire();
             Link *link = m_received.remove();
+            m_spin.release();
+            CPU::Interruptions::enable();
+
             if (link) {
-                Buffer &buffer = link->value();
-                notify(buffer->data(), buffer->length());
+                InternalBuffer &buf = link->value();
+
+                NIC::Buffer temp_buffer(buf.data, buf.size, 0);
+                notify(&temp_buffer);
+
+                CPU::Interruptions::disable();
+                m_spin.acquire();
+                m_free.insert(link);
+                m_spin.release();
+                CPU::Interruptions::enable();
             }
         }
+        return nullptr;
     }
 
   private:
-    using Buffer                           = NIC::Buffer;
-    using Link                             = Node<Buffer>;
-    using List                             = FIFO<Link>;
-    static constexpr int InternalQueueSize = 16;
+    using Link = Node<InternalBuffer>;
+    using List = FIFO<Link>;
 
-  private:
-    Devices m_devices;
-    Thread *m_worker;
+    Device *m_devices;
+    Thread *m_worker_thread;
     List m_free;
     List m_received;
     Link m_links[InternalQueueSize];
+    Spin m_spin;
 };
 
 } // namespace hypervisor

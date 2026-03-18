@@ -14,6 +14,10 @@ namespace riscv64 {
 class VirtualCPU;
 }
 
+namespace hypervisor {
+template <typename> class VirtualSwitch;
+}
+
 class Application;
 template <> struct Traits<Application> {
     static constexpr unsigned long Addr = Traits<MemoryMap>::RamStart + 128 * 1024;
@@ -22,7 +26,8 @@ template <> struct Traits<Application> {
 
 template <> struct Traits<Virtual> {
     typedef Meta::TypeList<virtio::Console<UART16550<UART0>, 0x30000000>,
-                           virtio::Network<DWC_Ether_QoS<GMAC0>, 0x30200000>,
+                           virtio::Network<hypervisor::VirtualSwitch<DWC_Ether_QoS<GMAC0>>, 0x30200000>,
+                           // virtio::Network<DWC_Ether_QoS<GMAC0>, 0x30200000>,
                            riscv64::VirtualCPU>
         Devices;
 

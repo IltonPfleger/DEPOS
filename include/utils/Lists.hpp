@@ -28,6 +28,8 @@ template <typename Value = void, typename Priority = void> struct Node {
     Node(V &&v)
         : m_value(static_cast<V &&>(v)) {}
 
+    Node() = default;
+
   private:
     Meta::IF<Meta::Void<Value>::Result, Meta::Empty, Value>::Result m_value;
     Meta::IF<Meta::Void<Priority>::Result, Meta::Empty, Priority>::Result m_criterion;

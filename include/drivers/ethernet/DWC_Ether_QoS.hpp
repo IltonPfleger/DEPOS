@@ -1,9 +1,10 @@
+#pragma once
 #include <Alarm.hpp>
 #include <architecture/CPU.hpp>
 #include <drivers/Driver.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
-#include <network/GenericAddress.hpp>
+#include <network/NIC.hpp>
 #include <network/ethernet/Ethernet.hpp>
 #include <utils/Debug.hpp>
 #include <utils/string.hpp>

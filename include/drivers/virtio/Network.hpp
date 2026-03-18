@@ -2,6 +2,7 @@
 
 #include <Traits.hpp>
 #include <abstractions/VirtualCPU.hpp>
+#include <drivers/hypervisor/VirtualSwitch.hpp>
 #include <drivers/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
 #include <network/NIC.hpp>
