@@ -29,35 +29,35 @@ template <typename Device, uintptr_t Base> class Network : public Handler<Networ
         VirtQueue &queue = this->m_queues[k_tx_queue];
 
         while (queue.available()) {
-            int head              = queue.alloc();
-            int current           = head;
-            uint32_t length       = 0;
-            bool first_descriptor = true;
+            int head       = queue.alloc();
+            int current    = head;
+            uint32_t total = 0;
+            bool first     = true;
 
             while (true) {
-                VirtQueue::RingDescriptor *descriptor = queue.get(current);
-                uint8_t *data                         = reinterpret_cast<uint8_t *>(descriptor->address);
-                uint32_t len                          = descriptor->length;
+                auto *descriptor = queue.get(current);
+                uint8_t *data    = reinterpret_cast<uint8_t *>(descriptor->address);
+                uint32_t length  = descriptor->length;
 
-                if (first_descriptor) {
+                if (first) {
                     data += sizeof(NetworkHeader);
-                    len -= sizeof(NetworkHeader);
-                    first_descriptor = false;
+                    length -= sizeof(NetworkHeader);
+                    first = false;
                 }
 
-                if (len > 0) {
-                    m_device->send(data, len);
-                }
+                if (length > 0) m_device->send(data, length);
 
-                length += descriptor->length;
+                total += descriptor->length;
                 if (!(descriptor->flags & 0x1)) break;
                 current = descriptor->next;
             }
 
-            queue.free(head, length);
+            queue.free(head, total);
             this->interrupts(0x1);
         }
     }
+
+    // size_t send(auto *descriptor) {}
 
     void update(const NIC::Buffer *buffer) override {
         auto data   = buffer->data();
