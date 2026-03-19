@@ -3,6 +3,7 @@
 #include <Traits.hpp>
 #include <drivers/virtio/LegacyHeader.hpp>
 #include <drivers/virtio/VirtQueue.hpp>
+#include <memory/Heap.hpp>
 #include <utils/Debug.hpp>
 
 namespace DEPOS {
@@ -85,16 +86,13 @@ template <typename T> class Handler {
     uint32_t &header(uint32_t offset) { return reinterpret_cast<uint32_t *>(&m_header)[offset / 4]; }
 
     uint32_t pfn() {
-        auto &queue = m_queues[m_header.m_queue_selector];
         if (m_header.m_guest_page_size == 0) return 0;
-        return queue.m_address / m_header.m_guest_page_size;
+        return m_queues[m_header.m_queue_selector].m_address / m_header.m_guest_page_size;
     }
 
     void pfn(uint32_t source) {
-        auto &queue            = m_queues[m_header.m_queue_selector];
-        const uint32_t address = source * m_header.m_guest_page_size;
-
-        queue = VirtQueue(address, m_header.m_max_number_of_descriptors, m_header.m_queue_align);
+        uint32_t address = source * m_header.m_guest_page_size;
+        new (&m_queues[m_header.m_queue_selector]) VirtQueue(address, m_header.m_queue_number, m_header.m_queue_align);
         m_header.m_queue_page_frame_number = source;
     }
 
