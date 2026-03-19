@@ -28,4 +28,3 @@ void operator delete(void *, unsigned long);
 
 void operator delete[](void *, unsigned long);
 void operator delete[](void *);
-

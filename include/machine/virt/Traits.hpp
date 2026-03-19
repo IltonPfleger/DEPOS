@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Meta.hpp>
+#include <Traits.hpp>
 
 namespace DEPOS {
 

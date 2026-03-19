@@ -1,5 +1,7 @@
 #pragma once
 
+#include <types.hpp>
+
 namespace DEPOS {
 
 namespace virtio {
@@ -16,9 +18,7 @@ class VirtQueue {
     struct RingAvailable {
         uint16_t flags;
         uint16_t index;
-        uint16_t *ring() {
-            return reinterpret_cast<uint16_t *>(reinterpret_cast<uintptr_t>(this) + 4);
-        };
+        uint16_t *ring() { return reinterpret_cast<uint16_t *>(reinterpret_cast<uintptr_t>(this) + 4); };
     } __attribute__((packed));
 
     struct RingUsedElement {
@@ -29,12 +29,11 @@ class VirtQueue {
     struct RingUsed {
         uint16_t flags;
         uint16_t index;
-        RingUsedElement *ring() {
-            return reinterpret_cast<RingUsedElement *>(reinterpret_cast<uintptr_t>(this) + 4);
-        };
+        RingUsedElement *ring() { return reinterpret_cast<RingUsedElement *>(reinterpret_cast<uintptr_t>(this) + 4); };
     } __attribute__((packed));
 
     VirtQueue() = default;
+
     VirtQueue(uintptr_t address, uint32_t size, uint32_t align)
         : m_address(address),
           m_size(size),

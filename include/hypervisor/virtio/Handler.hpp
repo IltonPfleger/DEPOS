@@ -11,7 +11,6 @@ namespace DEPOS {
 namespace virtio {
 
 class Handler {
-  public:
     struct Register {
         static constexpr uint32_t Magic                  = 0x000;
         static constexpr uint32_t Version                = 0x004;
@@ -34,6 +33,8 @@ class Handler {
     };
 
   public:
+    Handler() { memset(this, 0, sizeof(*this)); };
+
     template <typename Self> bool read(this Self &&self, uintptr_t address, uint32_t *destination) {
         const int offset = address - self.Address;
         switch (offset) {
@@ -106,7 +107,7 @@ class Handler {
 
   protected:
     LegacyHeader m_header;
-    VirtQueue m_queues[MaxNumberOfQueues];
+    Meta::Array<MaxNumberOfQueues, VirtQueue> m_queues;
 };
 
 } // namespace virtio

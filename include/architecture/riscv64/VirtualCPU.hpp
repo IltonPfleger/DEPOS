@@ -8,8 +8,6 @@
 #include <architecture/riscv64/PMP.hpp>
 #include <architecture/riscv64/VirtualPLIC.hpp>
 #include <hypervisor/VirtualMachine.hpp>
-#include <memory/Memory.hpp>
-#include <memory/Segment.hpp>
 
 namespace DEPOS {
 
@@ -23,11 +21,6 @@ class VirtualCPU {
     }
 
   public:
-    using Context = MachineContext;
-
-    static constexpr unsigned long Address = Traits<MemoryMap>::PLIC;
-    static constexpr unsigned long Size    = Traits<MemoryMap>::PLIC;
-
     VirtualCPU(VirtualMachine *vm, uintptr_t entry, size_t size)
         : m_entry(entry),
           m_size(size),
@@ -41,13 +34,13 @@ class VirtualCPU {
 
         PMP::NAPOT<0>(m_entry, m_size, PMP::R | PMP::W | PMP::X);
 
-        unsigned long mideleg = 0;
+        long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt
         mideleg |= 1 << 5; // Supervisor Timer Interrupt
         mideleg |= 1 << 9; // Supervisor External Interrupt
         csrw<MachineMode::MIDELEG>(mideleg);
 
-        unsigned long medeleg = 0;
+        long medeleg = 0;
         medeleg |= 1 << 3;  // Breakpoint
         medeleg |= 1 << 4;  // Load Address Misaligned
         medeleg |= 1 << 8;  // Environment Call From U-Mode
@@ -88,7 +81,7 @@ class VirtualCPU {
         if (current()->m_vm->read(address, destination)) {
             return true;
         } else {
-            return current()->m_plic.read(address - Address, destination);
+            return current()->m_plic.read(address - Traits<MemoryMap>::PLIC, destination);
         }
     }
 
@@ -97,12 +90,12 @@ class VirtualCPU {
         if (current()->m_vm->write(address, source)) {
             return true;
         } else {
-            return current()->m_plic.write(address - Address, source);
+            return current()->m_plic.write(address - Traits<MemoryMap>::PLIC, source);
         }
     }
 
   private:
-    static inline VirtualCPU *volatile s_current[Traits<CPU>::Active];
+    static inline VirtualCPU *s_current[Traits<CPU>::Active];
 
   private:
     uintptr_t m_entry;

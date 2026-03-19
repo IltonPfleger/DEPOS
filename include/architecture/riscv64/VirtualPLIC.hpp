@@ -25,7 +25,7 @@ class VirtualPLIC {
         uint32_t bit  = id & 31;
         uint32_t mask = (1U << bit);
 
-        for (uint32_t c = 0; c < k_number_of_contexts; ++c) {
+        for (uint32_t c = 0; c < NumberOfContexts; ++c) {
             if (m_enabled[c][bank] & mask) {
                 m_pending[bank] |= mask;
                 m_irq = true;
@@ -61,7 +61,7 @@ class VirtualPLIC {
             unsigned int context = off / 0x1000;
             unsigned int reg     = off % 0x1000;
 
-            if (context >= k_number_of_contexts) return false;
+            if (context >= NumberOfContexts) return false;
 
             if (reg == 0) {
                 *destination = m_threshold[context];
@@ -101,12 +101,12 @@ class VirtualPLIC {
     }
 
   private:
-    static constexpr unsigned int k_number_of_contexts = 2;
-    uint32_t m_priority[1024]                          = {0}; // 32 Bits For Each IRQ
-    uint32_t m_pending[32]                             = {0}; // One Bit For Each IRQ
-    uint32_t m_enabled[k_number_of_contexts][32]       = {0};
-    uint32_t m_threshold[k_number_of_contexts]         = {0}; // Threshold Per Context
-    bool m_irq                                         = false;
+    static constexpr unsigned int NumberOfContexts = 2;
+    uint32_t m_priority[1024]                      = {0}; // 32 Bits For Each IRQ
+    uint32_t m_pending[32]                         = {0}; // One Bit For Each IRQ
+    uint32_t m_enabled[NumberOfContexts][32]       = {0};
+    uint32_t m_threshold[NumberOfContexts]         = {0}; // Threshold Per Context
+    bool m_irq                                     = false;
 };
 
 } // namespace riscv64
