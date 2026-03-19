@@ -28,18 +28,18 @@ class VirtualCPU {
     static constexpr unsigned long Address = Traits<MemoryMap>::PLIC;
     static constexpr unsigned long Size    = Traits<MemoryMap>::PLIC;
 
-    VirtualCPU() = default;
-    template <typename... Args>
-    VirtualCPU(void (*entry)(Args...), uintptr_t memory, size_t size, VirtualMachine *vm, Args... args)
-        : m_mtimecmp(0),
-          m_plic(),
-          m_vm(vm) {
+    VirtualCPU(VirtualMachine *vm, uintptr_t entry, size_t size)
+        : m_entry(entry),
+          m_size(size),
+          m_mtimecmp(0),
+          m_vm(vm) {}
 
+    template <typename... Args> void start(Args... args) {
         CPU::Interruptions::disable();
 
         csrw<SupervisorMode::SATP>(0);
 
-        PMP::NAPOT<0>(memory, size, PMP::R | PMP::W | PMP::X);
+        PMP::NAPOT<0>(m_entry, m_size, PMP::R | PMP::W | PMP::X);
 
         unsigned long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt
@@ -61,12 +61,13 @@ class VirtualCPU {
         csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
 
         current(this);
-        csrw<MachineMode::EPC>(entry);
+        csrw<MachineMode::EPC>(m_entry);
         CPU::mb();
         supervisor(args...);
     }
 
     static auto current() { return s_current[CPU::id()]; }
+
     static void current(VirtualCPU *c) { s_current[CPU::id()] = c; }
 
     static void reset(unsigned long x) {
@@ -104,9 +105,11 @@ class VirtualCPU {
     static inline VirtualCPU *volatile s_current[Traits<CPU>::Active];
 
   private:
-    unsigned long m_mtimecmp;
-    VirtualPLIC m_plic;
+    uintptr_t m_entry;
+    size_t m_size;
+    uintmax_t m_mtimecmp;
     VirtualMachine *m_vm;
+    VirtualPLIC m_plic;
 };
 
 } // namespace riscv64

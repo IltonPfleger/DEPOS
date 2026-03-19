@@ -2,7 +2,7 @@
 
 #include <Meta.hpp>
 #include <abstractions/VirtualCPU.hpp>
-#include <drivers/hypervisor/VirtualMachine.hpp>
+#include <hypervisor/VirtualMachine.hpp>
 #include <types.hpp>
 
 namespace DEPOS {
@@ -38,14 +38,11 @@ template <typename... Devices> class GenericVirtualMachine : public VirtualMachi
     };
 
   public:
-    GenericVirtualMachine(uintptr_t memory, size_t size)
-        : m_memory(memory),
-          m_size(size),
-          m_devices(this) {}
+    GenericVirtualMachine(void *entry, size_t size)
+        : m_devices(this),
+          m_cpu(this, reinterpret_cast<uintptr_t>(entry), size) {}
 
-    template <typename... Args> void start(void (*entry)(Args...), Args... args) {
-        new (&m_cpu) VirtualCPU(entry, m_memory, m_size, this, args...);
-    }
+    template <typename... Args> void start(Args... args) { m_cpu.start(args...); }
 
     virtual bool read(uintptr_t target, unsigned int *destination) override {
         return m_devices.read(target, destination);
@@ -56,8 +53,6 @@ template <typename... Devices> class GenericVirtualMachine : public VirtualMachi
     virtual void interrupt(unsigned int id) override { m_cpu.interrupt(id); }
 
   private:
-    uintptr_t m_memory;
-    size_t m_size;
     DeviceCollection<Devices...> m_devices;
     VirtualCPU m_cpu;
 };

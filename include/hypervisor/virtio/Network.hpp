@@ -1,8 +1,7 @@
 #pragma once
 
 #include <Traits.hpp>
-#include <abstractions/VirtualCPU.hpp>
-#include <hypervisor/VirtualSwitch.hpp>
+#include <hypervisor/VirtualMachine.hpp>
 #include <hypervisor/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
 #include <network/NIC.hpp>
@@ -17,53 +16,51 @@ struct NetworkHeader {
 };
 
 template <typename Device, uintptr_t Base> class Network : public Handler, public NIC::Observer {
-    enum { RX, TX };
+    enum { RX = 0, TX = 1 };
 
   public:
-    static Network *instance() {
-        static Network instance;
-        return &instance;
-    }
-
     void notify(unsigned int source) {
         if (source != TX) return;
-        VirtQueue &queue = this->m_queues[TX];
+
+        auto &queue = this->m_queues[TX];
+
         while (queue.available()) {
-            int head       = queue.alloc();
-            uint32_t total = send(head);
-            queue.free(head, total);
-            this->interrupt() |= 0x1;
-        }
-    }
+            int head              = queue.alloc();
+            int current           = head;
+            uint32_t length       = 0;
+            bool first_descriptor = true;
 
-    size_t send(int head) {
-        bool first   = true;
-        size_t total = 0;
-        while (true) {
-            auto *descriptor = this->m_queues[TX].get(head);
-            uint8_t *data    = reinterpret_cast<uint8_t *>(descriptor->address);
-            uint32_t length  = descriptor->length;
+            while (true) {
+                auto *descriptor = queue.get(current);
+                uint8_t *data    = reinterpret_cast<uint8_t *>(descriptor->address);
+                uint32_t len     = descriptor->length;
 
-            if (first) {
-                data += sizeof(NetworkHeader);
-                length -= sizeof(NetworkHeader);
-                first = false;
+                if (first_descriptor) {
+                    data += sizeof(NetworkHeader);
+                    len -= sizeof(NetworkHeader);
+                    first_descriptor = false;
+                }
+
+                if (len > 0) {
+                    m_device->send(data, len);
+                }
+
+                length += descriptor->length;
+                if (!(descriptor->flags & 0x1)) break;
+                current = descriptor->next;
             }
 
-            if (length > 0) m_device->send(data, length);
-
-            total += descriptor->length;
-            if (!(descriptor->flags & 0x1)) break;
-            head = descriptor->next;
+            queue.free(head, length);
+            this->interrupt() |= 0x1;
+            m_owner->interrupt(IRQ);
         }
-        return total;
     }
 
     void update(const NIC::Buffer *buffer) override {
-        auto data   = buffer->data();
-        auto length = buffer->length();
+        auto data = buffer->data();
+        auto size = buffer->length();
 
-        VirtQueue &queue = this->m_queues[RX];
+        auto &queue = this->m_queues[RX];
 
         if (!queue.available()) return;
 
@@ -73,23 +70,23 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
         auto *destination = reinterpret_cast<uint8_t *>(descriptor->address);
 
         memset(destination, 0, sizeof(NetworkHeader));
-        memcpy(destination + sizeof(NetworkHeader), data, length);
+        memcpy(destination + sizeof(NetworkHeader), data, size);
 
-        descriptor->length = length + sizeof(NetworkHeader);
+        descriptor->length = size + sizeof(NetworkHeader);
 
         queue.free(id, descriptor->length);
         this->interrupt() |= 0x1;
-        m_vcpu->interrupt(IRQ);
+        m_owner->interrupt(IRQ);
     }
 
-  private:
-    Network() {
+    Network(VirtualMachine *owner)
+        : m_owner(owner) {
         this->m_header.m_magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
         this->m_header.m_version                   = 1;
         this->m_header.m_id                        = 1;
         this->m_header.m_vendor                    = 0x554d4551;
-        this->m_header.m_max_number_of_descriptors = k_number;
-        m_vcpu                                     = VirtualCPU::current();
+        this->m_header.m_host_features             = 0;
+        this->m_header.m_max_number_of_descriptors = Number;
         m_device                                   = Device::instance();
         m_device->attach(this);
     }
@@ -100,11 +97,11 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
     static constexpr size_t Size       = sizeof(LegacyHeader);
 
   private:
-    static constexpr uintptr_t k_number = 128;
+    static constexpr uintptr_t Number = 128;
 
   private:
     Device *m_device;
-    VirtualCPU *m_vcpu;
+    VirtualMachine *m_owner;
 };
 
 } // namespace virtio

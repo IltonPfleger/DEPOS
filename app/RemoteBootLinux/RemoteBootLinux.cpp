@@ -2,7 +2,8 @@
 #include <abstractions/Cache.hpp>
 #include <abstractions/VirtualCPU.hpp>
 #include <architecture/CPU.hpp>
-#include <drivers/virtio/Console.hpp>
+#include <hypervisor/GenericVirtualMachine.hpp>
+#include <hypervisor/virtio/Console.hpp>
 #include <machine/Machine.hpp>
 #include <network/NIC.hpp>
 #include <network/ethernet/ip/ARP.hpp>
@@ -86,13 +87,7 @@ unsigned char *align(unsigned char *p, long alignment) {
 }
 
 int main() {
-
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
-    typedef void (*Entry)(int, LinuxDeviceTree *);
-
-    // Driver::init();
-
-    // NIC<Driver>::init();
 
     constexpr long MB              = 1024 * 1024;
     constexpr long LinuxMemorySize = 256 * MB;
@@ -144,7 +139,8 @@ int main() {
     dtb->edit("chosen", "linux,initrd-end", &regs[2], sizeof(regs[0]) * 2);
 
     // Serial
-    typedef Meta::GetFromTypeList<Traits<Virtual>::Devices, 0>::Result Serial;
+    typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
+    typedef virtio::Console<SerialDevice, 0x30000000> Serial;
     irq     = CPU::htobe32(Serial::IRQ);
     regs[0] = CPU::htobe32(Serial::Address >> 32);
     regs[1] = CPU::htobe32(Serial::Address);
@@ -155,20 +151,23 @@ int main() {
     dtb->edit("virtio_mmio@1", "interrupts", &irq, sizeof(irq));
 
     // Network
-    typedef Meta::GetFromTypeList<Traits<Virtual>::Devices, 1>::Result Network;
-    irq     = CPU::htobe32(Network::IRQ);
-    regs[0] = CPU::htobe32(Network::Address >> 32);
-    regs[1] = CPU::htobe32(Network::Address);
-    regs[2] = CPU::htobe32(0x0);
-    regs[3] = CPU::htobe32(0x1000);
-    dtb->edit("virtio_mmio@2", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
-    dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
-    dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
+    // typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NetworkDevice;
+    // typedef virtio::Network<NetworkDevice, 0x30200000> Network;
+    // irq     = CPU::htobe32(Network::IRQ);
+    // regs[0] = CPU::htobe32(Network::Address >> 32);
+    // regs[1] = CPU::htobe32(Network::Address);
+    // regs[2] = CPU::htobe32(0x0);
+    // regs[3] = CPU::htobe32(0x1000);
+    // dtb->edit("virtio_mmio@2", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
+    // dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
+    // dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
 
     Console::cout << "\n *** Linux ***\n";
 
-    Entry entry = reinterpret_cast<Entry>(kernel);
-    new VirtualCPU(entry, MemoryMap::Entry{address, address + LinuxMemorySize}, 0, dtb);
+    auto entry = reinterpret_cast<void (*)(int, LinuxDeviceTree *)>(kernel);
+    // auto *vm   = new GenericVirtualMachine<Serial, Network>(address, LinuxMemorySize);
+    auto *vm = new GenericVirtualMachine<Serial>(address, LinuxMemorySize);
+    vm->start(entry, 0, dtb);
 
     return 0;
 }

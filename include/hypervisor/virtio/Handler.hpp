@@ -35,8 +35,7 @@ class Handler {
 
   public:
     template <typename Self> bool read(this Self &&self, uintptr_t address, uint32_t *destination) {
-        const auto offset = address - self.Address;
-
+        const int offset = address - self.Address;
         switch (offset) {
         case Register::Magic:
         case Register::Version:
@@ -58,7 +57,6 @@ class Handler {
 
     template <typename Self> bool write(this Self &&self, uintptr_t address, uint32_t value) {
         const auto offset = address - self.Address;
-
         switch (offset) {
         case Register::GuestPageSize:
         case Register::Status:

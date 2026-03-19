@@ -312,9 +312,15 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
 
         m_tx_head = (m_tx_head + 1) % Number;
 
-        Reg32(Address, CH0_TX_TAIL_POINTER) = reinterpret_cast<uintptr_t>(m_tx_descriptors + m_tx_head);
+        Reg32(Address, CH0_TX_TAIL_POINTER) =
+            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(m_tx_descriptors + m_tx_head));
 
-        return 0;
+        while (true) {
+            Cache::flush(&d, sizeof(Descriptor));
+            if (!(d.des3 & Descriptor::OWN)) {
+                return (d.des3 & Descriptor::ES) ? 0 : s;
+            }
+        }
     }
 
     Buffer *receive() {
