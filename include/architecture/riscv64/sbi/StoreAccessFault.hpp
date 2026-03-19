@@ -2,8 +2,8 @@
 
 #include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/Modes.hpp>
-#include <drivers/virtio/Console.hpp>
-#include <drivers/virtio/Network.hpp>
+#include <hypervisor/virtio/Console.hpp>
+#include <hypervisor/virtio/Network.hpp>
 
 namespace DEPOS {
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Traits.hpp>
-#include <drivers/virtio/LegacyHeader.hpp>
-#include <drivers/virtio/VirtQueue.hpp>
+#include <hypervisor/virtio/LegacyHeader.hpp>
+#include <hypervisor/virtio/VirtQueue.hpp>
 #include <memory/Heap.hpp>
 #include <utils/Debug.hpp>
 
@@ -10,7 +10,7 @@ namespace DEPOS {
 
 namespace virtio {
 
-template <typename T> class Handler {
+class Handler {
   public:
     struct Register {
         static constexpr uint32_t Magic                  = 0x000;
@@ -34,8 +34,9 @@ template <typename T> class Handler {
     };
 
   public:
-    bool read(uintptr_t address, uint32_t *destination) {
-        const auto offset = address - T::Address;
+    template <typename Self> bool read(this Self &&self, uintptr_t address, uint32_t *destination) {
+        const auto offset = address - self.Address;
+
         switch (offset) {
         case Register::Magic:
         case Register::Version:
@@ -45,18 +46,19 @@ template <typename T> class Handler {
         case Register::DeviceFeatures:
         case Register::QueueSizeMax:
         case Register::InterruptStatus:
-            *destination = header(offset);
+            *destination = self.header(offset);
             return true;
         case Register::QueuePFN:
-            *destination = pfn();
+            *destination = self.pfn();
             return true;
         default:
             return false;
         }
     }
 
-    bool write(uintptr_t address, uint32_t value) {
-        const auto offset = address - T::Address;
+    template <typename Self> bool write(this Self &&self, uintptr_t address, uint32_t value) {
+        const auto offset = address - self.Address;
+
         switch (offset) {
         case Register::GuestPageSize:
         case Register::Status:
@@ -66,16 +68,16 @@ template <typename T> class Handler {
         case Register::DriverFeatures:
         case Register::QueueSize:
         case Register::QueueAlignment:
-            header(offset) = value;
+            self.header(offset) = value;
             return true;
         case Register::QueuePFN:
-            pfn(value);
+            self.pfn(value);
             return true;
         case Register::InterruptAck:
-            this->interrupt() &= ~value;
+            self.interrupt() &= ~value;
             return true;
         case Register::QueueNotify:
-            static_cast<T *>(this)->notify(value);
+            self.notify(value);
             return true;
         default:
             return false;
@@ -83,25 +85,30 @@ template <typename T> class Handler {
     }
 
   protected:
-    uint32_t &header(uint32_t offset) { return reinterpret_cast<uint32_t *>(&m_header)[offset / 4]; }
-
-    uint32_t pfn() {
-        if (m_header.m_guest_page_size == 0) return 0;
-        return m_queues[m_header.m_queue_selector].m_address / m_header.m_guest_page_size;
+    uint32_t &header(this auto &self, uint32_t offset) {
+        return reinterpret_cast<uint32_t *>(&self.m_header)[offset / 4];
     }
 
-    void pfn(uint32_t source) {
-        uint32_t address = source * m_header.m_guest_page_size;
-        new (&m_queues[m_header.m_queue_selector]) VirtQueue(address, m_header.m_queue_number, m_header.m_queue_align);
-        m_header.m_queue_page_frame_number = source;
+    uint32_t pfn(this auto &self) {
+        if (self.m_header.m_guest_page_size == 0) return 0;
+        return self.m_queues[self.m_header.m_queue_selector].m_address / self.m_header.m_guest_page_size;
     }
 
-    auto &interrupt() { return m_header.m_interrupt_status; }
+    void pfn(this auto &self, uint32_t source) {
+        uint32_t address = source * self.m_header.m_guest_page_size;
+        new (&self.m_queues[self.m_header.m_queue_selector])
+            VirtQueue(address, self.m_header.m_queue_number, self.m_header.m_queue_align);
+        self.m_header.m_queue_page_frame_number = source;
+    }
+
+    auto &interrupt(this auto &self) { return self.m_header.m_interrupt_status; }
+
+  private:
+    static constexpr size_t MaxNumberOfQueues = 2;
 
   protected:
-    static constexpr size_t MaxQueues = 2;
-    VirtQueue m_queues[MaxQueues];
     LegacyHeader m_header;
+    VirtQueue m_queues[MaxNumberOfQueues];
 };
 
 } // namespace virtio

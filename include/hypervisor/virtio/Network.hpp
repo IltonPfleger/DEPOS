@@ -2,8 +2,8 @@
 
 #include <Traits.hpp>
 #include <abstractions/VirtualCPU.hpp>
-#include <drivers/hypervisor/VirtualSwitch.hpp>
-#include <drivers/virtio/Handler.hpp>
+#include <hypervisor/VirtualSwitch.hpp>
+#include <hypervisor/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
 #include <network/NIC.hpp>
 #include <utils/Observer.hpp>
@@ -16,7 +16,7 @@ struct NetworkHeader {
     unsigned char padding[10];
 };
 
-template <typename Device, uintptr_t Base> class Network : public Handler<Network<Device, Base>>, public NIC::Observer {
+template <typename Device, uintptr_t Base> class Network : public Handler, public NIC::Observer {
     enum { RX, TX };
 
   public:
@@ -32,7 +32,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler<Networ
             int head       = queue.alloc();
             uint32_t total = send(head);
             queue.free(head, total);
-            this->interrupts(0x1);
+            this->interrupt() |= 0x1;
         }
     }
 
@@ -78,7 +78,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler<Networ
         descriptor->length = length + sizeof(NetworkHeader);
 
         queue.free(id, descriptor->length);
-        this->interrupts(0x1);
+        this->interrupt() |= 0x1;
         m_vcpu->interrupt(IRQ);
     }
 

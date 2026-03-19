@@ -7,7 +7,7 @@
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/PMP.hpp>
 #include <architecture/riscv64/VirtualPLIC.hpp>
-#include <drivers/hypervisor/VirtualMachine.hpp>
+#include <hypervisor/VirtualMachine.hpp>
 #include <memory/Memory.hpp>
 #include <memory/Segment.hpp>
 

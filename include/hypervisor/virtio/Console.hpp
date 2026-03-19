@@ -3,8 +3,8 @@
 #include <Traits.hpp>
 #include <abstractions/VirtualCPU.hpp>
 #include <architecture/CPU.hpp>
-#include <drivers/uart/UART16550.hpp>
-#include <drivers/virtio/Handler.hpp>
+// #include <drivers/uart/UART16550.hpp>
+#include <hypervisor/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
 #include <utils/Observer.hpp>
 
@@ -13,7 +13,7 @@ namespace DEPOS {
 namespace virtio {
 
 template <typename Device, uintptr_t Base>
-class Console : public Handler<Console<Device, Base>>, public Observer<const unsigned char *, size_t> {
+class Console : public Handler, public Observer<const unsigned char *, size_t> {
 
   public:
     void notify(unsigned int source) {
