@@ -57,17 +57,17 @@ class Console : public Handler<Console<Device, Base>>, public Observer<const uns
 
         queue.free(id, size);
         this->interrupts(0x1);
-        m_vcpu->interrupt(IRQ);
+        m_owner->interrupt(IRQ);
     }
 
-    Console() {
+    Console(VirtualMachine *owner)
+        : m_owner(owner) {
         this->m_header.m_magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
         this->m_header.m_version                   = 1;
         this->m_header.m_id                        = 3;
         this->m_header.m_vendor                    = 0x554d4551;
         this->m_header.m_host_features             = 1 << 27;
         this->m_header.m_max_number_of_descriptors = k_number;
-        m_vcpu                                     = VirtualCPU::current();
         Device::instance()->attach(this);
     }
 
@@ -82,7 +82,7 @@ class Console : public Handler<Console<Device, Base>>, public Observer<const uns
     static const int k_rx_queue = 0;
 
   private:
-    VirtualCPU *m_vcpu;
+    VirtualMachine *m_owner;
 };
 
 } // namespace virtio

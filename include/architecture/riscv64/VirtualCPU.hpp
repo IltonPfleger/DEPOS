@@ -29,7 +29,7 @@ class VirtualCPU {
     static constexpr unsigned long Size    = Traits<MemoryMap>::PLIC;
 
     template <typename... Args>
-    VirtualCPU(void (*entry)(Args...), MemoryMap::Entry memory, VirtualMachine *vm, Args... args)
+    VirtualCPU(void (*entry)(Args...), uintptr_t memory, size_t size, VirtualMachine *vm, Args... args)
         : m_mtimecmp(0),
           m_plic(),
           m_vm(vm) {
@@ -38,7 +38,7 @@ class VirtualCPU {
 
         csrw<SupervisorMode::SATP>(0);
 
-        PMP::NAPOT<0>(memory.start, memory.end - memory.start, PMP::R | PMP::W | PMP::X);
+        PMP::NAPOT<0>(memory, size, PMP::R | PMP::W | PMP::X);
 
         unsigned long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt
@@ -92,10 +92,11 @@ class VirtualCPU {
 
     static bool write(unsigned long address, unsigned int source) {
         if (!current()) return false;
-        if (current()->m_vm->write(address, source))
+        if (current()->m_vm->write(address, source)) {
             return true;
-        else
+        } else {
             return current()->m_plic.write(address - Address, source);
+        }
     }
 
   private:

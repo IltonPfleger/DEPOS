@@ -33,9 +33,8 @@ template <typename T> class Handler {
     };
 
   public:
-    bool read(uintptr_t addr, uint32_t *dest) {
-        const auto offset = addr - T::Address;
-
+    bool read(uintptr_t address, uint32_t *destination) {
+        const auto offset = address - T::Address;
         switch (offset) {
         case Register::Magic:
         case Register::Version:
@@ -45,19 +44,18 @@ template <typename T> class Handler {
         case Register::DeviceFeatures:
         case Register::QueueSizeMax:
         case Register::InterruptStatus:
-            *dest = header(offset);
+            *destination = header(offset);
             return true;
         case Register::QueuePFN:
-            *dest = pfn();
+            *destination = pfn();
             return true;
         default:
             return false;
         }
     }
 
-    bool write(uintptr_t addr, uint32_t value) {
-        const auto offset = addr - T::Address;
-
+    bool write(uintptr_t address, uint32_t value) {
+        const auto offset = address - T::Address;
         switch (offset) {
         case Register::GuestPageSize:
         case Register::Status:
@@ -69,19 +67,15 @@ template <typename T> class Handler {
         case Register::QueueAlignment:
             header(offset) = value;
             return true;
-
         case Register::QueuePFN:
             pfn(value);
             return true;
-
         case Register::InterruptAck:
             interruptc(value);
             return true;
-
         case Register::QueueNotify:
             static_cast<T *>(this)->notify(value);
             return true;
-
         default:
             return false;
         }
@@ -107,14 +101,8 @@ template <typename T> class Handler {
     void interruptc(uint32_t mask) { m_header.m_interrupt_status &= ~mask; }
     void interrupts(uint32_t mask) { m_header.m_interrupt_status |= mask; }
 
-  public:
-    // static bool read(uintptr_t addr, uint32_t *dest) { return T::instance()->readm(addr, dest); }
-
-    // static bool write(uintptr_t addr, uint32_t val) { return T::instance()->writem(addr, val); }
-
   protected:
     static constexpr size_t MaxQueues = 2;
-
     VirtQueue m_queues[MaxQueues];
     LegacyHeader m_header;
 };

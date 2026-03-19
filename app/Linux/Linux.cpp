@@ -1,5 +1,4 @@
 #include <Traits.hpp>
-#include <abstractions/VirtualCPU.hpp>
 #include <architecture/CPU.hpp>
 #include <drivers/hypervisor/GenericVirtualMachine.hpp>
 #include <drivers/virtio/Console.hpp>
@@ -160,8 +159,7 @@ int main() {
     Console::cout << "\n *** Linux is at core " << CPU::id() << " ***\n ";
     CPU::mb();
 
-    auto *vm = new GenericVirtualMachine<Serial>();
-    new VirtualCPU(entry, MemoryMap::Entry{address, address + LinuxMemorySize}, vm, 0, dtb);
+    new GenericVirtualMachine<Serial>(entry, address, LinuxMemorySize, 0, dtb);
 
     return 0;
 }
