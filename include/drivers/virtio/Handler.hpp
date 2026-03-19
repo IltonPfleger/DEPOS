@@ -71,7 +71,7 @@ template <typename T> class Handler {
             pfn(value);
             return true;
         case Register::InterruptAck:
-            interruptc(value);
+            this->interrupt() &= ~value;
             return true;
         case Register::QueueNotify:
             static_cast<T *>(this)->notify(value);
@@ -98,8 +98,7 @@ template <typename T> class Handler {
         m_header.m_queue_page_frame_number = source;
     }
 
-    void interruptc(uint32_t mask) { m_header.m_interrupt_status &= ~mask; }
-    void interrupts(uint32_t mask) { m_header.m_interrupt_status |= mask; }
+    auto &interrupt() { return m_header.m_interrupt_status; }
 
   protected:
     static constexpr size_t MaxQueues = 2;

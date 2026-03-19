@@ -56,7 +56,7 @@ class Console : public Handler<Console<Device, Base>>, public Observer<const uns
         memcpy(destination, buffer, size);
 
         queue.free(id, size);
-        this->interrupts(0x1);
+        this->interrupt() |= 1;
         m_owner->interrupt(IRQ);
     }
 
