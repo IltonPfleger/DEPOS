@@ -33,7 +33,7 @@ template <typename T> class Handler {
     };
 
   public:
-    bool readm(uintptr_t addr, uint32_t *dest) {
+    bool read(uintptr_t addr, uint32_t *dest) {
         const auto offset = addr - T::Address;
 
         switch (offset) {
@@ -55,7 +55,7 @@ template <typename T> class Handler {
         }
     }
 
-    bool writem(uintptr_t addr, uint32_t value) {
+    bool write(uintptr_t addr, uint32_t value) {
         const auto offset = addr - T::Address;
 
         switch (offset) {
@@ -79,7 +79,7 @@ template <typename T> class Handler {
             return true;
 
         case Register::QueueNotify:
-            T::instance()->notify(value);
+            static_cast<T *>(this)->notify(value);
             return true;
 
         default:
@@ -88,9 +88,7 @@ template <typename T> class Handler {
     }
 
   protected:
-    uint32_t &header(uint32_t offset) {
-        return reinterpret_cast<uint32_t *>(&m_header)[offset / 4];
-    }
+    uint32_t &header(uint32_t offset) { return reinterpret_cast<uint32_t *>(&m_header)[offset / 4]; }
 
     uint32_t pfn() {
         auto &queue = m_queues[m_header.m_queue_selector];
@@ -110,9 +108,9 @@ template <typename T> class Handler {
     void interrupts(uint32_t mask) { m_header.m_interrupt_status |= mask; }
 
   public:
-    static bool read(uintptr_t addr, uint32_t *dest) { return T::instance()->readm(addr, dest); }
+    // static bool read(uintptr_t addr, uint32_t *dest) { return T::instance()->readm(addr, dest); }
 
-    static bool write(uintptr_t addr, uint32_t val) { return T::instance()->writem(addr, val); }
+    // static bool write(uintptr_t addr, uint32_t val) { return T::instance()->writem(addr, val); }
 
   protected:
     static constexpr size_t MaxQueues = 2;

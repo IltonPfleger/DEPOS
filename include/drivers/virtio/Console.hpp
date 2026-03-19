@@ -16,11 +16,6 @@ template <typename Device, uintptr_t Base>
 class Console : public Handler<Console<Device, Base>>, public Observer<const unsigned char *, size_t> {
 
   public:
-    static Console *instance() {
-        static Console instance;
-        return &instance;
-    }
-
     void notify(unsigned int source) {
         if (source != k_tx_queue) return;
 
@@ -65,7 +60,6 @@ class Console : public Handler<Console<Device, Base>>, public Observer<const uns
         m_vcpu->interrupt(IRQ);
     }
 
-  private:
     Console() {
         this->m_header.m_magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
         this->m_header.m_version                   = 1;

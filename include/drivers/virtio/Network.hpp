@@ -17,6 +17,8 @@ struct NetworkHeader {
 };
 
 template <typename Device, uintptr_t Base> class Network : public Handler<Network<Device, Base>>, public NIC::Observer {
+    enum { RX, TX };
+
   public:
     static Network *instance() {
         static Network instance;
@@ -24,46 +26,44 @@ template <typename Device, uintptr_t Base> class Network : public Handler<Networ
     }
 
     void notify(unsigned int source) {
-        if (source != k_tx_queue) return;
-
-        VirtQueue &queue = this->m_queues[k_tx_queue];
-
+        if (source != TX) return;
+        VirtQueue &queue = this->m_queues[TX];
         while (queue.available()) {
             int head       = queue.alloc();
-            int current    = head;
-            uint32_t total = 0;
-            bool first     = true;
-
-            while (true) {
-                auto *descriptor = queue.get(current);
-                uint8_t *data    = reinterpret_cast<uint8_t *>(descriptor->address);
-                uint32_t length  = descriptor->length;
-
-                if (first) {
-                    data += sizeof(NetworkHeader);
-                    length -= sizeof(NetworkHeader);
-                    first = false;
-                }
-
-                if (length > 0) m_device->send(data, length);
-
-                total += descriptor->length;
-                if (!(descriptor->flags & 0x1)) break;
-                current = descriptor->next;
-            }
-
+            uint32_t total = send(head);
             queue.free(head, total);
             this->interrupts(0x1);
         }
     }
 
-    // size_t send(auto *descriptor) {}
+    size_t send(int head) {
+        bool first   = true;
+        size_t total = 0;
+        while (true) {
+            auto *descriptor = this->m_queues[TX].get(head);
+            uint8_t *data    = reinterpret_cast<uint8_t *>(descriptor->address);
+            uint32_t length  = descriptor->length;
+
+            if (first) {
+                data += sizeof(NetworkHeader);
+                length -= sizeof(NetworkHeader);
+                first = false;
+            }
+
+            if (length > 0) m_device->send(data, length);
+
+            total += descriptor->length;
+            if (!(descriptor->flags & 0x1)) break;
+            head = descriptor->next;
+        }
+        return total;
+    }
 
     void update(const NIC::Buffer *buffer) override {
         auto data   = buffer->data();
         auto length = buffer->length();
 
-        VirtQueue &queue = this->m_queues[k_rx_queue];
+        VirtQueue &queue = this->m_queues[RX];
 
         if (!queue.available()) return;
 
@@ -100,9 +100,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler<Networ
     static constexpr size_t Size       = sizeof(LegacyHeader);
 
   private:
-    static constexpr uintptr_t k_number   = 128;
-    static constexpr uintptr_t k_rx_queue = 0;
-    static constexpr uintptr_t k_tx_queue = 1;
+    static constexpr uintptr_t k_number = 128;
 
   private:
     Device *m_device;

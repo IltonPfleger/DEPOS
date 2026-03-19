@@ -7,6 +7,7 @@
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/PMP.hpp>
 #include <architecture/riscv64/VirtualPLIC.hpp>
+#include <drivers/hypervisor/VirtualMachine.hpp>
 #include <memory/Memory.hpp>
 #include <memory/Segment.hpp>
 
@@ -28,9 +29,10 @@ class VirtualCPU {
     static constexpr unsigned long Size    = Traits<MemoryMap>::PLIC;
 
     template <typename... Args>
-    VirtualCPU(void (*entry)(Args...), MemoryMap::Entry memory, Args... args)
+    VirtualCPU(void (*entry)(Args...), MemoryMap::Entry memory, VirtualMachine *vm, Args... args)
         : m_mtimecmp(0),
-          m_plic() {
+          m_plic(),
+          m_vm(vm) {
 
         CPU::Interruptions::disable();
 
@@ -79,12 +81,21 @@ class VirtualCPU {
 
     void interrupt(unsigned int id) { m_plic.interrupt(id); }
 
-    static bool read(unsigned long addr, unsigned int *destination) {
-        return current()->m_plic.read(addr - Address, destination), true;
+    static bool read(unsigned long address, unsigned int *destination) {
+        if (!current()) return false;
+        if (current()->m_vm->read(address, destination)) {
+            return true;
+        } else {
+            return current()->m_plic.read(address - Address, destination);
+        }
     }
 
-    static bool write(unsigned long addr, unsigned int source) {
-        return current()->m_plic.write(addr - Address, source);
+    static bool write(unsigned long address, unsigned int source) {
+        if (!current()) return false;
+        if (current()->m_vm->write(address, source))
+            return true;
+        else
+            return current()->m_plic.write(address - Address, source);
     }
 
   private:
@@ -93,6 +104,7 @@ class VirtualCPU {
   private:
     unsigned long m_mtimecmp;
     VirtualPLIC m_plic;
+    VirtualMachine *m_vm;
 };
 
 } // namespace riscv64

@@ -1,6 +1,7 @@
 #include <Traits.hpp>
 #include <abstractions/VirtualCPU.hpp>
 #include <architecture/CPU.hpp>
+#include <drivers/hypervisor/GenericVirtualMachine.hpp>
 #include <drivers/virtio/Console.hpp>
 #include <machine/Machine.hpp>
 #include <utils/Console.hpp>
@@ -143,7 +144,8 @@ int main() {
     dtb->edit("chosen", "linux,initrd-end", &regs[2], sizeof(regs[0]) * 2);
 
     // Serial
-    typedef Meta::GetFromTypeList<Traits<Virtual>::Devices, 0>::Result Serial;
+    typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
+    typedef virtio::Console<SerialDevice, 0x30000000> Serial;
     irq     = CPU::htobe32(Serial::IRQ);
     regs[0] = CPU::htobe32(Serial::Address >> 32);
     regs[1] = CPU::htobe32(Serial::Address);
@@ -157,7 +159,9 @@ int main() {
 
     Console::cout << "\n *** Linux is at core " << CPU::id() << " ***\n ";
     CPU::mb();
-    new VirtualCPU(entry, MemoryMap::Entry{address, address + LinuxMemorySize}, 0, dtb);
+
+    auto *vm = new GenericVirtualMachine<Serial>();
+    new VirtualCPU(entry, MemoryMap::Entry{address, address + LinuxMemorySize}, vm, 0, dtb);
 
     return 0;
 }

@@ -2,7 +2,6 @@
 
 #include <Spin.hpp>
 #include <Traits.hpp>
-#include <drivers/ethernet/DWC_Ether_QoS.hpp>
 #include <network/NIC.hpp>
 
 namespace DEPOS {
