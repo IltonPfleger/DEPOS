@@ -28,6 +28,7 @@ class VirtualCPU {
     static constexpr unsigned long Address = Traits<MemoryMap>::PLIC;
     static constexpr unsigned long Size    = Traits<MemoryMap>::PLIC;
 
+    VirtualCPU() = default;
     template <typename... Args>
     VirtualCPU(void (*entry)(Args...), uintptr_t memory, size_t size, VirtualMachine *vm, Args... args)
         : m_mtimecmp(0),

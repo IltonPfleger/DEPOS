@@ -23,10 +23,9 @@ endif
 
 
 
-#gdb:
-#	riscv64-linux-gnu-gdb -ex "file build/DEPOS.elf"\
-#		-ex "file ../linux/vmlinux"\
-#		-ex "target extended-remote:1234"
+gdb:
+	riscv64-linux-gnu-gdb -ex "file build/DEPOS.elf" -ex "target extended-remote:1234"
+	#	-ex "file ../linux/vmlinux"\
 
 #		#-ex "set confirm off"\
 	#		#-ex "add-inferior"\

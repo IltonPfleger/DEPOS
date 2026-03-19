@@ -38,11 +38,14 @@ template <typename... Devices> class GenericVirtualMachine : public VirtualMachi
     };
 
   public:
-    template <typename... Args>
-    GenericVirtualMachine(void (*entry)(Args...), uintptr_t memory, size_t size, Args... args)
-        : m_devices(this) {
-        m_cpu = new VirtualCPU(entry, memory, size, this, args...);
-    };
+    GenericVirtualMachine(uintptr_t memory, size_t size)
+        : m_memory(memory),
+          m_size(size),
+          m_devices(this) {}
+
+    template <typename... Args> void start(void (*entry)(Args...), Args... args) {
+        new (&m_cpu) VirtualCPU(entry, m_memory, m_size, this, args...);
+    }
 
     virtual bool read(uintptr_t target, unsigned int *destination) override {
         return m_devices.read(target, destination);
@@ -50,11 +53,13 @@ template <typename... Devices> class GenericVirtualMachine : public VirtualMachi
 
     virtual bool write(uintptr_t target, unsigned int source) override { return m_devices.write(target, source); }
 
-    virtual void interrupt(unsigned int id) override { m_cpu->interrupt(id); }
+    virtual void interrupt(unsigned int id) override { m_cpu.interrupt(id); }
 
   private:
+    uintptr_t m_memory;
+    size_t m_size;
     DeviceCollection<Devices...> m_devices;
-    VirtualCPU *m_cpu;
+    VirtualCPU m_cpu;
 };
 
 } // namespace DEPOS

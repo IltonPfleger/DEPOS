@@ -159,7 +159,8 @@ int main() {
     Console::cout << "\n *** Linux is at core " << CPU::id() << " ***\n ";
     CPU::mb();
 
-    new GenericVirtualMachine<Serial>(entry, address, LinuxMemorySize, 0, dtb);
+    GenericVirtualMachine<Serial> *vm = new GenericVirtualMachine<Serial>(address, LinuxMemorySize);
+    vm->start(entry, 0, dtb);
 
     return 0;
 }
