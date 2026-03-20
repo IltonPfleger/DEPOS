@@ -134,6 +134,7 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
 
         if (speed() == 1000) {
             MDIO::set45(phy, SYNCE_CFG, SYNCE_CFG_ENABLE | SYNCE_CFG_CLK_125M);
+            MDIO::clear45(phy, SYNCE_CFG, 0x7);
         }
 
         while (!(MDIO::read(phy, STATUS) & STATUS_LINK_STATUS))
