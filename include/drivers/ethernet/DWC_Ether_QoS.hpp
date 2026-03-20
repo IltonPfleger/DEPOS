@@ -69,28 +69,39 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
     enum Register {
         BASIC_CONTROL          = 0x0,
         BASIC_STATUS           = 0x1,
+        STATUS                 = 0x11,
         CHIP_CONFIG            = 0xA001,
         RGMII_CONFIG1          = 0xA003,
         PAD_DRIVE_STRENGTH_CFG = 0xA010,
-        SYNC_E_CFG             = 0xA012,
-        STATUS                 = 0x11,
-        DWC_Ether_QoS_PHY_ID_1 = 0x2,
-        DWC_Ether_QoS_PHY_ID_2 = 0x3,
+        SYNCE_CFG              = 0xA012,
     };
     enum Bit {
+        STATUS_LINK_STATUS                     = 1 << 10,
         BASIC_CONTROL_RESET                    = 1 << 15,
         BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE  = 1 << 12,
+        BASIC_CONTROL_RGMII_ISOLATION          = 1 << 10,
         BASIC_CONTROL_RE_AUTO_NEGOTIATION      = 1 << 9,
         BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE = 1 << 5,
-        CHIP_CONFIG_SOFTWARE_RESET             = 1 << 15,
+        SOFTWARE_RESET                         = 1 << 15,
+        SYNCE_CFG_ENABLE                       = 1 << 6,
+        SYNCE_CFG_CLK_125M                     = 1 << 4,
     };
 
   public:
     static void init() {
         TraceIn();
 
-        MDIO::clear45(phy, CHIP_CONFIG, CHIP_CONFIG_SOFTWARE_RESET);
-        while (!(MDIO::read45(phy, CHIP_CONFIG) & CHIP_CONFIG_SOFTWARE_RESET))
+        MDIO::clear45(phy, CHIP_CONFIG, SOFTWARE_RESET);
+        while (!(MDIO::read45(phy, CHIP_CONFIG) & SOFTWARE_RESET))
+            ;
+
+        MDIO::set(phy, BASIC_CONTROL, SOFTWARE_RESET);
+        while (MDIO::read(phy, BASIC_CONTROL) & SOFTWARE_RESET)
+            ;
+
+        MDIO::set(phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE | BASIC_CONTROL_RE_AUTO_NEGOTIATION);
+
+        while (!(MDIO::read(phy, BASIC_STATUS) & (BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE)))
             ;
 
         // rgmii_sw_dr_2 = <0x0>;
@@ -111,8 +122,8 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
         MDIO::set45(phy, RGMII_CONFIG1, 0xa << 10);
 
         // tx_delay_sel_fe = <5>;
-        // MDIO::clear45(phy, RGMII_CONFIG1, 0xF << 4);
-        // MDIO::set45(phy, RGMII_CONFIG1, 5 << 4);
+        MDIO::clear45(phy, RGMII_CONFIG1, 0xF << 4);
+        MDIO::set45(phy, RGMII_CONFIG1, 5 << 4);
 
         // tx_delay_sel = <0xa>;
         MDIO::clear45(phy, RGMII_CONFIG1, 0xF);
@@ -121,9 +132,24 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
         // tx_inverted_1000 = <0x1>;
         MDIO::set45(phy, RGMII_CONFIG1, 1 << 14);
 
-        MDIO::set(phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE | BASIC_CONTROL_RE_AUTO_NEGOTIATION);
-        while (!(MDIO::read(phy, BASIC_STATUS) & (BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE)))
+        if (speed() == 1000) {
+            MDIO::set45(phy, SYNCE_CFG, SYNCE_CFG_ENABLE | SYNCE_CFG_CLK_125M);
+        }
+
+        while (!(MDIO::read(phy, STATUS) & STATUS_LINK_STATUS))
             ;
+    }
+
+    static bool duplex() { return MDIO::read(phy, STATUS) & (1 << 13); }
+    static unsigned speed() {
+        switch ((MDIO::read(phy, STATUS) >> 14) & 0x3) {
+        case 2:
+            return 1000;
+        case 1:
+            return 100;
+        default:
+            return 10;
+        }
     }
 
   private:
@@ -138,6 +164,8 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
         CONFIGURATION_RECEIVER_ENABLE    = 1,
         RX_QUEUE_CONTROL0_QUEUE0_ENABLE  = 2,
         CONFIGURATION_CST                = 1 << 21,
+        CONFIGURATION_PS                 = 1 << 15,
+        CONFIGURATION_FES                = 1 << 14,
         CONFIGURATION_DM                 = 1 << 13,
 
     };
@@ -157,8 +185,31 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
         Reg32(Base, PACKET_FILTER) |= PACKET_FILTER_RECEIVE_ALL | PACKET_FILTER_PROMISCUOUS_MODE;
         Reg32(Base, RX_QUEUE_CONTROL0) = RX_QUEUE_CONTROL0_QUEUE0_ENABLE;
         Reg32(Base, CONFIGURATION) |= CONFIGURATION_RECEIVER_ENABLE | CONFIGURATION_TRANSMITTER_ENABLE;
-        Reg32(Base, CONFIGURATION) |= CONFIGURATION_CST | CONFIGURATION_DM;
+        Reg32(Base, CONFIGURATION) |= CONFIGURATION_CST;
         TraceOut();
+    }
+
+    static void duplex(bool full) {
+        TraceIn(full);
+        Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_DM;
+        Reg32(Base, CONFIGURATION) |= (full ? CONFIGURATION_DM : 0);
+    }
+    static void speed(unsigned int speed) {
+        TraceIn(speed);
+        switch (speed) {
+        case 1000:
+            Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_PS;
+            Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_FES;
+            break;
+        case 100:
+            Reg32(Base, CONFIGURATION) |= CONFIGURATION_FES;
+            Reg32(Base, CONFIGURATION) |= CONFIGURATION_FES;
+            break;
+        case 10:
+            Reg32(Base, CONFIGURATION) |= CONFIGURATION_PS;
+            Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_FES;
+            break;
+        }
     }
 };
 
@@ -394,7 +445,8 @@ template <typename Tag> class DWC_Ether_QoS final : public NIC {
         MTL::init();
         m_dma = new DMA(this);
         MAC::init();
-        Alarm::udelay(1'000'000);
+        MAC::duplex(PHY::duplex());
+        MAC::speed(PHY::speed());
         NIC::init();
         TraceOut();
     }

@@ -164,10 +164,9 @@ int main() {
 
     Console::cout << "\n *** Linux ***\n";
 
-    auto entry = reinterpret_cast<void (*)(int, LinuxDeviceTree *)>(kernel);
     // auto *vm   = new GenericVirtualMachine<Serial, Network>(address, LinuxMemorySize);
-    auto *vm = new GenericVirtualMachine<Serial>(address, LinuxMemorySize);
-    vm->start(entry, 0, dtb);
+    auto *vm = new GenericVirtualMachine<Serial>(buffer, LinuxMemorySize);
+    vm->start(0, dtb);
 
     return 0;
 }
