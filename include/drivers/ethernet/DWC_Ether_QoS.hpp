@@ -272,7 +272,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
     };
 
   public:
-    DWC_Ether_QoS_DMA(NIC *owner)
+    DWC_Ether_QoS_DMA()
         : m_tx_head(0),
           m_rx_head(0) {
         TraceIn();
@@ -284,7 +284,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
             Buffer &buffer         = m_rx_buffers[i];
             Descriptor &descriptor = m_rx_descriptors[i];
 
-            buffer = Buffer(new unsigned char[MTU], MTU, owner);
+            buffer = Buffer(new unsigned char[MTU], MTU);
 
             descriptor.buffer(reinterpret_cast<uintptr_t>(buffer.data()));
             descriptor.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
@@ -444,10 +444,11 @@ template <typename Tag> class DWC_Ether_QoS final : public NIC {
         DMA::reset();
         PHY::init();
         MTL::init();
-        m_dma = new DMA(this);
+        m_dma = new DMA();
         MAC::init();
         MAC::duplex(PHY::duplex());
         MAC::speed(PHY::speed());
+        Alarm::udelay(1'000'000);
         NIC::init();
         TraceOut();
     }

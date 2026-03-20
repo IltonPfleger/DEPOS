@@ -11,13 +11,10 @@ class NIC {
     class Buffer {
       public:
         Buffer() = default;
-        Buffer(unsigned char *data, size_t length, NIC *owner)
-            : m_owner(owner),
-              m_data(data),
+        Buffer(unsigned char *data, size_t length)
+            : m_data(data),
               m_length(length),
               m_references(0) {}
-
-        auto nic() const { return m_owner; }
 
         auto data() const { return m_data; }
         auto &data() { return m_data; }
@@ -32,7 +29,6 @@ class NIC {
         auto &id() { return m_id; }
 
       private:
-        const NIC *m_owner;
         unsigned char *m_data;
         size_t m_length;
         size_t m_id;
