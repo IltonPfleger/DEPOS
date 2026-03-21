@@ -1,13 +1,16 @@
 #pragma once
 
+#include <network/Address.hpp>
 #include <types.hpp>
 #include <utils/string.hpp>
 
 namespace DEPOS {
 
-template <size_t Length> struct GenericAddress {
+template <size_t Length> class GenericAddress : public Address {
 
-    constexpr GenericAddress() = default;
+  public:
+    constexpr GenericAddress()
+        : m_data{} {}
 
     template <typename... Args>
     constexpr GenericAddress(Args... args)
@@ -28,22 +31,16 @@ template <size_t Length> struct GenericAddress {
         }
     }
 
-    constexpr operator const unsigned char *() const { return m_data; }
-    constexpr bool operator==(const GenericAddress &other) const {
-        return memcmp(m_data, other.m_data, sizeof(m_data)) == 0;
+    bool operator==(const Address &other) const override {
+        if (other.size() != Length) return false;
+        return memcmp(m_data, other.data(), Length) == 0;
     }
-    constexpr bool operator!=(const GenericAddress &other) const { return !(*this == other); }
 
-    static constexpr GenericAddress broadcast() {
-        GenericAddress result{};
-        for (size_t i = 0; i < Length; ++i) {
-            result.m_data[i] = 0xFF;
-        }
-        return result;
-    }
+    virtual size_t size() const { return Length; }
+    virtual const unsigned char *data() const { return m_data; }
 
   private:
-    unsigned char m_data[Length];
-} __attribute__((packed));
+    Meta::Array<Length, unsigned char> m_data;
+};
 
 } // namespace DEPOS

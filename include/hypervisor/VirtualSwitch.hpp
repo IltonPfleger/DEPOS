@@ -2,6 +2,7 @@
 
 #include <Spin.hpp>
 #include <Traits.hpp>
+#include <machine/Machine.hpp>
 #include <network/NIC.hpp>
 
 namespace DEPOS {
@@ -21,6 +22,7 @@ template <typename Device> class VirtualSwitch : public NIC::Observer, public NI
     };
 
   public:
+    using Buffer = NIC::Buffer;
     static auto instance() {
         static VirtualSwitch instance;
         return &instance;
@@ -40,8 +42,9 @@ template <typename Device> class VirtualSwitch : public NIC::Observer, public NI
     }
 
     int send(const unsigned char *data, unsigned int length) {
-        m_devices->send(data, length);
-        return enqueue_copy(data, length);
+        // m_devices->send(data, length);
+        // return enqueue_copy(data, length);
+        return 0;
     }
 
     void update(const NIC::Buffer *buffer) {
@@ -78,7 +81,7 @@ template <typename Device> class VirtualSwitch : public NIC::Observer, public NI
             if (link) {
                 InternalBuffer &buf = link->value();
 
-                NIC::Buffer temp_buffer(buf.data, buf.size, 0);
+                NIC::Buffer temp_buffer(buf.data, buf.size);
                 notify(&temp_buffer);
 
                 CPU::Interruptions::disable();

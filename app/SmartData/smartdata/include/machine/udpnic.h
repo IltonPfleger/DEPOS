@@ -2,31 +2,32 @@
 
 #include <Meta.hpp>
 #include <architecture/Timer.hpp>
+#include <hypervisor/VirtualSwitch.hpp>
 #include <machine/aes.h>
 #include <machine/nic.h>
 #include <memory/Memory.hpp>
-#include <network/ethernet/ip/UDP.hpp>
 #include <utility/observer.h>
 #include <utility/ostream.h>
 
 typedef DEPOS::Meta::GetFromTypeList<DEPOS::Traits<DEPOS::Ethernet>::Devices, 0>::Result Device;
-typedef DEPOS::IPv4::Network<Device> LocalNetwork;
-typedef DEPOS::UDP::Channel<LocalNetwork> Channel;
+typedef DEPOS::hypervisor::VirtualSwitch<Device> LocalNetwork;
+// typedef DEPOS::IPv4::Network<Device> LocalNetwork;
+// typedef DEPOS::UDP::Channel<LocalNetwork> Channel;
 
-class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Channel::Observer {
-    static constexpr const char *GROUP_ADDRESS = "224.1.1.1";
-    static const UInt32 PORT                   = 5000;
-    static const UInt32 KEY_SIZE               = Traits<TSTP>::KEY_SIZE;
-    static const UInt32 MTU                    = NIC<Only_Data_UDP_Wrapper>::MTU;
+class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public LocalNetwork::Observer {
+    // static constexpr const char *GROUP_ADDRESS = "224.1.1.1";
+    // static const UInt32 PORT                   = 5000;
+    static const UInt32 KEY_SIZE = Traits<TSTP>::KEY_SIZE;
+    static const UInt32 MTU      = NIC<Only_Data_UDP_Wrapper>::MTU;
 
     typedef AES<KEY_SIZE> _AES;
     static _AES _aes;
 
   public:
     UDPNIC()
-        : m_channel(PORT) {
+        : m_network(LocalNetwork::instance()) {
         db<NIC>(TRC) << "UDPNIC::UDPNIC()" << endl;
-        m_channel.attach(this);
+        m_network->attach(this);
     }
 
     ~UDPNIC() override {
@@ -65,11 +66,12 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Channel::Observer {
         db<NIC>(TRC) << "UDPNIC::send(buf=" << buf << ") size: " << buf->size() << endl;
         unsigned int size     = buf->size();
         unsigned char *buffer = new unsigned char[2048];
-        memcpy(buffer + 42, buf->frame()->data<const unsigned char>(), buf->size());
-        m_channel.send(GROUP_ADDRESS, PORT, buffer, buf->size());
+        memcpy(buffer, buf->frame()->data<const unsigned char>(), buf->size());
+        m_network->send(buffer, buf->size());
         delete buf;
         delete[] buffer;
         return size;
+        return 0;
     }
 
     void free(Buffer *buf) override {
@@ -104,7 +106,7 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Channel::Observer {
         return m_statistics;
     }
 
-    void update(const Channel::Buffer *buffer) {
+    void update(const LocalNetwork::Buffer *buffer) {
         db<NIC>(TRC) << "UDPNIC::update " << buffer->length() << endl;
         const unsigned char *data = buffer->data();
         Protocol prot             = PROTO_TSTP;
@@ -120,7 +122,7 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public Channel::Observer {
     static unsigned char GRP_KEY[16];
 
   private:
-    Channel m_channel;
+    LocalNetwork *m_network;
     Configuration m_configuration;
     Statistics m_statistics;
 };

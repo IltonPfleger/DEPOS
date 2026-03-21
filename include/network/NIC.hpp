@@ -34,8 +34,8 @@ class NIC {
     using Observed = DEPOS::Observed<const Buffer *>;
 
   public:
-    virtual ~NIC()                                    = default;
-    virtual int send(const void *buffer, size_t size) = 0;
+    virtual ~NIC()                         = default;
+    virtual int send(const void *, size_t) = 0;
     void attach(Observer *o) { m_observed.attach(o); }
     void detach(Observer *o) { m_observed.detach(o); }
 

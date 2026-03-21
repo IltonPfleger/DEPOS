@@ -20,23 +20,34 @@ void call_global_constructors() {
     }
 }
 
-static const unsigned int ITERATIONS = 10;
+static constexpr int Iterations = 10;
+
+void *sink(void *) {
+    Antigravity_Proxy a(
+        Antigravity::Region(0, 0, 0, 100, Antigravity::now(), Antigravity::now() + (Iterations + 5) * 1000000),
+        10000000);
+
+    for (unsigned int i = 0; i < Iterations + 5; i++) {
+        DEPOS::Console::cout << "Received a=" << i << DEPOS::Console::endl;
+        DEPOS::Alarm::udelay(1000000);
+    }
+
+    return nullptr;
+}
 
 int main(int, char *[]) {
-    // typedef DEPOS::Meta::GetFromTypeList<DEPOS::Traits<DEPOS::Ethernet>::Devices, 0>::Result Device;
-
-    // Device::init();
-
     call_global_constructors();
 
     TSTP::init();
 
     Antigravity a(0, 1000000, SmartData::ADVERTISED);
 
+    new Thread(sink);
+
     unsigned int i = 0;
     while (1) {
         a = i++;
-        DEPOS::Console::cout << "a=" << i << DEPOS::Console::endl;
+        DEPOS::Console::cout << "Send a=" << i << DEPOS::Console::endl;
         DEPOS::Alarm::udelay(1000000);
     }
 }

@@ -1,12 +1,12 @@
 #pragma once
 
+#include <architecture/CPU.hpp>
 #include <network/GenericAddress.hpp>
 #include <utils/Observer.hpp>
 
 namespace DEPOS {
 
 class Ethernet {
-
   public:
     enum { MTU = 1500 };
     typedef GenericAddress<6> Address;
