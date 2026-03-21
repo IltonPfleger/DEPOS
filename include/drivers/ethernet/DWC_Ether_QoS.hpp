@@ -91,60 +91,60 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
     static void init() {
         TraceIn();
 
-        MDIO::clear45(phy, CHIP_CONFIG, SOFTWARE_RESET);
-        while (!(MDIO::read45(phy, CHIP_CONFIG) & SOFTWARE_RESET))
+        MDIO::clear45(Phy, CHIP_CONFIG, SOFTWARE_RESET);
+        while (!(MDIO::read45(Phy, CHIP_CONFIG) & SOFTWARE_RESET))
             ;
 
-        MDIO::set(phy, BASIC_CONTROL, SOFTWARE_RESET);
-        while (MDIO::read(phy, BASIC_CONTROL) & SOFTWARE_RESET)
+        MDIO::set(Phy, BASIC_CONTROL, SOFTWARE_RESET);
+        while (MDIO::read(Phy, BASIC_CONTROL) & SOFTWARE_RESET)
             ;
 
-        MDIO::set(phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE | BASIC_CONTROL_RE_AUTO_NEGOTIATION);
+        MDIO::set(Phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE | BASIC_CONTROL_RE_AUTO_NEGOTIATION);
 
-        while (!(MDIO::read(phy, BASIC_STATUS) & (BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE)))
+        while (!(MDIO::read(Phy, BASIC_STATUS) & (BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE)))
             ;
 
         // rgmii_sw_dr_2 = <0x0>;
-        MDIO::clear45(phy, PAD_DRIVE_STRENGTH_CFG, 1 << 12);
+        MDIO::clear45(Phy, PAD_DRIVE_STRENGTH_CFG, 1 << 12);
 
         // rgmii_sw_dr = <0x3>;
-        MDIO::set45(phy, PAD_DRIVE_STRENGTH_CFG, 3 << 4);
+        MDIO::set45(Phy, PAD_DRIVE_STRENGTH_CFG, 3 << 4);
 
         // rgmii_sw_dr_rxc = <0x6>;
-        MDIO::clear45(phy, PAD_DRIVE_STRENGTH_CFG, 7 << 13);
-        MDIO::set45(phy, PAD_DRIVE_STRENGTH_CFG, 6 << 13);
+        MDIO::clear45(Phy, PAD_DRIVE_STRENGTH_CFG, 7 << 13);
+        MDIO::set45(Phy, PAD_DRIVE_STRENGTH_CFG, 6 << 13);
 
         // rxc_dly_en = <0>;
-        MDIO::clear45(phy, CHIP_CONFIG, 1 << 8);
+        MDIO::clear45(Phy, CHIP_CONFIG, 1 << 8);
 
         // rx_delay_sel = <0xa>;
-        MDIO::clear45(phy, RGMII_CONFIG1, 0xF << 10);
-        MDIO::set45(phy, RGMII_CONFIG1, 0xa << 10);
+        MDIO::clear45(Phy, RGMII_CONFIG1, 0xF << 10);
+        MDIO::set45(Phy, RGMII_CONFIG1, 0xa << 10);
 
         // tx_delay_sel_fe = <5>;
-        MDIO::clear45(phy, RGMII_CONFIG1, 0xF << 4);
-        MDIO::set45(phy, RGMII_CONFIG1, 5 << 4);
+        MDIO::clear45(Phy, RGMII_CONFIG1, 0xF << 4);
+        MDIO::set45(Phy, RGMII_CONFIG1, 5 << 4);
 
         // tx_delay_sel = <0xa>;
-        MDIO::clear45(phy, RGMII_CONFIG1, 0xF);
-        MDIO::set45(phy, RGMII_CONFIG1, 0xa);
+        MDIO::clear45(Phy, RGMII_CONFIG1, 0xF);
+        MDIO::set45(Phy, RGMII_CONFIG1, 0xa);
 
         // tx_inverted_1000 = <0x1>;
-        MDIO::set45(phy, RGMII_CONFIG1, 1 << 14);
+        MDIO::set45(Phy, RGMII_CONFIG1, 1 << 14);
 
         if (speed() == 1000) {
-            MDIO::set45(phy, SYNCE_CFG, SYNCE_CFG_ENABLE | SYNCE_CFG_CLK_125M);
-            MDIO::clear45(phy, SYNCE_CFG, 0x7);
+            MDIO::set45(Phy, SYNCE_CFG, SYNCE_CFG_ENABLE | SYNCE_CFG_CLK_125M);
+            MDIO::clear45(Phy, SYNCE_CFG, 0x7);
         }
 
-        while (!(MDIO::read(phy, STATUS) & STATUS_LINK_STATUS))
+        while (!(MDIO::read(Phy, STATUS) & STATUS_LINK_STATUS))
             ;
     }
 
-    static bool duplex() { return MDIO::read(phy, STATUS) & (1 << 13); }
+    static bool duplex() { return MDIO::read(Phy, STATUS) & (1 << 13); }
 
     static unsigned speed() {
-        switch ((MDIO::read(phy, STATUS) >> 14) & 0x3) {
+        switch ((MDIO::read(Phy, STATUS) >> 14) & 0x3) {
         case 2:
             return 1000;
         case 1:
@@ -155,7 +155,7 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
     }
 
   private:
-    static constexpr unsigned int phy = 0;
+    static constexpr int Phy = 0;
 };
 
 template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
@@ -446,9 +446,9 @@ template <typename Tag> class DWC_Ether_QoS final : public NIC {
         DMA::reset();
         MTL::init();
         m_dma = new DMA();
-        MAC::init();
         MAC::duplex(PHY::duplex());
         MAC::speed(PHY::speed());
+        MAC::init();
         NIC::init();
         TraceOut();
     }
