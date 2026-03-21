@@ -14,10 +14,9 @@ namespace DEPOS {
 template <unsigned long Base> class DWC_Ether_QoS_MDIO : Driver {
     enum Register { BASE = 0x200, DATA = 0x204 };
     enum Bit {
-        CLOCK_250_300 = 0x5 << 8,
-        WRITE         = 0x1 << 2,
-        READ          = 0x3 << 2,
-        BUSY          = 1,
+        WRITE = 0x1 << 2,
+        READ  = 0x3 << 2,
+        BUSY  = 1,
     };
 
   public:
@@ -36,11 +35,11 @@ template <unsigned long Base> class DWC_Ether_QoS_MDIO : Driver {
 
     static void write(unsigned char phy, unsigned char dev, unsigned short data) {
         Reg32(Base, DATA) = data;
-        Reg32(Base, BASE) = BUSY | WRITE | CLOCK_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
+        Reg32(Base, BASE) = BUSY | WRITE | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
         wait();
     }
     static unsigned short read(unsigned char phy, unsigned char dev) {
-        Reg32(Base, BASE) = BUSY | READ | CLOCK_250_300 | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
+        Reg32(Base, BASE) = BUSY | READ | ((phy & 0x1F) << 21) | ((dev & 0x1F) << 16);
         wait();
         return Reg32(Base, DATA) & 0xFFFF;
     }

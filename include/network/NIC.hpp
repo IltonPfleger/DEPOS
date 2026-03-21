@@ -7,15 +7,6 @@
 namespace DEPOS {
 
 class NIC {
-
-  public:
-    class Buffer;
-    using Observer = DEPOS::Observer<const Buffer *>;
-    using Observed = DEPOS::Observed<const Buffer *>;
-
-    void attach(Observer *o) { m_observed.attach(o); }
-    void detach(Observer *o) { m_observed.detach(o); }
-
   public:
     class Buffer {
       public:
@@ -24,14 +15,14 @@ class NIC {
             : m_data(data),
               m_length(length) {}
 
-        auto data() const { return m_data; }
+        auto &data() const { return m_data; }
         auto &data() { return m_data; }
 
-        auto length() const { return m_length; }
+        auto &length() const { return m_length; }
         auto &length() { return m_length; }
 
-        auto id() const { return m_id; }
         auto &id() { return m_id; }
+        auto &id() const { return m_id; }
 
       private:
         unsigned char *m_data;
@@ -39,8 +30,14 @@ class NIC {
         size_t m_id;
     };
 
-    virtual ~NIC() {}
-    virtual int send(const void *b, size_t s) = 0;
+    using Observer = DEPOS::Observer<const Buffer *>;
+    using Observed = DEPOS::Observed<const Buffer *>;
+
+  public:
+    virtual ~NIC()                                    = default;
+    virtual int send(const void *buffer, size_t size) = 0;
+    void attach(Observer *o) { m_observed.attach(o); }
+    void detach(Observer *o) { m_observed.detach(o); }
 
   protected:
     void init() { new Thread(worker, this); }
@@ -54,10 +51,10 @@ class NIC {
         while (true) {
             auto *buffer = self->receive();
             if (!buffer) continue;
+
             self->m_observed.notify(buffer);
             self->free(buffer);
         }
-
         return nullptr;
     }
 
