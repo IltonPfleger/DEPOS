@@ -26,8 +26,7 @@ struct Datagram {
 };
 
 template <typename Network>
-class Channel : private Observer<const typename Network::Packet *>,
-                public Observed<const Datagram *> {
+class Channel : private Observer<const typename Network::Packet *>, public Observed<const Datagram *> {
 
     void update(const Network::Packet *packet) {
         const auto *datagram = reinterpret_cast<const Datagram *>(packet->data());

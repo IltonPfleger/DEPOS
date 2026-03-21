@@ -67,16 +67,8 @@ class NIC {
             if (!buffer) continue;
             self->m_observed.notify(buffer);
             self->free(buffer);
-
-            // size_t observers_count = self->m_observed.size();
-            // buffer->references()   = observers_count;
-
-            // if (observers_count > 0) {
-            //     self->m_observed.notify(buffer);
-            // } else {
-            //     self->free(buffer);
-            // }
         }
+
         return nullptr;
     }
 

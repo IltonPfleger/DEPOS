@@ -89,6 +89,8 @@ unsigned char *align(unsigned char *p, long alignment) {
 int main() {
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
 
+    Device::instance();
+
     constexpr long MB              = 1024 * 1024;
     constexpr long LinuxMemorySize = 256 * MB;
 

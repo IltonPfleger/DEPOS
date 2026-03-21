@@ -448,7 +448,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NIC {
         MAC::init();
         MAC::duplex(PHY::duplex());
         MAC::speed(PHY::speed());
-        Alarm::udelay(1'000'000);
+        // Alarm::udelay(1'000'000);
         NIC::init();
         TraceOut();
     }
