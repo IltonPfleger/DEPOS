@@ -142,6 +142,7 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
     }
 
     static bool duplex() { return MDIO::read(phy, STATUS) & (1 << 13); }
+
     static unsigned speed() {
         switch ((MDIO::read(phy, STATUS) >> 14) & 0x3) {
         case 2:
@@ -185,8 +186,8 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
         TraceIn();
         Reg32(Base, PACKET_FILTER) |= PACKET_FILTER_RECEIVE_ALL | PACKET_FILTER_PROMISCUOUS_MODE;
         Reg32(Base, RX_QUEUE_CONTROL0) = RX_QUEUE_CONTROL0_QUEUE0_ENABLE;
-        Reg32(Base, CONFIGURATION) |= CONFIGURATION_RECEIVER_ENABLE | CONFIGURATION_TRANSMITTER_ENABLE;
         Reg32(Base, CONFIGURATION) |= CONFIGURATION_CST;
+        Reg32(Base, CONFIGURATION) |= CONFIGURATION_RECEIVER_ENABLE | CONFIGURATION_TRANSMITTER_ENABLE;
         TraceOut();
     }
 
@@ -195,6 +196,7 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
         Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_DM;
         Reg32(Base, CONFIGURATION) |= (full ? CONFIGURATION_DM : 0);
     }
+
     static void speed(unsigned int speed) {
         TraceIn(speed);
         switch (speed) {
@@ -314,6 +316,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
 
     static void reset() {
         Reg32(Address, DMA_MODE) |= MODE_SOFTWARE_RESET;
+        Alarm::udelay(1);
         while (Reg32(Address, DMA_MODE) & MODE_SOFTWARE_RESET)
             ;
     }
@@ -348,29 +351,27 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
         d.des2 = 0;
         d.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
         Cache::flush(&d, sizeof(Descriptor));
-
-        Reg32(Address, CH0_RX_TAIL_POINTER) = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&d));
+        Reg32(Address, CH0_RX_TAIL_POINTER) = reinterpret_cast<uintptr_t>(&d);
     }
 
-    int send(const void *p, size_t s) {
+    int send(const void *data, size_t length) {
+        Cache::flush(data, length);
+
         Descriptor &d = m_tx_descriptors[m_tx_head];
-
-        d.buffer(reinterpret_cast<uint64_t>(p));
-        d.des3 = Descriptor::OWN | Descriptor::FD | Descriptor::LD | (s & 0x3FFF);
-        d.des2 = s & 0x3FFF;
-
-        Cache::flush(&d, sizeof(Descriptor));
-        Cache::flush(p, s);
 
         m_tx_head = (m_tx_head + 1) % Number;
 
-        Reg32(Address, CH0_TX_TAIL_POINTER) =
-            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(m_tx_descriptors + m_tx_head));
+        d.buffer(reinterpret_cast<uint64_t>(data));
+        d.des2 = length & 0x3FFF;
+        d.des3 = Descriptor::OWN | Descriptor::FD | Descriptor::LD | (length & 0x3FFF);
+        Cache::flush(&d, sizeof(Descriptor));
+
+        Reg32(Address, CH0_TX_TAIL_POINTER) = reinterpret_cast<uintptr_t>(m_tx_descriptors + m_tx_head);
 
         while (true) {
             Cache::flush(&d, sizeof(Descriptor));
             if (!(d.des3 & Descriptor::OWN)) {
-                return (d.des3 & Descriptor::ES) ? 0 : s;
+                return d.des3 & Descriptor::ES;
             }
         }
     }
@@ -402,7 +403,6 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
     Descriptor m_tx_descriptors[Number];
     Descriptor m_rx_descriptors[Number];
     Buffer m_rx_buffers[Number];
-    Buffer m_tx_buffers[Number];
     unsigned int m_tx_head;
     unsigned int m_rx_head;
 };
@@ -438,17 +438,17 @@ template <typename Tag> class DWC_Ether_QoS final : public NIC {
     using MTL      = DWC_Ether_QoS_MTL<MyTraits::Address>;
     using PHY      = DWC_Ether_QoS_PHY<MyTraits::Address>;
     using MAC      = DWC_Ether_QoS_MAC<MyTraits::Address>;
+    using Address  = Ethernet::Address;
 
     DWC_Ether_QoS() {
         TraceIn();
-        DMA::reset();
         PHY::init();
+        DMA::reset();
         MTL::init();
         m_dma = new DMA();
         MAC::init();
         MAC::duplex(PHY::duplex());
         MAC::speed(PHY::speed());
-        // Alarm::udelay(1'000'000);
         NIC::init();
         TraceOut();
     }
@@ -457,8 +457,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NIC {
     int send(const void *d, size_t s) override { return m_dma->send(d, s); }
     Buffer *receive() override { return m_dma->receive(); }
     void free(Buffer *b) override { m_dma->release(b); }
-
-    Ethernet::Address address() { return MyTraits::MAC; }
+    Address address() { return MyTraits::MAC; }
 
     static auto *instance() {
         static DWC_Ether_QoS instance;
