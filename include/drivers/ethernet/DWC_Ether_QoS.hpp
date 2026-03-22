@@ -4,7 +4,7 @@
 #include <drivers/Driver.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
-#include <network/NIC.hpp>
+#include <network/NetworkDevice.hpp>
 #include <network/ethernet/Ethernet.hpp>
 #include <utils/Debug.hpp>
 #include <utils/string.hpp>
@@ -216,7 +216,7 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
 };
 
 template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
-    typedef NIC::Buffer Buffer;
+    typedef NetworkBuffer Buffer;
 
     struct Descriptor {
         uint32_t des0;
@@ -431,13 +431,13 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     }
 };
 
-template <typename Tag> class DWC_Ether_QoS final : public NIC {
+template <typename Tag> class DWC_Ether_QoS final : public NetworkDevice<Ethernet> {
     using MyTraits = Traits<DWC_Ether_QoS<Tag>>;
     using DMA      = DWC_Ether_QoS_DMA<MyTraits>;
     using MTL      = DWC_Ether_QoS_MTL<MyTraits::Address>;
     using PHY      = DWC_Ether_QoS_PHY<MyTraits::Address>;
     using MAC      = DWC_Ether_QoS_MAC<MyTraits::Address>;
-    using Address  = Ethernet::Address;
+    using Base     = NetworkDevice<Family>;
 
     DWC_Ether_QoS() {
         TraceIn();
@@ -448,20 +448,21 @@ template <typename Tag> class DWC_Ether_QoS final : public NIC {
         MAC::duplex(PHY::duplex());
         MAC::speed(PHY::speed());
         MAC::init();
-        NIC::init();
+        Base::init();
         TraceOut();
     }
 
   public:
-    int send(const void *d, size_t s) override { return m_dma->send(d, s); }
     Buffer *receive() override { return m_dma->receive(); }
+    Buffer *alloc() override { return 0; }
+    int send(Buffer *buffer) override { return m_dma->send(buffer->data(), buffer->length()); }
     void free(Buffer *b) override { m_dma->release(b); }
     Address address() { return MyTraits::MAC; }
 
     static auto *instance() {
         static DWC_Ether_QoS instance;
         return &instance;
-    }
+	}
 
   private:
     DMA *m_dma;

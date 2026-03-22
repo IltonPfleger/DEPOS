@@ -6,16 +6,13 @@
 
 namespace DEPOS {
 
-class Ethernet {
-  public:
+struct Ethernet {
     enum { MTU = 1500 };
     typedef GenericAddress<6> Address;
     typedef uint16_t Protocol;
     typedef unsigned char Data[MTU];
-    typedef uint32_t CRC;
 
-    class Header {
-      public:
+    struct Header {
         Header(Address to, Address from, Protocol protocol)
             : m_to(to),
               m_from(from),
@@ -31,14 +28,7 @@ class Ethernet {
         Protocol m_protocol;
     } __attribute__((packed));
 
-    class Frame {
-      private:
-        Header m_header;
-        Data m_data;
-        CRC m_crc;
-    };
-
-    static constexpr auto Broadcast = Address(255, 255, 255, 255, 255, 255);
+    static constexpr auto broadcast() { return Address(255, 255, 255, 255, 255, 255); }
 };
 
 } // namespace DEPOS

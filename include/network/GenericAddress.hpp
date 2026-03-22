@@ -1,16 +1,13 @@
 #pragma once
 
-#include <network/Address.hpp>
 #include <types.hpp>
 #include <utils/string.hpp>
 
 namespace DEPOS {
 
-template <size_t Length> class GenericAddress : public Address {
+template <size_t Length> struct GenericAddress {
 
-  public:
-    constexpr GenericAddress()
-        : m_data{} {}
+    constexpr GenericAddress() = default;
 
     template <typename... Args>
     constexpr GenericAddress(Args... args)
@@ -31,16 +28,30 @@ template <size_t Length> class GenericAddress : public Address {
         }
     }
 
-    bool operator==(const Address &other) const override {
-        if (other.size() != Length) return false;
-        return memcmp(m_data, other.data(), Length) == 0;
+    constexpr operator const unsigned char *() const { return m_data; }
+    constexpr bool operator==(const GenericAddress &other) const {
+        return memcmp(m_data, other.m_data, sizeof(m_data)) == 0;
+    }
+    constexpr bool operator!=(const GenericAddress &other) const { return !(*this == other); }
+
+    constexpr GenericAddress operator|(const GenericAddress &other) const {
+        GenericAddress result;
+        for (size_t i = 0; i < Length; ++i) {
+            result.m_data[i] = m_data[i] | other.m_data[i];
+        }
+        return result;
     }
 
-    virtual size_t size() const { return Length; }
-    virtual const unsigned char *data() const { return m_data; }
+    static constexpr GenericAddress broadcast() {
+        GenericAddress result{};
+        for (size_t i = 0; i < Length; ++i) {
+            result.m_data[i] = 0xFF;
+        }
+        return result;
+    }
 
   private:
-    Meta::Array<Length, unsigned char> m_data;
-};
+    unsigned char m_data[Length];
+} __attribute__((packed));
 
 } // namespace DEPOS

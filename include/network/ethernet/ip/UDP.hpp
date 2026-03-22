@@ -1,6 +1,6 @@
 #pragma once
 
-#include <network/ethernet/ip/IPv4.hpp>
+#include <network/protocols/IPv4.hpp>
 
 namespace DEPOS {
 
@@ -26,17 +26,7 @@ struct Datagram {
 };
 
 template <typename Network>
-class Channel : private Observer<const typename Network::Packet *>, public Observed<const Datagram *> {
-
-    void update(const Network::Packet *packet) {
-        const auto *datagram = reinterpret_cast<const Datagram *>(packet->data());
-
-        if (packet->header()->m_protocol != Protocol) return;
-
-        if (!m_port || CPU::be16toh(datagram->header()->m_destination) == m_port) {
-            notify(datagram);
-        }
-    }
+class Channel : private Observer<const typename Network::Buffer *>, public Observed<const Datagram *> {
 
   public:
     typedef Datagram Buffer;
@@ -51,9 +41,9 @@ class Channel : private Observer<const typename Network::Packet *>, public Obser
     ~Channel() { m_network->detach(this); }
 
     void send(Network::Address address, uint16_t port, unsigned char *data, size_t length) {
-        auto *ethernet = reinterpret_cast<Ethernet::Header *>(data);
-        auto *ip       = reinterpret_cast<Network::Header *>(ethernet + 1);
-        auto *header   = reinterpret_cast<Header *>(ip + 1);
+        auto *l2     = reinterpret_cast<Ethernet::Header *>(data);
+        auto *l3     = reinterpret_cast<Network::Header *>(l2 + 1);
+        auto *header = reinterpret_cast<Header *>(l3 + 1);
 
         header->m_source      = CPU::htobe16(m_port);
         header->m_destination = CPU::htobe16(port);
@@ -61,6 +51,17 @@ class Channel : private Observer<const typename Network::Packet *>, public Obser
         header->m_checksum    = 0;
 
         m_network->send(address, Protocol, data, length + sizeof(Header));
+    }
+
+  private:
+    void update(const Network::Buffer *packet) {
+        const auto *datagram = reinterpret_cast<const Datagram *>(packet->data());
+
+        if (packet->header()->m_protocol != Protocol) return;
+
+        if (!m_port || CPU::be16toh(datagram->header()->m_destination) == m_port) {
+            notify(datagram);
+        }
     }
 
   private:

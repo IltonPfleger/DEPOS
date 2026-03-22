@@ -82,6 +82,7 @@ template <> struct Traits<CLINT> {
 template <> struct Traits<DWC_Ether_QoS<GMAC0>> {
     static constexpr const char *MAC       = "12:34:56:78:12:34";
     static constexpr const char *IP        = "192.168.1.101";
+    static constexpr const char *Netmask   = "255.255.255.0";
     static constexpr unsigned long Address = Traits<MemoryMap>::GMAC0;
     static constexpr unsigned int IRQs[]   = {9};
 };

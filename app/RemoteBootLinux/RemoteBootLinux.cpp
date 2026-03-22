@@ -5,9 +5,6 @@
 #include <hypervisor/GenericVirtualMachine.hpp>
 #include <hypervisor/virtio/Console.hpp>
 #include <machine/Machine.hpp>
-#include <network/NIC.hpp>
-#include <network/ethernet/ip/ARP.hpp>
-#include <network/ethernet/ip/IPv4.hpp>
 #include <network/ethernet/ip/TFTP.hpp>
 #include <network/ethernet/ip/UDP.hpp>
 #include <utils/Console.hpp>

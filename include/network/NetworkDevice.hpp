@@ -1,40 +1,39 @@
 #pragma once
 
-#include <network/Address.hpp>
-#include <types.hpp>
+#include <Thread.hpp>
+#include <network/NetworkBuffer.hpp>
 
 namespace DEPOS {
 
-class NetworkDevice {
+template <typename F> class NetworkDevice : public Observed<const NetworkBuffer *> {
   public:
-    class Buffer {
-      public:
-        Buffer() = default;
-        Buffer(unsigned char *data, size_t length)
-            : m_data(data),
-              m_length(length) {}
+    using Buffer   = NetworkBuffer;
+    using Observer = DEPOS::Observer<const Buffer *>;
+    using Observed = DEPOS::Observed<const Buffer *>;
+    using Family   = F;
+    using Address  = Family::Address;
 
-        auto &data() const { return m_data; }
-        auto &data() { return m_data; }
+    virtual ~NetworkDevice()          = default;
+    virtual int send(Buffer *)        = 0;
+    virtual void free(Buffer *b)      = 0;
+    virtual Buffer *alloc()           = 0;
+    virtual Buffer *receive()         = 0;
+    virtual Family::Address address() = 0;
 
-        auto &length() const { return m_length; }
-        auto &length() { return m_length; }
+  protected:
+    void init() { new Thread(worker, this); }
 
-        auto &id() { return m_id; }
-        auto &id() const { return m_id; }
-
-      private:
-        unsigned char *m_data;
-        size_t m_length;
-        size_t m_id;
-    };
-
-    virtual ~NetworkDevice()      = default;
-    virtual int send(Buffer *)    = 0;
-    virtual Buffer *receive()     = 0;
-    virtual void alloc(Buffer *b) = 0;
-    virtual void free(Buffer *b)  = 0;
-    virtual Address address()     = 0;
+  private:
+    static void *worker(void *argument) {
+        auto *self = static_cast<NetworkDevice *>(argument);
+        while (true) {
+            auto *buffer = self->receive();
+            if (!buffer) continue;
+            self->notify(buffer);
+            self->free(buffer);
+        }
+        return nullptr;
+    }
 };
 
 } // namespace DEPOS

@@ -4,7 +4,6 @@
 #include <hypervisor/VirtualMachine.hpp>
 #include <hypervisor/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
-#include <network/NIC.hpp>
 #include <utils/Observer.hpp>
 
 namespace DEPOS {
@@ -15,7 +14,7 @@ struct NetworkHeader {
     unsigned char padding[10];
 };
 
-template <typename Device, uintptr_t Base> class Network : public Handler, public NIC::Observer {
+template <typename Device, uintptr_t Base> class Network : public Handler, public Device::Observer {
     enum { RX = 0, TX = 1 };
 
   public:
@@ -42,7 +41,8 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
                 }
 
                 if (len > 0) {
-                    m_device->send(data, len);
+                    typename Device::Buffer buffer(data, len);
+                    m_device->send(&buffer);
                 }
 
                 length += descriptor->length;
@@ -56,7 +56,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
         }
     }
 
-    void update(const NIC::Buffer *buffer) override {
+    void update(const Device::Buffer *buffer) override {
         auto data = buffer->data();
         auto size = buffer->length();
 

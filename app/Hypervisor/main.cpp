@@ -29,7 +29,7 @@ class Task {
     static void init() {
         int core = (CPU::id() + 1) % Traits<CPU>::Active;
         Console::cout << "\n *** Task is at core " << core << " ***\n ";
-		new PeriodicThread(worker, 0, Thread::Criterion(Thread::Criterion::NORMAL, core), 1000);
+        new PeriodicThread(worker, 0, Thread::Criterion(Thread::Criterion::NORMAL, core), 1000);
     }
 };
 

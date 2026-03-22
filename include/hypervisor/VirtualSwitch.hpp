@@ -3,13 +3,12 @@
 #include <Spin.hpp>
 #include <Traits.hpp>
 #include <machine/Machine.hpp>
-#include <network/NIC.hpp>
 
 namespace DEPOS {
 
 namespace hypervisor {
 
-template <typename Device> class VirtualSwitch : public NIC::Observer, public NIC::Observed {
+template <typename Device> class VirtualSwitch : public Device::Observer, public Device::Observed {
     static constexpr unsigned int FrameSize = 1518;
     static constexpr int InternalQueueSize  = 16;
 
@@ -22,7 +21,7 @@ template <typename Device> class VirtualSwitch : public NIC::Observer, public NI
     };
 
   public:
-    using Buffer = NIC::Buffer;
+    using Buffer = Device::Buffer;
     static auto instance() {
         static VirtualSwitch instance;
         return &instance;
@@ -47,7 +46,7 @@ template <typename Device> class VirtualSwitch : public NIC::Observer, public NI
         return 0;
     }
 
-    void update(const NIC::Buffer *buffer) {
+    void update(const Device::Buffer *buffer) {
         enqueue_copy(reinterpret_cast<const unsigned char *>(buffer->data()), buffer->length());
     }
 
@@ -81,8 +80,8 @@ template <typename Device> class VirtualSwitch : public NIC::Observer, public NI
             if (link) {
                 InternalBuffer &buf = link->value();
 
-                NIC::Buffer temp_buffer(buf.data, buf.size);
-                notify(&temp_buffer);
+                typename Device::Buffer temp_buffer(buf.data, buf.size);
+                this->notify(&temp_buffer);
 
                 CPU::Interruptions::disable();
                 m_spin.acquire();
