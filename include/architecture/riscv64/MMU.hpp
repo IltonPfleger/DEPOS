@@ -109,6 +109,7 @@ class MMU {
 
             return l0->set(vpn0, reinterpret_cast<uintptr_t>(pa), flags);
         }
+
         bool map(uintptr_t va, Flags flags) { return map(va, va, flags); }
 
         void map(uintptr_t va, uintptr_t pa, size_t size, Flags flags) {

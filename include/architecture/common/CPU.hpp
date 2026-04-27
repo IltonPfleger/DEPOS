@@ -13,17 +13,17 @@ class CPU {
     using Atomic = DEPOS::ArchitectureCommon::Atomic;
 
     static void barrier() {
-        __attribute__((section(".data"))) static volatile unsigned char gsense = 0;
-        __attribute__((section(".data"))) static volatile uint32_t ready[2]    = {0};
+        static constinit volatile bool gsense = 1;
+        static volatile int count             = Traits<DEPOS::CPU>::Active;
 
-        unsigned char sense = gsense;
-        uint32_t arrived    = Atomic::finc(ready[sense]);
+        auto sense   = !Atomic::load(gsense);
+        int position = Atomic::fdec(count);
 
-        if (arrived == Traits<DEPOS::CPU>::Active - 1) {
-            ready[sense] = 0;
-            gsense       = !sense;
+        if (position == 1) {
+            Atomic::store(count, Traits<DEPOS::CPU>::Active);
+            Atomic::store(gsense, sense);
         } else {
-            while (gsense == sense)
+            while (Atomic::load(gsense) != sense)
                 ;
         }
     }

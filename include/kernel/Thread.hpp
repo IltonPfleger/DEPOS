@@ -2,8 +2,7 @@
 
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
-
-#include <kernel/Scheduler.hpp>
+#include <kernel/scheduler/Scheduler.hpp>
 #include <shared/memory/Pointer.hpp>
 
 namespace DEPOS {

@@ -4,7 +4,7 @@
 
 namespace Messages {
 
-static constexpr const char *ErrorPrefix      = "\n[ERROR] In: ";
+static constexpr const char *ErrorPrefix      = "\n[ERROR] ";
 static constexpr const char *ExpressionPrefix = "Expression: ";
 static constexpr const char *MessagePrefix    = "Message: ";
 static constexpr const char *ReturnLabel      = "return=";
@@ -39,7 +39,7 @@ template <unsigned int N> struct Parser {
     if constexpr (Traits<Debug>::Error) {                                                                              \
         if (expr) {                                                                                                    \
             Console::panic();                                                                                          \
-            Console::println(Messages::ErrorPrefix, LOCATION);                                                         \
+            Console::println(Messages::ErrorPrefix, __PRETTY_FUNCTION__);                                              \
             Console::println(Messages::ExpressionPrefix, #expr);                                                       \
             __VA_OPT__(Console::println(Messages::MessagePrefix, __VA_ARGS__);)                                        \
             for (;;)                                                                                                   \

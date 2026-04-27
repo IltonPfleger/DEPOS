@@ -9,7 +9,7 @@ namespace DEPOS {
 class Thread;
 class Machine;
 class Timer;
-class FixedCPU;
+class FixedCore;
 class RR;
 class Kernel;
 class Application;
@@ -27,7 +27,7 @@ template <> struct Traits<Kernel> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr Hz TickFrequency = 10'000;
+    static constexpr Hz TickFrequency = 1000;
     static constexpr bool Enable      = true;
 };
 
@@ -57,7 +57,7 @@ template <> struct Traits<Thread> {
     static constexpr bool IsolatedKernelStack = Traits<Application>::Virtualized || Traits<Debug>::Error;
     static constexpr size_t UserStackSize     = Traits<Memory>::PageSize;
     static constexpr size_t KernelStackSize   = IsolatedKernelStack ? Traits<Memory>::PageSize : 0;
-    using Criterion                           = RR;
+    using Criterion                           = FixedCore;
 };
 
 } // namespace DEPOS

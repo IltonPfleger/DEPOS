@@ -1,5 +1,5 @@
-#ifndef __SPIN_HEADER__
-#define __SPIN_HEADER__
+#ifndef __SYNCHRONIZATION_SPIN_HEADER__
+#define __SYNCHRONIZATION_SPIN_HEADER__
 
 class Spin {
   public:

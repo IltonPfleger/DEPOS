@@ -111,8 +111,12 @@ void Thread::exit() {
 
 void Thread::init() {
     TraceIn();
+
+    new (&s_scheduler) Scheduler();
+
     for (int i = 0; i < Traits<CPU>::Active; ++i)
         new Thread(idle, 0, Criterion::IDLE);
+
     TraceOut();
 }
 
@@ -153,6 +157,8 @@ void Thread::sleep(Queue *m_waiting, Spin *spin) {
     previous->m_waiting = m_waiting;
 
     Link *next = s_scheduler.remove();
+
+    ERROR(!next);
 
     dispatch(previous, next->value(), spin);
 

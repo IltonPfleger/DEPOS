@@ -17,17 +17,17 @@ extern "C" void init() {
 
     if (CPU::id() == Traits<CPU>::BSP) {
         Memory::init();
-        ApplicationHandler::init();
         Thread::init();
+        ApplicationHandler::init();
     }
 
     CPU::barrier();
+
     Thread::run();
 }
 
 extern "C" __attribute__((optimize("O0"), naked, used, section(".init"))) void _init() {
     CPU::init();
-    // BSS::init();
     Machine::init();
     init();
 }
