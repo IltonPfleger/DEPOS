@@ -178,7 +178,7 @@ class Machine : Driver {
             // aoncrg_init();
 
             /* CAN */
-            Clock::divisor(Clock::SystemClock::JH7110_CAN0_CTRL_CLK_CORE, 16);
+            Clock::divisor(Clock::SystemClock::JH7110_CAN0_CTRL_CLK_CORE, 15);
 
             Clock::enable(Clock::SystemClock::JH7110_CAN0_CTRL_CLK_APB);
             Clock::enable(Clock::SystemClock::JH7110_CAN0_CTRL_CLK_TIMER);

@@ -13,150 +13,202 @@
 namespace DEPOS {
 
 template <typename Tag> class StarFiveCAN : public NetworkDevice {
-    using Self     = StarFiveCAN<Tag>;
-    using MyTraits = Traits<Self>;
+  private:
+    using Self   = StarFiveCAN<Tag>;
+    using Traits = DEPOS::Traits<Self>;
 
-    enum Registers {
+    // ============================================================
+    // Constants
+    // ============================================================
+
+    static constexpr uintptr_t Base    = Traits::Address;
+    static constexpr size_t MaxPayload = 8;
+
+    static constexpr bool DebugMode        = true;
+    static constexpr bool InternalLoopback = false;
+    static constexpr bool ExternalLoopback = false;
+
+    // ============================================================
+    // Registers
+    // ============================================================
+
+    enum class Reg : uintptr_t {
         RBUF_ID   = 0x00,
         RBUF_CTL  = 0x04,
         RBUF_DATA = 0x08,
+
         TBUF_ID   = 0x50,
         TBUF_CTL  = 0x54,
         TBUF_DATA = 0x58,
-        CFG_STAT  = 0xA0,
-        TCMD      = 0xA1,
-        RCTRL     = 0xA3,
-        RTIE      = 0xA4,
-        RTIF      = 0xA5,
-        ERRINT    = 0xA6,
-        LIMIT     = 0xA7,
-        S_SEG_1   = 0xA8,
-        F_SEG_1   = 0xAC,
-        EALCAP    = 0xB0,
+
+        STATUS  = 0xA0,
+        TCMD    = 0xA1,
+        RCTRL   = 0xA3,
+        RTIE    = 0xA4,
+        RTIF    = 0xA5,
+        ERRINT  = 0xA6,
+        LIMIT   = 0xA7,
+        S_SEG_1 = 0xA8,
+        F_SEG_1 = 0xAC,
+        EALCAP  = 0xB0
     };
 
-    enum Masks {
-        RESET             = 1 << 7,
-        RIF               = 1 << 7,
-        IDE               = 1 << 7,
-        SACK              = 1 << 7,
-        RTR               = 1 << 6,
-        LBE               = 1 << 6,
-        RFIF              = 1 << 5,
-        LBI               = 1 << 5,
-        RAFIF             = 1 << 4,
-        RREL              = 1 << 4,
-        TPE               = 1 << 4,
-        TPIF              = 1 << 3,
-        TSIF              = 1 << 2,
-        EIF               = 1 << 1,
-        DLC               = 0x0F,
-        STBY              = 0x20,
-        TBSEL             = 0x80,
-        ALL_IRQ           = 0xFF,
-        RX_NOT_EMPTY_MASK = 0x03,
-        RX_IRQ            = RIF | RFIF | RAFIF,
+    // ============================================================
+    // Bit Masks
+    // ============================================================
+
+    enum Mask : uint8_t {
+        RESET = 0x80,
+
+        // Error
+        EIF  = 0x02,
+        EPIE = 0x10,
+        EPIF = 0x10,
+        BEIF = 0x01,
+
+        // RX
+        RIE   = 0x02,
+        RIF   = 0x80,
+        RFIF  = 0x20,
+        RAFIF = 0x10,
+        RREL  = 0x10,
+        RNE   = 0x03,
+
+        // TX
+        TPIF  = 0x08,
+        TSIF  = 0x04,
+        TPE   = 0x10,
+        TBSEL = 0x80,
+
+        // Frame
+        IDE = 0x80,
+        RTR = 0x40,
+        DLC = 0x0F,
+
+        // Modes
+        SACK = 0x80,
+        LBE  = 0x40,
+        LBI  = 0x20,
+        STBY = 0x20,
+
+        // Status
+        BUSOFF = 0x01
     };
 
-    static constexpr size_t MTU     = 8;
-    static constexpr uintptr_t Base = MyTraits::Address;
+    // ============================================================
+    // Baudrate Table
+    // ============================================================
 
-    // Bit Timings: {baudrate, sample point, tq, prop, seg1, seg2, sjw, brp}
-    static constexpr size_t BitTimings[][8] = {{495000, 875, 126, 6, 7, 2, 1, 5}};
+    struct BitTiming {
+        size_t baudrate;
+        size_t t[6];
+    };
+
+    static constexpr BitTiming TimingTable[] = {
+        {1000, {126, 2, 3, 2, 1, 5}}, {800, {126, 3, 4, 2, 1, 5}},   {500, {126, 6, 7, 2, 1, 5}},
+        {250, {251, 6, 7, 2, 1, 10}}, {125, {1338, 1, 2, 2, 1, 53}}, {100, {833, 4, 5, 2, 1, 33}},
+        {50, {1666, 4, 5, 2, 1, 66}}, {20, {3333, 6, 6, 2, 1, 132}}, {10, {6666, 6, 6, 2, 1, 264}}};
 
   public:
+    // ============================================================
+    // Constructor
+    // ============================================================
+
     StarFiveCAN() {
-        constexpr bool InternalLoopback = false;
-        constexpr bool ExternalLoopback = true;
+        IC::install(Traits::IRQs[0], onTrap);
 
-        IC::install(MyTraits::IRQs[0], onTrap);
+        set8(Reg::STATUS, RESET);
 
-        ioset8(Registers::CFG_STAT, Masks::RESET);
+        configure(500, InternalLoopback, ExternalLoopback);
 
-        baudrate(0);
-
-        ioclear8(Registers::CFG_STAT, Masks::RESET);
-
-        iowrite8(Registers::LIMIT, 0x40);
-        ioset8(Registers::LIMIT, 0x0B);
-        iowrite8(Registers::RTIE, Masks::ALL_IRQ);
-        ioset8(Registers::ERRINT, 0x20);
-
-        configure(InternalLoopback, ExternalLoopback);
+        clear8(Reg::STATUS, RESET);
+        set8(Reg::ERRINT, EPIE);
     }
 
-    virtual int send(const NetworkBuffer *nbuffer) override {
-        auto *buffer = static_cast<const CAN::Buffer *>(nbuffer);
+    // ============================================================
+    // TX
+    // ============================================================
 
-        uint8_t tcmd = ioread8(Registers::TCMD);
-        tcmd &= ~Masks::TBSEL;
-        tcmd &= ~Masks::STBY;
-        iowrite8(Registers::TCMD, tcmd);
+    int send(const NetworkBuffer *raw) override {
+        auto *frame = static_cast<const CAN::Buffer *>(raw);
 
-        reg32(Registers::TBUF_ID) = buffer->id();
+        uint8_t cmd = read8(Reg::TCMD);
+        cmd &= ~TBSEL;
+        cmd &= ~STBY;
+        write8(Reg::TCMD, cmd);
 
-        uint32_t ctl = (buffer->length() & Masks::DLC);
-        if (buffer->isRemote()) ctl |= Masks::RTR;
-        if (buffer->isExtended()) ctl |= Masks::IDE;
-        reg32(Registers::TBUF_CTL) = ctl;
+        reg32(Reg::TBUF_ID) = frame->id();
 
-        uint32_t *data                  = buffer->data<uint32_t *>();
-        reg32(Registers::TBUF_DATA)     = data[0];
-        reg32(Registers::TBUF_DATA + 4) = data[1];
+        uint32_t ctl = frame->length() & DLC;
+        if (frame->isRemote()) ctl |= RTR;
+        if (frame->isExtended()) ctl |= IDE;
 
-        ioset8(Registers::TCMD, Masks::TPE);
+        reg32(Reg::TBUF_CTL) = ctl;
+
+        auto *data                                        = frame->data<uint32_t *>();
+        reg32(Reg::TBUF_DATA)                             = data[0];
+        reg32(static_cast<uintptr_t>(Reg::TBUF_DATA) + 4) = data[1];
+
+        set8(Reg::TCMD, TPE);
         return 0;
     }
 
-    virtual const NetworkBuffer *receive() override {
-        if (!(ioread8(Registers::RCTRL) & Masks::RX_NOT_EMPTY_MASK)) return nullptr;
+    // ============================================================
+    // RX
+    // ============================================================
 
-        uint32_t id = reg32(Registers::RBUF_ID);
-        uint8_t ctl = ioread8(Registers::RBUF_CTL);
-        uint8_t dlc = (ctl & Masks::DLC) > MTU ? (ctl & Masks::DLC) : MTU;
-        bool ide    = ctl & Masks::IDE;
-        bool rtr    = ctl & Masks::RTR;
+    const NetworkBuffer *receive() override {
+        if (!(read8(Reg::RCTRL) & RNE)) return nullptr;
 
-        auto *buffer = new CAN::Buffer(id, ide, rtr);
-        buffer->length(dlc);
+        uint32_t id = reg32(Reg::RBUF_ID);
+        uint8_t ctl = read8(Reg::RBUF_CTL);
+
+        uint8_t dlc = ctl & DLC;
+        if (dlc > MaxPayload) dlc = MaxPayload;
+
+        bool ide = ctl & IDE;
+        bool rtr = ctl & RTR;
+
+        auto *frame = new CAN::Buffer(id, ide, rtr);
+        frame->length(dlc);
 
         if (!rtr) {
-            uint32_t *data = buffer->data<uint32_t *>();
-            data[0]        = reg32(Registers::RBUF_DATA);
-            data[1]        = reg32(Registers::RBUF_DATA + 4);
+            auto *data = frame->data<uint32_t *>();
+            data[0]    = reg32(Reg::RBUF_DATA);
+            data[1]    = reg32(static_cast<uintptr_t>(Reg::RBUF_DATA) + 4);
         }
 
-        ioset8(Registers::RCTRL, Masks::RREL);
-        return buffer;
+        set8(Reg::RCTRL, RREL);
+        return frame;
     }
 
-    virtual void free(const NetworkBuffer *nbuffer) override { delete static_cast<const CAN::Buffer *>(nbuffer); }
+    void free(const NetworkBuffer *raw) override { delete static_cast<const CAN::Buffer *>(raw); }
 
   private:
+    // ============================================================
+    // Handlers
+    // ============================================================
+
     static void onTrap(size_t) {
-        uint8_t isr = ioread8(Registers::RTIF);
-        uint8_t eir = ioread8(Registers::ERRINT);
+        uint8_t flags = read8(Reg::RTIF);
+        uint8_t err   = read8(Reg::ERRINT);
 
-        if (!isr && !eir) return;
+        if (!flags && !err) return;
 
-        if (isr & Masks::RX_IRQ) {
-            iowrite8(Registers::RTIF, isr & Masks::RX_IRQ);
-        }
+        if ((flags & EIF) || (err & EPIF) || (err & BEIF)) onError(err);
 
-        if (isr & (Masks::TPIF | Masks::TSIF)) {
-            iowrite8(Registers::RTIF, isr & (Masks::TPIF | Masks::TSIF));
-        }
-
-        if ((isr & Masks::EIF) || (eir & 0x11)) {
-            onError(eir);
-        }
+        if (flags) set8(Reg::RTIF, flags);
     }
 
-    static void onError(uint8_t eir) {
-        uint8_t koer    = ioread8(Registers::EALCAP) & 0xE0;
+    static void onError(uint8_t err) {
+        if constexpr (!DebugMode) return;
+
+        uint8_t cause  = read8(Reg::EALCAP) & 0xE0;
+        uint8_t status = read8(Reg::STATUS);
+
         const char *msg = "Unknown Error";
 
-        switch (koer) {
+        switch (cause) {
         case 0x20:
             msg = "Bit Error";
             break;
@@ -174,49 +226,76 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
             break;
         }
 
-        Console::println("CAN Error: ", msg);
-        iowrite8(Registers::ERRINT, eir);
+        if (status & BUSOFF) msg = "Bus Off";
+
+        Warn(msg);
+
+        set8(Reg::ERRINT, err);
     }
 
-    void configure(bool ilb, bool elb) {
-        uint8_t status = ioread8(Registers::CFG_STAT) & ~(Masks::LBI | Masks::LBE);
+    // ============================================================
+    // Configuration
+    // ============================================================
 
-        if (ilb) status |= Masks::LBI;
-        if (elb) {
-            status |= Masks::LBE;
-            ioset8(Registers::RCTRL, Masks::SACK);
-        } else {
-            ioclear8(Registers::RCTRL, Masks::SACK);
+    void configure(size_t kbps, bool internalLB, bool externalLB) {
+        for (const auto &cfg : TimingTable) {
+            if (cfg.baudrate == kbps) {
+                setBaudrate(cfg);
+                break;
+            }
         }
-        iowrite8(Registers::CFG_STAT, status);
+
+        if (internalLB) set8(Reg::STATUS, LBI);
+
+        if (externalLB) {
+            set8(Reg::STATUS, LBE);
+            set8(Reg::RCTRL, SACK);
+        }
     }
 
-    static void baudrate(size_t index) {
-        auto b     = BitTimings[index];
-        uint32_t s = ((b[4] + b[3] - 1) << 0) | ((b[5] - 1) << 8) | ((b[6] - 1) << 16) | ((b[7] - 1) << 24);
-        reg32(Registers::S_SEG_1) = s;
+    static void setBaudrate(const BitTiming &cfg) {
+        const auto &b = cfg.t;
+
+        uint32_t value = ((b[1] + b[2] - 1) << 0) | ((b[3] - 1) << 8) | ((b[4] - 1) << 16) | ((b[5] - 1) << 24);
+
+        reg32(Reg::S_SEG_1) = value;
     }
 
-    static inline uint8_t ioread8(uintptr_t addr) {
-        uintptr_t base = utility::Align::down(Base + addr, 4);
-        uint8_t offset = (Base + addr) - base;
-        return (reinterpret_cast<volatile uint32_t *>(base)[0] >> (offset * 8)) & 0xFF;
+    // ============================================================
+    // MMIO Helpers
+    // ============================================================
+
+    static uint8_t read8(Reg reg) {
+        uintptr_t addr    = Base + static_cast<uintptr_t>(reg);
+        uintptr_t aligned = utility::Align::down(addr, 4);
+        uint8_t shift     = (addr - aligned) * 8;
+
+        return (reinterpret_cast<volatile uint32_t *>(aligned)[0] >> shift) & 0xFF;
     }
 
-    static inline void iowrite8(uintptr_t addr, uint8_t value) {
-        uintptr_t base         = utility::Align::down(Base + addr, 4);
-        uint8_t offset         = (Base + addr) - base;
-        volatile uint32_t *ptr = reinterpret_cast<volatile uint32_t *>(base);
+    static void write8(Reg reg, uint8_t value) {
+        uintptr_t addr    = Base + static_cast<uintptr_t>(reg);
+        uintptr_t aligned = utility::Align::down(addr, 4);
+        uint8_t shift     = (addr - aligned) * 8;
+
+        auto *ptr = reinterpret_cast<volatile uint32_t *>(aligned);
 
         uint32_t tmp = *ptr;
-        tmp &= ~(0xFF << (offset * 8));
-        tmp |= (static_cast<uint32_t>(value) << (offset * 8));
+        tmp &= ~(0xFFu << shift);
+        tmp |= (static_cast<uint32_t>(value) << shift);
+
         *ptr = tmp;
     }
 
-    static void ioset8(uintptr_t addr, uint8_t mask) { iowrite8(addr, ioread8(addr) | mask); }
-    static void ioclear8(uintptr_t addr, uint8_t mask) { iowrite8(addr, ioread8(addr) & ~mask); }
-    static volatile uint32_t &reg32(size_t offset) { return *reinterpret_cast<volatile uint32_t *>(Base + offset); }
+    static void set8(Reg reg, uint8_t mask) { write8(reg, read8(reg) | mask); }
+
+    static void clear8(Reg reg, uint8_t mask) { write8(reg, read8(reg) & ~mask); }
+
+    static volatile uint32_t &reg32(Reg reg) {
+        return *reinterpret_cast<volatile uint32_t *>(Base + static_cast<uintptr_t>(reg));
+    }
+
+    static volatile uint32_t &reg32(uintptr_t offset) { return *reinterpret_cast<volatile uint32_t *>(Base + offset); }
 };
 
 } // namespace DEPOS

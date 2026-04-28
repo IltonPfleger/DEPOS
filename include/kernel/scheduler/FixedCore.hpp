@@ -1,10 +1,7 @@
 #ifndef __SCHEDULER_FIXED_CORE_HEADER__
 #define __SCHEDULER_FIXED_CORE_HEADER__
 
-#include <kernel/scheduler/Policy.hpp>
-#include <shared/synchronization/Spin.hpp>
 #include <types.hpp>
-#include <utils/collections/FIFO.hpp>
 #include <utils/collections/MPSC.hpp>
 
 // TODO: Explain Why It's Works Without ABA Problem in MPSC
