@@ -15,16 +15,18 @@ template <typename T> class Scheduler {
 
     Scheduler() = default;
 
-    Link *remove(Criterion threshold = Criterion::IDLE) {
-        uint32_t i = Criterion::Levels - 1;
+    Link *remove(Criterion minimum = Criterion::IDLE) {
+        auto i = Criterion::HIGHER - 1;
 
-        while (i >= threshold) {
-            if (Link *next = m_collection.remove(Criterion(i))) {
-                m_heads[head()] = next->value();
+        while (i >= minimum) {
+            if (Link *next = m_collection.remove(i)) {
+                head() = next->value();
                 return next;
             }
             i--;
         }
+
+        ERROR(minimum == Criterion::IDLE);
         return nullptr;
     }
 
@@ -33,15 +35,13 @@ template <typename T> class Scheduler {
         m_collection.insert(node->criterion(), node);
     }
 
-    auto head() { return CPU::id(); }
-
-    auto *current() { return m_heads[head()]; }
+    T *current() { return head(); }
 
   private:
-    static constexpr uint32_t CPUS = Traits<CPU>::Active;
+    auto &head() { return m_heads[CPU::id()]; }
 
   private:
-    Meta::Array<CPUS, T *> m_heads;
+    meta::Array<Traits<CPU>::Active, T *> m_heads;
     typename Criterion::template Collection<Link> m_collection;
 };
 

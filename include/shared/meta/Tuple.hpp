@@ -1,5 +1,5 @@
-#ifndef __META_TUPLE_HEADER__
-#define __META_TUPLE_HEADER__
+#ifndef __DEPOS_SHARED_META_TUPLE_HEADER__
+#define __DEPOS_SHARED_META_TUPLE_HEADER__
 
 namespace DEPOS {
 

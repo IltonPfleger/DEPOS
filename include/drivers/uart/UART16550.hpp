@@ -7,7 +7,7 @@
 namespace DEPOS {
 
 template <typename Tag> class UART16550 : public Driver, public Observed<const unsigned char *, size_t> {
-    using MyTraits = Traits<UART16550<Tag>>;
+    using MyTraits = Traits<Tag>;
 
     static constexpr unsigned long Address    = MyTraits::Address;
     static constexpr unsigned int Clock       = MyTraits::Clock;

@@ -55,7 +55,7 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long PLIC  = 0xc000000;
 };
 
-template <> struct Traits<UART16550<UART0>> {
+template <> struct Traits<UART0> {
     static constexpr unsigned long Address = Traits<MemoryMap>::UART0;
     static constexpr unsigned int Clock    = 10'000'000;
     static constexpr unsigned int BaudRate = 115200;
@@ -77,9 +77,8 @@ template <> struct Traits<CLINT> {
 template <> struct Traits<PLIC> {
     static constexpr bool Enable               = true;
     static constexpr int NumberOfInterruptions = 30;
-    using ContextsType                         = Meta::Array<Traits<CPU>::Count, Meta::Array<2, int>>;
-    static constexpr ContextsType Contexts     = []() {
-        ContextsType contexts{};
+    static constexpr auto Contexts             = []() {
+        meta::Array<Traits<CPU>::Count, meta::Array<2, int>> contexts{};
         for (int i = 0; i < Traits<CPU>::Count; i++) {
             contexts[i][0] = i * 2;
             contexts[i][1] = (i * 2) + 1;

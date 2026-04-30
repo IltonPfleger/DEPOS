@@ -5,7 +5,7 @@
 
 namespace DEPOS {
 
-namespace Meta {
+namespace meta {
 
 template <size_t N, typename T> class Array {
   public:
@@ -43,7 +43,7 @@ template <size_t N, typename T> class Array {
     T m_data[N];
 };
 
-} // namespace Meta
+} // namespace meta
 
 } // namespace DEPOS
 

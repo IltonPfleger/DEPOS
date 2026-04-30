@@ -1,11 +1,11 @@
-#include <drivers/network/can/StarFiveCAN.hpp>
+#include <drivers/network/can/IPMS_CANFD.hpp>
 #include <kernel/Alarm.hpp>
 #include <shared/console/Console.hpp>
 
 using namespace DEPOS;
 
 int main(int, char *[]) {
-    using Device = StarFiveCAN<CAN0>;
+    using Device = IPMS_CANFD<CAN0>;
     using Buffer = CAN::Buffer;
 
     // static uintmax_t id   = 0;

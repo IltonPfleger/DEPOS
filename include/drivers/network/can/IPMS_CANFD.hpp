@@ -12,15 +12,13 @@
 
 namespace DEPOS {
 
-template <typename Tag> class StarFiveCAN : public NetworkDevice {
+template <typename Tag> class IPMS_CANFD : public NetworkDevice {
   private:
-    using Self   = StarFiveCAN<Tag>;
-    using Traits = DEPOS::Traits<Self>;
+    using Traits = DEPOS::Traits<Tag>;
 
     // ============================================================
     // Constants
     // ============================================================
-
     static constexpr uintptr_t Base    = Traits::Address;
     static constexpr size_t MaxPayload = 8;
 
@@ -29,17 +27,18 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
     static constexpr bool ExternalLoopback = false;
 
     // ============================================================
-    // Registers
+    // Registeristers
     // ============================================================
+    enum class Register : uintptr_t {
+        RBUF_ID    = 0x00,
+        RBUF_CTL   = 0x04,
+        RBUF_DATA1 = 0x08,
+        RBUF_DATA2 = 0x0C,
 
-    enum class Reg : uintptr_t {
-        RBUF_ID   = 0x00,
-        RBUF_CTL  = 0x04,
-        RBUF_DATA = 0x08,
-
-        TBUF_ID   = 0x50,
-        TBUF_CTL  = 0x54,
-        TBUF_DATA = 0x58,
+        TBUF_ID    = 0x50,
+        TBUF_CTL   = 0x54,
+        TBUF_DATA1 = 0x58,
+        TBUF_DATA2 = 0x5C,
 
         STATUS  = 0xA0,
         TCMD    = 0xA1,
@@ -98,7 +97,6 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
     // ============================================================
     // Baudrate Table
     // ============================================================
-
     struct BitTiming {
         size_t baudrate;
         size_t t[6];
@@ -113,55 +111,52 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
     // ============================================================
     // Constructor
     // ============================================================
-
-    StarFiveCAN() {
+    IPMS_CANFD() {
         IC::install(Traits::IRQs[0], onTrap);
 
-        set8(Reg::STATUS, RESET);
+        set8(Register::STATUS, RESET);
 
         configure(500, InternalLoopback, ExternalLoopback);
 
-        clear8(Reg::STATUS, RESET);
-        set8(Reg::ERRINT, EPIE);
+        clear8(Register::STATUS, RESET);
+        set8(Register::ERRINT, EPIE);
     }
 
     // ============================================================
     // TX
     // ============================================================
-
     int send(const NetworkBuffer *raw) override {
         auto *frame = static_cast<const CAN::Buffer *>(raw);
 
-        uint8_t cmd = read8(Reg::TCMD);
+        uint8_t cmd = read8(Register::TCMD);
         cmd &= ~TBSEL;
         cmd &= ~STBY;
-        write8(Reg::TCMD, cmd);
+        write8(Register::TCMD, cmd);
 
-        reg32(Reg::TBUF_ID) = frame->id();
+        reg32(Register::TBUF_ID) = frame->id();
 
         uint32_t ctl = frame->length() & DLC;
         if (frame->isRemote()) ctl |= RTR;
         if (frame->isExtended()) ctl |= IDE;
 
-        reg32(Reg::TBUF_CTL) = ctl;
+        reg32(Register::TBUF_CTL) = ctl;
 
-        auto *data                                        = frame->data<uint32_t *>();
-        reg32(Reg::TBUF_DATA)                             = data[0];
-        reg32(static_cast<uintptr_t>(Reg::TBUF_DATA) + 4) = data[1];
+        auto *data                  = frame->data<uint32_t *>();
+        reg32(Register::TBUF_DATA1) = data[0];
+        reg32(Register::TBUF_DATA2) = data[1];
 
-        set8(Reg::TCMD, TPE);
+        set8(Register::TCMD, TPE);
         return 0;
     }
 
     // ============================================================
     // RX
     // ============================================================
-
     const NetworkBuffer *receive() override {
-        if (!(read8(Reg::RCTRL) & RNE)) return nullptr;
+        if (!(read8(Register::RCTRL) & RNE)) return nullptr;
 
-        uint32_t id = reg32(Reg::RBUF_ID);
-        uint8_t ctl = read8(Reg::RBUF_CTL);
+        uint32_t id = reg32(Register::RBUF_ID);
+        uint8_t ctl = read8(Register::RBUF_CTL);
 
         uint8_t dlc = ctl & DLC;
         if (dlc > MaxPayload) dlc = MaxPayload;
@@ -174,11 +169,11 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
 
         if (!rtr) {
             auto *data = frame->data<uint32_t *>();
-            data[0]    = reg32(Reg::RBUF_DATA);
-            data[1]    = reg32(static_cast<uintptr_t>(Reg::RBUF_DATA) + 4);
+            data[0]    = reg32(Register::RBUF_DATA1);
+            data[1]    = reg32(Register::RBUF_DATA2);
         }
 
-        set8(Reg::RCTRL, RREL);
+        set8(Register::RCTRL, RREL);
         return frame;
     }
 
@@ -188,23 +183,22 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
     // ============================================================
     // Handlers
     // ============================================================
-
     static void onTrap(size_t) {
-        uint8_t flags = read8(Reg::RTIF);
-        uint8_t err   = read8(Reg::ERRINT);
+        uint8_t flags = read8(Register::RTIF);
+        uint8_t err   = read8(Register::ERRINT);
 
         if (!flags && !err) return;
 
         if ((flags & EIF) || (err & EPIF) || (err & BEIF)) onError(err);
 
-        if (flags) set8(Reg::RTIF, flags);
+        if (flags) set8(Register::RTIF, flags);
     }
 
     static void onError(uint8_t err) {
         if constexpr (!DebugMode) return;
 
-        uint8_t cause  = read8(Reg::EALCAP) & 0xE0;
-        uint8_t status = read8(Reg::STATUS);
+        uint8_t cause  = read8(Register::EALCAP) & 0xE0;
+        uint8_t status = read8(Register::STATUS);
 
         const char *msg = "Unknown Error";
 
@@ -230,13 +224,12 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
 
         Warn(msg);
 
-        set8(Reg::ERRINT, err);
+        set8(Register::ERRINT, err);
     }
 
     // ============================================================
     // Configuration
     // ============================================================
-
     void configure(size_t kbps, bool internalLB, bool externalLB) {
         for (const auto &cfg : TimingTable) {
             if (cfg.baudrate == kbps) {
@@ -245,11 +238,11 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
             }
         }
 
-        if (internalLB) set8(Reg::STATUS, LBI);
+        if (internalLB) set8(Register::STATUS, LBI);
 
         if (externalLB) {
-            set8(Reg::STATUS, LBE);
-            set8(Reg::RCTRL, SACK);
+            set8(Register::STATUS, LBE);
+            set8(Register::RCTRL, SACK);
         }
     }
 
@@ -258,14 +251,13 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
 
         uint32_t value = ((b[1] + b[2] - 1) << 0) | ((b[3] - 1) << 8) | ((b[4] - 1) << 16) | ((b[5] - 1) << 24);
 
-        reg32(Reg::S_SEG_1) = value;
+        reg32(Register::S_SEG_1) = value;
     }
 
     // ============================================================
     // MMIO Helpers
     // ============================================================
-
-    static uint8_t read8(Reg reg) {
+    static uint8_t read8(Register reg) {
         uintptr_t addr    = Base + static_cast<uintptr_t>(reg);
         uintptr_t aligned = utility::Align::down(addr, 4);
         uint8_t shift     = (addr - aligned) * 8;
@@ -273,7 +265,7 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
         return (reinterpret_cast<volatile uint32_t *>(aligned)[0] >> shift) & 0xFF;
     }
 
-    static void write8(Reg reg, uint8_t value) {
+    static void write8(Register reg, uint8_t value) {
         uintptr_t addr    = Base + static_cast<uintptr_t>(reg);
         uintptr_t aligned = utility::Align::down(addr, 4);
         uint8_t shift     = (addr - aligned) * 8;
@@ -287,15 +279,13 @@ template <typename Tag> class StarFiveCAN : public NetworkDevice {
         *ptr = tmp;
     }
 
-    static void set8(Reg reg, uint8_t mask) { write8(reg, read8(reg) | mask); }
+    static void set8(Register reg, uint8_t mask) { write8(reg, read8(reg) | mask); }
 
-    static void clear8(Reg reg, uint8_t mask) { write8(reg, read8(reg) & ~mask); }
+    static void clear8(Register reg, uint8_t mask) { write8(reg, read8(reg) & ~mask); }
 
-    static volatile uint32_t &reg32(Reg reg) {
+    static volatile uint32_t &reg32(Register reg) {
         return *reinterpret_cast<volatile uint32_t *>(Base + static_cast<uintptr_t>(reg));
     }
-
-    static volatile uint32_t &reg32(uintptr_t offset) { return *reinterpret_cast<volatile uint32_t *>(Base + offset); }
 };
 
 } // namespace DEPOS

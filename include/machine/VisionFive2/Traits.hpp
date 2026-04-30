@@ -22,7 +22,7 @@ class Ethernet;
 template <typename> class SiFiveU74CacheController;
 template <typename> class UART16550;
 template <typename> class DWC_Ether_QoS;
-template <typename> class StarFiveCAN;
+template <typename> class IPMS_CANFD;
 
 template <> struct Traits<Machine> {
     static constexpr const char NAME[] = "VisionFive2";
@@ -84,7 +84,7 @@ template <> struct Traits<UART> {
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 
-template <> struct Traits<StarFiveCAN<CAN0>> {
+template <> struct Traits<CAN0> {
     static constexpr unsigned long Address = Traits<MemoryMap>::CAN0;
     static constexpr unsigned int IRQs[]   = {112, 115};
 };
