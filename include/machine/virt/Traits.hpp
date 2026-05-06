@@ -47,6 +47,7 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long RamStart = Traits<Kernel>::Multitask ? VirtualRamStart : PhysicalRamStart;
     static constexpr unsigned long RamEnd   = Traits<Kernel>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
 
+    static constexpr unsigned long BootStart  = RamStart;
     static constexpr unsigned long KernelAddr = RamStart;
 
     static constexpr unsigned long MMIO  = 0x00000000;
@@ -55,7 +56,7 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long PLIC  = 0xc000000;
 };
 
-template <> struct Traits<UART16550<UART0>> {
+template <> struct Traits<UART0> {
     static constexpr unsigned long Address = Traits<MemoryMap>::UART0;
     static constexpr unsigned int Clock    = 10'000'000;
     static constexpr unsigned int BaudRate = 115200;

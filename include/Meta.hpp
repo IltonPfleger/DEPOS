@@ -1,6 +1,5 @@
 #pragma once
 
-
 namespace DEPOS {
 
 namespace Meta {
@@ -64,7 +63,7 @@ template <typename Head, typename... Tail, unsigned int Index> struct GetFromTyp
     using Result = typename GetFromTypeList<TypeList<Tail...>, Index - 1>::Result;
 };
 
-template <typename... Ts, typename F> void ForEachTypeList(Meta::TypeList<Ts...>, F &&f) {
+template <typename... Ts, typename Function> void forEach(TypeList<Ts...>, Function f) {
     (f.template operator()<Ts>(), ...);
 }
 
