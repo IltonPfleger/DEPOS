@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Meta.hpp>
 #include <Traits.hpp>
 
 namespace DEPOS {
@@ -14,10 +13,16 @@ class PLIC;
 class UART;
 class UART0;
 class GMAC0;
+// class IPv4;
 class IC;
+class CAN0;
+class CacheController;
+class Ethernet;
 
+template <typename> class SiFiveU74L2CacheController;
 template <typename> class UART16550;
 template <typename> class DWC_Ether_QoS;
+template <typename> class IPMS_CANFD;
 
 template <> struct Traits<Machine> {
     static constexpr const char NAME[] = "VisionFive2";
@@ -32,10 +37,10 @@ template <> struct Traits<CPU> {
 };
 
 template <> struct Traits<Memory> {
-    static constexpr unsigned long Order     = 30;
-    static constexpr unsigned long Size      = (1 << Order);
-    static constexpr unsigned long PageSize  = 4096;
-    static constexpr unsigned long StackSize = PageSize;
+    static constexpr unsigned long Order    = 30;
+    static constexpr unsigned long Size     = (1 << Order);
+    static constexpr unsigned int PageSize  = 4096;
+    static constexpr unsigned int StackSize = PageSize * 64;
 };
 
 template <> struct Traits<MemoryMap> {
@@ -45,31 +50,24 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long VirtualRamStart = 0xffffffff80000000;
     static constexpr unsigned long VirtualRamEnd   = VirtualRamStart + Traits<Memory>::Size;
 
-    static constexpr unsigned long RamStart = Traits<Kernel>::Multitask ? VirtualRamStart : PhysicalRamStart;
-    static constexpr unsigned long RamEnd   = Traits<Kernel>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
+    static constexpr unsigned long RamStart  = Traits<Kernel>::Multitask ? VirtualRamStart : PhysicalRamStart;
+    static constexpr unsigned long RamEnd    = Traits<Kernel>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
+    static constexpr unsigned long BootStart = RamStart;
 
     static constexpr unsigned long KernelAddr = RamStart;
 
     /* *** MMIO *** */
-    static constexpr unsigned long MMIO            = 0x00000000;
-    static constexpr unsigned long CacheController = 0x2010000;
-    static constexpr unsigned long GMAC0           = 0x16030000;
-    static constexpr unsigned long GMAC1           = 0x16040000;
-    static constexpr unsigned long UART0           = 0x10000000;
-    static constexpr unsigned long CLINT           = 0x2000000;
-    static constexpr unsigned long PLIC            = 0x0C000000;
+    static constexpr unsigned long MMIO  = 0x00000000;
+    static constexpr unsigned long GMAC0 = 0x16030000;
+    static constexpr unsigned long GMAC1 = 0x16040000;
+    static constexpr unsigned long UART0 = 0x10000000;
+    static constexpr unsigned long CAN0  = 0x130D0000;
+    static constexpr unsigned long CLINT = 0x2000000;
+    static constexpr unsigned long PLIC  = 0x0C000000;
 };
 
-template <> struct Traits<UART16550<UART0>> {
-    static constexpr unsigned long Address = Traits<MemoryMap>::UART0;
-    static constexpr unsigned int Clock    = 24'000'000;
-    static constexpr unsigned int BaudRate = 115200;
-    static constexpr unsigned int Shift    = 2;
-    static constexpr unsigned int IRQs[]   = {32};
-};
-
-template <> struct Traits<UART> {
-    typedef Meta::TypeList<UART16550<UART0>> Devices;
+template <> struct Traits<CacheController> {
+    typedef Meta::TypeList<SiFiveU74L2CacheController<decltype(0)>> Devices;
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 
@@ -77,19 +75,6 @@ template <> struct Traits<CLINT> {
     static constexpr bool Enable           = Traits<Timer>::Enable;
     static constexpr unsigned long Address = Traits<MemoryMap>::CLINT;
     static constexpr unsigned long Clock   = 4'000'000;
-};
-
-template <> struct Traits<DWC_Ether_QoS<GMAC0>> {
-    static constexpr const char *MAC       = "12:34:56:78:12:34";
-    static constexpr const char *IP        = "192.168.1.101";
-    static constexpr const char *Netmask   = "255.255.255.0";
-    static constexpr unsigned long Address = Traits<MemoryMap>::GMAC0;
-    static constexpr unsigned int IRQs[]   = {9};
-};
-
-template <> struct Traits<Ethernet> {
-    typedef Meta::TypeList<DWC_Ether_QoS<GMAC0>> Devices;
-    static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 
 template <> struct Traits<PLIC> {
@@ -102,6 +87,43 @@ template <> struct Traits<PLIC> {
         {5, 6},  // Hart 3: M->5, S->6
         {7, 8}   // Hart 4: M->7, S->8
     };
+};
+
+/* ********** UART ********** */
+template <> struct Traits<UART0> {
+    static constexpr unsigned long Address = Traits<MemoryMap>::UART0;
+    static constexpr unsigned int Clock    = 24'000'000;
+    static constexpr unsigned int BaudRate = 115200;
+    static constexpr unsigned int Shift    = 2;
+    static constexpr unsigned int IRQs[]   = {32};
+};
+
+template <> struct Traits<UART> {
+    typedef Meta::TypeList<UART16550<UART0>> Devices;
+    static constexpr unsigned int NumberOfDevices = Devices::Length;
+};
+
+/* ********** Ethernet ********** */
+// template <> struct Traits<IPv4> {
+//     static constexpr unsigned char Address[] = {150, 162, 62, 2};
+// };
+
+template <> struct Traits<GMAC0> {
+    static constexpr unsigned long Address = Traits<MemoryMap>::GMAC0;
+    static constexpr unsigned char MAC[]   = {12, 34, 56, 78, 12, 34};
+    static constexpr unsigned char IP[]    = {192, 168, 1, 167};
+    static constexpr unsigned int IRQs[]   = {9};
+};
+
+template <> struct Traits<Ethernet> {
+    typedef Meta::TypeList<DWC_Ether_QoS<GMAC0>> Devices;
+    static constexpr unsigned int NumberOfDevices = Devices::Length;
+};
+
+/* ********** CAN ********** */
+template <> struct Traits<CAN0> {
+    static constexpr unsigned long Address = Traits<MemoryMap>::CAN0;
+    static constexpr unsigned int IRQs[]   = {112, 115};
 };
 
 } // namespace DEPOS

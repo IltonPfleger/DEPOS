@@ -1,43 +1,48 @@
 #pragma once
 
-#include <Scheduler.hpp>
-#include <Spin.hpp>
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
-#include <memory/Segment.hpp>
+#include <scheduler/Scheduler.hpp>
 
 namespace DEPOS {
 
 class Thread {
   public:
     enum class State { RUNNING, READY, WAITING, FINISHING, FINISHED };
+
     using Scheduler = DEPOS::Scheduler<Thread>;
     using Criterion = Scheduler::Criterion;
     using Link      = Scheduler::Link;
-    using Queue     = Scheduler::Queue;
-    using Return    = void *;
-    using Argument  = void *;
-    using Function  = Return (*)(Argument);
-    using Context   = CPU::Context;
+    using Queue     = FIFO<Link>;
+
+    using Return   = void *;
+    using Argument = void *;
+    using Function = Return (*)(Argument);
+    using Context  = CPU::Context;
 
     Thread(Function, Argument = 0, Criterion = Criterion::NORMAL);
     ~Thread();
 
-    static Thread *running();
-    static void exit();
     static void init();
     static void run();
     static void sleep(Queue *, Spin *);
     static void wakeup(Queue *);
     static void yield();
-    static void join(Thread *);
-    static void dispatch(Thread *, Thread *, Spin *);
     static void reschedule();
-    static Return idle(Argument);
+    static void onTick();
+    static void join(Thread *);
 
   private:
-    Segment m_stack;
-    Segment m_kstack;
+    static Thread *running();
+    static void dispatch(Thread *, Thread *, Spin *);
+    static void entry(Function, Argument);
+    static Return idle(Argument);
+    static void epilogue();
+    static void exit();
+
+  private:
+    Chunk m_stack;
+    Chunk m_kstack;
     Queue *m_waiting;
     Criterion m_criterion;
     Link m_link;
@@ -47,25 +52,8 @@ class Thread {
   private:
     static inline Scheduler s_scheduler;
     static inline volatile unsigned int s_count;
-
-  private:
-    static void epilogue(Thread *t, Spin *spin) {
-        switch (t->m_state) {
-        case State::READY:
-            s_scheduler.insert(&t->m_link);
-            break;
-        case State::WAITING:
-            t->m_waiting->insert(&t->m_link);
-            spin->release();
-            break;
-        case State::FINISHING:
-            t->m_state = State::FINISHED;
-            CPU::Atomic::fdec(s_count);
-            break;
-        default:
-            break;
-        }
-    }
+    static inline Thread *s_previous[Traits<CPU>::Active];
+    static inline Spin *s_spin[Traits<CPU>::Active];
 };
 
 } // namespace DEPOS

@@ -1,7 +1,7 @@
-#pragma once
+#ifndef __TRAITS_HEADER__
+#define __TRAITS_HEADER__
 
-#include <Meta.hpp>
-#include <headers.hpp>
+#include <macros.hpp>
 #include <types.hpp>
 
 namespace DEPOS {
@@ -9,15 +9,13 @@ namespace DEPOS {
 class Thread;
 class Machine;
 class Timer;
-class FixedCPU;
+class FixedCore;
 class RR;
 class Kernel;
 class Application;
 class Debug;
 class Alarm;
-class Ethernet;
 class Console;
-class Virtual;
 class CPU;
 
 template <typename U> class Scheduler;
@@ -29,38 +27,39 @@ template <> struct Traits<Kernel> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr Hz Frequency = 1000;
-    static constexpr bool Enable  = true;
+    static constexpr Hz TickFrequency = 1000;
+    static constexpr bool Enable      = true;
 };
 
 template <> struct Traits<Alarm> {
-    static constexpr Hz Frequency = Traits<Timer>::Frequency;
-    static constexpr bool Enable  = true;
+    static constexpr Hz TickFrequency = Traits<Timer>::TickFrequency;
+    static constexpr bool Enable      = true;
 };
 
 template <> struct Traits<Debug> {
-    static constexpr bool Error = true;
+    static constexpr bool Error = false;
     static constexpr bool Trace = true;
 };
 
 template <> struct Traits<Console> {
-    static constexpr unsigned int Columns = 80;
+    static constexpr unsigned int Columns = 100;
 };
 
 } // namespace DEPOS
 
-#include <application/Traits.hpp>
-#include <machine/Traits.hpp>
+#include __MACHINE_TRAITS_HEADER
+#include __APPLICATION_TRAITS_HEADER
 
 namespace DEPOS {
 
 template <> struct Traits<Thread> {
-    static constexpr Hz RescheduleFrequency   = Traits<Timer>::Frequency;
-    static constexpr bool IsolatedKernelStack = true;
-    static constexpr unsigned UserStackSize   = Traits<Memory>::PageSize;
-    static constexpr unsigned KernelStackSize = IsolatedKernelStack ? Traits<Memory>::PageSize : 0;
-    // using Criterion                           = RR;
-    using Criterion = FixedCPU;
+    static constexpr Hz TickFrequency         = Traits<Timer>::TickFrequency;
+    static constexpr bool IsolatedKernelStack = Traits<Application>::Virtualized || Traits<Debug>::Error;
+    static constexpr size_t UserStackSize     = Traits<Memory>::StackSize;
+    static constexpr size_t KernelStackSize   = IsolatedKernelStack ? Traits<Memory>::StackSize : 0;
+    using Criterion                           = FixedCore;
 };
 
 } // namespace DEPOS
+
+#endif

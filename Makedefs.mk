@@ -1,3 +1,5 @@
+MAKEFLAGS += --warn-undefined-variables
+
 HERE := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 INCLUDE      := $(HERE)/include
@@ -9,7 +11,8 @@ SYSTEM      := $(BUILD)/DEPOS
 IMAGE       := $(BUILD)/Image.bin
 CONFIG      := $(BUILD)/Config
 
-TRAITS := $(BUILD)/Traits
+CONFIGURATOR := $(TOOLS)/TraitsLoggerGenerator
+TRAITS := $(shell find $(HERE) -name "Traits.hpp")
 MAPPER   := $(BUILD)/Mapper
 
 TOOL    := riscv64-linux-gnu
@@ -18,6 +21,7 @@ LD      := $(TOOL)-ld
 NM      := $(TOOL)-nm
 SIZE    := $(TOOL)-size
 OBJCOPY := $(TOOL)-objcopy
+GDB     := $(TOOL)-gdb
 DD      := dd
 TRUNCATE := truncate
 QEMU    := qemu-system-riscv64
@@ -25,8 +29,8 @@ QEMU    := qemu-system-riscv64
 MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
-CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic -Wfatal-errors
-CCFLAGS += -D__MACHINE=$(MACHINE) -D__ARCH=$(ARCH) -D__APPLICATION=$(APPLICATION) -g
+CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic -Wfatal-errors 
+CCFLAGS += -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -g
 
 ifeq ($(MAKELEVEL),0)
 run norun debug: $(CONFIG)
@@ -35,12 +39,11 @@ else
 build: $(IMAGE)
 endif
 
-.PHONY: $(CONFIG)
-$(CONFIG):
+$(CONFIG): $(TRAITS)
 	mkdir -p $(dir $@)
-	g++ $(CCFLAGS) $(TOOLS)/Traits.cpp -o $(TRAITS)
-	$(TRAITS) > $@.tmp
-	@cmp -s $@ $@.tmp && rm -f $@.tmp || (mv -f $@.tmp $@)
+	g++ $(CCFLAGS) -E $(HERE)/include/Traits.hpp -w -Wno-error=pragma-once-outside-header | $(CONFIGURATOR) > $(CONFIG).cpp
+	g++ $(CCFLAGS) $(CONFIG).cpp -o $(CONFIG).elf
+	$(CONFIG).elf > $@
 
 MARCH_CCFLAGS = $(CCFLAGS)
 ifneq ($(MAKECMDGOALS),clean)

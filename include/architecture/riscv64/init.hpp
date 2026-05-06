@@ -1,6 +1,7 @@
 #pragma once
 
 #include <architecture/riscv64/CPU.hpp>
+#include <architecture/riscv64/CoreContextHandler.hpp>
 #include <architecture/riscv64/HIC.hpp>
 #include <architecture/riscv64/IC.hpp>
 #include <architecture/riscv64/MIC.hpp>
@@ -8,6 +9,8 @@
 #include <architecture/riscv64/PLIC.hpp>
 #include <architecture/riscv64/PMP.hpp>
 #include <architecture/riscv64/SIC.hpp>
+
+#include <architecture/riscv64/TrapHandler.hpp>
 
 namespace DEPOS {
 
@@ -26,19 +29,25 @@ __attribute__((naked)) static void supervisor() {
 inline void init() {
     csrw<MachineMode::IE>(0);
 
+    TrapHandler::init();
+
+    size_t core = CPU::id<true>();
+
+    CoreContextHandler<MachineMode>::bind(CoreContextHandler<MachineMode>::init(core));
+
     if constexpr (Traits<RISCV>::Hypervisor)
         HIC::init();
     else
         MIC::init();
 
     if constexpr (Traits<RISCV>::Supervisor) {
+        CoreContext *context = CoreContextHandler<SupervisorMode>::init(core);
         supervisor();
+        CoreContextHandler<SupervisorMode>::bind(context);
         SIC::init();
     }
 
-    if constexpr (Traits<Kernel>::Multitask) {
-        SV39_MMU::init();
-    }
+    if constexpr (Traits<Kernel>::Multitask) MMU::init();
 }
 
 } // namespace riscv64

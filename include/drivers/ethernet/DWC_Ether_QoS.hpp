@@ -2,12 +2,12 @@
 #include <Alarm.hpp>
 #include <architecture/CPU.hpp>
 #include <drivers/Driver.hpp>
+#include <libraries/libc/string.h>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
 #include <network/NetworkDevice.hpp>
 #include <network/ethernet/Ethernet.hpp>
 #include <utils/Debug.hpp>
-#include <utils/string.hpp>
 
 namespace DEPOS {
 
@@ -272,6 +272,7 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
 };
 
 template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
+    typedef Meta::GetFromTypeList<Traits<DEPOS::CacheController>::Devices, 0>::Result Cache;
     typedef NetworkBuffer Buffer;
 
     struct Descriptor {
@@ -488,7 +489,8 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
 };
 
 template <typename Tag> class DWC_Ether_QoS final : public NetworkDevice<Ethernet> {
-    using MyTraits = Traits<DWC_Ether_QoS<Tag>>;
+  public:
+    using MyTraits = Traits<Tag>;
     using DMA      = DWC_Ether_QoS_DMA<MyTraits>;
     using MTL      = DWC_Ether_QoS_MTL<MyTraits::Address>;
     using PHY      = DWC_Ether_QoS_PHY<MyTraits::Address>;
@@ -508,7 +510,6 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkDevice<Etherne
         TraceOut();
     }
 
-  public:
     Buffer *receive() override { return m_dma->receive(); }
     Buffer *alloc() override { return 0; }
     int send(Buffer *buffer) override { return m_dma->send(buffer->data(), buffer->length()); }

@@ -1,15 +1,16 @@
 #pragma once
 
-#include <architecture/riscv64/CPU.hpp>
+#include <architecture/CPU.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/csrs.hpp>
+
 #include <memory/Memory.hpp>
 
 namespace DEPOS {
 
 namespace riscv64 {
 
-class SV39_MMU {
+class MMU {
   public:
     class TLB {
       public:
@@ -17,7 +18,7 @@ class SV39_MMU {
     };
 
     class PageTable {
-        friend SV39_MMU;
+        friend MMU;
 
       public:
         PageTable() = default;
@@ -42,9 +43,9 @@ class SV39_MMU {
             KernelRWX = V | R | W | X | A | D,
         };
 
-        static PageTable *init() {
+        static PageTable *alloc() {
             PageTable *pg = reinterpret_cast<PageTable *>(Memory::alloc(sizeof(PageTable)));
-            *pg            = PageTable();
+            *pg           = PageTable();
             return pg;
         }
 
@@ -65,21 +66,21 @@ class SV39_MMU {
             uintptr_t root     = satp & 0xFFFFFFFFFFF;
             PageTable *current = reinterpret_cast<PageTable *>(root << 12);
 
-            uintptr_t pte2 = current->entries[vpn2];
+            uintptr_t pte2 = current->m_entries[vpn2];
             if (!(pte2 & V)) return 0;
             if (pte2 & (R | W | X)) {
                 return ((pte2 >> 10) << 12) | (va & 0x3FFFFFFF);
             }
 
             PageTable *l1  = reinterpret_cast<PageTable *>((pte2 >> 10) << 12);
-            uintptr_t pte1 = l1->entries[vpn1];
+            uintptr_t pte1 = l1->m_entries[vpn1];
             if (!(pte1 & V)) return 0;
             if (pte1 & (R | W | X)) {
                 return ((pte1 >> 10) << 12) | (va & 0x1FFFFF);
             }
 
             PageTable *l0  = reinterpret_cast<PageTable *>((pte1 >> 10) << 12);
-            uintptr_t pte0 = l0->entries[vpn0];
+            uintptr_t pte0 = l0->m_entries[vpn0];
             if (!(pte0 & V)) return 0;
 
             return ((pte0 >> 10) << 12) | (va & 0xFFF);
@@ -93,14 +94,14 @@ class SV39_MMU {
             PageTable *l1;
             PageTable *l0;
 
-            if (!entries[vpn2]) {
-                l1 = PageTable::init();
+            if (!m_entries[vpn2]) {
+                l1 = PageTable::alloc();
                 set(vpn2, reinterpret_cast<uintptr_t>(l1), V);
             } else {
                 l1 = walk(vpn2);
             }
-            if (!l1->entries[vpn1]) {
-                l0 = PageTable::init();
+            if (!l1->m_entries[vpn1]) {
+                l0 = PageTable::alloc();
                 l1->set(vpn1, reinterpret_cast<uintptr_t>(l0), V);
             } else {
                 l0 = l1->walk(vpn1);
@@ -108,6 +109,7 @@ class SV39_MMU {
 
             return l0->set(vpn0, reinterpret_cast<uintptr_t>(pa), flags);
         }
+
         bool map(uintptr_t va, Flags flags) { return map(va, va, flags); }
 
         void map(uintptr_t va, uintptr_t pa, size_t size, Flags flags) {
@@ -126,13 +128,13 @@ class SV39_MMU {
 
       private:
         bool set(int vpn, uintptr_t addr, Flags flags) {
-            if (entries[vpn]) return false;
-            entries[vpn] = (addr >> 2) | flags;
+            if (m_entries[vpn]) return false;
+            m_entries[vpn] = (addr >> 2) | flags;
             return true;
         }
 
         PageTable *walk(int vpn) {
-            uintptr_t pte  = entries[vpn];
+            uintptr_t pte  = m_entries[vpn];
             uintptr_t addr = (pte >> 10) << 12;
             return reinterpret_cast<PageTable *>(addr);
         }
@@ -140,34 +142,29 @@ class SV39_MMU {
       private:
         static constexpr auto Size          = 4096;
         static constexpr auto EntriesNumber = 512;
-        alignas(Size) uintptr_t entries[EntriesNumber];
+        alignas(Size) uintptr_t m_entries[EntriesNumber];
     };
 
   public:
     static void init() {
-        riscv64::CPU::barrier();
+        auto mm = __amm.start();
 
         if (riscv64::CPU::id() == Traits<CPU>::BSP) {
-            s_kernel_page_table = PageTable::init();
-            s_kernel_page_table->map(Traits<MemoryMap>::VirtualRamStart,
-                                     Traits<MemoryMap>::PhysicalRamStart, Giga,
-                                     PageTable::KernelRWX);
-            s_kernel_page_table->map(Traits<MemoryMap>::PhysicalRamStart,
-                                     Traits<MemoryMap>::PhysicalRamStart, Giga,
-                                     PageTable::KernelRWX);
-            s_kernel_page_table->map(Traits<MemoryMap>::MMIO, Traits<MemoryMap>::MMIO, Giga,
-                                     PageTable::KernelRWX);
+            s_kernel_page_table = PageTable();
+            s_kernel_page_table.map(Traits<MemoryMap>::RamStart, mm, Giga, PageTable::KernelRWX);
+            s_kernel_page_table.map(mm, mm, Giga, PageTable::KernelRWX);
+            s_kernel_page_table.map(Traits<MemoryMap>::MMIO, Traits<MemoryMap>::MMIO, Giga, PageTable::KernelRWX);
         }
 
-        riscv64::CPU::barrier();
+        DEPOS::CPU::barrier();
 
-        s_kernel_page_table->load();
+        s_kernel_page_table.load();
     }
 
   private:
     static constexpr unsigned long Mode = 8UL << 60;
     static constexpr unsigned long Giga = (1 << 30);
-    static inline PageTable *s_kernel_page_table;
+    static inline PageTable s_kernel_page_table;
 };
 
 } // namespace riscv64

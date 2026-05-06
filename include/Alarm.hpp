@@ -13,7 +13,7 @@ class Alarm {
   public:
     static void at(Microsecond);
     static void udelay(Microsecond);
-    static void handler();
+    static void onTick();
 
   private:
     static bool elapsed(Microsecond);

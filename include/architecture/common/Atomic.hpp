@@ -1,5 +1,7 @@
 #pragma once
 
+namespace DEPOS {
+
 namespace ArchitectureCommon {
 
 class Atomic {
@@ -12,3 +14,5 @@ class Atomic {
 };
 
 } // namespace ArchitectureCommon
+
+} // namespace DEPOS

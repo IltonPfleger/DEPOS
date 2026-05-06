@@ -1,62 +1,47 @@
-#pragma once
+#ifndef __RISCV64_MIC_HEADER
+#define __RISCV64_MIC_HEADER
 
 #include <Traits.hpp>
 #include <architecture/riscv64/CLINT.hpp>
-#include <architecture/riscv64/Exception.hpp>
 #include <architecture/riscv64/IC.hpp>
 #include <architecture/riscv64/PLIC.hpp>
-#include <memory/Memory.hpp>
+#include <architecture/riscv64/TrapHandler.hpp>
 
 namespace DEPOS {
 
 namespace riscv64 {
 
 class MIC {
-    static constexpr bool ChangeStack = Traits<Thread>::IsolatedKernelStack || Traits<Kernel>::Multitask;
+    static constexpr bool IsMachineMode                 = !Traits<RISCV>::Supervisor;
+    static constexpr bool IsTimerEnable                 = Traits<DEPOS::Timer>::Enable;
+    static constexpr bool IsExternalInterruptionsEnable = Traits<PLIC>::Enable;
+    static constexpr bool ChangeStack = (IsMachineMode && Traits<Thread>::IsolatedKernelStack) || !IsMachineMode;
+    using MachineContextHandler       = DEPOS::riscv64::MachineContext<ChangeStack>;
 
   protected:
-    static void external(unsigned int) {
-        unsigned int id = PLIC::claim();
-        IC::dispatch(id, 0, true, true);
-        PLIC::complete(id);
-    }
-
-    static void dispatch(Context *context) {
-        intmax_t mcause   = csrr<MachineMode::CAUSE>();
-        bool interruption = mcause >> 63;
-        bool external     = false;
-        mcause &= ~(1ULL << 63);
-        IC::dispatch(mcause, context, interruption, external);
-    }
-
-    __attribute__((naked, optimize("O0"), aligned(4))) static void entry() {
-        dispatch(MachineContext::push<ChangeStack>());
-        MachineContext::pop<ChangeStack>();
+    static void forward(size_t, Context *) { CLINT::forward(); }
+    static void syscall(size_t, Context *context) {
+        CLINT::syscall();
+        context->pc += 4;
     }
 
   public:
     static void init() {
-        csrw<MachineMode::TVEC>(MIC::entry);
+        TrapHandler::init<MachineMode, ChangeStack>();
 
-        for (int i = 0; i < 16; i++)
-            IC::bind(i, Exception::dispatch, false, false);
-
-        if constexpr (Traits<Kernel>::Multitask) {
-            /* Keep Boot Stack For Handle M-Mode IRQs */
-            static_assert(!Traits<Kernel>::Multitask || ChangeStack);
-            csrw<MachineMode::SCRATCH>(Traits<MemoryMap>::PhysicalRamEnd - Traits<Memory>::PageSize * CPU::id());
-        }
-
-        if constexpr (Traits<DEPOS::Timer>::Enable && Traits<RISCV>::Supervisor) {
-            IC::bind(7, CLINT::forward, true, false);
-            csrs<MachineMode::IP>(SupervisorMode::TI);
-        }
-
-        if constexpr (!Traits<RISCV>::Supervisor && Traits<PLIC>::Enable) {
-            PLIC::init();
-            IC::bind(0, +[](unsigned int) {}, true, true);
-            IC::bind(11, external, true, false);
-            csrs<MachineMode::IE>(MachineMode::EI);
+        if constexpr (!IsMachineMode) {
+            CoreContextHandler<MachineMode>::stack(__amm.end() - Traits<Memory>::PageSize * CPU::id<true>());
+            if constexpr (IsTimerEnable) {
+                csrs<MachineMode::IP>(SupervisorMode::TI);
+                TrapHandler::install(7, forward);
+                TrapHandler::install(9, syscall, TrapHandler::Exception);
+            }
+        } else {
+            if constexpr (IsExternalInterruptionsEnable) {
+                PLIC::init();
+                TrapHandler::install(11, IC::onTrap);
+                csrs<MachineMode::IE>(MachineMode::EI);
+            }
         }
     }
 };
@@ -64,3 +49,5 @@ class MIC {
 } // namespace riscv64
 
 } // namespace DEPOS
+
+#endif

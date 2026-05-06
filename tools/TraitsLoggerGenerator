@@ -1,0 +1,44 @@
+#!/bin/bash
+
+echo "#include <iostream>"
+echo "#include <Traits.hpp>"
+echo "#include <concepts>"
+echo "#include <type_traits>" 
+
+echo ""
+echo "using namespace DEPOS;"
+echo ""
+echo "template<typename T>"
+echo "concept Printable = requires(std::ostream& os, T v) { os << v; };"
+echo ""
+echo "template<typename T>"
+echo "void print_trait(const char* name, const T& value) {"
+echo "    if constexpr (Printable<T>) {"
+echo "        std::cout << name << \" := \";"
+echo "        if constexpr (std::is_same_v<T, long> || std::is_same_v<T, unsigned long>) {"
+echo "            std::cout << std::hex << std::showbase << value << std::dec;"
+echo "        } else {"
+echo "            std::cout << value;"
+echo "        }"
+echo "        std::cout << std::endl;"
+echo "    }"
+echo "}"
+
+echo "int main() {"
+
+class=""
+while IFS= read -r line || [ -n "$line" ]; do
+    if [[ $line =~ struct[[:space:]]+Traits\<([a-zA-Z0-9_:]+)\> ]]; then
+        class="${BASH_REMATCH[1]}"
+    elif [[ $line =~ struct[[:space:]]+Traits\<.*\> ]]; then
+        class=""
+    elif [[ $line =~ static[[:space:]]+constexpr.*[[:space:]]([a-zA-Z0-9_]+)[[:space:]]*= ]]; then
+        member="${BASH_REMATCH[1]}"
+        if [[ -n "$class" ]]; then
+            echo "    print_trait(\"${class}_${member}\", Traits<${class}>::${member});"
+        fi
+    fi
+done
+
+echo "    return 0;"
+echo "}"

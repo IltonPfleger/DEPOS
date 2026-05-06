@@ -1,20 +1,14 @@
-#pragma once
+#ifndef __DEPOS_ARCHITECTURE_TIMER_HEADER__
+#define __DEPOS_ARCHITECTURE_TIMER_HEADER__
 
-#include <Alarm.hpp>
-#include <Thread.hpp>
-#include <Traits.hpp>
-#include <headers.hpp>
-#include <utils/Ticker.hpp>
+#include <macros.hpp>
 
 #include __TIMER_HEADER
 
 namespace DEPOS {
 
-using T1 =
-    Ticker<Traits<Timer>::Frequency / Traits<Thread>::RescheduleFrequency, Thread::reschedule, Traits<CPU>::Active>;
-
-using T2 = Ticker<Traits<Timer>::Frequency / Traits<Alarm>::Frequency, Alarm::handler, Traits<CPU>::Active>;
-
-class Timer : public __ARCH::Timer<T1, T2> {};
+class Timer : public __ARCH::Timer {};
 
 } // namespace DEPOS
+
+#endif

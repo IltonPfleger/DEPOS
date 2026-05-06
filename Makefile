@@ -14,30 +14,24 @@ ifneq ($(MAKELEVEL),0)
 norun: $(IMAGE)
 
 run: $(IMAGE)
-	-$(QEMU) -M $(MACHINE_NAME) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(IMAGE)
+	-$(QEMU) -M $(MACHINE) -smp $(CPU_Count) -bios none -nographic -m $(Memory_Size)b -kernel $(IMAGE)
 
 debug: $(IMAGE)
-	-$(QEMU) -M $(MACHINE_NAME) -smp $(CPUS) -bios none -nographic -m $(MEMORY_SIZE)b -kernel $(IMAGE) -S -gdb tcp::1234
+	-$(QEMU) -M $(MACHINE) -smp $(CPU_Count) -bios none -nographic -m $(Memory_Size)b -kernel $(IMAGE) -S -gdb tcp::1234
 
 endif
 
-
+$(OBJECTS): $(CONFIG)
 
 gdb:
-	riscv64-linux-gnu-gdb -ex "file build/DEPOS.elf" -ex "target extended-remote:1234"
-	#	-ex "file ../linux/vmlinux"\
+	$(GDB)\
+		-ex "file build/DEPOS.elf"\
+		-ex "target extended-remote:1234"\
 
-#		#-ex "set confirm off"\
-	#		#-ex "add-inferior"\
-	#		#-ex "inferior 2"\
-	#		#-ex "attach 2"\
-	#		#-ex "set confirm off"
-#		#-ex "file $(SYSTEM).elf"
-#
 $(IMAGE): $(SYSTEM).bin $(BINARY)
 	$(DD) bs=1M conv=notrunc if=$(SYSTEM).bin of=$(IMAGE)
-	$(DD) bs=1M conv=notrunc if=$(BINARY) of=$(IMAGE) oflag=seek_bytes seek=$$(( $(APPLICATION_ADDR) - $(RAM_START) ))
-	$(TRUNCATE) -s %$(PAGE_SIZE) $(IMAGE)
+	$(DD) bs=1M conv=notrunc if=$(BINARY) of=$(IMAGE) oflag=seek_bytes seek=$$(( $(Application_Addr) - $(MemoryMap_BootStart) ))
+	$(TRUNCATE) -s %$(Memory_PageSize) $(IMAGE)
 
 $(SYSTEM).bin : $(SYSTEM).elf $(ELF) $(COMPILED_TOOLS)
 	$(MAPPER) $(ELF) $(MAP)
@@ -53,13 +47,13 @@ $(ELF): $(SYSTEM).elf
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS) all
 
 $(SYSTEM).elf: $(OBJECTS)
-	$(LD) --no-gc-sections -e _init --section-start=.init=$(KERNEL_ADDR) --image-base=$(KERNEL_ADDR) -o $@ $(OBJECTS)
+	$(LD) --no-gc-sections -e _init --section-start=.init=$(MemoryMap_BootStart) --image-base=$(MemoryMap_BootStart) -o $@ $(OBJECTS)
 
 $(BUILD)/%: $(TOOLS)/%.cpp 
 	mkdir -p $(dir $@)
 	g++ $(CCFLAGS) -o $@ $<
 
-$(BUILD)/%.o: src/%.cpp $(CONFIG)
+$(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)
 	$(CC) $(MARCH_CCFLAGS) -MMD -MP -c $< -o $@
 

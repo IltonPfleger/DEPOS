@@ -17,7 +17,7 @@ void Alarm::at(Microsecond us) {
 
 void Alarm::udelay(Microsecond us) { Alarm::at(Timer::now() + us); }
 
-void Alarm::handler() {
+void Alarm::onTick() {
     int core   = CPU::id();
     List &list = s_delays[core];
 

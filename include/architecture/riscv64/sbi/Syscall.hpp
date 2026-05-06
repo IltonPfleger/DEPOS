@@ -1,6 +1,7 @@
 #pragma once
 
 #include <architecture/riscv64/sbi/Base.hpp>
+#include <architecture/riscv64/sbi/Core.hpp>
 #include <architecture/riscv64/sbi/Time.hpp>
 
 namespace DEPOS {
@@ -13,7 +14,7 @@ class Syscall {
   public:
     static constexpr unsigned int CODE = 9;
 
-    static void dispatch(unsigned int id, Context *c) {
+    static void dispatch(size_t id, Context *c) {
         switch (c->a7) {
         case Base::EID:
             Base::handler(c);
@@ -21,8 +22,11 @@ class Syscall {
         case Time::EID:
             Time::handler(c);
             break;
+        case Core::EID:
+            Core::handler(c);
+            break;
         default:
-            Exception::dispatch(id, c);
+            ExceptionHandler::onTrap(id, c);
         }
         c->pc += 4;
     }

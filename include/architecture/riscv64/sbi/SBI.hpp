@@ -13,19 +13,15 @@ namespace DEPOS {
 
 namespace riscv64 {
 
-namespace sbi {
-
 class SBI {
   public:
     static void init() {
-        IC::bind(Syscall::CODE, Syscall::dispatch, false, false);
-        IC::bind(IllegalInstruction::CODE, IllegalInstruction::dispatch, false, false);
-        IC::bind(LoadAccessFault::CODE, LoadAccessFault::dispatch, false, false);
-        IC::bind(StoreAccessFault::CODE, StoreAccessFault::dispatch, false, false);
+        TrapHandler::install(sbi::Syscall::CODE, sbi::Syscall::dispatch, TrapHandler::Exception);
+        TrapHandler::install(sbi::IllegalInstruction::CODE, sbi::IllegalInstruction::dispatch, TrapHandler::Exception);
+        TrapHandler::install(sbi::LoadAccessFault::CODE, sbi::LoadAccessFault::dispatch, TrapHandler::Exception);
+        TrapHandler::install(sbi::StoreAccessFault::CODE, sbi::StoreAccessFault::dispatch, TrapHandler::Exception);
     }
 };
-
-} // namespace sbi
 
 } // namespace riscv64
 

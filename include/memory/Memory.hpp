@@ -2,7 +2,6 @@
 
 #include <Spin.hpp>
 #include <Traits.hpp>
-#include <memory/MemoryMap.hpp>
 #include <memory/allocators/Buddy.hpp>
 
 namespace DEPOS {
@@ -18,7 +17,7 @@ class Memory {
     static uintptr_t virt2phys(uintptr_t);
 
   private:
-    static inline Allocator *s_allocator = nullptr;
+    static inline Allocator s_allocator;
     static inline Spin s_spin;
 };
 

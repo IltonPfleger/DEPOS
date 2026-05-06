@@ -1,9 +1,7 @@
 #pragma once
 
 #include <Traits.hpp>
-#include <abstractions/VirtualCPU.hpp>
 #include <architecture/CPU.hpp>
-// #include <drivers/uart/UART16550.hpp>
 #include <hypervisor/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
 #include <utils/Observer.hpp>

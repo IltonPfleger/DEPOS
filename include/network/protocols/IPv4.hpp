@@ -2,7 +2,6 @@
 
 #include <Meta.hpp>
 #include <machine/Machine.hpp>
-#include <machine/Traits.hpp>
 #include <network/GenericAddress.hpp>
 #include <network/NetworkDevice.hpp>
 #include <network/ethernet/Checksum.hpp>
@@ -73,7 +72,7 @@ template <typename Device> class Network : public Device::Observer, public Obser
     using ARP      = DEPOS::ARP<Device, Network>;
     using Family   = typename Device::Family;
     using HA       = typename Family::Address;
-    using MyTraits = Traits<Device>;
+    using MyTraits = Device::MyTraits;
 
   public:
     enum { Protocol = IPv4::Protocol };
@@ -123,7 +122,7 @@ template <typename Device> class Network : public Device::Observer, public Obser
   private:
     bool is_broadcast(PA pa) {
         if (pa == PA::broadcast()) return true;
-        if ((PA(MyTraits::Netmask) | pa) == PA::broadcast()) return true;
+        // if ((PA(MyTraits::Netmask) | pa) == PA::broadcast()) return true;
         return false;
     }
 

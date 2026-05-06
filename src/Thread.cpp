@@ -1,14 +1,32 @@
-#include <Alarm.hpp>
 #include <Thread.hpp>
 #include <Traits.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
-#include <memory/Segment.hpp>
 #include <utils/Debug.hpp>
 
 namespace DEPOS {
 
 Thread *Thread::running() { return s_scheduler.current(); }
+
+void Thread::entry(Function f, Argument a) {
+    epilogue();
+    CPU::Interrupt::enable();
+    f(a);
+    exit();
+};
+
+Thread::Return Thread::idle(Argument) {
+    while (s_count > Traits<CPU>::Active) {
+        CPU::idle();
+        reschedule();
+    }
+
+    CPU::Interrupt::disable();
+    CPU::barrier();
+    if (CPU::id() == Traits<CPU>::BSP) Trace("\n*** Shutdown! ***\n");
+    CPU::halt();
+    return 0;
+}
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
     CPU::mb();
@@ -16,28 +34,41 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
     ERROR(!next);
     ERROR(next == previous);
 
-    CPU::Context context;
-    previous->m_context = &context;
-    next->m_state       = State::RUNNING;
+    s_previous[CPU::id()] = previous;
+    s_spin[CPU::id()]     = spin;
 
-    Context::swap(previous->m_context, next->m_context, epilogue, previous, spin);
+    next->m_state = State::RUNNING;
+
+    Context::swap(&previous->m_context, next->m_context);
+
+    epilogue();
 }
 
-Thread::Return Thread::idle(Argument) {
-    while (s_count > Traits<CPU>::Active) {
-        reschedule();
-    }
+void Thread::epilogue() {
+    unsigned int core = CPU::id();
+    Thread *previous  = s_previous[core];
+    Spin *spin        = s_spin[core];
 
-    CPU::Interruptions::disable();
-    CPU::barrier();
-    if (CPU::id() == Traits<CPU>::BSP) Console::cout << "\n*** Shutdown! ***\n";
-    CPU::halt();
-    return 0;
+    switch (previous->m_state) {
+    case State::READY:
+        s_scheduler.insert(&previous->m_link);
+        break;
+    case State::WAITING:
+        previous->m_waiting->insert(&previous->m_link);
+        spin->release();
+        break;
+    case State::FINISHING:
+        previous->m_state = State::FINISHED;
+        CPU::Atomic::fdec(s_count);
+        break;
+    default:
+        break;
+    }
 }
 
 Thread::Thread(Function f, Argument a, Criterion c)
-    : m_stack(Traits<Thread>::UserStackSize),
-      m_kstack(Traits<Thread>::KernelStackSize),
+    : m_stack(Memory::alloc(Traits<Thread>::UserStackSize), Traits<Thread>::UserStackSize),
+      m_kstack(Memory::alloc(Traits<Thread>::KernelStackSize), Traits<Thread>::KernelStackSize),
       m_waiting(0),
       m_criterion(c),
       m_link(Link(this, m_criterion)),
@@ -45,18 +76,21 @@ Thread::Thread(Function f, Argument a, Criterion c)
 
     TraceIn(this);
 
-    m_context  = reinterpret_cast<Context *>(m_stack.end() - sizeof(Context));
-    *m_context = Context(m_stack.end(), m_kstack.end(), f, exit, a);
+    m_context = Context::create(m_stack, m_kstack, entry, f, a);
 
-    bool enabled = CPU::Interruptions::disable();
+    bool enabled = CPU::Interrupt::disable();
     CPU::Atomic::finc(s_count);
     s_scheduler.insert(&m_link);
-    if (enabled) CPU::Interruptions::enable();
+    if (enabled) CPU::Interrupt::enable();
 
     TraceOut();
 }
 
-Thread::~Thread() { Thread::join(this); }
+Thread::~Thread() {
+    Thread::join(this);
+    Memory::free(m_stack.data(), m_stack.size());
+    Memory::free(m_kstack.data(), m_kstack.size());
+}
 
 void Thread::join(Thread *joinable) {
     while (joinable->m_state != State::FINISHED) {
@@ -65,7 +99,7 @@ void Thread::join(Thread *joinable) {
 }
 
 void Thread::exit() {
-    CPU::Interruptions::disable();
+    CPU::Interrupt::disable();
 
     Thread *previous = running();
 
@@ -77,8 +111,12 @@ void Thread::exit() {
 
 void Thread::init() {
     TraceIn();
+
+    new (&s_scheduler) Scheduler();
+
     for (int i = 0; i < Traits<CPU>::Active; ++i)
-        new (Heap::SYSTEM) Thread(idle, 0, Criterion::IDLE);
+        new Thread(idle, 0, Criterion::IDLE);
+
     TraceOut();
 }
 
@@ -90,8 +128,10 @@ void Thread::run() {
     dispatch(previous, next);
 }
 
+void Thread::onTick() { reschedule(); }
+
 void Thread::reschedule() {
-    bool enabled = CPU::Interruptions::disable();
+    bool enabled = CPU::Interrupt::disable();
 
     Thread *previous = running();
 
@@ -103,11 +143,13 @@ void Thread::reschedule() {
         dispatch(previous, next->value());
     }
 
-    if (enabled) CPU::Interruptions::enable();
+    if (enabled) CPU::Interrupt::enable();
 }
 
+void Thread::yield() { Thread::reschedule(); }
+
 void Thread::sleep(Queue *m_waiting, Spin *spin) {
-    bool enabled = CPU::Interruptions::disable();
+    bool enabled = CPU::Interrupt::disable();
 
     Thread *previous = running();
 
@@ -116,9 +158,11 @@ void Thread::sleep(Queue *m_waiting, Spin *spin) {
 
     Link *next = s_scheduler.remove();
 
+    ERROR(!next);
+
     dispatch(previous, next->value(), spin);
 
-    if (enabled) CPU::Interruptions::enable();
+    if (enabled) CPU::Interrupt::enable();
 }
 
 void Thread::wakeup(Queue *m_waiting) {
@@ -128,9 +172,9 @@ void Thread::wakeup(Queue *m_waiting) {
     awake->m_state   = State::READY;
     awake->m_waiting = nullptr;
 
-    bool enabled = CPU::Interruptions::disable();
+    bool enabled = CPU::Interrupt::disable();
     s_scheduler.insert(&awake->m_link);
-    if (enabled) CPU::Interruptions::enable();
+    if (enabled) CPU::Interrupt::enable();
 }
 
 } // namespace DEPOS

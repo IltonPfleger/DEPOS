@@ -1,7 +1,7 @@
 #pragma once
 
+#include <libraries/libc/string.h>
 #include <types.hpp>
-#include <utils/string.hpp>
 
 namespace DEPOS {
 
@@ -11,47 +11,53 @@ template <size_t Length> struct GenericAddress {
 
     template <typename... Args>
     constexpr GenericAddress(Args... args)
-        : m_data{static_cast<unsigned char>(args)...} {
+        : _data{static_cast<unsigned char>(args)...} {
         static_assert(sizeof...(Args) == Length);
     }
 
-    GenericAddress(const char *s) {
-        const char *token = s;
-        const char *next  = token;
-        for (unsigned int i = 0; i < Length; i++) {
-            if (token) {
-                m_data[i] = atol(token);
-                next      = strchr(token, '.');
-                if (!next) next = strchr(token, ':');
-                if (next) token = next + 1;
-            }
-        }
+    constexpr GenericAddress(const unsigned char *data) {
+        for (size_t i = 0; i < Length; ++i)
+            _data[i] = data[i];
     }
 
-    constexpr operator const unsigned char *() const { return m_data; }
+    // GenericAddress(const char *s) {
+    //     const char *token = s;
+    //     const char *next  = token;
+    //     for (unsigned int i = 0; i < Length; i++) {
+    //         if (token) {
+    //             _data[i] = atol(token);
+    //             next      = strchr(token, '.');
+    //             if (!next) next = strchr(token, ':');
+    //             if (next) token = next + 1;
+    //         }
+    //     }
+    // }
+
+    constexpr operator const unsigned char *() const { return _data; }
+
     constexpr bool operator==(const GenericAddress &other) const {
-        return memcmp(m_data, other.m_data, sizeof(m_data)) == 0;
+        return memcmp(_data, other._data, sizeof(_data)) == 0;
     }
     constexpr bool operator!=(const GenericAddress &other) const { return !(*this == other); }
 
-    constexpr GenericAddress operator|(const GenericAddress &other) const {
-        GenericAddress result;
-        for (size_t i = 0; i < Length; ++i) {
-            result.m_data[i] = m_data[i] | other.m_data[i];
-        }
-        return result;
-    }
+    // constexpr GenericAddress operator|(const GenericAddress &other) const {
+    //     GenericAddress result;
+    //     for (size_t i = 0; i < Length; ++i) {
+    //         result._data[i] = _data[i] | other._data[i];
+    //     }
+    //     return result;
+    // }
 
     static constexpr GenericAddress broadcast() {
         GenericAddress result{};
         for (size_t i = 0; i < Length; ++i) {
-            result.m_data[i] = 0xFF;
+            result._data[i] = 0xFF;
         }
         return result;
     }
 
   private:
-    unsigned char m_data[Length];
+    unsigned char _data[Length];
 } __attribute__((packed));
 
 } // namespace DEPOS

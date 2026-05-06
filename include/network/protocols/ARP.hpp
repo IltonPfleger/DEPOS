@@ -109,7 +109,7 @@ template <typename Device, typename Network> class ARP : public Device::Observer
         arp->operation = CPU::htobe16(static_cast<uint16_t>(op));
         arp->sha       = m_nic->address();
         arp->spa       = m_network->address();
-        arp->tha       = (op == Opcode::REQUEST) ? HA("00:00:00:00:00:00") : tha;
+        arp->tha       = (op == Opcode::REQUEST) ? HA() : tha;
         arp->tpa       = tpa;
         NetworkBuffer buffer(data, sizeof(data));
         m_nic->send(&buffer);

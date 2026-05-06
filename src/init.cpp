@@ -1,22 +1,17 @@
-#include <Thread.hpp>
-#include <application/Application.hpp>
 #include <architecture/Timer.hpp>
 #include <machine/Machine.hpp>
+
+#include <Application.hpp>
+#include <Thread.hpp>
 #include <memory/Memory.hpp>
-#include <utils/BSS.hpp>
-#include <utils/Debug.hpp>
 
 using namespace DEPOS;
 
 extern "C" void init() {
     if (CPU::id() == Traits<CPU>::BSP) {
-        Console::init();
+        Console::cout << '\n';
         TraceIn();
     }
-
-    CPU::barrier();
-
-    Machine::init();
 
     CPU::barrier();
 
@@ -24,8 +19,8 @@ extern "C" void init() {
 
     if (CPU::id() == Traits<CPU>::BSP) {
         Memory::init();
-        Application::init();
         Thread::init();
+        Application::init();
     }
 
     CPU::barrier();
@@ -34,6 +29,6 @@ extern "C" void init() {
 
 extern "C" __attribute__((optimize("O0"), naked, used, section(".init"))) void _init() {
     CPU::init();
-    BSS::init();
+    Machine::init();
     init();
 }

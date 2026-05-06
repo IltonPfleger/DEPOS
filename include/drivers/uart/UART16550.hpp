@@ -8,7 +8,7 @@
 namespace DEPOS {
 
 template <typename Tag> class UART16550 : public Driver, public Observed<const unsigned char *, size_t> {
-    using MyTraits = Traits<UART16550<Tag>>;
+    using MyTraits = Traits<Tag>;
 
     static constexpr unsigned long Address    = MyTraits::Address;
     static constexpr unsigned int Clock       = MyTraits::Clock;
@@ -52,7 +52,7 @@ template <typename Tag> class UART16550 : public Driver, public Observed<const u
         LSR_TX_EMPTY = 1 << 5,
     };
 
-    static void handler(unsigned int) {
+    static void handler(size_t) {
         unsigned char buffer[32];
         unsigned int i = 0;
         while (Reg8(Address, LSR) & LSR_RX_READY && i < sizeof(buffer)) {
@@ -66,7 +66,7 @@ template <typename Tag> class UART16550 : public Driver, public Observed<const u
   public:
     static void init() {
         for (auto IRQ : MyTraits::IRQs)
-            IC::bind(IRQ, handler);
+            IC::install(IRQ, handler);
     }
 
     static UART16550 *instance() {

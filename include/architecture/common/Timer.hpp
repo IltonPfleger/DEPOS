@@ -1,21 +1,32 @@
 #pragma once
 
+#include <Alarm.hpp>
+#include <Thread.hpp>
 #include <Traits.hpp>
-#include <utils/Ticker.hpp>
+#include <architecture/common/TimerTicker.hpp>
+
+namespace DEPOS {
 
 namespace ArchitectureCommon {
 
-template <typename... Tickers> class TimerTemplate : public Tickers... {
+class Timer {
   public:
-    static void handler(unsigned int channel) { (instance()->template update<Tickers>(channel), ...); }
+    static void onTick(size_t channel) {
+        Meta::forEach(m_tickers, [channel](auto &ticker) { ticker.onTick(channel); });
+    }
 
   private:
-    TimerTemplate() = default;
-    template <typename T> void update(unsigned int channel) { static_cast<T *>(this)->tick(channel); }
-    static TimerTemplate *instance() {
-        static TimerTemplate $;
-        return &$;
-    }
+    static constexpr uintmax_t TimerTickFrequency  = Traits<DEPOS::Timer>::TickFrequency;
+    static constexpr uintmax_t AlarmTickFrequency  = TimerTickFrequency / Traits<Alarm>::TickFrequency;
+    static constexpr uintmax_t ThreadTickFrequency = TimerTickFrequency / Traits<Thread>::TickFrequency;
+    static constexpr uintmax_t Active              = Traits<DEPOS::CPU>::Active;
+
+    using ThreadTimerTicker = TimerTicker<ThreadTickFrequency, Thread::onTick, Active>;
+    using AlarmTimerTicker  = TimerTicker<AlarmTickFrequency, Alarm::onTick, Active>;
+
+    static inline constinit Meta::Tuple<ThreadTimerTicker, AlarmTimerTicker> m_tickers{};
 };
 
 } // namespace ArchitectureCommon
+
+} // namespace DEPOS

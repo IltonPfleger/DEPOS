@@ -1,14 +1,13 @@
 #include <Traits.hpp>
-#include <abstractions/Cache.hpp>
-#include <abstractions/VirtualCPU.hpp>
 #include <architecture/CPU.hpp>
+#include <architecture/VCPU.hpp>
 #include <hypervisor/GenericVirtualMachine.hpp>
 #include <hypervisor/virtio/Console.hpp>
+#include <libraries/libc/string.h>
 #include <machine/Machine.hpp>
 #include <network/ethernet/ip/TFTP.hpp>
 #include <network/ethernet/ip/UDP.hpp>
 #include <utils/Console.hpp>
-#include <utils/string.hpp>
 
 using namespace DEPOS;
 
@@ -99,7 +98,7 @@ int main() {
     unsigned char *current = buffer;
     unsigned int remaining = LinuxMemorySize;
 
-    TFTP<Device> tftp("192.168.1.100");
+    TFTP<Device> tftp({192, 168, 1, 100});
 
     unsigned char *kernel = current;
     size_t kernel_size    = tftp.request("Image", kernel, remaining);
