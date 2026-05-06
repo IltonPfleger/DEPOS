@@ -1,6 +1,6 @@
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
-#include <drivers/ethernet/Dummy.hpp>
+// #include <drivers/ethernet/Dummy.hpp>
 #include <hypervisor/GenericVirtualMachine.hpp>
 #include <hypervisor/virtio/Console.hpp>
 #include <machine/Machine.hpp>
@@ -155,20 +155,20 @@ int main() {
     dtb->edit("virtio_mmio@1", "interrupts", &irq, sizeof(irq));
 
     // Network
-    typedef virtio::Network<Dummy, 0x30200000> Network;
-    irq     = CPU::htobe32(Network::IRQ);
-    regs[0] = CPU::htobe32(Network::Address >> 32);
-    regs[1] = CPU::htobe32(Network::Address);
-    regs[2] = CPU::htobe32(0x0);
-    regs[3] = CPU::htobe32(0x1000);
-    dtb->edit("virtio_mmio@2", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
-    dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
-    dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
+    // typedef virtio::Network<Dummy, 0x30200000> Network;
+    // irq     = CPU::htobe32(Network::IRQ);
+    // regs[0] = CPU::htobe32(Network::Address >> 32);
+    // regs[1] = CPU::htobe32(Network::Address);
+    // regs[2] = CPU::htobe32(0x0);
+    // regs[3] = CPU::htobe32(0x1000);
+    // dtb->edit("virtio_mmio@2", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
+    // dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
+    // dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
 
-    Console::cout << "\n *** Linux is at core " << CPU::id() << " ***\n ";
-    CPU::mb();
+    // Console::cout << "\n *** Linux is at core " << CPU::id() << " ***\n ";
+    // CPU::mb();
 
-    typedef GenericVirtualMachine<Serial, Network> MyMachine;
+    typedef GenericVirtualMachine<Serial> MyMachine;
     MyMachine *vm = new MyMachine(kernel, LinuxMemorySize);
     vm->start(0, dtb);
 

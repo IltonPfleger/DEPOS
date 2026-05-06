@@ -11,7 +11,7 @@
 
 namespace DEPOS {
 
-template <unsigned long Base> class DWC_Ether_QoS_MDIO : Driver {
+template <uintptr_t Base> class DWC_Ether_QoS_MDIO : Driver {
     enum Register { BASE = 0x200, DATA = 0x204 };
     enum Bit {
         WRITE = 0x1 << 2,
@@ -62,19 +62,22 @@ template <unsigned long Base> class DWC_Ether_QoS_MDIO : Driver {
     }
 };
 
-template <unsigned long Base> class DWC_Ether_QoS_PHY {
+template <uintptr_t Base> class DWC_Ether_QoS_PHY {
     using MDIO = DWC_Ether_QoS_MDIO<Base>;
 
     enum Register {
-        BASIC_CONTROL          = 0x0,
-        BASIC_STATUS           = 0x1,
-        STATUS                 = 0x11,
-        CHIP_CONFIG            = 0xA001,
-        RGMII_CONFIG1          = 0xA003,
-        PAD_DRIVE_STRENGTH_CFG = 0xA010,
-        SYNCE_CFG              = 0xA012,
+        BASIC_CONTROL                = 0x0,
+        BASIC_STATUS                 = 0x1,
+        STATUS                       = 0x11,
+        MASTER_SLAVE_STATUS_REGISTER = 0x0A,
+        CHIP_CONFIG                  = 0xA001,
+        RGMII_CONFIG1                = 0xA003,
+        PAD_DRIVE_STRENGTH_CFG       = 0xA010,
+        SYNCE_CFG                    = 0xA012,
     };
     enum Bit {
+        LOCAL_RECEIVER_STATUS                  = 1 << 13,
+        REMOTE_RECEIVER                        = 1 << 12,
         STATUS_LINK_STATUS                     = 1 << 10,
         BASIC_CONTROL_RESET                    = 1 << 15,
         BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE  = 1 << 12,
@@ -98,10 +101,7 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
         while (MDIO::read(Phy, BASIC_CONTROL) & SOFTWARE_RESET)
             ;
 
-        MDIO::set(Phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE | BASIC_CONTROL_RE_AUTO_NEGOTIATION);
-
-        while (!(MDIO::read(Phy, BASIC_STATUS) & (BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE)))
-            ;
+        negotiate();
 
         // rgmii_sw_dr_2 = <0x0>;
         MDIO::clear45(Phy, PAD_DRIVE_STRENGTH_CFG, 1 << 12);
@@ -140,7 +140,61 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
             ;
     }
 
+    // static void init() {
+    //     TraceIn();
+
+    //    MDIO::set(Phy, BASIC_CONTROL, SOFTWARE_RESET);
+
+    //    do {
+    //    } while (MDIO::read(Phy, BASIC_CONTROL) & SOFTWARE_RESET);
+
+    //    // rgmii_sw_dr_2 = <0x0>;
+    //    MDIO::clear45(Phy, PAD_DRIVE_STRENGTH_CFG, 1 << 12);
+
+    //    // rgmii_sw_dr = <0x3>;
+    //    MDIO::set45(Phy, PAD_DRIVE_STRENGTH_CFG, 3 << 4);
+
+    //    // rgmii_sw_dr_rxc = <0x6>;
+    //    MDIO::clear45(Phy, PAD_DRIVE_STRENGTH_CFG, 7 << 13);
+    //    MDIO::set45(Phy, PAD_DRIVE_STRENGTH_CFG, 6 << 13);
+
+    //    // rxc_dly_en = <0>;
+    //    MDIO::clear45(Phy, CHIP_CONFIG, 1 << 8);
+
+    //    // rx_delay_sel = <0xa>;
+    //    MDIO::clear45(Phy, RGMII_CONFIG1, 0xF << 10);
+    //    MDIO::set45(Phy, RGMII_CONFIG1, 0xa << 10);
+
+    //    // tx_delay_sel_fe = <5>;
+    //    MDIO::clear45(Phy, RGMII_CONFIG1, 0xF << 4);
+    //    MDIO::set45(Phy, RGMII_CONFIG1, 5 << 4);
+
+    //    // tx_delay_sel = <0xa>;
+    //    MDIO::clear45(Phy, RGMII_CONFIG1, 0xF);
+    //    MDIO::set45(Phy, RGMII_CONFIG1, 0xa);
+
+    //    // tx_inverted_1000 = <0x1>;
+    //    MDIO::set45(Phy, RGMII_CONFIG1, 1 << 14);
+
+    //    negotiate();
+
+    //    // if (speed() == 1000) {
+    //    //     MDIO::set45(Phy, SYNCE_CFG, SYNCE_CFG_ENABLE | SYNCE_CFG_CLK_125M);
+    //    //     MDIO::clear45(Phy, SYNCE_CFG, 0x7);
+    //    // }
+    //}
+
     static bool duplex() { return MDIO::read(Phy, STATUS) & (1 << 13); }
+
+    static bool negotiate() {
+        MDIO::set(Phy, BASIC_CONTROL, BASIC_CONTROL_AUTO_NEGOTIATION_ENABLE | BASIC_CONTROL_RE_AUTO_NEGOTIATION);
+        while (!(MDIO::read(Phy, BASIC_STATUS) & BASIC_STATUS_AUTO_NEGOTIATION_COMPLETE))
+            ;
+        while (!((MDIO::read(Phy, MASTER_SLAVE_STATUS_REGISTER) & LOCAL_RECEIVER_STATUS) &&
+                 (MDIO::read(Phy, MASTER_SLAVE_STATUS_REGISTER) & REMOTE_RECEIVER)))
+            ;
+        return true;
+    }
 
     static unsigned speed() {
         switch ((MDIO::read(Phy, STATUS) >> 14) & 0x3) {
@@ -148,8 +202,10 @@ template <unsigned long Base> class DWC_Ether_QoS_PHY {
             return 1000;
         case 1:
             return 100;
-        default:
+        case 0:
             return 10;
+        default:
+            return ~0U;
         }
     }
 
@@ -462,7 +518,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkDevice<Etherne
     static auto *instance() {
         static DWC_Ether_QoS instance;
         return &instance;
-	}
+    }
 
   private:
     DMA *m_dma;
