@@ -1,28 +1,57 @@
-#pragma once
-
-#include <types.hpp>
+#ifndef __DEPOS_NETWORK_BUFFER_HEADER__
+#define __DEPOS_NETWORK_BUFFER_HEADER__
 
 namespace DEPOS {
 
-struct NetworkBuffer {
-    NetworkBuffer() = default;
-    NetworkBuffer(void *data, size_t length)
-        : m_data(static_cast<unsigned char *>(data)),
-          m_length(length) {}
+class NetworkBuffer {
+  public:
+    NetworkBuffer(void *start, size_t size)
+        : _start(reinterpret_cast<uint8_t *>(start)),
+          _size(size),
+          _data(_start),
+          _length(_size),
+          _references(0) {}
 
-    auto &data() const { return m_data; }
-    auto &data() { return m_data; }
+    template <typename T = uint8_t *> [[nodiscard]] T data(this auto &&self) { return reinterpret_cast<T>(self._data); }
 
-    auto &length() const { return m_length; }
-    auto &length() { return m_length; }
+    void length(size_t l) { _length = l; }
 
-    auto &id() { return m_id; }
-    auto &id() const { return m_id; }
+    void references(size_t r) { _references = r; }
+
+    [[nodiscard]] size_t references() { return _references; }
+
+    [[nodiscard]] size_t length() const { return _length; }
+
+    [[nodiscard]] uint8_t *start() const { return _start; }
+
+    [[nodiscard]] size_t size() const { return _size; }
+
+    [[nodiscard]] size_t offset() const { return static_cast<size_t>(data() - start()); }
+
+    [[nodiscard]] size_t remaining() const { return size() - offset(); }
+
+    bool advance(size_t bytes) {
+        if (bytes > remaining()) return false;
+        _data += bytes;
+        return true;
+    }
+
+    bool rewind(size_t bytes) {
+        if (bytes > offset()) return false;
+        _data -= bytes;
+        return true;
+    }
 
   private:
-    unsigned char *m_data;
-    size_t m_length;
-    size_t m_id;
+    uint8_t *const _start;
+    const size_t _size;
+
+    uint8_t *_data;
+    size_t _length;
+
+    volatile mutable size_t _references;
 };
 
 } // namespace DEPOS
+
+#endif

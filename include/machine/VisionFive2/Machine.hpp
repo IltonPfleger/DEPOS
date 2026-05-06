@@ -76,7 +76,7 @@ class VisionFive2 : Driver {
             aoncrg_init();
         }
 
-        Meta::ForEachTypeList(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
+        Meta::forEach(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
         riscv64::CPU::barrier();
     }
 };
