@@ -34,10 +34,12 @@ template <typename Device> class TFTP : Observer<const UDP::Datagram *> {
         m_expected_block = 1;
         m_server_port    = 69;
 
-        unsigned char packet[256];
+        auto *message = m_channel.alloc(100);
+
+        // unsigned char packet[256];
         size_t name_length = strlen(filename);
 
-        auto *opcode = reinterpret_cast<uint16_t *>(header(packet));
+        auto *opcode = reinterpret_cast<uint16_t *>(message->data());
         *opcode      = CPU::htobe16(static_cast<uint16_t>(Opcode::RRQ));
 
         char *ptr = reinterpret_cast<char *>(opcode + 1);
@@ -56,7 +58,11 @@ template <typename Device> class TFTP : Observer<const UDP::Datagram *> {
 
         size_t tftp_payload_size = reinterpret_cast<uint8_t *>(ptr) - reinterpret_cast<uint8_t *>(opcode);
 
-        m_channel.send(m_server_ip, m_server_port, packet, tftp_payload_size);
+        message->length(tftp_payload_size);
+
+        m_channel.send(m_server_ip, m_server_port, message);
+
+        m_channel.free(message);
 
         m_semaphore.p();
 
@@ -99,11 +105,12 @@ template <typename Device> class TFTP : Observer<const UDP::Datagram *> {
     }
 
     void ack(uint16_t block) {
-        unsigned char buffer[256];
-        auto *packet = reinterpret_cast<uint16_t *>(header(buffer));
+        auto *buffer = m_channel.alloc(4);
+        auto *packet = reinterpret_cast<uint16_t *>(header(buffer->data()));
         packet[0]    = CPU::htobe16(static_cast<uint16_t>(Opcode::ACK));
         packet[1]    = CPU::htobe16(block);
-        m_channel.send(m_server_ip, m_server_port, buffer, 4);
+        m_channel.send(m_server_ip, m_server_port, buffer);
+        m_channel.free(buffer);
     }
 
   private:

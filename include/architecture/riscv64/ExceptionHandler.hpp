@@ -30,9 +30,10 @@ class ExceptionHandler {
 
   public:
     static void onTrap(size_t id, Context *c) {
-        (void)id;
-        (void)c;
-        // Console::panic();
+        Console::cout << Console::panic << Console::endl;
+        Console::cout << "Ohh, It's a Trap!" << Console::endl;
+        Console::cout << "id: " << id << Console::endl;
+        Console::cout << "context: " << c << Console::endl;
         // Console::println("\nOhh, It's a Trap!");
         // Console::println("context: ", c);
         // Console::println("id: ", id);

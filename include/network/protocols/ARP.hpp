@@ -1,125 +1,148 @@
-#pragma once
+#ifndef __DEPOS_NETWORK_PROTOCOLS_ARP_HEADER__
+#define __DEPOS_NETWORK_PROTOCOLS_ARP_HEADER__
 
-#include <Spin.hpp>
+#include <ConditionalVariable.hpp>
+#include <Thread.hpp>
+#include <collections/Hash.hpp>
 #include <network/NetworkDevice.hpp>
-#include <utils/Observer.hpp>
-#include <utils/lists/Hash.hpp>
+#include <network/NetworkProtocolIdentifier.hpp>
+#include <network/protocols/IPv4.hpp>
 
 namespace DEPOS {
 
-template <typename Device, typename Network> class ARP : public Device::Observer {
-  private:
-    enum { Protocol = 0x0806 };
-    enum class Opcode : uint16_t { REQUEST = 1, REPLY = 2 };
+template <typename T> class ARP : public NetworkDevice::Observer {
+  public:
+    enum Operation { REQUEST = 1, REPLY = 2 };
 
-    typedef typename Device::Family Family;
-    typedef typename Family::Address HA;
-    typedef typename Network::Address PA;
+    typedef typename T::Address HA;
+    typedef IPv4 Protocol;
+    typedef Protocol::Address PA;
 
     struct Header {
-        uint16_t htype{CPU::htobe16(1)};
-        uint16_t ptype{CPU::htobe16(Network::Protocol)};
-        uint8_t hlen{sizeof(HA)};
-        uint8_t plen{sizeof(PA)};
-        uint16_t operation{0};
+        Header()
+            : htype(CPU::htobe16(1)),
+              ptype(CPU::htobe16(Protocol::Protocol)),
+              hlen(sizeof(HA)),
+              plen(sizeof(PA)),
+              operation(CPU::htobe16(0)) {}
+
+        uint16_t htype;
+        uint16_t ptype;
+        uint8_t hlen;
+        uint8_t plen;
+        uint16_t operation;
         HA sha;
         PA spa;
-        HA tha;
-        PA tpa;
+        HA dha;
+        PA dpa;
     } __attribute__((packed));
 
     struct Entry {
-        HA ha;
-        PA pa;
-        Thread::Queue waiting{};
+        HA ha{};
+        PA pa{};
+        uint32_t waiting{0};
+        ConditionalVariable waiters{};
         bool valid{false};
-        uint32_t pending{0};
-
-        void wakeup() {
-            while (pending > 0) {
-                pending--;
-                Thread::wakeup(&waiting);
-            }
-        }
     };
 
     struct Hasher {
-        size_t operator()(const PA &addr) const { return addr[3]; }
+        size_t operator()(const PA &pa) const { return pa[3]; }
     };
 
-    using Table = Hash<PA, Entry, 256, Hasher>;
+    typedef Hash<PA, Entry, 256, Hasher> Table;
 
-  public:
-    ARP(Device *nic, Network *network)
-        : m_nic(nic),
-          m_network(network) {
-        m_nic->attach(this);
+    ARP(T *device, const PA &pa)
+        : _device(device),
+          _pa(pa) {
+        _device->attach(this);
     }
 
+    ~ARP() { _device->detach(this); }
+
     HA resolve(const PA &pa) {
-        HA ha;
         while (true) {
-            m_spin.acquire();
-            auto &entry = m_table[pa];
+            _lock.acquire();
+            auto &entry = _table[pa];
 
             if (entry.valid && entry.pa == pa) {
-                ha = entry.ha;
-                m_spin.release();
+                HA ha = entry.ha;
+                _lock.release();
                 return ha;
             }
 
-            entry.pending++;
-            send(HA::broadcast(), pa, Opcode::REQUEST);
-            Thread::sleep(&entry.waiting, &m_spin);
+            entry.waiting++;
+            request(pa);
+            entry.waiters.wait(&_lock);
         }
     }
 
-    void update(const Device::Buffer *buffer) override {
-        auto *eth = reinterpret_cast<const Family::Header *>(buffer->data());
-        if (eth->protocol() != Protocol) return;
-
-        const auto *arp = reinterpret_cast<const Header *>(eth + 1);
-        auto op         = static_cast<Opcode>(CPU::be16toh(arp->operation));
-
-        if (op == Opcode::REQUEST)
-            request(*arp);
-        else if (op == Opcode::REPLY)
-            reply(*arp);
-    }
-
   private:
-    void request(const Header &arp) {
-        if (arp.tpa == m_network->address()) send(arp.sha, arp.spa, Opcode::REPLY);
+    void update(const NetworkBuffer *buffer) {
+        if (buffer->protocol() != NetworkProtocolIdentifier::ARP()) return;
+        Header *header = buffer->data<Header *>();
+        if (CPU::be16toh(header->operation) == REPLY) {
+            onReply(*header);
+        } else {
+            onRequest(*header);
+        }
     }
 
-    void reply(const Header &arp) {
-        m_spin.acquire();
-        auto &entry = m_table[arp.spa];
-        entry.pa    = arp.spa;
-        entry.ha    = arp.sha;
+    void request(const PA &pa) {
+        NetworkBuffer *buffer = _device->alloc(sizeof(Header));
+
+        Header *header = new (buffer->data()) Header();
+
+        header->operation = CPU::htobe16(REQUEST);
+
+        header->sha = _device->address();
+        header->spa = _pa;
+
+        header->dha = HA();
+        header->dpa = pa;
+
+        _device->broadcast(NetworkProtocolIdentifier::ARP(), buffer);
+        _device->free(buffer);
+    }
+
+    void onReply(const Header &received) {
+        _lock.acquire();
+        auto &entry = _table[received.spa];
+        entry.pa    = received.spa;
+        entry.ha    = received.sha;
         entry.valid = true;
-        entry.wakeup();
-        m_spin.release();
+        entry.waiters.signalize();
+        _lock.release();
     }
 
-    void send(const HA &tha, const PA &tpa, Opcode op) {
-        alignas(64) unsigned char data[Family::MTU];
-        auto *eth      = new (data) Family::Header(tha, m_nic->address(), Protocol);
-        auto *arp      = new (eth + 1) Header();
-        arp->operation = CPU::htobe16(static_cast<uint16_t>(op));
-        arp->sha       = m_nic->address();
-        arp->spa       = m_network->address();
-        arp->tha       = (op == Opcode::REQUEST) ? HA() : tha;
-        arp->tpa       = tpa;
-        NetworkBuffer buffer(data, sizeof(data));
-        m_nic->send(&buffer);
+    void onRequest(const Header &received) {
+        if (received.dpa == _pa) {
+            NetworkBuffer *buffer = _device->alloc(sizeof(Header));
+
+            Header *header = new (buffer->data()) Header();
+
+            header->operation = CPU::htobe16(REPLY);
+
+            header->sha = _device->address();
+            header->spa = _pa;
+
+            header->dha = received.sha;
+            header->dpa = received.spa;
+
+            _device->send(received.sha, NetworkProtocolIdentifier::ARP(), buffer);
+
+            _device->free(buffer);
+        }
     }
 
   private:
-    Device *m_nic;
-    Network *m_network;
-    Table m_table;
-    Spin m_spin;
+    T *_device;
+    Spin _lock;
+    PA _pa;
+    Table _table;
 };
 
+template <typename T> ARP(T *) -> ARP<T>;
+
 } // namespace DEPOS
+
+#endif

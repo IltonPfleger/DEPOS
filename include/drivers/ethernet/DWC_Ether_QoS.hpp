@@ -5,6 +5,7 @@
 #include <libraries/libc/string.h>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
+#include <network/NetworkAddressableDevice.hpp>
 #include <network/NetworkDevice.hpp>
 #include <network/ethernet/Ethernet.hpp>
 #include <utils/Debug.hpp>
@@ -419,6 +420,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
 
         Cache::flush(buffer, sizeof(DWC_Ether_QoS_Buffer));
 
+        buffer->reset();
         buffer->length(descriptor->length());
         buffer->id(m_rx_head);
 
@@ -465,16 +467,20 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     }
 };
 
-template <typename Tag> class DWC_Ether_QoS final : public NetworkDevice<Ethernet> {
+template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDevice {
   public:
     using MyTraits = Traits<Tag>;
     using DMA      = DWC_Ether_QoS_DMA<MyTraits>;
     using MTL      = DWC_Ether_QoS_MTL<MyTraits::Address>;
     using PHY      = DWC_Ether_QoS_PHY<MyTraits::Address>;
     using MAC      = DWC_Ether_QoS_MAC<MyTraits::Address>;
-    using Base     = NetworkDevice<Family>;
+    using Address  = Ethernet::Address;
+    using Header   = Ethernet::Header;
 
-    DWC_Ether_QoS() {
+    using NetworkAddressableDevice::send;
+
+    DWC_Ether_QoS()
+        : _address(MyTraits::MAC) {
         TraceIn();
         PHY::init();
         DMA::reset();
@@ -483,15 +489,47 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkDevice<Etherne
         MAC::duplex(PHY::duplex());
         MAC::speed(PHY::speed());
         MAC::init();
-        Base::init();
+        NetworkDevice::init();
         TraceOut();
     }
 
-    Buffer *receive() override { return m_dma->receive(); }
-    Buffer *alloc() override { return 0; }
-    int send(Buffer *buffer) override { return m_dma->send(buffer->data(), buffer->length()); }
-    void free(Buffer *b) override { m_dma->release(static_cast<DWC_Ether_QoS_Buffer *>(b)); }
-    Address address() { return MyTraits::MAC; }
+    NetworkBuffer *doAlloc(size_t length) override {
+        size_t size           = length + sizeof(Header);
+        NetworkBuffer *buffer = new NetworkBuffer(new unsigned char[size], size);
+        buffer->advance(sizeof(Header));
+        return buffer;
+    }
+
+    void doFree(NetworkBuffer *buffer) override {
+        delete[] buffer->start();
+        delete buffer;
+    }
+
+    NetworkBuffer *doReceive() override {
+        NetworkBuffer *buffer = m_dma->receive();
+        if (buffer) {
+            buffer->protocol(buffer->data<Header *>()->protocol());
+            buffer->advance(sizeof(Header));
+        }
+        return buffer;
+    }
+
+    void doRelease(NetworkBuffer *buffer) override { m_dma->release(static_cast<DWC_Ether_QoS_Buffer *>(buffer)); }
+    int doSend(NetworkBuffer *buffer) override { return m_dma->send(buffer->data(), buffer->length()); }
+
+    NetworkAddress address() const override { return _address; }
+    void address(const NetworkAddress &address) override { new (&_address) Address(address); }
+
+    int broadcast(const NetworkProtocolIdentifier &protocol, NetworkBuffer *buffer) override {
+        return send(Ethernet::broadcast(), protocol, buffer);
+    }
+
+    int
+    send(const NetworkAddress &destination, const NetworkProtocolIdentifier &protocol, NetworkBuffer *buffer) override {
+        buffer->rewind(sizeof(Header));
+        new (buffer->data()) Header(destination, address(), protocol);
+        return doSend(buffer);
+    };
 
     static auto *instance() {
         static DWC_Ether_QoS instance;
@@ -499,6 +537,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkDevice<Etherne
     }
 
   private:
+    Address _address;
     DMA *m_dma;
 };
 

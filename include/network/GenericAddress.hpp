@@ -1,6 +1,7 @@
 #pragma once
 
 #include <libraries/libc/string.h>
+#include <network/NetworkAddress.hpp>
 #include <types.hpp>
 
 namespace DEPOS {
@@ -11,42 +12,26 @@ template <size_t Length> struct GenericAddress {
 
     template <typename... Args>
     constexpr GenericAddress(Args... args)
-        : _data{static_cast<unsigned char>(args)...} {
-        static_assert(sizeof...(Args) == Length);
-    }
+        : _data{static_cast<unsigned char>(args)...} {}
 
     constexpr GenericAddress(const unsigned char *data) {
         for (size_t i = 0; i < Length; ++i)
             _data[i] = data[i];
     }
 
-    // GenericAddress(const char *s) {
-    //     const char *token = s;
-    //     const char *next  = token;
-    //     for (unsigned int i = 0; i < Length; i++) {
-    //         if (token) {
-    //             _data[i] = atol(token);
-    //             next      = strchr(token, '.');
-    //             if (!next) next = strchr(token, ':');
-    //             if (next) token = next + 1;
-    //         }
-    //     }
-    // }
+    constexpr GenericAddress(const NetworkAddress &address) {
+        for (size_t i = 0; i < Length && i < address.length(); i++) {
+            _data[i] = address[i];
+        }
+    }
+
+    [[nodiscard]] operator NetworkAddress() const { return NetworkAddress(_data, Length); }
+
+    [[nodiscard]] bool operator==(const GenericAddress &) const = default;
+
+    // Remove
 
     constexpr operator const unsigned char *() const { return _data; }
-
-    constexpr bool operator==(const GenericAddress &other) const {
-        return memcmp(_data, other._data, sizeof(_data)) == 0;
-    }
-    constexpr bool operator!=(const GenericAddress &other) const { return !(*this == other); }
-
-    // constexpr GenericAddress operator|(const GenericAddress &other) const {
-    //     GenericAddress result;
-    //     for (size_t i = 0; i < Length; ++i) {
-    //         result._data[i] = _data[i] | other._data[i];
-    //     }
-    //     return result;
-    // }
 
     static constexpr GenericAddress broadcast() {
         GenericAddress result{};

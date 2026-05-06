@@ -40,18 +40,26 @@ class Channel : private Observer<const typename Network::Buffer *>, public Obser
 
     ~Channel() { m_network->detach(this); }
 
-    void send(Network::Address address, uint16_t port, unsigned char *data, size_t length) {
-        auto *l2     = reinterpret_cast<Ethernet::Header *>(data);
-        auto *l3     = reinterpret_cast<Network::Header *>(l2 + 1);
-        auto *header = reinterpret_cast<Header *>(l3 + 1);
+    NetworkBuffer *alloc(size_t size) { return m_network->alloc(size + sizeof(Header)); }
+    void free(NetworkBuffer *buffer) { return m_network->free(buffer); }
 
+    void send(Network::Address address, uint16_t port, NetworkBuffer *buffer) {
+        buffer->rewind(sizeof(Header));
+        buffer->length(buffer->length() + sizeof(Header));
+
+        auto *header          = reinterpret_cast<Header *>(buffer->data());
         header->m_source      = CPU::htobe16(m_port);
         header->m_destination = CPU::htobe16(port);
-        header->m_length      = CPU::htobe16(length + sizeof(Header));
+        header->m_length      = CPU::htobe16(buffer->length());
         header->m_checksum    = 0;
 
-        m_network->send(address, Protocol, data, length + sizeof(Header));
+        m_network->send(address, Protocol, buffer);
     }
+
+    // void send(Network::Address address, uint16_t port, unsigned char *data, size_t length) {
+    //     auto *l2     = reinterpret_cast<Ethernet::Header *>(data);
+    //     auto *l3     = reinterpret_cast<Network::Header *>(l2 + 1);
+    //     auto *header = reinterpret_cast<Header *>(l3 + 1);
 
   private:
     void update(const Network::Buffer *packet) {

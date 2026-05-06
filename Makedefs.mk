@@ -29,7 +29,7 @@ QEMU    := qemu-system-riscv64
 MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
-CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic -Wfatal-errors 
+CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic
 CCFLAGS += -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -g
 
 ifeq ($(MAKELEVEL),0)
