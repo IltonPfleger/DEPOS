@@ -34,6 +34,10 @@ class ExceptionHandler {
         Console::cout << "Ohh, It's a Trap!" << Console::endl;
         Console::cout << "id: " << id << Console::endl;
         Console::cout << "context: " << c << Console::endl;
+        Console::cout << "pc: " << Console::hex << c->pc << Console::endl;
+        Console::cout << "cause: " << c->cause << Console::endl;
+        Console::cout << "tval: " << Console::hex << c->value << Console::endl;
+
         // Console::println("\nOhh, It's a Trap!");
         // Console::println("context: ", c);
         // Console::println("id: ", id);

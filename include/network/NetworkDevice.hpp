@@ -2,7 +2,7 @@
 
 #include <Thread.hpp>
 #include <network/NetworkBuffer.hpp>
-#include <utils/Observer.hpp>
+#include <utility/Observer.hpp>
 
 namespace DEPOS {
 

@@ -3,19 +3,24 @@
 
 #include <ConditionalVariable.hpp>
 #include <Thread.hpp>
-#include <collections/Hash.hpp>
 #include <network/NetworkDevice.hpp>
 #include <network/NetworkProtocolIdentifier.hpp>
-#include <network/protocols/IPv4.hpp>
+#include <utility/collections/Hash.hpp>
 
 namespace DEPOS {
 
-template <typename T> class ARP : public NetworkDevice::Observer {
+class ARP : public NetworkDevice::Observer {
+  public:
+    virtual ~ARP()                                         = default;
+    virtual void bind(const NetworkAddress &)              = 0;
+    virtual NetworkAddress resolve(const NetworkAddress &) = 0;
+};
+
+template <typename Device, typename Protocol> class _ARP : public ARP {
   public:
     enum Operation { REQUEST = 1, REPLY = 2 };
 
-    typedef typename T::Address HA;
-    typedef IPv4 Protocol;
+    typedef typename Device::Address HA;
     typedef Protocol::Address PA;
 
     struct Header {
@@ -51,20 +56,21 @@ template <typename T> class ARP : public NetworkDevice::Observer {
 
     typedef Hash<PA, Entry, 256, Hasher> Table;
 
-    ARP(T *device, const PA &pa)
-        : _device(device),
-          _pa(pa) {
+    _ARP(Device *device)
+        : _device(device) {
         _device->attach(this);
     }
 
-    ~ARP() { _device->detach(this); }
+    ~_ARP() { _device->detach(this); }
 
-    HA resolve(const PA &pa) {
+    void bind(const NetworkAddress &a) { _pa = a; }
+
+    NetworkAddress resolve(const NetworkAddress &pa) {
         while (true) {
             _lock.acquire();
             auto &entry = _table[pa];
 
-            if (entry.valid && entry.pa == pa) {
+            if (entry.valid && entry.pa == PA(pa)) {
                 HA ha = entry.ha;
                 _lock.release();
                 return ha;
@@ -135,13 +141,11 @@ template <typename T> class ARP : public NetworkDevice::Observer {
     }
 
   private:
-    T *_device;
+    Device *_device;
     Spin _lock;
     PA _pa;
     Table _table;
 };
-
-template <typename T> ARP(T *) -> ARP<T>;
 
 } // namespace DEPOS
 

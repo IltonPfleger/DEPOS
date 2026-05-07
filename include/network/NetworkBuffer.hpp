@@ -40,13 +40,11 @@ class NetworkBuffer {
     void reset() { _data = _start; }
 
     bool advance(size_t bytes) {
-        // if (bytes > remaining()) return false;
         _data += bytes;
         return true;
     }
 
     bool rewind(size_t bytes) {
-        // if (bytes > offset()) return false;
         _data -= bytes;
         return true;
     }

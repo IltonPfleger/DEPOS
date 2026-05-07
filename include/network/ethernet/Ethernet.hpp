@@ -2,7 +2,6 @@
 
 #include <architecture/CPU.hpp>
 #include <network/GenericAddress.hpp>
-#include <utils/Observer.hpp>
 
 namespace DEPOS {
 

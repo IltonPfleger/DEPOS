@@ -53,7 +53,7 @@ class VisionFive2 : Driver {
     }
 
     static void aoncrg_init() {
-        Reg32(k_aon_crg_base, AONCRG_GMAC0_RMII_RTX) = 30;
+        // Reg32(k_aon_crg_base, AONCRG_GMAC0_RMII_RTX) = 30;
         Reg32(k_aon_crg_base, AONCRG_GMAC0_TX) |= GATE;
         Reg32(k_aon_crg_base, AONCRG_GMAC0_TX) |= (1 << 24);
         Reg32(k_aon_crg_base, AONCRG_GMAC0_TX_INV) |= INVERTER;

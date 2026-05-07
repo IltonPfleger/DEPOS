@@ -16,7 +16,8 @@ class Console {
         using Modifier = Stream &(*)(Stream &);
 
       public:
-        Stream() : m_base(10) {}
+        Stream()
+            : m_base(10) {}
 
         Stream &operator<<(Modifier modifier) { return modifier(*this); }
 
@@ -33,7 +34,9 @@ class Console {
             return *this;
         }
 
-        template <unsigned Length> Stream &operator<<(const char (&s)[Length]) { return *this << static_cast<const char *>(s); }
+        template <unsigned Length> Stream &operator<<(const char (&s)[Length]) {
+            return *this << static_cast<const char *>(s);
+        }
 
         template <Meta::Pointer T> Stream &operator<<(T p) { return *this << reinterpret_cast<void *>(p); }
 
@@ -51,7 +54,7 @@ class Console {
             }
 
             char buffer[64];
-            int i = 0;
+            int i              = 0;
             const char *digits = "0123456789abcdef";
 
             while (x > 0) {
@@ -70,7 +73,7 @@ class Console {
 
         Stream &operator<<(void *p) {
             unsigned int old = m_base;
-            m_base = 16;
+            m_base           = 16;
             *this << reinterpret_cast<uintptr_t>(p);
             m_base = old;
             return *this;
@@ -97,7 +100,7 @@ class Console {
 
   private:
     static volatile inline unsigned long s_panic = 0;
-    static inline unsigned int s_column = 0;
+    static inline unsigned int s_column          = 0;
 };
 
 } // namespace DEPOS

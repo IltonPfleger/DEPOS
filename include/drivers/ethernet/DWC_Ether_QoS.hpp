@@ -165,10 +165,8 @@ template <uintptr_t Base> class DWC_Ether_QoS_PHY {
             return 1000;
         case 1:
             return 100;
-        case 0:
-            return 10;
         default:
-            return ~0U;
+            return 10;
         }
     }
 
@@ -405,7 +403,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
         while (true) {
             Cache::flush(&d, sizeof(Descriptor));
             if (!(d.des3 & Descriptor::OWN)) {
-                return d.des3 & Descriptor::ES;
+                return (d.des3 & Descriptor::ES) ? 0 : length;
             }
         }
     }
@@ -484,10 +482,10 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDev
         TraceIn();
         PHY::init();
         DMA::reset();
-        MTL::init();
         m_dma = new DMA();
         MAC::duplex(PHY::duplex());
         MAC::speed(PHY::speed());
+        MTL::init();
         MAC::init();
         NetworkDevice::init();
         TraceOut();
@@ -497,6 +495,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDev
         size_t size           = length + sizeof(Header);
         NetworkBuffer *buffer = new NetworkBuffer(new unsigned char[size], size);
         buffer->advance(sizeof(Header));
+        buffer->length(length);
         return buffer;
     }
 
@@ -520,13 +519,13 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDev
     NetworkAddress address() const override { return _address; }
     void address(const NetworkAddress &address) override { new (&_address) Address(address); }
 
-    int broadcast(const NetworkProtocolIdentifier &protocol, NetworkBuffer *buffer) override {
+    int broadcast(uint16_t protocol, NetworkBuffer *buffer) override {
         return send(Ethernet::broadcast(), protocol, buffer);
     }
 
-    int
-    send(const NetworkAddress &destination, const NetworkProtocolIdentifier &protocol, NetworkBuffer *buffer) override {
+    int send(const NetworkAddress &destination, uint16_t protocol, NetworkBuffer *buffer) override {
         buffer->rewind(sizeof(Header));
+        buffer->length(buffer->length() + sizeof(Header));
         new (buffer->data()) Header(destination, address(), protocol);
         return doSend(buffer);
     };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utils/Lists.hpp>
+#include <utility/collections/SimpleList.hpp>
 
 namespace DEPOS {
 
@@ -8,7 +8,7 @@ template <typename... Args> class Observer;
 template <typename... Args> class Observed;
 
 template <typename... Args> class Observed {
-    using Link = Node<Observer<Args...> *>;
+    using Link = collections::Node<Observer<Args...> *>;
     friend class Observer<Args...>;
 
   public:
@@ -25,7 +25,7 @@ template <typename... Args> class Observed {
     }
 
   private:
-    LIFO<Link> m_observers;
+    collections::SimpleList<Link> m_observers;
 };
 
 template <typename... Args> class Observer {
