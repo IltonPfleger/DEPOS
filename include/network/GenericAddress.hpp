@@ -37,6 +37,8 @@ template <size_t Length> struct GenericAddress {
 
     [[nodiscard]] operator const uint8_t *() const { return _data; }
 
+    [[nodiscard]] size_t length() const { return Length; }
+
     [[nodiscard]] bool operator==(const GenericAddress &) const = default;
 
     static constexpr GenericAddress broadcast() {

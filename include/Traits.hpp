@@ -17,6 +17,7 @@ class Debug;
 class Alarm;
 class Console;
 class CPU;
+class IPv4;
 
 template <typename U> class Scheduler;
 

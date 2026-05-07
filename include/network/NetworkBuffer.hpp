@@ -23,7 +23,7 @@ class NetworkBuffer {
     }
 
     template <typename T = uint8_t *> [[nodiscard]] T data(this auto &&self) { return reinterpret_cast<T>(self._data); }
-    [[nodiscard]] uint8_t operator[](this auto &&self, size_t i) { return self._data[i]; }
+	[[nodiscard]] uint8_t operator[](this auto &&self, size_t i) { return self._data[i]; }
 
     [[nodiscard]] const InternalData *internal() const { return _internal; }
 

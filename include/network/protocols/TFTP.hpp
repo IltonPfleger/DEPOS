@@ -1,11 +1,11 @@
 #pragma once
 
+#include <Semaphore.hpp>
 #include <network/protocols/UDP.hpp>
 
 namespace DEPOS {
 
-class TFTP {
-
+class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
     enum Operation : uint16_t {
         RRQ   = 1,
         WRQ   = 2,
@@ -18,20 +18,24 @@ class TFTP {
   public:
     TFTP(UDP &udp, const NetworkAddress &address)
         : _udp(udp),
-          _address(address) {}
+          _server_address(address) {
+        _udp.attach(this);
+    }
 
-    size_t request(const char *filename, void *destination, size_t size) {
-        (void)destination;
-        (void)size;
+    size_t request(const char *filename, void *buffer, size_t size) {
+        _buffer      = static_cast<uint8_t *>(buffer);
+        _buffer_size = size;
+        _received    = 0;
+        _block       = 1;
 
-        auto *buffer = _udp.alloc(256);
+        NetworkBuffer *packet = _udp.alloc(256);
 
         size_t name_length = strlen(filename);
 
-        auto *opcode = buffer->data<uint16_t *>();
-        *opcode      = CPU::htobe16(static_cast<uint16_t>(Operation::RRQ));
+        uint16_t *operation = packet->data<uint16_t *>();
+        *operation          = CPU::htobe16(Operation::RRQ);
 
-        char *ptr = reinterpret_cast<char *>(opcode + 1);
+        char *ptr = reinterpret_cast<char *>(operation + 1);
 
         memcpy(ptr, filename, name_length + 1);
         ptr += name_length + 1;
@@ -45,77 +49,102 @@ class TFTP {
         memcpy(ptr, k_blksize_string, sizeof(k_blksize_string));
         ptr += sizeof(k_blksize_string);
 
-        size_t total = reinterpret_cast<uint8_t *>(ptr) - reinterpret_cast<uint8_t *>(opcode);
+        size_t total = reinterpret_cast<uint8_t *>(ptr) - reinterpret_cast<uint8_t *>(operation);
 
-        buffer->length(total);
+        packet->length(total);
 
-        _udp.send(_address, k_port, buffer);
+        _udp.send(_server_address, 69, packet);
 
-        _udp.free(buffer);
+        _udp.free(packet);
 
-        //    m_semaphore.p();
+        _semaphore.p();
 
-        return 0;
+        return _error ? 0 : _received;
     }
 
-    // void update(const UDP::Datagram *datagram) {
-    //     const uint8_t *tftp = datagram->data();
-    //     size_t length       = datagram->length();
-    //     auto opcode         = static_cast<Operation>(CPU::be16toh(*reinterpret_cast<const uint16_t *>(tftp)));
-    //     m_server_port       = CPU::be16toh(datagram->header()->m_source);
+    void update(NetworkBuffer packet, uint16_t, uint16_t source) override {
+        uint16_t *header   = packet.data<uint16_t *>();
+        uint16_t operation = CPU::be16toh(*header);
 
-    //    if (opcode == OACK) {
-    //        ack(0);
-    //    } else if (opcode == DATA) {
-    //        uint16_t block         = CPU::be16toh(*reinterpret_cast<const uint16_t *>(tftp + 2));
-    //        const uint8_t *payload = tftp + 4;
-    //        size_t payload_length  = length - 4;
+        switch (operation) {
+        case OACK: {
+            ack(0, source);
+            break;
+        }
+        case DATA: {
+            uint16_t block = CPU::be16toh(*(header + 1));
+            size_t length  = packet.length() - 4;
+            uint8_t *data  = reinterpret_cast<uint8_t *>(header + 2);
+            onData(data, block, length, source);
+            break;
+        }
+        case ERROR: {
+            onError();
+            break;
+        }
+        }
+    }
 
-    //        ERROR(block != m_expected_block);
-    //        ERROR(m_received_size + payload_length > m_buffer_size);
+    void onData(uint8_t *data, uint16_t block, size_t length, uint16_t source) {
+        if (_received + length >= _buffer_size) {
+            onError();
+            return;
+        }
 
-    //        memcpy(m_user_buffer + m_received_size, payload, payload_length);
-    //        m_received_size += payload_length;
+        if (block != _block) {
+            ack(_block, source);
+            return;
+        };
 
-    //        ack(block);
-    //        m_expected_block++;
+        _block++;
+        _received += length;
+        memcpy(_buffer + length, data, length);
 
-    //        if (block % 64 == 0) {
-    //            Console::cout << "#";
-    //        }
+        ack(block, source);
 
-    //        if (payload_length < k_blksize_int) {
-    //            Console::cout << " [OK]" << Console::endl;
-    //            m_semaphore.v();
-    //        }
-    //    }
+        if constexpr (Trace)
+            if (block % 32 == 0) Console::cout << '#';
 
-    //    ERROR(opcode == Operation::ERROR);
-    //}
+        if (length < k_blksize_int) {
+            if constexpr (Trace) Console::cout << "[OK]" << Console::endl;
+            _semaphore.v();
+        }
+    }
 
-    // void ack(uint16_t block) {
-    //     auto *buffer = m_channel.alloc(4);
-    //     auto *packet = reinterpret_cast<uint16_t *>(header(buffer->data()));
-    //     packet[0]    = CPU::htobe16(static_cast<uint16_t>(Operation::ACK));
-    //     packet[1]    = CPU::htobe16(block);
-    //     m_channel.send(m_server_ip, m_server_port, buffer);
-    //     m_channel.free(buffer);
-    // }
+    void onError() {
+        _error = true;
+        _semaphore.v();
+    }
+
+    void ack(uint16_t block, uint16_t source) {
+        NetworkBuffer *buffer = _udp.alloc(4);
+        uint16_t *payload     = buffer->data<uint16_t *>();
+        payload[0]            = CPU::htobe16(Operation::ACK);
+        payload[1]            = CPU::htobe16(block);
+        _udp.send(_server_address, source, buffer);
+        _udp.free(buffer);
+    }
 
   private:
     static constexpr const char *k_blksize_string     = "1468";
     static constexpr const unsigned int k_blksize_int = 1468;
-    static constexpr unsigned int k_port              = 69;
+    static constexpr bool Trace                       = true;
 
   private:
     UDP &_udp;
-    NetworkAddress _address;
-    // Semaphore m_semaphore;
-    // uint16_t m_expected_block;
-    // uint8_t *m_user_buffer;
-    // size_t m_buffer_size;
-    // size_t m_received_size;
-    // uint16_t m_server_port;
+    Semaphore _semaphore;
+
+    NetworkAddress _server_address;
+
+    uint8_t *_buffer;
+    size_t _buffer_size;
+
+    size_t _received;
+
+    uint16_t _block;
+
+    bool _done;
+    bool _error;
 };
 
 } // namespace DEPOS

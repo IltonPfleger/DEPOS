@@ -12,21 +12,23 @@ using namespace DEPOS;
 int main(int, char *[]) {
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
 
-    ARP *router = new _ARP<Device, IPv4>(Device::instance());
+    auto *router = new ARP<Device, IPv4>(Device::instance());
     // router->bind(IPv4::Address(192, 168, 1, 1));
-    // router->resolve(IPv4::Address(192, 168, 1, 100));
+    // Device::Address d;
+    // router->resolve(IPv4::Address(192, 168, 1, 100), d);
 
-    IPv4 *ipv4 = new IPv4(Device::instance(), router);
+    IPv4 *ipv4 = new IPv4(IPv4::Address(192, 168, 1, 167), Device::instance(), *router);
 
-    UDP *udp = new UDP(ipv4, 0);
+    UDP *udp = new UDP(ipv4, 5123);
 
-    TFTP *tftp = new TFTP(*udp, IPv4::Address(192, 168, 1, 100));
+    IPv4::Address server(192, 168, 1, 100);
+    TFTP *tftp = new TFTP(*udp, server);
 
-    Alarm::udelay(100);
+    // Alarm::udelay(100);
 
-    auto size    = 1 << 10;
+    auto size    = 1 << 25;
     auto *buffer = new unsigned char[size];
-    tftp->request("Image", buffer, size);
+    Console::cout << tftp->request("Image", buffer, size) / (1024 * 1024) << Console::endl;
 
     while (1)
         ;

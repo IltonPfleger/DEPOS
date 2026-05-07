@@ -111,7 +111,6 @@ template <> struct Traits<UART> {
 template <> struct Traits<GMAC0> {
     static constexpr unsigned long Address = Traits<MemoryMap>::GMAC0;
     static constexpr unsigned char MAC[]   = {12, 34, 56, 78, 12, 34};
-    static constexpr unsigned char IP[]    = {192, 168, 1, 167};
     static constexpr unsigned int IRQs[]   = {9};
 };
 

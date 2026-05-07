@@ -8,8 +8,8 @@ using namespace DEPOS;
 void *operator new(unsigned long size, Heap::Location) {
     using Header   = Heap::Header;
     Header *header = reinterpret_cast<Header *>(Memory::alloc(size + sizeof(Header)));
-    header->m_size = size;
-    memset(header + 1, 0xFF, size);
+    header->size   = size;
+    // memset(header + 1, 0xFF, size);
     return header + 1;
 }
 
@@ -23,7 +23,7 @@ void operator delete(void *p) {
     ERROR(!p);
     using Header   = Heap::Header;
     Header *header = reinterpret_cast<Header *>(p) - 1;
-    Memory::free(header, header->m_size);
+    Memory::free(header, header->size);
 }
 
 void operator delete(void *p, unsigned long) { ::operator delete(p); }

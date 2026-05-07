@@ -6,17 +6,13 @@
 
 namespace DEPOS {
 
-class NetworkDevice : public Observed<const NetworkBuffer *> {
-  public:
-    using Buffer   = NetworkBuffer;
-    using Observer = DEPOS::Observer<const Buffer *>;
-
+class NetworkDevice : public Observed<NetworkBuffer> {
   protected:
-    virtual NetworkBuffer *doAlloc(size_t)        = 0;
-    virtual int doSend(NetworkBuffer *)           = 0;
-    virtual void doFree(NetworkBuffer *)          = 0;
-    virtual NetworkBuffer *doReceive()            = 0;
-    virtual void doRelease(const NetworkBuffer *) = 0;
+    virtual NetworkBuffer *doAlloc(size_t)  = 0;
+    virtual int doSend(NetworkBuffer *)     = 0;
+    virtual void doFree(NetworkBuffer *)    = 0;
+    virtual NetworkBuffer *doReceive()      = 0;
+    virtual void doRelease(NetworkBuffer *) = 0;
 
   public:
     virtual ~NetworkDevice() = default;
@@ -24,25 +20,22 @@ class NetworkDevice : public Observed<const NetworkBuffer *> {
     int send(NetworkBuffer *buffer) { return doSend(buffer); }
     void free(NetworkBuffer *buffer) { return doFree(buffer); }
 
-    void init() {
-        _running = true;
-        _thread  = new Thread(worker, this);
-    }
+    void init() { _thread = new Thread(worker, this); }
 
-    void release(const NetworkBuffer *buffer) {
+    void release(NetworkBuffer *buffer) {
         if (CPU::Atomic::fdec(buffer->internal()->references) == 1) doRelease(buffer);
     }
 
-    void retain(const NetworkBuffer *buffer) { CPU::Atomic::finc(buffer->internal()->references); }
+    // void retain(const NetworkBuffer *buffer) { CPU::Atomic::finc(buffer->internal()->references); }
 
   private:
     static void *worker(void *argument) {
         auto *self = static_cast<NetworkDevice *>(argument);
-        while (self->_running) {
+        while (true) {
             NetworkBuffer *buffer = self->doReceive();
             if (!buffer) continue;
             buffer->internal()->references = 1;
-            self->notify(buffer);
+            self->notify(*buffer);
             self->release(buffer);
         }
         return nullptr;
@@ -50,38 +43,6 @@ class NetworkDevice : public Observed<const NetworkBuffer *> {
 
   private:
     Thread *_thread;
-    volatile bool _running;
 };
-
-// template <typename F> class NetworkDevice : public Observed<const NetworkBuffer *> {
-//   public:
-//     using Buffer   = NetworkBuffer;
-//     using Observer = DEPOS::Observer<const Buffer *>;
-//     using Observed = DEPOS::Observed<const Buffer *>;
-//     using Family   = F;
-//     using Address  = Family::Address;
-//
-//     virtual ~NetworkDevice()          = default;
-//     virtual int send(Buffer *)        = 0;
-//     virtual void free(Buffer *b)      = 0;
-//     virtual Buffer *alloc()           = 0;
-//     virtual Buffer *receive()         = 0;
-//     virtual Family::Address address() = 0;
-//
-//   protected:
-//     void init() { new Thread(worker, this); }
-//
-//   private:
-//     static void *worker(void *argument) {
-//         auto *self = static_cast<NetworkDevice *>(argument);
-//         while (true) {
-//             auto *buffer = self->receive();
-//             if (!buffer) continue;
-//             self->notify(buffer);
-//             self->free(buffer);
-//         }
-//         return nullptr;
-//     }
-// };
 
 } // namespace DEPOS

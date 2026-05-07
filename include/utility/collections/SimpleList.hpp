@@ -9,6 +9,9 @@ namespace collections {
 
 template <typename T> class SimpleList {
   public:
+    SimpleList()
+        : _head(nullptr) {}
+
     T *head(this auto &&self) { return self._head; }
 
     void insert(T *node) {

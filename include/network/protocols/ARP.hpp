@@ -1,22 +1,17 @@
-#ifndef __DEPOS_NETWORK_PROTOCOLS_ARP_HEADER__
-#define __DEPOS_NETWORK_PROTOCOLS_ARP_HEADER__
+#ifndef __DEPOS_NETWORK_PROTOCOLSARP_HEADER__
+#define __DEPOS_NETWORK_PROTOCOLSARP_HEADER__
 
 #include <ConditionalVariable.hpp>
 #include <Thread.hpp>
+#include <network/NetworkAddressResolutionService.hpp>
 #include <network/NetworkDevice.hpp>
 #include <network/NetworkProtocolIdentifier.hpp>
 #include <utility/collections/Hash.hpp>
 
 namespace DEPOS {
 
-class ARP : public NetworkDevice::Observer {
-  public:
-    virtual ~ARP()                                          = default;
-    virtual void bind(const NetworkAddress &)               = 0;
-    virtual bool resolve(const NetworkAddress &, uint8_t *) = 0;
-};
-
-template <typename Device, typename Protocol> class _ARP : public ARP {
+template <typename Device, typename Protocol>
+class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionService {
   public:
     enum Operation { REQUEST = 1, REPLY = 2 };
 
@@ -56,12 +51,12 @@ template <typename Device, typename Protocol> class _ARP : public ARP {
 
     typedef Hash<PA, Entry, 256, Hasher> Table;
 
-    _ARP(Device *device)
+    ARP(Device *device)
         : _device(device) {
         _device->attach(this);
     }
 
-    ~_ARP() { _device->detach(this); }
+    ~ARP() { _device->detach(this); }
 
     void bind(const NetworkAddress &a) { _pa = a; }
 
@@ -71,9 +66,10 @@ template <typename Device, typename Protocol> class _ARP : public ARP {
             _lock.acquire();
             auto &entry = _table[pa];
 
-            if (entry.valid && entry.pa == PA(pa)) {
+            if (entry.valid && NetworkAddress(entry.pa) == pa) {
                 memcpy(destination, &entry.ha, sizeof(HA));
                 _lock.release();
+                return true;
             }
 
             entry.waiting++;
@@ -83,9 +79,9 @@ template <typename Device, typename Protocol> class _ARP : public ARP {
     }
 
   private:
-    void update(const NetworkBuffer *buffer) {
-        if (buffer->protocol() != NetworkProtocolIdentifier::ARP()) return;
-        Header *header = buffer->data<Header *>();
+    void update(NetworkBuffer buffer) {
+        if (buffer.protocol() != NetworkProtocolIdentifier::ARP()) return;
+        Header *header = buffer.data<Header *>();
         if (CPU::be16toh(header->operation) == REPLY) {
             onReply(*header);
         } else {

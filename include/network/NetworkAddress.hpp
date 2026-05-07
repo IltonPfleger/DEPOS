@@ -23,13 +23,11 @@ class NetworkAddress {
 
     [[nodiscard]] size_t length() const { return _length; }
 
-    [[nodiscard]] auto operator<=>(const NetworkAddress &) const = default;
+    [[nodiscard]] bool operator==(const NetworkAddress &other) const {
+        return (_length == other._length) && (memcmp(_data, other._data, _length) == 0);
+    }
 
-    //[[nodiscard]] bool operator==(const NetworkAddress &other) const {
-    //    return (_length == other._length) && (memcmp(_data, other._data, _length) == 0);
-    //}
-
-    //[[nodiscard]] bool operator!=(const NetworkAddress &other) const { return !(*this == other); }
+    [[nodiscard]] bool operator!=(const NetworkAddress &other) const { return !(*this == other); }
 
   private:
     const uint8_t *_data;

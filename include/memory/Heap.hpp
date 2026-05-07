@@ -7,7 +7,7 @@ namespace DEPOS {
 class Heap {
   public:
     struct Header {
-        unsigned long m_size;
+        unsigned long size;
     };
 
     enum Location { SYSTEM };
