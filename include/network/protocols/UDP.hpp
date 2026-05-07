@@ -19,7 +19,7 @@ class UDP : public Observer<NetworkBuffer, const NetworkAddress &, const Network
     } __attribute__((packed));
 
   public:
-    UDP(Handler *handler, uint16_t port)
+    UDP(Handler *handler, uint16_t port = 0)
         : _handler(handler),
           _port(port) {
         _handler->attach(this);

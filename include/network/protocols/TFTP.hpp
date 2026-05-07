@@ -18,7 +18,9 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
   public:
     TFTP(UDP &udp, const NetworkAddress &address)
         : _udp(udp),
-          _server_address(address) {
+          _server_address(address),
+          _semaphore(0),
+          _done(true) {
         _udp.attach(this);
     }
 
@@ -27,6 +29,8 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         _buffer_size = size;
         _received    = 0;
         _block       = 1;
+        _done        = false;
+        _error       = false;
 
         NetworkBuffer *packet = _udp.alloc(256);
 
@@ -59,7 +63,12 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
 
         _semaphore.p();
 
-        return _error ? 0 : _received;
+        if (!_error) {
+            Console::cout << "\n[OK]" << Console::endl;
+            return _received;
+        }
+
+        return 0;
     }
 
     void update(NetworkBuffer packet, uint16_t, uint16_t source) override {
@@ -86,6 +95,8 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
     }
 
     void onData(uint8_t *data, uint16_t block, size_t length, uint16_t source) {
+        if (_done) return;
+
         if (_received + length >= _buffer_size) {
             onError();
             return;
@@ -97,8 +108,8 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         };
 
         _block++;
+        memcpy(_buffer + _received, data, length);
         _received += length;
-        memcpy(_buffer + length, data, length);
 
         ack(block, source);
 
@@ -106,7 +117,7 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
             if (block % 32 == 0) Console::cout << '#';
 
         if (length < k_blksize_int) {
-            if constexpr (Trace) Console::cout << "[OK]" << Console::endl;
+            _done = true;
             _semaphore.v();
         }
     }
@@ -132,9 +143,8 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
 
   private:
     UDP &_udp;
-    Semaphore _semaphore;
-
     NetworkAddress _server_address;
+    Semaphore _semaphore;
 
     uint8_t *_buffer;
     size_t _buffer_size;
@@ -143,8 +153,8 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
 
     uint16_t _block;
 
-    bool _done;
-    bool _error;
+    volatile bool _done;
+    volatile bool _error;
 };
 
 } // namespace DEPOS

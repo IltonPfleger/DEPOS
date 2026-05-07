@@ -7,6 +7,9 @@
 namespace DEPOS {
 
 class NetworkDevice : public Observed<NetworkBuffer> {
+  public:
+    using Observer = DEPOS::Observer<NetworkBuffer>;
+
   protected:
     virtual NetworkBuffer *doAlloc(size_t)  = 0;
     virtual int doSend(NetworkBuffer *)     = 0;

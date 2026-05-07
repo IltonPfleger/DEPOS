@@ -4,7 +4,8 @@
 #include <hypervisor/VirtualMachine.hpp>
 #include <hypervisor/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
-#include <utils/Observer.hpp>
+#include <network/NetworkDevice.hpp>
+#include <utility/Observer.hpp>
 
 namespace DEPOS {
 
@@ -41,8 +42,10 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
                 }
 
                 if (len > 0) {
-                    typename Device::Buffer buffer(data, len);
-                    m_device->send(&buffer);
+                    NetworkBuffer *buffer = m_device->alloc(len);
+                    memcpy(buffer->data(), data, len);
+                    m_device->send(buffer);
+                    m_device->free(buffer);
                 }
 
                 length += descriptor->length;
@@ -56,9 +59,9 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
         }
     }
 
-    void update(const Device::Buffer *buffer) override {
-        auto data = buffer->data();
-        auto size = buffer->length();
+    void update(NetworkBuffer buffer) override {
+        auto data = buffer.data();
+        auto size = buffer.length();
 
         auto &queue = this->m_queues[RX];
 

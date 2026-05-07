@@ -4,7 +4,7 @@
 #include <architecture/CPU.hpp>
 #include <hypervisor/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
-#include <utils/Observer.hpp>
+#include <utility/Observer.hpp>
 
 namespace DEPOS {
 
