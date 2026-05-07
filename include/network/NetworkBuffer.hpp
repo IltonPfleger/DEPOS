@@ -7,37 +7,45 @@ namespace DEPOS {
 
 class NetworkBuffer {
   public:
-    NetworkBuffer(void *start, size_t size, NetworkProtocolIdentifier protocol = NetworkProtocolIdentifier::UNKNOWN())
-        : _start(reinterpret_cast<uint8_t *>(start)),
-          _size(size),
-          _data(_start),
-          _length(_size),
-          _protocol(protocol),
-          _references(0) {}
+    struct InternalData {
+        uint8_t *start;
+        size_t size;
+        volatile mutable size_t references = 0;
+    };
+
+    NetworkBuffer(InternalData *data = 0, uint16_t protocol = 0)
+        : _internal(data),
+          _protocol(protocol) {
+        if (internal()) {
+            _data   = start();
+            _length = size();
+        }
+    }
 
     template <typename T = uint8_t *> [[nodiscard]] T data(this auto &&self) { return reinterpret_cast<T>(self._data); }
+    [[nodiscard]] uint8_t operator[](this auto &&self, size_t i) { return self._data[i]; }
+
+    [[nodiscard]] const InternalData *internal() const { return _internal; }
 
     void length(size_t l) { _length = l; }
-
-    void references(size_t r) { _references = r; }
 
     void protocol(size_t p) { _protocol = p; }
 
     [[nodiscard]] size_t protocol() const { return _protocol; }
 
-    [[nodiscard]] size_t references() const { return _references; }
-
     [[nodiscard]] size_t length() const { return _length; }
 
-    [[nodiscard]] uint8_t *start() const { return _start; }
+    [[nodiscard]] auto &references() { return internal()->references; }
 
-    [[nodiscard]] size_t size() const { return _size; }
+    [[nodiscard]] uint8_t *start() const { return internal()->start; }
+
+    [[nodiscard]] size_t size() const { return internal()->size; }
 
     [[nodiscard]] size_t offset() const { return static_cast<size_t>(data() - start()); }
 
     [[nodiscard]] size_t remaining() const { return size() - offset(); }
 
-    void reset() { _data = _start; }
+    void reset() { _data = start(); }
 
     bool advance(size_t bytes) {
         _data += bytes;
@@ -50,15 +58,10 @@ class NetworkBuffer {
     }
 
   private:
-    uint8_t *const _start;
-    const size_t _size;
-
+    const InternalData *_internal;
     uint8_t *_data;
     size_t _length;
-
-    NetworkProtocolIdentifier _protocol;
-
-    volatile mutable size_t _references;
+    uint16_t _protocol;
 };
 
 } // namespace DEPOS

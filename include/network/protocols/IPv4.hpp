@@ -12,10 +12,10 @@
 namespace DEPOS {
 
 struct NetworkLayerBuffer {
-    NetworkAddress source;
+    NetworkBuffer buffer;
     NetworkAddress destination;
+    NetworkAddress source;
     uint8_t protocol;
-    NetworkBuffer *buffer;
 };
 
 class IPv4 : NetworkDevice::Observer {
@@ -35,7 +35,7 @@ class IPv4 : NetworkDevice::Observer {
         uint8_t protocol;
         uint16_t checksum;
         Address source;
-        Address to;
+        Address destination;
 
         Header(Address d,
                Address s,
@@ -53,7 +53,7 @@ class IPv4 : NetworkDevice::Observer {
             ttl            = time;
             protocol       = p;
             source         = s;
-            to             = d;
+            destination    = d;
             checksum       = 0;
             checksum       = Checksum::calculate(this, sizeof(Header));
         }
@@ -69,7 +69,7 @@ class IPv4 : NetworkDevice::Observer {
         _device->attach(this);
     }
 
-    Address address() const { return Address(192, 168, 1, 1); }
+    Address address() const { return Address(192, 168, 1, 167); }
 
     ~IPv4() { _device->detach(this); }
 
@@ -85,9 +85,14 @@ class IPv4 : NetworkDevice::Observer {
 
   public:
     void update(const NetworkBuffer *buffer) {
-        (void)buffer;
-        //_lock.acquire();
-        //_device->clone(buffer, _receivers.count());
+        _lock.acquire();
+        size_t waiting = _receivers.count();
+        while (waiting--) {
+            _device->retain(buffer);
+            _receivers.signalize(buffer, sizeof(*buffer));
+        }
+        _device->release(buffer);
+        _lock.release();
     }
 
     int send(const NetworkAddress &pa, uint8_t protocol, NetworkBuffer *buffer) {
@@ -100,18 +105,36 @@ class IPv4 : NetworkDevice::Observer {
         if (Address(pa) == Address::broadcast()) {
             return _device->broadcast(NetworkProtocolIdentifier::IPv4(), buffer);
         } else {
-            return _device->send(_arp->resolve(pa), NetworkProtocolIdentifier::IPv4(), buffer);
+            unsigned char data[16];
+            bool solved = _arp->resolve(pa, data);
+            NetworkAddress ha(data, _device->address().length());
+            if (solved)
+                return _device->send(ha, NetworkProtocolIdentifier::IPv4(), buffer);
+            else
+                return 0;
         }
     }
 
-    // NetworkLayerBuffer receive() {
-    //     _lock.acquire();
-    //     NetworkBuffer *buffer = reinterpret_cast<NetworkBuffer *>(_receivers.wait(&_lock));
-    // }
+    NetworkBuffer receive(NetworkAddress *d = nullptr, NetworkAddress *s = nullptr, uint8_t *p = nullptr) {
+        NetworkBuffer b1;
+
+        _lock.acquire();
+        _receivers.wait(&_lock, &b1, sizeof(b1));
+
+        Header *header = b1.data<Header *>();
+        if (d) *d = header->destination;
+        if (s) *s = header->source;
+        if (p) *p = header->protocol;
+        b1.advance(header->length());
+
+        return b1;
+    }
+
+    void release(const NetworkBuffer &buffer) { _device->release(&buffer); }
 
   private:
     NetworkAddressableDevice *_device;
-    // ConditionalVariable _receivers;
+    ConditionalVariable _receivers;
     Spin _lock;
     ARP *_arp;
 };

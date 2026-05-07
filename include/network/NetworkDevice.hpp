@@ -12,11 +12,11 @@ class NetworkDevice : public Observed<const NetworkBuffer *> {
     using Observer = DEPOS::Observer<const Buffer *>;
 
   protected:
-    virtual NetworkBuffer *doAlloc(size_t)  = 0;
-    virtual int doSend(NetworkBuffer *)     = 0;
-    virtual void doFree(NetworkBuffer *)    = 0;
-    virtual NetworkBuffer *doReceive()      = 0;
-    virtual void doRelease(NetworkBuffer *) = 0;
+    virtual NetworkBuffer *doAlloc(size_t)        = 0;
+    virtual int doSend(NetworkBuffer *)           = 0;
+    virtual void doFree(NetworkBuffer *)          = 0;
+    virtual NetworkBuffer *doReceive()            = 0;
+    virtual void doRelease(const NetworkBuffer *) = 0;
 
   public:
     virtual ~NetworkDevice() = default;
@@ -29,14 +29,21 @@ class NetworkDevice : public Observed<const NetworkBuffer *> {
         _thread  = new Thread(worker, this);
     }
 
+    void release(const NetworkBuffer *buffer) {
+        if (CPU::Atomic::fdec(buffer->internal()->references) == 1) doRelease(buffer);
+    }
+
+    void retain(const NetworkBuffer *buffer) { CPU::Atomic::finc(buffer->internal()->references); }
+
   private:
     static void *worker(void *argument) {
         auto *self = static_cast<NetworkDevice *>(argument);
         while (self->_running) {
             NetworkBuffer *buffer = self->doReceive();
             if (!buffer) continue;
+            buffer->internal()->references = 1;
             self->notify(buffer);
-            self->doRelease(buffer);
+            self->release(buffer);
         }
         return nullptr;
     }

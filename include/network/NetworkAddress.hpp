@@ -32,7 +32,7 @@ class NetworkAddress {
     //[[nodiscard]] bool operator!=(const NetworkAddress &other) const { return !(*this == other); }
 
   private:
-    const uint8_t *const _data;
+    const uint8_t *_data;
     size_t _length;
 };
 

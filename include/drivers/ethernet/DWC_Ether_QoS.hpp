@@ -232,13 +232,14 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
     }
 };
 
-class DWC_Ether_QoS_Buffer : public NetworkBuffer {
+class DWC_Ether_QoS_Buffer : private NetworkBuffer::InternalData, public NetworkBuffer {
   public:
-    DWC_Ether_QoS_Buffer()
-        : NetworkBuffer(0, 0) {}
+    using NetworkBuffer::size;
+    using NetworkBuffer::start;
 
-    DWC_Ether_QoS_Buffer(void *data, size_t length, uint32_t id = 0)
-        : NetworkBuffer(data, length),
+    DWC_Ether_QoS_Buffer(void *data = nullptr, size_t length = 0, uint32_t id = 0)
+        : NetworkBuffer::InternalData(static_cast<uint8_t *>(data), length, 0),
+          NetworkBuffer(static_cast<NetworkBuffer::InternalData *>(this)),
           _id(id) {}
 
     uint32_t id() const { return _id; }
@@ -377,7 +378,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
     //    status |= done;
     //}
 
-    void release(DWC_Ether_QoS_Buffer *b) {
+    void release(const DWC_Ether_QoS_Buffer *b) {
         Descriptor &d = m_rx_descriptors[b->id()];
         d.buffer(reinterpret_cast<uintptr_t>(b->data()));
         d.des2 = 0;
@@ -493,7 +494,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDev
 
     NetworkBuffer *doAlloc(size_t length) override {
         size_t size           = length + sizeof(Header);
-        NetworkBuffer *buffer = new NetworkBuffer(new unsigned char[size], size);
+        NetworkBuffer *buffer = new DWC_Ether_QoS_Buffer(new unsigned char[size], size);
         buffer->advance(sizeof(Header));
         buffer->length(length);
         return buffer;
@@ -513,10 +514,14 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDev
         return buffer;
     }
 
-    void doRelease(NetworkBuffer *buffer) override { m_dma->release(static_cast<DWC_Ether_QoS_Buffer *>(buffer)); }
+    void doRelease(const NetworkBuffer *buffer) override {
+        m_dma->release(static_cast<const DWC_Ether_QoS_Buffer *>(buffer));
+    }
+
     int doSend(NetworkBuffer *buffer) override { return m_dma->send(buffer->data(), buffer->length()); }
 
     NetworkAddress address() const override { return _address; }
+
     void address(const NetworkAddress &address) override { new (&_address) Address(address); }
 
     int broadcast(uint16_t protocol, NetworkBuffer *buffer) override {

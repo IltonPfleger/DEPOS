@@ -43,6 +43,28 @@ class UDP {
         return _handler->send(address, Protocol, buffer);
     }
 
+    NetworkBuffer receive(NetworkAddress *address = nullptr, uint16_t *d = nullptr, uint16_t *s = nullptr) {
+        uint8_t protocol;
+
+        while (1) {
+            NetworkBuffer buffer = _handler->receive(nullptr, address, &protocol);
+            Header *header       = buffer.data<Header *>();
+
+            if (protocol != Protocol || (_port && (CPU::htobe16(header->destination) != _port))) {
+                _handler->release(buffer);
+                continue;
+            }
+
+            if (s) *s = CPU::be16toh(header->source);
+            if (d) *d = CPU::be16toh(header->destination);
+
+            buffer.advance(sizeof(Header));
+            buffer.length(CPU::htobe16(header->length));
+
+            return buffer;
+        }
+    }
+
     void free(NetworkBuffer *buffer) { _handler->free(buffer); }
 
   private:

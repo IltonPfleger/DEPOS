@@ -11,9 +11,9 @@ namespace DEPOS {
 
 class ARP : public NetworkDevice::Observer {
   public:
-    virtual ~ARP()                                         = default;
-    virtual void bind(const NetworkAddress &)              = 0;
-    virtual NetworkAddress resolve(const NetworkAddress &) = 0;
+    virtual ~ARP()                                          = default;
+    virtual void bind(const NetworkAddress &)               = 0;
+    virtual bool resolve(const NetworkAddress &, uint8_t *) = 0;
 };
 
 template <typename Device, typename Protocol> class _ARP : public ARP {
@@ -65,15 +65,15 @@ template <typename Device, typename Protocol> class _ARP : public ARP {
 
     void bind(const NetworkAddress &a) { _pa = a; }
 
-    NetworkAddress resolve(const NetworkAddress &pa) {
+    bool resolve(const NetworkAddress &pa, uint8_t *destination) {
+
         while (true) {
             _lock.acquire();
             auto &entry = _table[pa];
 
             if (entry.valid && entry.pa == PA(pa)) {
-                HA ha = entry.ha;
+                memcpy(destination, &entry.ha, sizeof(HA));
                 _lock.release();
-                return ha;
             }
 
             entry.waiting++;

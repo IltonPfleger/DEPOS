@@ -18,37 +18,43 @@ class ConditionalVariable {
     typedef Node<Signal> Link;
 
   public:
-    void wait(Spin *lock, void *value = nullptr, size_t size = 0) {
+    ConditionalVariable() = default;
+
+    size_t wait(Spin *lock, void *value = nullptr, size_t size = 0) {
         Link link;
         Signal &signal = link.value();
         signal.value   = value;
         signal.size    = size;
 
         _waiters.insert(&link);
+        _waiting++;
         Thread::sleep(&signal.thread, lock);
+
+        return signal.size;
     }
 
-    void signalize(size_t number = ~0ULL, void *value = 0, size_t size = 0) {
-        while (number > 0) {
-            Link *link = _waiters.remove();
-            if (!link) break;
+    void signalize(const void *value = 0, size_t size = 0) {
+        Link *link = _waiters.remove();
+        if (!link) return;
 
-            Signal &signal = link->value();
+        Signal &signal = link->value();
 
-            if (value && signal.value) {
-                signal.size = (size > signal.size) ? signal.size : size;
-                memcpy(signal.value, value, signal.size);
-            } else {
-                signal.size = 0;
-            }
-
-            signal.value = value;
-            Thread::wakeup(&signal.thread);
-            number--;
+        if (value && signal.value) {
+            signal.size = (size > signal.size) ? signal.size : size;
+            memcpy(signal.value, value, signal.size);
+        } else {
+            signal.size = 0;
         }
+
+        _waiting--;
+        Thread::wakeup(&signal.thread);
     }
+
+    size_t count() const { return _waiting; }
 
   private:
-    LIFO<Link> _waiters;
+    LIFO<Link> _waiters{};
+    size_t _waiting{};
 };
+
 } // namespace DEPOS
