@@ -60,8 +60,7 @@ class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionServi
 
     void bind(const NetworkAddress &a) { _pa = a; }
 
-    bool resolve(const NetworkAddress &pa, uint8_t *destination) {
-
+    bool resolve(const NetworkAddress &pa, Span<uint8_t> destination) {
         while (true) {
             _lock.acquire();
             auto &entry = _table[pa];

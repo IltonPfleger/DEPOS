@@ -8,9 +8,9 @@ namespace DEPOS {
 
 class NetworkAddressResolutionService {
   public:
-    virtual ~NetworkAddressResolutionService()              = default;
-    virtual void bind(const NetworkAddress &)               = 0;
-    virtual bool resolve(const NetworkAddress &, uint8_t *) = 0;
+    virtual ~NetworkAddressResolutionService()                  = default;
+    virtual void bind(const NetworkAddress &)                   = 0;
+    virtual bool resolve(const NetworkAddress &, Span<uint8_t>) = 0;
 };
 
 } // namespace DEPOS

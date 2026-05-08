@@ -103,7 +103,7 @@ class IPv4 : public Observer<NetworkBuffer>,
             return _device->broadcast(NetworkProtocolIdentifier::IPv4(), buffer);
         } else {
             unsigned char data[16];
-            bool solved = _router.resolve(pa, data);
+            bool solved = _router.resolve(pa, Span(data));
             NetworkAddress ha(data, _device->address().length());
             if (solved)
                 return _device->send(ha, NetworkProtocolIdentifier::IPv4(), buffer);
