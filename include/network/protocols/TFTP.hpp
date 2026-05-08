@@ -16,21 +16,21 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
     };
 
   public:
-    TFTP(UDP &udp, const NetworkAddress &address)
+    TFTP(UDP &udp)
         : _udp(udp),
-          _server_address(address),
           _semaphore(0),
           _done(true) {
         _udp.attach(this);
     }
 
-    size_t request(const char *filename, void *buffer, size_t size) {
-        _buffer      = static_cast<uint8_t *>(buffer);
-        _buffer_size = size;
-        _received    = 0;
-        _block       = 1;
-        _done        = false;
-        _error       = false;
+    size_t request(const NetworkAddress &&address, const char *filename, void *buffer, size_t size) {
+        _buffer         = static_cast<uint8_t *>(buffer);
+        _buffer_size    = size;
+        _received       = 0;
+        _block          = 1;
+        _done           = false;
+        _error          = false;
+        _server_address = address;
 
         NetworkBuffer *packet = _udp.alloc(256);
 

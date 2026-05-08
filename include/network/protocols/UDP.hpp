@@ -47,6 +47,7 @@ class UDP : public Observer<NetworkBuffer, const NetworkAddress &, const Network
     void update(NetworkBuffer buffer, const NetworkAddress &, const NetworkAddress &, uint8_t protocol) {
         if (protocol != Protocol) return;
         Header *header = buffer.data<Header *>();
+        if (_port && header->destination != _port) return;
         buffer.advance(sizeof(Header));
         buffer.length(CPU::htobe16(header->length) - sizeof(Header));
         notify(buffer, CPU::be16toh(header->destination), CPU::be16toh(header->source));

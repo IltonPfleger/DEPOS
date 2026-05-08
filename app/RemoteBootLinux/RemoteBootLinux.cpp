@@ -87,12 +87,10 @@ int main() {
     constexpr size_t MB              = 1024 * 1024;
     constexpr size_t LinuxMemorySize = 256 * MB;
 
-    IPv4::Address server(192, 168, 1, 100);
-
     auto *router = new ARP<Device, IPv4>(Device::instance());
     auto *ipv4   = new IPv4(IPv4::Address(192, 168, 1, 167), Device::instance(), *router);
-    auto *udp    = new UDP(ipv4, 5123);
-    auto *tftp   = new TFTP(*udp, server);
+    auto *udp    = new UDP(ipv4);
+    auto *tftp   = new TFTP(*udp);
 
     auto *buffer = static_cast<unsigned char *>(Memory::alloc(LinuxMemorySize));
     auto address = reinterpret_cast<uintptr_t>(buffer);
@@ -101,21 +99,21 @@ int main() {
     size_t remaining = LinuxMemorySize;
 
     auto *kernel       = current;
-    size_t kernel_size = tftp->request("Image", kernel, remaining);
+    size_t kernel_size = tftp->request(IPv4::Address(192, 168, 1, 100), "Image", kernel, remaining);
 
     current += kernel_size;
     remaining -= kernel_size;
     current = align(current, MB);
 
     auto *dtb       = reinterpret_cast<LinuxDeviceTree *>(current);
-    size_t dtb_size = tftp->request("guest.dtb", dtb, remaining);
+    size_t dtb_size = tftp->request(IPv4::Address(192, 168, 1, 100), "guest.dtb", dtb, remaining);
 
     current += dtb_size;
     current = align(current, MB);
     remaining -= kernel_size;
 
     unsigned char *initramfs = current;
-    size_t initramfs_size    = tftp->request("initramfs.cpio.gz", initramfs, remaining);
+    size_t initramfs_size = tftp->request(IPv4::Address(192, 168, 1, 100), "initramfs.cpio.gz", initramfs, remaining);
 
     current += initramfs_size;
     current = align(current, MB);
