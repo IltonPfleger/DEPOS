@@ -2,7 +2,7 @@
 #include <Traits.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
-#include <utils/Debug.hpp>
+#include <utility/Debug.hpp>
 
 namespace DEPOS {
 

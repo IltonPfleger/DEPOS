@@ -2,7 +2,7 @@
 #include <Thread.hpp>
 #include <architecture/Timer.hpp>
 #include <utils/Console.hpp>
-#include <utils/Debug.hpp>
+#include <utility/Debug.hpp>
 
 using namespace DEPOS;
 

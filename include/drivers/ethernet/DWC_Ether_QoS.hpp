@@ -8,7 +8,7 @@
 #include <network/NetworkAddressableDevice.hpp>
 #include <network/NetworkDevice.hpp>
 #include <network/ethernet/Ethernet.hpp>
-#include <utils/Debug.hpp>
+#include <utility/Debug.hpp>
 
 namespace DEPOS {
 

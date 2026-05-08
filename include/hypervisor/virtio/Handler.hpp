@@ -5,7 +5,7 @@
 #include <hypervisor/virtio/VirtQueue.hpp>
 #include <libraries/libc/string.h>
 #include <memory/Heap.hpp>
-#include <utils/Debug.hpp>
+#include <utility/Debug.hpp>
 
 namespace DEPOS {
 

@@ -9,7 +9,7 @@ using namespace DEPOS;
 
 extern "C" void init() {
     if (CPU::id() == Traits<CPU>::BSP) {
-        Console::cout << '\n';
+        Console::println(' ');
         TraceIn();
     }
 

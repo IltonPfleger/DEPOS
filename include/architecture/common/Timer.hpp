@@ -3,7 +3,7 @@
 #include <Alarm.hpp>
 #include <Thread.hpp>
 #include <Traits.hpp>
-#include <architecture/common/TimerTicker.hpp>
+#include <utility/Ticker.hpp>
 
 namespace DEPOS {
 
@@ -21,10 +21,10 @@ class Timer {
     static constexpr uintmax_t ThreadTickFrequency = TimerTickFrequency / Traits<Thread>::TickFrequency;
     static constexpr uintmax_t Active              = Traits<DEPOS::CPU>::Active;
 
-    using ThreadTimerTicker = TimerTicker<ThreadTickFrequency, Thread::onTick, Active>;
-    using AlarmTimerTicker  = TimerTicker<AlarmTickFrequency, Alarm::onTick, Active>;
+    using ThreadTicker = Ticker<ThreadTickFrequency, Thread::onTick, Active>;
+    using AlarmTicker  = Ticker<AlarmTickFrequency, Alarm::onTick, Active>;
 
-    static inline constinit Meta::Tuple<ThreadTimerTicker, AlarmTimerTicker> m_tickers{};
+    static inline constinit Meta::Tuple<ThreadTicker, AlarmTicker> m_tickers{};
 };
 
 } // namespace ArchitectureCommon

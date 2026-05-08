@@ -3,7 +3,7 @@
 #include <architecture/IC.hpp>
 #include <drivers/Driver.hpp>
 #include <utility/Observer.hpp>
-#include <utils/Debug.hpp>
+#include <utility/Debug.hpp>
 
 namespace DEPOS {
 

@@ -1,7 +1,7 @@
 #include <libraries/libc/string.h>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
-#include <utils/Debug.hpp>
+#include <utility/Debug.hpp>
 
 using namespace DEPOS;
 

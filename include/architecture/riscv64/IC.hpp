@@ -2,7 +2,7 @@
 
 #include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/PLIC.hpp>
-#include <utils/Debug.hpp>
+#include <utility/Debug.hpp>
 
 namespace DEPOS {
 

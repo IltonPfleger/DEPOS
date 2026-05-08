@@ -7,7 +7,6 @@
 #include <libraries/libc/string.h>
 #include <machine/Machine.hpp>
 #include <network/protocols/TFTP.hpp>
-#include <utils/Console.hpp>
 
 using namespace DEPOS;
 
@@ -166,7 +165,7 @@ int main() {
     dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
     dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
 
-    Console::cout << "\n *** Linux ***\n";
+    Console::print("\n *** Linux ***\n");
 
     // auto *vm = new GenericVirtualMachine<Serial>(buffer, LinuxMemorySize);
     auto *vm = new GenericVirtualMachine<Serial, Network>(buffer, LinuxMemorySize);

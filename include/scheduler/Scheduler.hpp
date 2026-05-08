@@ -4,7 +4,7 @@
 #include <architecture/CPU.hpp>
 #include <scheduler/FixedCore.hpp>
 #include <scheduler/RR.hpp>
-#include <utils/Debug.hpp>
+#include <utility/Debug.hpp>
 #include <utils/Lists.hpp>
 
 namespace DEPOS {

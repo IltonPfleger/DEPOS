@@ -62,7 +62,7 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         _semaphore.p();
 
         if (!_error) {
-            Console::cout << "\n[OK]" << Console::endl;
+            Console::println("\n[OK]");
             return _received;
         }
 
@@ -112,7 +112,7 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         ack(block, source);
 
         if constexpr (Trace)
-            if (block % 32 == 0) Console::cout << '#';
+            if (block % 32 == 0) Console::print('#');
 
         if (length < k_blksize_int) {
             _done = true;

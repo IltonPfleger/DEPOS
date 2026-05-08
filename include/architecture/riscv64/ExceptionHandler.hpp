@@ -1,16 +1,14 @@
 #pragma once
 
 #include <architecture/riscv64/CPU.hpp>
-#include <architecture/riscv64/MMU.hpp>
 #include <architecture/riscv64/csrs.hpp>
-#include <utils/Console.hpp>
+#include <utility/Console.hpp>
 
 namespace DEPOS {
 
 namespace riscv64 {
 
 class ExceptionHandler {
-    using PageTable = MMU::PageTable;
     // static constexpr const char *Descriptions[] = {
     //     "Instruction Address Misaligned", // 0
     //     "Instruction Access Fault",       // 1
@@ -32,20 +30,14 @@ class ExceptionHandler {
 
   public:
     static void onTrap(size_t id, Context *c) {
-        Console::cout << Console::panic << Console::endl;
-        Console::cout << "Ohh, It's a Trap!" << Console::endl;
-        Console::cout << "id: " << id << Console::endl;
-        Console::cout << "context: " << c << Console::endl;
-        Console::cout << "pc: " << Console::hex << c->pc << Console::endl;
-        Console::cout << "cause: " << c->cause << Console::endl;
-        Console::cout << "tval: " << Console::hex << c->value << Console::endl;
-        Console::cout << "status: " << Console::hex << c->status << Console::endl;
-        // Console::println("\nOhh, It's a Trap!");
-        // Console::println("context: ", c);
-        // Console::println("id: ", id);
-        // Console::println("pc: ", Console::Hex(c->pc));
-        // Console::println("cause: ", Console::Hex(c->cause));
-        // Console::println("tval: ", Console::Hex(c->value));
+        Console::panic();
+        Console::println("\nOhh, It's a Trap!");
+        Console::println("context: ", c);
+        Console::println("id: ", id);
+        Console::println("pc: ", Console::Hex(c->pc));
+        Console::println("cause: ", Console::Hex(c->cause));
+        Console::println("status: ", Console::Hex(c->status));
+        Console::println("tval: ", Console::Hex(c->value));
         CPU::halt();
     }
 };

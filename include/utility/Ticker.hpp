@@ -4,9 +4,7 @@
 
 namespace DEPOS {
 
-namespace ArchitectureCommon {
-
-template <uintmax_t Duration, void (*Handler)(), size_t Channels> struct TimerTicker {
+template <uintmax_t Duration, void (*Handler)(), size_t Channels> struct Ticker {
     void onTick(size_t channel) {
         auto &current = _current[channel];
 
@@ -21,7 +19,5 @@ template <uintmax_t Duration, void (*Handler)(), size_t Channels> struct TimerTi
   private:
     uintmax_t _current[Channels] = {Duration};
 };
-
-} // namespace ArchitectureCommon
 
 } // namespace DEPOS
