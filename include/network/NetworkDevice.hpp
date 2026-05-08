@@ -20,8 +20,12 @@ class NetworkDevice : public Observed<NetworkBuffer> {
   public:
     virtual ~NetworkDevice() = default;
     NetworkBuffer *alloc(size_t size) { return doAlloc(size); }
-    int send(NetworkBuffer *buffer) { return doSend(buffer); }
-    void free(NetworkBuffer *buffer) { return doFree(buffer); }
+
+    int send(NetworkBuffer *buffer) {
+        int result = doSend(buffer);
+        doFree(buffer);
+        return result;
+    }
 
     void init() { _thread = new Thread(worker, this); }
 

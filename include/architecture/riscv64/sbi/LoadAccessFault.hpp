@@ -29,6 +29,7 @@ class LoadAccessFault {
                 return;
             }
         }
+        c->value = PageTable::virt2phys(c->value);
         ExceptionHandler::onTrap(id, c);
     }
 };

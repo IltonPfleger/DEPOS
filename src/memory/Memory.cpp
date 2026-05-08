@@ -34,13 +34,13 @@ void *Memory::alloc(size_t size) {
 
     s_spin.acquire();
 
-    // TraceIn(size);
+    TraceIn(size);
 
     void *chunk = s_allocator.remove(size);
 
     ERROR(!chunk, "Out of Memory.");
 
-    // TraceOut(chunk);
+    TraceOut(chunk);
 
     s_spin.release();
     return chunk;
@@ -48,10 +48,10 @@ void *Memory::alloc(size_t size) {
 
 void Memory::free(void *chunk, size_t size) {
     s_spin.acquire();
-    // TraceIn(chunk, size);
+    TraceIn(chunk, size);
     ERROR(chunk == nullptr);
     s_allocator.insert(chunk, size);
-    // TraceOut();
+    TraceOut();
     s_spin.release();
 }
 

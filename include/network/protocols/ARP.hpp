@@ -103,7 +103,6 @@ class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionServi
         header->dpa = pa;
 
         _device->broadcast(NetworkProtocolIdentifier::ARP(), buffer);
-        _device->free(buffer);
     }
 
     void onReply(const Header &received) {
@@ -131,8 +130,6 @@ class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionServi
             header->dpa = received.spa;
 
             _device->send(received.sha, NetworkProtocolIdentifier::ARP(), buffer);
-
-            _device->free(buffer);
         }
     }
 

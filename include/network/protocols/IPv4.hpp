@@ -84,8 +84,6 @@ class IPv4 : public Observer<NetworkBuffer>,
         return buffer;
     }
 
-    void free(NetworkBuffer *buffer) { _device->free(buffer); }
-
   public:
     void update(NetworkBuffer buffer) {
         if (buffer.protocol() != NetworkProtocolIdentifier::IPv4()) return;

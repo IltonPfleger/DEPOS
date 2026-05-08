@@ -209,52 +209,54 @@ template <typename T, bool ChangeStack> class ContextHandler : public Context {
     }
 };
 
-class HypervisorContext;
-
 template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
 using MachineContext = ContextHandler<MachineMode, ChangeStack>;
 
 template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
 using SupervisorContext = ContextHandler<SupervisorMode, ChangeStack>;
 
-class HypervisorContext {
-    using HostMode  = MachineMode;
-    using GuestMode = SupervisorMode;
-    using Host      = MachineContext<true>;
+using HypervisorContext = MachineContext<true>;
 
-    struct GuestContext {
-        uint64_t m_satp;
-        uint64_t m_sscratch;
-    };
-
-  public:
-    static HypervisorContext *create(const Chunk &usp, const Chunk &ksp, auto pc, auto a0, auto a1) {
-        Host *host          = Host::create(usp, ksp, pc, a0, a1);
-        GuestContext *guest = reinterpret_cast<GuestContext *>(host) - 1;
-        guest->m_satp       = 0;
-        return reinterpret_cast<HypervisorContext *>(guest);
-    }
-
-  public:
-    __attribute__((naked)) static void swap(void *previous, void *next) {
-        Host::save();
-
-        asm("addi sp, sp, %0" ::"i"(-sizeof(GuestContext)));
-
-        asm("csrr t0, %0\nsd t0, %0(sp)" ::"i"(GuestMode::SATP), "i"(__builtin_offsetof(GuestContext, m_satp)));
-        asm("csrr t0, %0\nsd t0, %0(sp)" ::"i"(GuestMode::SCRATCH), "i"(__builtin_offsetof(GuestContext, m_sscratch)));
-
-        asm("sd sp, 0(%0)" ::"r"(previous));
-        asm("mv sp, %0" ::"r"(next));
-
-        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(__builtin_offsetof(GuestContext, m_satp)), "i"(GuestMode::SATP));
-        asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(__builtin_offsetof(GuestContext, m_sscratch)), "i"(GuestMode::SCRATCH));
-
-        asm("addi sp, sp, %0" ::"i"(sizeof(GuestContext)));
-
-        Host::load();
-    }
-};
+// class HypervisorContext {
+//     using HostMode  = MachineMode;
+//     using GuestMode = SupervisorMode;
+//     using Host      = MachineContext<true>;
+//
+//     struct GuestContext {
+//         uint64_t m_satp;
+//         uint64_t m_sscratch;
+//     };
+//
+//   public:
+//     static HypervisorContext *create(const Chunk &usp, const Chunk &ksp, auto pc, auto a0, auto a1) {
+//         Host *host          = Host::create(usp, ksp, pc, a0, a1);
+//         GuestContext *guest = reinterpret_cast<GuestContext *>(host) - 1;
+//         guest->m_satp       = 0;
+//         return reinterpret_cast<HypervisorContext *>(guest);
+//     }
+//
+//   public:
+//     __attribute__((naked)) static void swap(void *previous, void *next) {
+//         Host::save();
+//
+//         asm("addi sp, sp, %0" ::"i"(-sizeof(GuestContext)));
+//
+//         asm("csrr t0, %0\nsd t0, %0(sp)" ::"i"(GuestMode::SATP), "i"(__builtin_offsetof(GuestContext, m_satp)));
+//         asm("csrr t0, %0\nsd t0, %0(sp)" ::"i"(GuestMode::SCRATCH), "i"(__builtin_offsetof(GuestContext,
+//         m_sscratch)));
+//
+//         asm("sd sp, 0(%0)" ::"r"(previous));
+//         asm("mv sp, %0" ::"r"(next));
+//
+//         asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(__builtin_offsetof(GuestContext, m_satp)), "i"(GuestMode::SATP));
+//         asm("ld t0, %0(sp)\ncsrw %1, t0" ::"i"(__builtin_offsetof(GuestContext, m_sscratch)),
+//         "i"(GuestMode::SCRATCH));
+//
+//         asm("addi sp, sp, %0" ::"i"(sizeof(GuestContext)));
+//
+//         Host::load();
+//     }
+// };
 
 } // namespace riscv64
 

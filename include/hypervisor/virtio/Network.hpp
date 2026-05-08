@@ -42,10 +42,10 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
                 }
 
                 if (len > 0) {
-                    NetworkBuffer *buffer = m_device->alloc(len);
-                    memcpy(buffer->data(), data, len);
-                    m_device->send(buffer);
-                    m_device->free(buffer);
+                    // NetworkBuffer *buffer = m_device->alloc(len);
+                    // memcpy(buffer->data(), data, len);
+                    // m_device->send(buffer);
+                    // m_device->free(buffer);
                 }
 
                 length += descriptor->length;

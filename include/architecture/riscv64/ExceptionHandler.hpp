@@ -1,6 +1,7 @@
 #pragma once
 
 #include <architecture/riscv64/CPU.hpp>
+#include <architecture/riscv64/MMU.hpp>
 #include <architecture/riscv64/csrs.hpp>
 #include <utils/Console.hpp>
 
@@ -9,6 +10,7 @@ namespace DEPOS {
 namespace riscv64 {
 
 class ExceptionHandler {
+    using PageTable = MMU::PageTable;
     // static constexpr const char *Descriptions[] = {
     //     "Instruction Address Misaligned", // 0
     //     "Instruction Access Fault",       // 1
@@ -37,13 +39,12 @@ class ExceptionHandler {
         Console::cout << "pc: " << Console::hex << c->pc << Console::endl;
         Console::cout << "cause: " << c->cause << Console::endl;
         Console::cout << "tval: " << Console::hex << c->value << Console::endl;
-
+        Console::cout << "status: " << Console::hex << c->status << Console::endl;
         // Console::println("\nOhh, It's a Trap!");
         // Console::println("context: ", c);
         // Console::println("id: ", id);
         // Console::println("pc: ", Console::Hex(c->pc));
         // Console::println("cause: ", Console::Hex(c->cause));
-        // Console::println("status: ", Console::Hex(c->status));
         // Console::println("tval: ", Console::Hex(c->value));
         CPU::halt();
     }

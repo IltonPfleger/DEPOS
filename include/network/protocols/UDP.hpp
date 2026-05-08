@@ -52,8 +52,6 @@ class UDP : public Observer<NetworkBuffer, const NetworkAddress &, const Network
         notify(buffer, CPU::be16toh(header->destination), CPU::be16toh(header->source));
     }
 
-    void free(NetworkBuffer *buffer) { _handler->free(buffer); }
-
   private:
     Handler *_handler;
     uint16_t _port;

@@ -12,6 +12,7 @@ namespace riscv64 {
 namespace sbi {
 
 class IllegalInstruction {
+
   public:
     static constexpr unsigned int CODE = 2;
 

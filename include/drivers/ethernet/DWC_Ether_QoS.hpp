@@ -543,7 +543,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDev
         buffer->rewind(sizeof(Header));
         buffer->length(buffer->length() + sizeof(Header));
         new (buffer->data()) Header(destination, address(), protocol);
-        return doSend(buffer);
+        return send(buffer);
     };
 
     static auto *instance() {

@@ -59,8 +59,6 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
 
         _udp.send(_server_address, 69, packet);
 
-        _udp.free(packet);
-
         _semaphore.p();
 
         if (!_error) {
@@ -97,13 +95,13 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
     void onData(uint8_t *data, uint16_t block, size_t length, uint16_t source) {
         if (_done) return;
 
-        if (_received + length >= _buffer_size) {
+        if (_received + length > _buffer_size) {
             onError();
             return;
         }
 
         if (block != _block) {
-            ack(_block, source);
+            ack(_block - 1, source);
             return;
         };
 
@@ -133,7 +131,6 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         payload[0]            = CPU::htobe16(Operation::ACK);
         payload[1]            = CPU::htobe16(block);
         _udp.send(_server_address, source, buffer);
-        _udp.free(buffer);
     }
 
   private:
