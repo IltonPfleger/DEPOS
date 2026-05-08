@@ -5,7 +5,6 @@
 #include <Thread.hpp>
 #include <network/NetworkAddressResolutionService.hpp>
 #include <network/NetworkDevice.hpp>
-#include <network/NetworkProtocolIdentifier.hpp>
 #include <utility/collections/Hash.hpp>
 
 namespace DEPOS {
@@ -13,7 +12,8 @@ namespace DEPOS {
 template <typename Device, typename Protocol>
 class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionService {
   public:
-    enum Operation { REQUEST = 1, REPLY = 2 };
+    enum : uint16_t { ProtocolValue = 0x0806 };
+    enum : uint16_t { REQUEST = 1, REPLY = 2 };
 
     typedef typename Device::Address HA;
     typedef Protocol::Address PA;
@@ -21,7 +21,7 @@ class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionServi
     struct Header {
         Header()
             : htype(CPU::htobe16(1)),
-              ptype(CPU::htobe16(Protocol::Protocol)),
+              ptype(CPU::htobe16(Protocol::ProtocolValue)),
               hlen(sizeof(HA)),
               plen(sizeof(PA)),
               operation(CPU::htobe16(0)) {}
@@ -79,7 +79,7 @@ class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionServi
 
   private:
     void update(NetworkBuffer buffer) {
-        if (buffer.protocol() != NetworkProtocolIdentifier::ARP()) return;
+        if (buffer.protocol() != ProtocolValue) return;
         Header *header = buffer.data<Header *>();
         if (CPU::be16toh(header->operation) == REPLY) {
             onReply(*header);
@@ -101,7 +101,7 @@ class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionServi
         header->dha = HA();
         header->dpa = pa;
 
-        _device->broadcast(NetworkProtocolIdentifier::ARP(), buffer);
+        _device->broadcast(ProtocolValue, buffer);
     }
 
     void onReply(const Header &received) {
@@ -128,7 +128,7 @@ class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionServi
             header->dha = received.sha;
             header->dpa = received.spa;
 
-            _device->send(received.sha, NetworkProtocolIdentifier::ARP(), buffer);
+            _device->send(received.sha, ProtocolValue, buffer);
         }
     }
 

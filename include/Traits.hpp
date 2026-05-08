@@ -1,5 +1,5 @@
-#ifndef __TRAITS_HEADER__
-#define __TRAITS_HEADER__
+#ifndef __DEPOS_TRAITS__
+#define __DEPOS_TRAITS__
 
 #include <macros.hpp>
 #include <types.hpp>

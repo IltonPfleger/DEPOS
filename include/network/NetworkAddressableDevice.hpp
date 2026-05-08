@@ -3,7 +3,6 @@
 
 #include <network/NetworkAddress.hpp>
 #include <network/NetworkDevice.hpp>
-#include <network/NetworkProtocolIdentifier.hpp>
 
 namespace DEPOS {
 

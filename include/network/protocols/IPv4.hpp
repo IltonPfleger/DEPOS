@@ -5,8 +5,7 @@
 #include <machine/Machine.hpp>
 #include <network/GenericAddress.hpp>
 #include <network/NetworkAddressResolutionService.hpp>
-#include <network/NetworkDevice.hpp>
-#include <network/NetworkProtocolIdentifier.hpp>
+#include <network/NetworkAddressableDevice.hpp>
 #include <network/ethernet/Checksum.hpp>
 #include <network/protocols/ARP.hpp>
 
@@ -22,7 +21,7 @@ struct NetworkLayerBuffer {
 class IPv4 : public Observer<NetworkBuffer>,
              public Observed<NetworkBuffer, const NetworkAddress &, const NetworkAddress &, uint8_t> {
   public:
-    enum : uint16_t { Protocol = 0x0800 };
+    enum : uint16_t { ProtocolValue = 0x0800 };
     enum : uint8_t { DefaultTTL = 64, VersionIHL = 0x45 };
 
     using Address = GenericAddress<4>;
@@ -86,7 +85,7 @@ class IPv4 : public Observer<NetworkBuffer>,
 
   public:
     void update(NetworkBuffer buffer) {
-        if (buffer.protocol() != NetworkProtocolIdentifier::IPv4()) return;
+        if (buffer.protocol() != ProtocolValue) return;
         Header *header = buffer.data<Header *>();
         buffer.advance(header->length());
         notify(buffer, header->destination, header->source, header->protocol);
@@ -100,13 +99,13 @@ class IPv4 : public Observer<NetworkBuffer>,
         buffer->length(buffer->length() + sizeof(Header));
 
         if (Address(pa) == Address::broadcast()) {
-            return _device->broadcast(NetworkProtocolIdentifier::IPv4(), buffer);
+            return _device->broadcast(ProtocolValue, buffer);
         } else {
             unsigned char data[16];
             bool solved = _router.resolve(pa, Span(data));
             NetworkAddress ha(data, _device->address().length());
             if (solved)
-                return _device->send(ha, NetworkProtocolIdentifier::IPv4(), buffer);
+                return _device->send(ha, ProtocolValue, buffer);
             else
                 return 0;
         }

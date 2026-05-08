@@ -1,7 +1,5 @@
-#ifndef __DEPOS_NETWORK_BUFFER_HEADER__
-#define __DEPOS_NETWORK_BUFFER_HEADER__
-
-#include <network/NetworkProtocolIdentifier.hpp>
+#ifndef __DEPOS_NETWORK_BUFFER__
+#define __DEPOS_NETWORK_BUFFER__
 
 namespace DEPOS {
 
@@ -14,54 +12,81 @@ class NetworkBuffer {
     };
 
     NetworkBuffer(InternalData *data = 0, uint16_t protocol = 0)
-        : _internal(data),
-          _protocol(protocol) {
+        : internal_(data),
+          protocol_(protocol) {
         if (internal()) {
-            _data   = start();
-            _length = size();
+            data_   = start();
+            length_ = size();
         }
     }
 
-    template <typename T = uint8_t *> [[nodiscard]] T data(this auto &&self) { return reinterpret_cast<T>(self._data); }
-    [[nodiscard]] uint8_t operator[](this auto &&self, size_t i) { return self._data[i]; }
+    template <typename T = uint8_t *> [[nodiscard]] T data(this auto &&self) { return reinterpret_cast<T>(self.data_); }
+    [[nodiscard]]
+    uint8_t operator[](this auto &&self, size_t i) {
+        return self.data_[i];
+    }
 
-    [[nodiscard]] const InternalData *internal() const { return _internal; }
+    [[nodiscard]]
+    const InternalData *internal() const {
+        return internal_;
+    }
 
-    void length(size_t l) { _length = l; }
+    [[nodiscard]]
+    size_t protocol() const {
+        return protocol_;
+    }
 
-    void protocol(size_t p) { _protocol = p; }
+    [[nodiscard]]
+    size_t length() const {
+        return length_;
+    }
 
-    [[nodiscard]] size_t protocol() const { return _protocol; }
+    [[nodiscard]]
+    auto &references() {
+        return internal()->references;
+    }
 
-    [[nodiscard]] size_t length() const { return _length; }
+    [[nodiscard]]
+    uint8_t *start() const {
+        return internal()->start;
+    }
 
-    [[nodiscard]] auto &references() { return internal()->references; }
+    [[nodiscard]]
+    size_t size() const {
+        return internal()->size;
+    }
 
-    [[nodiscard]] uint8_t *start() const { return internal()->start; }
+    [[nodiscard]]
+    size_t offset() const {
+        return static_cast<size_t>(data() - start());
+    }
 
-    [[nodiscard]] size_t size() const { return internal()->size; }
+    [[nodiscard]]
+    size_t remaining() const {
+        return size() - offset();
+    }
 
-    [[nodiscard]] size_t offset() const { return static_cast<size_t>(data() - start()); }
+    void length(size_t l) { length_ = l; }
 
-    [[nodiscard]] size_t remaining() const { return size() - offset(); }
+    void protocol(size_t p) { protocol_ = p; }
 
-    void reset() { _data = start(); }
+    void reset() { data_ = start(); }
 
     bool advance(size_t bytes) {
-        _data += bytes;
+        data_ += bytes;
         return true;
     }
 
     bool rewind(size_t bytes) {
-        _data -= bytes;
+        data_ -= bytes;
         return true;
     }
 
   private:
-    const InternalData *_internal;
-    uint8_t *_data;
-    size_t _length;
-    uint16_t _protocol;
+    const InternalData *internal_;
+    uint8_t *data_;
+    size_t length_;
+    uint16_t protocol_;
 };
 
 } // namespace DEPOS

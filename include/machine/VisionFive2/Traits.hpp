@@ -13,7 +13,7 @@ class PLIC;
 class UART;
 class UART0;
 class GMAC0;
-// class IPv4;
+class IPv4;
 class IC;
 class CAN0;
 class CacheController;
@@ -104,10 +104,6 @@ template <> struct Traits<UART> {
 };
 
 /* ********** Ethernet ********** */
-// template <> struct Traits<IPv4> {
-//     static constexpr unsigned char Address[] = {150, 162, 62, 2};
-// };
-
 template <> struct Traits<GMAC0> {
     static constexpr unsigned long Address = Traits<MemoryMap>::GMAC0;
     static constexpr unsigned char MAC[]   = {12, 34, 56, 78, 12, 34};
