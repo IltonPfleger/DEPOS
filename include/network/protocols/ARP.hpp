@@ -58,19 +58,19 @@ template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : pu
 
     void bind(const NetworkAddress &a) { pa_ = a; }
 
-    bool resolve(const NetworkAddress &pa, Span<uint8_t> destination) {
+    bool resolve(const PA &pa, const HA &solver, HA &destination) {
         while (true) {
             lock_.acquire();
             auto &entry = table_[pa];
 
-            if (entry.valid && NetworkAddress(entry.pa) == pa) {
+            if (entry.valid && entry.pa == pa) {
                 memcpy(destination, &entry.ha, sizeof(HA));
                 lock_.release();
                 return true;
             }
 
             entry.waiting++;
-            request(pa);
+            request(pa, solver);
             entry.waiters.wait(&lock_);
         }
     }
@@ -86,7 +86,7 @@ template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : pu
         }
     }
 
-    void request(const PA &pa) {
+    void request(const PA &pa, const HA &solver) {
         NetworkBuffer *buffer = device_.alloc(sizeof(Header));
 
         Header *header = new (buffer->data()) Header();
@@ -99,7 +99,7 @@ template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : pu
         header->dha = HA();
         header->dpa = pa;
 
-        device_.broadcast(ProtocolValue, buffer);
+        device_.send(solver, ProtocolValue, buffer);
     }
 
     void onReply(const Header &received) {

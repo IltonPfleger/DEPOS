@@ -12,10 +12,8 @@ class NetworkAddressableDevice : public NetworkDevice {
 
     virtual ~NetworkAddressableDevice() {}
 
-    virtual NetworkAddress address() const       = 0;
-    virtual void address(const NetworkAddress &) = 0;
-
-    virtual int broadcast(uint16_t, NetworkBuffer *)                    = 0;
+    virtual NetworkAddress address() const                              = 0;
+    virtual void address(const NetworkAddress &)                        = 0;
     virtual int send(const NetworkAddress &, uint16_t, NetworkBuffer *) = 0;
 };
 

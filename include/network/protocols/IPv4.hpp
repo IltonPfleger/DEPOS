@@ -5,7 +5,7 @@
 #include <network/GenericAddress.hpp>
 #include <network/NetworkAddressableDevice.hpp>
 #include <network/NetworkLinkLayer.hpp>
-#include <network/ethernet/Checksum.hpp>
+#include <network/protocols/InternetChecksum.hpp>
 
 namespace DEPOS {
 
@@ -54,7 +54,7 @@ class IPv4 : public Observer<NetworkBuffer>,
             source         = s;
             destination    = d;
             checksum       = 0;
-            checksum       = Checksum::calculate(this, sizeof(Header));
+            checksum       = InternetChecksum(this, sizeof(Header));
         }
 
         uint8_t length() const { return (version & 0x0F) * 4; }

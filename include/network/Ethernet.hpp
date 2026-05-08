@@ -18,7 +18,7 @@ class Ethernet {
 
         const Address &source() const { return _destination; }
         const Address &destination() const { return _source; }
-        const Protocol &protocol() const { return CPU::be16toh(_protocol); }
+        Protocol protocol() const { return CPU::be16toh(_protocol); }
 
       private:
         Address _destination;

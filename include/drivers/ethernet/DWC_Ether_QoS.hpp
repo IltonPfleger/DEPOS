@@ -5,9 +5,9 @@
 #include <libraries/libc/string.h>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
+#include <network/Ethernet.hpp>
 #include <network/NetworkAddressableDevice.hpp>
 #include <network/NetworkDevice.hpp>
-#include <network/ethernet/Ethernet.hpp>
 #include <utility/Debug.hpp>
 
 namespace DEPOS {
@@ -534,10 +534,6 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDev
     NetworkAddress address() const override { return _address; }
 
     void address(const NetworkAddress &address) override { new (&_address) Address(address); }
-
-    int broadcast(uint16_t protocol, NetworkBuffer *buffer) override {
-        return send(Ethernet::broadcast(), protocol, buffer);
-    }
 
     int send(const NetworkAddress &destination, uint16_t protocol, NetworkBuffer *buffer) override {
         buffer->rewind(sizeof(Header));

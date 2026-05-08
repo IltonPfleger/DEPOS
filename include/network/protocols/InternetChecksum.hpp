@@ -2,9 +2,10 @@
 
 namespace DEPOS {
 
-class Checksum {
+class InternetChecksum {
   public:
-    static uint16_t calculate(const void *data, size_t length) {
+    InternetChecksum(const void *data, size_t length)
+        : _result(0) {
         uint32_t sum            = 0;
         const uint16_t *pointer = reinterpret_cast<const uint16_t *>(data);
 
@@ -16,8 +17,13 @@ class Checksum {
         while (sum >> 16)
             sum = (sum & 0xFFFF) + (sum >> 16);
 
-        return static_cast<uint16_t>(~sum);
+        _result = static_cast<uint16_t>(~sum);
     }
+
+    operator uint16_t() const { return _result; }
+
+  private:
+    uint16_t _result;
 };
 
 } // namespace DEPOS

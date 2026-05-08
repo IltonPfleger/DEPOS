@@ -27,10 +27,9 @@ class LinkIPv4ToEthernet : public NetworkLinkLayer {
     virtual int send(const NetworkAddress &address, NetworkBuffer *buffer) override {
         if (IP(address) == IPv4Broadcast) return device_.send(EthernetBroadcast, Ethertype, buffer);
 
-        unsigned char data[16];
-        if (router_.resolve(address, Span(data))) {
-            NetworkAddress ha(data, device_.address().length());
-            return device_.send(ha, Ethertype, buffer);
+        MAC solved;
+        if (router_.resolve(address, EthernetBroadcast, solved)) {
+            return device_.send(solved, Ethertype, buffer);
         }
 
         return 0;
