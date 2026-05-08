@@ -14,28 +14,12 @@ template <typename True, typename False> struct IF<false, True, False> {
     using Result = False;
 };
 
-template <typename T, auto Method, typename... Args> struct Caller {
-    static auto Result(T *obj, Args... args) { (obj->*Method)(args...); }
-};
-
 template <unsigned N, typename T> struct Array {
     constexpr T &operator[](unsigned int row) { return m_data[row]; }
     constexpr const T &operator[](unsigned int row) const { return m_data[row]; }
 
   private:
     T m_data[N];
-};
-
-template <typename T> struct Void {
-    static constexpr bool Result = false;
-};
-
-template <> struct Void<void> {
-    static constexpr bool Result = true;
-};
-
-template <typename T> struct Signed {
-    static constexpr bool Result = T(-1) < T(0);
 };
 
 template <typename T, typename U> struct Same {
@@ -68,12 +52,6 @@ template <typename... Ts, typename Function> void forEach(TypeList<Ts...>, Funct
 }
 
 template <typename T>
-concept Integer = requires(T a) {
-    a % 10;
-    a / 10;
-};
-
-template <typename T>
 concept Pointer = requires(T t) { []<typename U>(U *) {}(t); };
 
 template <typename...> struct Tuple;
@@ -91,6 +69,68 @@ template <typename Head, typename... Tail, typename Function> void forEach(Tuple
     f(tuple.m_value);
     forEach(tuple.m_next, f);
 }
+
+/* ------------------------------------------------------------------------- */
+/*                                 Types                                     */
+/* ------------------------------------------------------------------------- */
+
+template <typename T> struct IsInteger {
+    static constexpr bool Result = false;
+};
+template <> struct IsInteger<char> {
+    static constexpr bool Result = true;
+};
+template <> struct IsInteger<signed char> {
+    static constexpr bool Result = true;
+};
+template <> struct IsInteger<unsigned char> {
+    static constexpr bool Result = true;
+};
+template <> struct IsInteger<short> {
+    static constexpr bool Result = true;
+};
+template <> struct IsInteger<unsigned short> {
+    static constexpr bool Result = true;
+};
+template <> struct IsInteger<int> {
+    static constexpr bool Result = true;
+};
+template <> struct IsInteger<unsigned int> {
+    static constexpr bool Result = true;
+};
+template <> struct IsInteger<long> {
+    static constexpr bool Result = true;
+};
+template <> struct IsInteger<unsigned long> {
+    static constexpr bool Result = true;
+};
+template <> struct IsInteger<long long> {
+    static constexpr bool Result = true;
+};
+template <> struct IsInteger<unsigned long long> {
+    static constexpr bool Result = true;
+};
+
+template <typename T>
+concept Integer = IsInteger<T>::Result;
+
+template <Integer T> struct IsSigned {
+    static constexpr bool Result = T(-1) < T(0);
+};
+
+template <typename T>
+concept Signed = IsSigned<T>::Result;
+
+template <typename T> struct IsVoid {
+    static constexpr bool Result = false;
+};
+
+template <> struct IsVoid<void> {
+    static constexpr bool Result = true;
+};
+
+template <typename T>
+concept Void = IsVoid<T>::Result;
 
 } // namespace Meta
 

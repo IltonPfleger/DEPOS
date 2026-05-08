@@ -88,8 +88,10 @@ class Console {
         }
     }
 
+    static void print(bool x) { print(x ? "true" : "false"); }
+
     template <Meta::Integer T> static void print(T x) {
-        if constexpr (Meta::Signed<T>::Result) {
+        if constexpr (Meta::IsSigned<T>::Result) {
             print(static_cast<intmax_t>(x));
         } else {
             print(static_cast<uintmax_t>(x));

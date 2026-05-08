@@ -2,46 +2,11 @@
 
 #include <Meta.hpp>
 #include <types.hpp>
+#include <utility/collections/Node.hpp>
 
 namespace DEPOS {
 
-template <typename Value = void, typename Priority = void> struct Node {
-    template <typename T> friend class LinkedList;
-    template <typename T> friend class LIFO;
-    template <typename T> friend class FIFO;
-    template <typename T> friend class POLO;
-
-    Node *next() const { return m_next; }
-
-    auto &value() { return m_value; }
-    const auto &value() const { return m_value; }
-
-    auto &criterion() { return m_criterion; }
-    const auto &criterion() const { return m_criterion; }
-
-    template <typename V, typename P>
-    Node(V &&v, P &&p)
-        : m_value(static_cast<V &&>(v)),
-          m_criterion(static_cast<P &&>(p)) {}
-
-    template <typename V>
-    Node(V &&v)
-        : m_value(static_cast<V &&>(v)) {}
-
-    Node() = default;
-
-  private:
-    Meta::IF<Meta::Void<Value>::Result, Meta::Empty, Value>::Result m_value;
-    Meta::IF<Meta::Void<Priority>::Result, Meta::Empty, Priority>::Result m_criterion;
-    Node *m_next = nullptr;
-};
-
-template <typename T>
-concept ListConcept = requires(T list, typename T::Element *node) {
-    list.insert(node);
-    { list.insert(node) } -> Meta::SameAs<void>;
-    { list.remove() } -> Meta::SameAs<typename T::Element *>;
-};
+template <typename V = void, typename P = void, typename D = void> using Node = collections::Node<V, P, D>;
 
 template <typename T> class LinkedList {
   public:
