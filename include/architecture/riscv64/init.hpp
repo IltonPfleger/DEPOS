@@ -29,6 +29,8 @@ __attribute__((naked)) static void supervisor() {
 inline void init() {
     csrw<MachineMode::IE>(0);
 
+    // PMP::TOR<1>(__kmm.text.start(), __kmm.text.start() + __kmm.text.size(), PMP::R | PMP::X | PMP::LOCK);
+
     TrapHandler::init();
 
     size_t core = CPU::id<true>();

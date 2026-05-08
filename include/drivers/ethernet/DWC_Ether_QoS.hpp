@@ -514,7 +514,7 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDev
         return buffer;
     }
 
-    int doSend(NetworkBuffer *buffer) override { return m_dma->send(buffer->data(), buffer->length()); }
+    int doSend(NetworkBuffer *buffer) override { return m_dma->send(buffer->start(), buffer->length()); }
 
     void doFree(NetworkBuffer *buffer) override { m_dma->free(static_cast<DWC_Ether_QoS_Buffer *>(buffer)); }
 

@@ -33,7 +33,7 @@ class VCPU {
 
         csrw<SupervisorMode::SATP>(0);
 
-        PMP::NAPOT<0>(_entry, _size, PMP::R | PMP::W | PMP::X);
+        PMP::NAPOT<2>(_entry, _size, PMP::R | PMP::W | PMP::X);
 
         long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt

@@ -21,8 +21,8 @@ class PMP {
         csrw<PMPADDR + N - 1>(start >> 2);
         csrw<PMPADDR + N>(end >> 2);
 
-        unsigned int shift        = (N % 4) * 8;
-        constexpr uintptr_t index = N / 4;
+        constexpr uintptr_t index = (N / 8) * 2;
+        unsigned int shift        = (N % 8) * 8;
         uintptr_t cfg             = csrr<PMPCFG + index>();
 
         cfg &= ~(0xFFULL << shift);
