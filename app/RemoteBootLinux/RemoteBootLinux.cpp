@@ -6,6 +6,7 @@
 #include <hypervisor/virtio/Network.hpp>
 #include <libraries/libc/string.h>
 #include <machine/Machine.hpp>
+#include <network/link/LinkIPv4ToEthernet.hpp>
 #include <network/protocols/TFTP.hpp>
 
 using namespace DEPOS;
@@ -87,10 +88,10 @@ int main() {
     constexpr size_t MB              = 1024 * 1024;
     constexpr size_t LinuxMemorySize = 256 * MB;
 
-    auto *router = new ARP<Device, IPv4>(Device::instance());
-    auto *ipv4   = new IPv4(IPv4::Address(192, 168, 1, 167), Device::instance(), *router);
-    auto *udp    = new UDP(ipv4);
-    auto *tftp   = new TFTP(*udp);
+    auto *link = new LinkIPv4ToEthernet(*Device::instance());
+    auto *ipv4 = new IPv4(IPv4::Address(192, 168, 1, 167), *Device::instance(), *link);
+    auto *udp  = new UDP(ipv4);
+    auto *tftp = new TFTP(*udp);
 
     auto *buffer = static_cast<unsigned char *>(Memory::alloc(LinuxMemorySize));
     auto address = reinterpret_cast<uintptr_t>(buffer);

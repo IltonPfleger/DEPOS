@@ -3,25 +3,23 @@
 
 #include <ConditionalVariable.hpp>
 #include <Thread.hpp>
-#include <network/NetworkAddressResolutionService.hpp>
-#include <network/NetworkDevice.hpp>
+#include <network/NetworkAddressableDevice.hpp>
 #include <utility/collections/Hash.hpp>
 
 namespace DEPOS {
 
-template <typename Device, typename Protocol>
-class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionService {
+template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : public Observer<NetworkBuffer> {
   public:
     enum : uint16_t { ProtocolValue = 0x0806 };
     enum : uint16_t { REQUEST = 1, REPLY = 2 };
 
-    typedef typename Device::Address HA;
-    typedef Protocol::Address PA;
+    typedef typename HardwareLayerType::Address HA;
+    typedef ProtocolLayerType::Address PA;
 
     struct Header {
         Header()
             : htype(CPU::htobe16(1)),
-              ptype(CPU::htobe16(Protocol::ProtocolValue)),
+              ptype(CPU::htobe16(ProtocolLayerType::ProtocolValue)),
               hlen(sizeof(HA)),
               plen(sizeof(PA)),
               operation(CPU::htobe16(0)) {}
@@ -51,29 +49,29 @@ class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionServi
 
     typedef Hash<PA, Entry, 256, Hasher> Table;
 
-    ARP(Device *device)
-        : _device(device) {
-        _device->attach(this);
+    ARP(NetworkAddressableDevice &device)
+        : device_(device) {
+        device_.attach(this);
     }
 
-    ~ARP() { _device->detach(this); }
+    ~ARP() { device_.detach(this); }
 
-    void bind(const NetworkAddress &a) { _pa = a; }
+    void bind(const NetworkAddress &a) { pa_ = a; }
 
     bool resolve(const NetworkAddress &pa, Span<uint8_t> destination) {
         while (true) {
-            _lock.acquire();
-            auto &entry = _table[pa];
+            lock_.acquire();
+            auto &entry = table_[pa];
 
             if (entry.valid && NetworkAddress(entry.pa) == pa) {
                 memcpy(destination, &entry.ha, sizeof(HA));
-                _lock.release();
+                lock_.release();
                 return true;
             }
 
             entry.waiting++;
             request(pa);
-            entry.waiters.wait(&_lock);
+            entry.waiters.wait(&lock_);
         }
     }
 
@@ -89,54 +87,54 @@ class ARP : public Observer<NetworkBuffer>, public NetworkAddressResolutionServi
     }
 
     void request(const PA &pa) {
-        NetworkBuffer *buffer = _device->alloc(sizeof(Header));
+        NetworkBuffer *buffer = device_.alloc(sizeof(Header));
 
         Header *header = new (buffer->data()) Header();
 
         header->operation = CPU::htobe16(REQUEST);
 
-        header->sha = _device->address();
-        header->spa = _pa;
+        header->sha = device_.address();
+        header->spa = pa_;
 
         header->dha = HA();
         header->dpa = pa;
 
-        _device->broadcast(ProtocolValue, buffer);
+        device_.broadcast(ProtocolValue, buffer);
     }
 
     void onReply(const Header &received) {
-        _lock.acquire();
-        auto &entry = _table[received.spa];
+        lock_.acquire();
+        auto &entry = table_[received.spa];
         entry.pa    = received.spa;
         entry.ha    = received.sha;
         entry.valid = true;
         entry.waiters.signalize();
-        _lock.release();
+        lock_.release();
     }
 
     void onRequest(const Header &received) {
-        if (received.dpa == _pa) {
-            NetworkBuffer *buffer = _device->alloc(sizeof(Header));
+        if (received.dpa == pa_) {
+            NetworkBuffer *buffer = device_.alloc(sizeof(Header));
 
             Header *header = new (buffer->data()) Header();
 
             header->operation = CPU::htobe16(REPLY);
 
-            header->sha = _device->address();
-            header->spa = _pa;
+            header->sha = device_.address();
+            header->spa = pa_;
 
             header->dha = received.sha;
             header->dpa = received.spa;
 
-            _device->send(received.sha, ProtocolValue, buffer);
+            device_.send(received.sha, ProtocolValue, buffer);
         }
     }
 
   private:
-    Device *_device;
-    Spin _lock;
-    PA _pa;
-    Table _table;
+    NetworkAddressableDevice &device_;
+    Spin lock_;
+    PA pa_;
+    Table table_;
 };
 
 } // namespace DEPOS

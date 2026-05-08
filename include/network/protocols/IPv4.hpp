@@ -1,13 +1,11 @@
 #pragma once
 
-#include <ConditionalVariable.hpp>
 #include <Meta.hpp>
 #include <machine/Machine.hpp>
 #include <network/GenericAddress.hpp>
-#include <network/NetworkAddressResolutionService.hpp>
 #include <network/NetworkAddressableDevice.hpp>
+#include <network/NetworkLinkLayer.hpp>
 #include <network/ethernet/Checksum.hpp>
-#include <network/protocols/ARP.hpp>
 
 namespace DEPOS {
 
@@ -63,21 +61,19 @@ class IPv4 : public Observer<NetworkBuffer>,
 
     } __attribute__((packed));
 
-    IPv4(const Address &address, NetworkAddressableDevice *device, NetworkAddressResolutionService &router)
-        : _device(device),
-          _router(router) {
+    IPv4(const Address &address, NetworkAddressableDevice &device, NetworkLinkLayer &link)
+        : device_(device),
+          link_(link) {
         _address = address;
-        _router.bind(_address);
-        _device->attach(this);
+        link_.bind(_address);
+        device_.attach(this);
     }
 
-    const Address &address() const { return _address; }
-
-    ~IPv4() { _device->detach(this); }
+    ~IPv4() { device_.detach(this); }
 
     NetworkBuffer *alloc(size_t length) {
         size_t total          = length + sizeof(Header);
-        NetworkBuffer *buffer = _device->alloc(total);
+        NetworkBuffer *buffer = device_.alloc(total);
         buffer->advance(sizeof(Header));
         buffer->length(total);
         return buffer;
@@ -94,27 +90,17 @@ class IPv4 : public Observer<NetworkBuffer>,
     int send(const NetworkAddress &pa, uint8_t protocol, NetworkBuffer *buffer) {
         buffer->rewind(sizeof(Header));
 
-        new (buffer->data()) Header(pa, this->address(), protocol, buffer->length());
+        new (buffer->data()) Header(pa, _address, protocol, buffer->length());
 
         buffer->length(buffer->length() + sizeof(Header));
 
-        if (Address(pa) == Address::broadcast()) {
-            return _device->broadcast(ProtocolValue, buffer);
-        } else {
-            unsigned char data[16];
-            bool solved = _router.resolve(pa, Span(data));
-            NetworkAddress ha(data, _device->address().length());
-            if (solved)
-                return _device->send(ha, ProtocolValue, buffer);
-            else
-                return 0;
-        }
+        return link_.send(pa, buffer);
     }
 
   private:
     Address _address;
-    NetworkAddressableDevice *_device;
-    NetworkAddressResolutionService &_router;
+    NetworkAddressableDevice &device_;
+    NetworkLinkLayer &link_;
 };
 
 } // namespace DEPOS

@@ -1,14 +1,13 @@
 #pragma once
 
 #include <network/GenericAddress.hpp>
-#include <network/NetworkProtocolIdentifier.hpp>
 
 namespace DEPOS {
 
 class Ethernet {
   public:
     typedef GenericAddress<6> Address;
-    typedef NetworkProtocolIdentifier Protocol;
+    typedef uint16_t Protocol;
 
     class Header {
       public:
@@ -19,7 +18,7 @@ class Ethernet {
 
         const Address &source() const { return _destination; }
         const Address &destination() const { return _source; }
-        Protocol protocol() const { return CPU::be16toh(_protocol); }
+        const Protocol &protocol() const { return CPU::be16toh(_protocol); }
 
       private:
         Address _destination;
@@ -27,7 +26,7 @@ class Ethernet {
         Protocol _protocol;
     } __attribute__((packed));
 
-    Address broadcast() const { return Address({255, 255, 255, 255, 255, 255}); }
+    // Address broadcast() const { return Address({255, 255, 255, 255, 255, 255}); }
 
     // class Device : public AddressableNetworkDevice {
     //   public:
