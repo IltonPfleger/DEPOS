@@ -5,14 +5,14 @@
 #include <scheduler/FixedCore.hpp>
 #include <scheduler/RR.hpp>
 #include <utility/Debug.hpp>
-#include <utils/Lists.hpp>
+#include <utility/collections/Node.hpp>
 
 namespace DEPOS {
 
 template <typename T> class Scheduler {
   public:
     using Criterion = typename Traits<T>::Criterion;
-    using Link      = Node<T *, Criterion>;
+    using Link      = collections::Node<T *, Criterion>;
 
     Scheduler() = default;
 

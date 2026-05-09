@@ -8,7 +8,7 @@ namespace DEPOS {
 
 class Memory {
   private:
-    using Allocator = Allocators::Buddy<Traits<Memory>::Order>;
+    using Allocator = allocators::Buddy<Traits<Memory>::Order>;
 
   public:
     static void init();

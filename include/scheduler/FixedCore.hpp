@@ -1,9 +1,9 @@
-#ifndef __DEPOS_KERNEL_SCHEDULER_FIXED_CORE_HEADER__
-#define __DEPOS_KERNEL_SCHEDULER_FIXED_CORE_HEADER__
+#ifndef __DEPOS_SCHEDULER_FIXED_CORE__
+#define __DEPOS_SCHEDULER_FIXED_CORE__
 
 #include <Spin.hpp>
 #include <types.hpp>
-#include <utils/Lists.hpp>
+#include <utility/collections/FIFO.hpp>
 
 namespace DEPOS {
 
@@ -15,49 +15,49 @@ class FixedCore {
     static constexpr size_t NumberOfQueues = NumberOfCores * HIGHER;
 
     FixedCore(size_t rank = NORMAL, size_t cpu = ANY, ...)
-        : _index(build(rank, cpu)) {}
+        : index_(build(rank, cpu)) {}
 
     template <typename T> struct Collection {
         void insert(const FixedCore &c, T *t) {
             size_t i = c.index();
-            _locks[i].acquire();
-            _queues[i].insert(t);
-            _locks[i].release();
+            locks_[i].acquire();
+            queues_[i].insert(t);
+            locks_[i].release();
         }
 
         T *remove(size_t rank) {
             size_t i = encode(rank, CPU::id());
-            _locks[i].acquire();
-            T *t = _queues[i].remove();
-            _locks[i].release();
+            locks_[i].acquire();
+            T *t = queues_[i].remove();
+            locks_[i].release();
             return t;
         }
 
       private:
-        FIFO<T> _queues[NumberOfQueues];
-        Spin _locks[NumberOfQueues];
+        collections::FIFO<T> queues_[NumberOfQueues];
+        Spin locks_[NumberOfQueues];
     };
 
     operator size_t() const { return rank(); }
 
   private:
-    size_t index() const { return _index; }
+    size_t index() const { return index_; }
     size_t cpu() const { return index() / HIGHER; }
     size_t rank() const { return index() % HIGHER; }
     static size_t encode(size_t rank, size_t cpu) { return cpu * HIGHER + rank; }
     static size_t build(size_t rank, size_t cpu) {
         if (rank == IDLE) {
-            cpu = CPU::Atomic::finc(s_idles);
+            cpu = CPU::Atomic::finc(idles_);
         } else if (cpu == ANY) {
-            cpu = CPU::Atomic::finc(s_counter);
+            cpu = CPU::Atomic::finc(counter_);
         }
         return encode(rank, cpu % NumberOfCores);
     }
 
   private:
-    static inline size_t s_idles   = 0;
-    static inline size_t s_counter = 0;
-    size_t _index;
+    static inline size_t idles_   = 0;
+    static inline size_t counter_ = 0;
+    size_t index_;
 };
 
 } // namespace DEPOS

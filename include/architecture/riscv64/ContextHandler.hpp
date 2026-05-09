@@ -30,7 +30,7 @@ template <typename T, bool ChangeStack> class ContextHandler : public Context {
         load();
     }
 
-    __attribute__((naked)) static void load() {
+    __attribute__((always_inline)) static void load() {
         if constexpr (ChangeStack) {
             asm("csrr t0, %0" ::"i"(T::SCRATCH));
             asm("ld t1, %0(sp)" ::"i"(__builtin_offsetof(Context, ksp)));
@@ -155,7 +155,7 @@ template <typename T, bool ChangeStack> class ContextHandler : public Context {
         return sp;
     }
 
-    __attribute__((naked)) static void pop() {
+    __attribute__((always_inline)) static void pop() {
         asm("ld t0, %0(sp); csrw %1, t0" ::"i"(__builtin_offsetof(Context, status)), "i"(T::STATUS));
         asm("ld t0, %0(sp); csrw %1, t0" ::"i"(__builtin_offsetof(Context, pc)), "i"(T::EPC));
 

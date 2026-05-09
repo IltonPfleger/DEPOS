@@ -13,7 +13,7 @@ class Thread {
     using Scheduler = DEPOS::Scheduler<Thread>;
     using Criterion = Scheduler::Criterion;
     using Link      = Scheduler::Link;
-    using Queue     = FIFO<Link>;
+    using Queue     = collections::FIFO<Link>;
 
     using Return   = void *;
     using Argument = void *;

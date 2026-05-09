@@ -1,9 +1,9 @@
-#ifndef __DEPOS_SCHEDULER_RR_HEADER__
-#define __DEPOS_SCHEDULER_RR_HEADER__
+#ifndef __DEPOS_SCHEDULER_RR__
+#define __DEPOS_SCHEDULER_RR__
 
 #include <Spin.hpp>
 #include <types.hpp>
-#include <utils/Lists.hpp>
+#include <utility/collections/FIFO.hpp>
 
 namespace DEPOS {
 
@@ -13,32 +13,32 @@ class RR {
     enum : uint8_t { IDLE = 0, NORMAL = 1, MAX = 2 };
 
     RR(uint8_t rank)
-        : _rank(rank) {}
+        : rank_(rank) {}
 
-    operator size_t() const { return _rank; }
+    operator size_t() const { return rank_; }
 
     template <typename T> struct Collection {
       public:
         void insert(const RR &r, T *t) {
-            m_lock[r].acquire();
-            m_queues[r].insert(t);
-            m_lock[r].release();
+            lock_[r].acquire();
+            queues_[r].insert(t);
+            lock_[r].release();
         }
 
         T *remove(const RR &r) {
-            m_lock[r].acquire();
-            auto t = m_queues[r].remove();
-            m_lock[r].release();
+            lock_[r].acquire();
+            auto t = queues_[r].remove();
+            lock_[r].release();
             return t;
         }
 
       private:
-        FIFO<T> m_queues[MAX];
-        Spin m_lock[MAX];
+        collections::FIFO<T> queues_[MAX];
+        Spin lock_[MAX];
     };
 
   private:
-    uint8_t _rank;
+    uint8_t rank_;
 };
 
 } // namespace DEPOS

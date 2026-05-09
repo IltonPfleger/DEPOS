@@ -9,7 +9,7 @@ namespace riscv64 {
 
 class TrapHandler {
   public:
-    enum Type { Exception = 0, IRQ = 1 };
+    enum Type { Exception = 0, Interrupt = 1 };
 
   private:
     using ID      = size_t;
@@ -38,7 +38,7 @@ class TrapHandler {
     };
 
   public:
-    static void install(ID id, Handler handler, Type type = IRQ) {
+    static void install(ID id, Handler handler, Type type = Interrupt) {
         Index index = irq2index(id, type);
         ERROR(index >= NumberOfTrapHandlers, index);
         s_handlers[index] = handler;

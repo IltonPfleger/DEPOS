@@ -9,6 +9,8 @@ template <typename T> class FIFO {
   public:
     FIFO() = default;
 
+    T *head() { return head_; }
+
     void insert(T *node) {
         node->next() = nullptr;
         if (!head_)
@@ -25,7 +27,7 @@ template <typename T> class FIFO {
         return node;
     }
 
-  private:
+  protected:
     T *head_;
     T *tail_;
 };

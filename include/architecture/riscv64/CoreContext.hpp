@@ -1,5 +1,5 @@
-#ifndef __RISCV64_CORE_CONTEXT_HEADER__
-#define __RISCV64_CORE_CONTEXT_HEADER__
+#ifndef __DEPOS_RISCV64_CORE_CONTEXT__
+#define __DEPOS_RISCV64_CORE_CONTEXT__
 
 #include <types.hpp>
 

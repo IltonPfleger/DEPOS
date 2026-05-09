@@ -2,8 +2,8 @@
 
 #include <architecture/IC.hpp>
 #include <drivers/Driver.hpp>
-#include <utility/Observer.hpp>
 #include <utility/Debug.hpp>
+#include <utility/Observer.hpp>
 
 namespace DEPOS {
 
