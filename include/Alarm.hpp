@@ -9,7 +9,7 @@
 namespace DEPOS {
 
 class Alarm {
-    using Link = collections::Node<Thread::Queue *, Microsecond>;
+    using Link = collections::Node<Thread::Queue, Microsecond>;
     using List = collections::POLO<Link>;
 
   public:

@@ -7,12 +7,14 @@ bool Alarm::elapsed(Microsecond us) { return static_cast<intmax_t>(Timer::now() 
 
 void Alarm::at(Microsecond us) {
     int core = CPU::id();
-    Thread::Queue queue;
-    Spin spin;
+    Link link(Thread::Queue{}, us);
 
-    Link link(&queue, us);
+    bool enabled = CPU::Interrupt::disable();
     s_delays[core].insert(&link);
-    Thread::sleep(&queue, &spin);
+    if (enabled) CPU::Interrupt::enable();
+
+    Spin stub;
+    Thread::sleep(&link.value(), &stub);
 }
 
 void Alarm::udelay(Microsecond us) { Alarm::at(Timer::now() + us); }
@@ -23,7 +25,7 @@ void Alarm::onTick() {
 
     Link *head = list.head();
     while (head && elapsed(head->criterion())) {
-        Thread::wakeup(head->value());
+        Thread::wakeup(&head->value());
         list.remove();
         head = list.head();
     }
