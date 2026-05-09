@@ -529,8 +529,6 @@ template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDev
 
     void doRelease(NetworkBuffer *buffer) override { m_dma->release(static_cast<DWC_Ether_QoS_Buffer *>(buffer)); }
 
-    // ***************************************************
-
     NetworkAddress address() const override { return _address; }
 
     void address(const NetworkAddress &address) override { new (&_address) Address(address); }

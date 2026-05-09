@@ -24,7 +24,7 @@ $(BIN): $(ELF)
 
 $(ELF): $(BUILD)/$(APPLICATION).o
 	@mkdir -p $(dir $@)
-	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(APPLICATION_ADDR) --image-base=$(APPLICATION_ADDR) -o $@ $^
+	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(Application_Addr) --image-base=$(Application_Addr) -o $@ $<
 
 $(BUILD)/$(APPLICATION).o: $(APPLICATION).cpp $(KERNEL_BLOB) $(DTB_BLOB) $(INITRAMFS_BLOB)
 	@mkdir -p $(dir $@)

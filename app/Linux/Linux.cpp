@@ -4,8 +4,8 @@
 #include <hypervisor/GenericVirtualMachine.hpp>
 #include <hypervisor/virtio/Console.hpp>
 #include <machine/Machine.hpp>
-#include <utils/Console.hpp>
-#include <utils/string.hpp>
+#include <utility/Console.hpp>
+// #include <utils/string.hpp>
 
 using namespace DEPOS;
 
@@ -165,7 +165,7 @@ int main() {
     // dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
     // dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
 
-    // Console::cout << "\n *** Linux is at core " << CPU::id() << " ***\n ";
+    Console::println("\n *** Linux is at core ", CPU::id(), " ***");
     // CPU::mb();
 
     typedef GenericVirtualMachine<Serial> MyMachine;

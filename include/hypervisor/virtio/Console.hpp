@@ -12,35 +12,23 @@ namespace virtio {
 
 template <typename Device, uintptr_t Base>
 class Console : public Handler, public Observer<const unsigned char *, size_t> {
+    enum { RX = 0, TX = 1 };
 
   public:
     void notify(unsigned int source) {
-        if (source != k_tx_queue) return;
+        if (source != TX) return;
 
-        VirtQueue &queue = this->m_queues[source];
-        if (!queue.available()) return;
+        auto &queue = this->m_queues[TX];
 
-        int head        = queue.alloc();
-        int current     = head;
-        uint32_t length = 0;
-
-        while (1) {
-            auto *descriptor = queue.get(current);
-            char *data       = reinterpret_cast<char *>(descriptor->address);
-
-            for (uint32_t j = 0; j < descriptor->length; j++)
-                Device::instance()->putc(data[j]);
-
-            length += descriptor->length;
-
-            if (!(descriptor->flags & 0x1)) break;
-            current = descriptor->next;
+        while (queue.available()) {
+            int head      = queue.alloc();
+            size_t length = process(queue, head);
+            queue.free(head, length);
         }
-        queue.free(head, length);
     }
 
     void update(const unsigned char *buffer, size_t size) override {
-        VirtQueue &queue = this->m_queues[k_rx_queue];
+        VirtQueue &queue = this->m_queues[RX];
 
         if (!queue.available()) return;
 
@@ -58,6 +46,31 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
         m_owner->interrupt(IRQ);
     }
 
+    size_t process(VirtQueue &queue, int head) {
+        size_t total = 0;
+        int current  = head;
+
+        VirtQueue::RingDescriptor *descriptor = queue.get(current);
+
+        total += print(descriptor);
+
+        while (descriptor->flags & 0x1) {
+            current    = descriptor->next;
+            descriptor = queue.get(current);
+            total += print(descriptor);
+        }
+
+        return total;
+    }
+
+    size_t print(VirtQueue::RingDescriptor *descriptor) {
+        auto *data      = reinterpret_cast<uint8_t *>(descriptor->address);
+        uint32_t length = descriptor->length;
+        for (uint32_t j = 0; j < descriptor->length; j++)
+            Device::instance()->putc(data[j]);
+        return length;
+    }
+
     Console(VirtualMachine *owner)
         : m_owner(owner) {
         this->m_header.m_magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
@@ -72,12 +85,9 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
   public:
     static constexpr uintptr_t Address = Base;
     static constexpr int IRQ           = 32;
-    static constexpr size_t Size       = sizeof(LegacyHeader);
 
   private:
-    static const int k_number   = 32;
-    static const int k_tx_queue = 1;
-    static const int k_rx_queue = 0;
+    static const int k_number = 32;
 
   private:
     VirtualMachine *m_owner;

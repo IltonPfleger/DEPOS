@@ -23,9 +23,6 @@ template <typename T, bool ChangeStack> class ContextHandler : public Context {
         return context;
     }
 
-    void argument(void *a) { a0 = a; }
-    void *argument() { return a0; }
-
     __attribute__((naked)) static void swap(void *previous, void *next) {
         save();
         asm("sd sp, 0(%0)" ::"r"(previous));
@@ -42,7 +39,6 @@ template <typename T, bool ChangeStack> class ContextHandler : public Context {
 
         asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(ContextHandler, status)));
         asm("csrw %0, t0" ::"i"(T::STATUS));
-
         asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(ContextHandler, pc)));
         asm("csrw %0, t0" ::"i"(T::EPC));
 
@@ -58,7 +54,6 @@ template <typename T, bool ChangeStack> class ContextHandler : public Context {
         asm("ld s9,  %0(sp)" ::"i"(__builtin_offsetof(Context, s9)));
         asm("ld s10, %0(sp)" ::"i"(__builtin_offsetof(Context, s10)));
         asm("ld s11, %0(sp)" ::"i"(__builtin_offsetof(Context, s11)));
-
         asm("ld a1,  %0(sp)" ::"i"(__builtin_offsetof(Context, a1)));
         asm("ld a0,  %0(sp)" ::"i"(__builtin_offsetof(Context, a0)));
 
@@ -106,7 +101,7 @@ template <typename T, bool ChangeStack> class ContextHandler : public Context {
             asm("csrrw t0, %0, t0" ::"i"(T::SCRATCH));
         }
 
-        asm("addi sp, sp, %[size]\n" ::[size] "i"(-sizeof(ContextHandler)));
+        asm("addi sp, sp, %0" ::"i"(-sizeof(ContextHandler)));
 
         asm("sd ra, %0(sp)" : : "i"(__builtin_offsetof(Context, ra)));
         asm("sd gp, %0(sp)" : : "i"(__builtin_offsetof(Context, gp)));
