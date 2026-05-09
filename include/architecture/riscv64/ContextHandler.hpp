@@ -13,9 +13,10 @@ namespace riscv64 {
 
 template <typename T, bool ChangeStack> class ContextHandler : public Context {
   public:
-    static ContextHandler *create(const Chunk &usp, const Chunk &ksp, auto pc, auto a0, auto a1) {
+    static ContextHandler *create(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
         ContextHandler *context = reinterpret_cast<ContextHandler *>(usp.end()) - 1;
         context->pc             = reinterpret_cast<uint64_t>(pc);
+        context->ra             = reinterpret_cast<uint64_t>(ra);
         context->status         = static_cast<uint64_t>(T::ME2ME);
         context->a0             = reinterpret_cast<uint64_t>(a0);
         context->a1             = reinterpret_cast<uint64_t>(a1);
@@ -54,6 +55,8 @@ template <typename T, bool ChangeStack> class ContextHandler : public Context {
         asm("ld s9,  %0(sp)" ::"i"(__builtin_offsetof(Context, s9)));
         asm("ld s10, %0(sp)" ::"i"(__builtin_offsetof(Context, s10)));
         asm("ld s11, %0(sp)" ::"i"(__builtin_offsetof(Context, s11)));
+
+        asm("ld ra,  %0(sp)" ::"i"(__builtin_offsetof(Context, ra)));
         asm("ld a1,  %0(sp)" ::"i"(__builtin_offsetof(Context, a1)));
         asm("ld a0,  %0(sp)" ::"i"(__builtin_offsetof(Context, a0)));
 

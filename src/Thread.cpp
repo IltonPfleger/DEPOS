@@ -12,7 +12,6 @@ void Thread::entry(Function f, Argument a) {
     epilogue();
     CPU::Interrupt::enable();
     f(a);
-    exit();
 };
 
 Thread::Return Thread::idle(Argument) {
@@ -76,7 +75,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
 
     TraceIn(this);
 
-    m_context = Context::create(m_stack, m_kstack, entry, f, a);
+    m_context = Context::create(m_stack, m_kstack, entry, exit, f, a);
 
     bool enabled = CPU::Interrupt::disable();
     CPU::Atomic::finc(s_count);
