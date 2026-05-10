@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DEPOS_RISCV64_VIRTUAL_CPU__
+#define __DEPOS_RISCV64_VIRTUAL_CPU__
 
 #include <Traits.hpp>
 #include <architecture/riscv64/CLINT.hpp>
@@ -6,14 +7,12 @@
 #include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/PMP.hpp>
-#include <architecture/riscv64/VPLIC.hpp>
+#include <architecture/riscv64/VirtualPLIC.hpp>
 #include <hypervisor/VirtualMachine.hpp>
 
-namespace DEPOS {
+namespace DEPOS::riscv64 {
 
-namespace riscv64 {
-
-class VCPU {
+class VirtualCPU {
     template <typename... Args> __attribute__((naked)) static void supervisor(Args... args) {
         ((void)args, ...);
         asm volatile("mret");
@@ -22,7 +21,7 @@ class VCPU {
     static auto &current() { return s_current[CPU::id()]; }
 
   public:
-    VCPU(VirtualMachine *vm, uintptr_t entry, size_t size)
+    VirtualCPU(VirtualMachine *vm, uintptr_t entry, size_t size)
         : entry_(entry),
           size_(size),
           _mtimecmp(0),
@@ -61,6 +60,11 @@ class VCPU {
         supervisor(args...);
     }
 
+    void interrupt(unsigned int id) {
+        plic_.interrupt(id);
+        CLINT::ipi(core_);
+    }
+
     static void onTick() {
         if (!current()) return;
         if (CLINT::mtime() >= current()->_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
@@ -69,11 +73,6 @@ class VCPU {
     static void onInterProcessorInterrupt() {
         if (!current()) return;
         if (current()->plic_.pending()) csrs<MachineMode::IP>(SupervisorMode::EI);
-    }
-
-    void interrupt(unsigned int id) {
-        plic_.interrupt(id);
-        CLINT::ipi(core_);
     }
 
     static void reset(unsigned long r) {
@@ -100,7 +99,7 @@ class VCPU {
     }
 
   private:
-    static inline VCPU *s_current[Traits<CPU>::Active];
+    static inline VirtualCPU *s_current[Traits<CPU>::Active];
 
   private:
     uintptr_t entry_;
@@ -108,9 +107,9 @@ class VCPU {
     uintmax_t _mtimecmp;
     size_t core_;
     VirtualMachine *vm_;
-    VPLIC plic_;
+    VirtualPLIC plic_;
 };
 
-} // namespace riscv64
+} // namespace DEPOS::riscv64
 
-} // namespace DEPOS
+#endif

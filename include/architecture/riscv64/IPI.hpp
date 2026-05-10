@@ -3,14 +3,14 @@
 
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/Context.hpp>
-#include <architecture/riscv64/VCPU.hpp>
+#include <architecture/riscv64/VirtualCPU.hpp>
 
 namespace DEPOS::riscv64 {
 
 class IPI {
   public:
     static void onTrap(size_t, Context *) {
-        VCPU::onInterProcessorInterrupt();
+        VirtualCPU::onInterProcessorInterrupt();
         CLINT::ipi(mhartid(), true);
     }
 };

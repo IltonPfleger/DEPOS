@@ -2,7 +2,7 @@
 
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/Context.hpp>
-#include <architecture/riscv64/VCPU.hpp>
+#include <architecture/riscv64/VirtualCPU.hpp>
 
 namespace DEPOS {
 

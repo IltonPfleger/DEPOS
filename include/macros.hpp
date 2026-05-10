@@ -16,8 +16,7 @@
 #define __MMU_HEADER __HEADER_ARCH(MMU)
 #define __TIMER_HEADER __HEADER_ARCH(Timer)
 #define __IC_HEADER __HEADER_ARCH(IC)
-
-#define __VCPU_HEADER __HEADER_ARCH(VCPU)
+#define __VIRTUAL_CPU_HEADER __HEADER_ARCH(VirtualCPU)
 #endif
 
 /* Machine */

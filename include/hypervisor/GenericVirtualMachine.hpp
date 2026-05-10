@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Meta.hpp>
-#include <architecture/VCPU.hpp>
+#include <architecture/VirtualCPU.hpp>
 #include <hypervisor/VirtualMachine.hpp>
 #include <types.hpp>
 
@@ -54,7 +54,7 @@ template <typename... Devices> class GenericVirtualMachine : public VirtualMachi
 
   private:
     DeviceCollection<Devices...> _devices;
-    VCPU _cpu;
+    VirtualCPU _cpu;
 };
 
 } // namespace DEPOS

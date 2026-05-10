@@ -1,6 +1,6 @@
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
-#include <architecture/VCPU.hpp>
+#include <architecture/VirtualCPU.hpp>
 #include <hypervisor/GenericVirtualMachine.hpp>
 #include <hypervisor/virtio/Console.hpp>
 #include <hypervisor/virtio/Network.hpp>
