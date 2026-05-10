@@ -20,6 +20,7 @@ struct MachineMode {
         TIME    = 1 << 1,
         INSTRET = 1 << 2,
 
+        SI    = 1ULL << 3,  // Software Interrupt Enable
         TI    = 1ULL << 7,  // Timer Interrupt Enable
         EI    = 1ULL << 11, // External Interrupt Enable
         IRQE  = 1ULL << 3,  // Interrupt Enable

@@ -23,17 +23,17 @@ class VCPU {
 
   public:
     VCPU(VirtualMachine *vm, uintptr_t entry, size_t size)
-        : _entry(entry),
-          _size(size),
+        : entry_(entry),
+          size_(size),
           _mtimecmp(0),
-          _vm(vm) {}
+          vm_(vm) {}
 
     template <typename... Args> void start(Args... args) {
         CPU::Interrupt::disable();
 
         csrw<SupervisorMode::SATP>(0);
 
-        PMP::NAPOT<2>(_entry, _size, PMP::R | PMP::W | PMP::X);
+        PMP::NAPOT<2>(entry_, size_, PMP::R | PMP::W | PMP::X);
 
         long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt
@@ -54,19 +54,27 @@ class VCPU {
         csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
         csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
 
+        core_     = mhartid();
         current() = this;
-        csrw<MachineMode::EPC>(_entry);
+        csrw<MachineMode::EPC>(entry_);
         CPU::mb();
         supervisor(args...);
     }
 
     static void onTick() {
         if (!current()) return;
-        if (CLINT::read() >= current()->_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
-        if (current()->_plic.pending()) csrs<MachineMode::IP>(SupervisorMode::EI);
+        if (CLINT::mtime() >= current()->_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
     }
 
-    void interrupt(unsigned int id) { _plic.interrupt(id); }
+    static void onInterProcessorInterrupt() {
+        if (!current()) return;
+        if (current()->plic_.pending()) csrs<MachineMode::IP>(SupervisorMode::EI);
+    }
+
+    void interrupt(unsigned int id) {
+        plic_.interrupt(id);
+        CLINT::ipi(core_);
+    }
 
     static void reset(unsigned long r) {
         csrc<MachineMode::IP>(SupervisorMode::TI);
@@ -75,19 +83,19 @@ class VCPU {
 
     static bool read(unsigned long address, unsigned int *destination) {
         if (!current()) return false;
-        if (current()->_vm->read(address, destination)) {
+        if (current()->vm_->read(address, destination)) {
             return true;
         } else {
-            return current()->_plic.read(address - Traits<MemoryMap>::PLIC, destination);
+            return current()->plic_.read(address - Traits<MemoryMap>::PLIC, destination);
         }
     }
 
     static bool write(unsigned long address, unsigned int source) {
         if (!current()) return false;
-        if (current()->_vm->write(address, source)) {
+        if (current()->vm_->write(address, source)) {
             return true;
         } else {
-            return current()->_plic.write(address - Traits<MemoryMap>::PLIC, source);
+            return current()->plic_.write(address - Traits<MemoryMap>::PLIC, source);
         }
     }
 
@@ -95,11 +103,12 @@ class VCPU {
     static inline VCPU *s_current[Traits<CPU>::Active];
 
   private:
-    uintptr_t _entry;
-    size_t _size;
+    uintptr_t entry_;
+    size_t size_;
     uintmax_t _mtimecmp;
-    VirtualMachine *_vm;
-    VPLIC _plic;
+    size_t core_;
+    VirtualMachine *vm_;
+    VPLIC plic_;
 };
 
 } // namespace riscv64

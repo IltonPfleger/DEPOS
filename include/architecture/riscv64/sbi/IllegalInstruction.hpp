@@ -22,7 +22,7 @@ class IllegalInstruction {
         uint32_t tval = static_cast<uint32_t>(csrr<MachineMode::TVAL>());
         if ((tval & RDTIME_MASK) == RDTIME) {
             unsigned int rd = (tval >> 7) & 0x1F;
-            if (rd != 0) (*c)[rd] = CLINT::read();
+            if (rd != 0) (*c)[rd] = CLINT::mtime();
             c->pc += 4;
         } else {
             ExceptionHandler::onTrap(id, c);

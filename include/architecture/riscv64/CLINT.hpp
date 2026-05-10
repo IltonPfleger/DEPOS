@@ -17,9 +17,13 @@ class CLINT : Driver {
     };
 
   public:
-    static uint64_t read() { return Reg64(Address, MTIME); }
+    static uint64_t mtime() { return Reg64(Address, MTIME); }
 
-    static void write(uint64_t ticks = read() + Ticks, unsigned int core = csrr<MachineMode::HARTID>()) {
+    static void ipi(size_t hartid, bool clear = false) {
+        *(reinterpret_cast<volatile uint32_t *>(Address) + hartid) = !clear;
+    }
+
+    static void write(uint64_t ticks = mtime() + Ticks, unsigned int core = csrr<MachineMode::HARTID>()) {
         Reg64(Address, MTIMECMP + core * 8) = ticks;
     }
 
@@ -29,7 +33,7 @@ class CLINT : Driver {
     }
 
     static void syscall(uint64_t delta = 0) {
-        if (delta == 0) delta = Ticks + read();
+        if (delta == 0) delta = Ticks + mtime();
         write(delta);
         csrc<MachineMode::IP>(SupervisorMode::TI);
         csrs<MachineMode::IE>(MachineMode::TI);

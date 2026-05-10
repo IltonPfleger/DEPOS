@@ -26,8 +26,8 @@ class Timer : public ArchitectureCommon::Timer {
         ArchitectureCommon::Timer::onTick(CPU::id());
     }
 
-    static inline uint64_t ms() { return CLINT::read() * 1'000'000 / Traits<CLINT>::Clock; }
-    static inline uint64_t us() { return CLINT::read() * 1'000'000'000 / Traits<CLINT>::Clock; }
+    static inline uint64_t ms() { return CLINT::mtime() * 1'000'000 / Traits<CLINT>::Clock; }
+    static inline uint64_t us() { return CLINT::mtime() * 1'000'000'000 / Traits<CLINT>::Clock; }
     static inline uint64_t now() { return ms(); }
 
     static void init() {
