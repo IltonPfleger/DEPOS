@@ -5,30 +5,18 @@ namespace DEPOS {
 
 class NetworkBuffer {
   public:
-    struct InternalData {
-        uint8_t *start;
-        size_t size;
-        volatile mutable size_t references = 0;
-    };
-
-    NetworkBuffer(InternalData *data = 0, uint16_t protocol = 0)
-        : internal_(data),
-          protocol_(protocol) {
-        if (internal()) {
-            data_   = start();
-            length_ = size();
-        }
-    }
+    NetworkBuffer(void *start, size_t size, uint16_t protocol = 0)
+        : start_(static_cast<uint8_t *>(start)),
+          size_(size),
+          data_(start_),
+          length_(0),
+          protocol_(protocol) {}
 
     template <typename T = uint8_t *> [[nodiscard]] T data(this auto &&self) { return reinterpret_cast<T>(self.data_); }
+
     [[nodiscard]]
     uint8_t operator[](this auto &&self, size_t i) {
         return self.data_[i];
-    }
-
-    [[nodiscard]]
-    const InternalData *internal() const {
-        return internal_;
     }
 
     [[nodiscard]]
@@ -42,18 +30,13 @@ class NetworkBuffer {
     }
 
     [[nodiscard]]
-    auto &references() {
-        return internal()->references;
-    }
-
-    [[nodiscard]]
     uint8_t *start() const {
-        return internal()->start;
+        return start_;
     }
 
     [[nodiscard]]
     size_t size() const {
-        return internal()->size;
+        return size_;
     }
 
     [[nodiscard]]
@@ -83,9 +66,12 @@ class NetworkBuffer {
     }
 
   private:
-    const InternalData *internal_;
+    uint8_t *const start_;
+    size_t size_;
+
     uint8_t *data_;
     size_t length_;
+
     uint16_t protocol_;
 };
 

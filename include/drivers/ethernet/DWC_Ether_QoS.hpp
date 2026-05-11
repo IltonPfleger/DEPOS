@@ -5,10 +5,11 @@
 #include <libraries/libc/string.h>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
-#include <network/Ethernet.hpp>
-#include <network/NetworkAddressableDevice.hpp>
-#include <network/NetworkDevice.hpp>
 #include <utility/Debug.hpp>
+
+#include <architecture/IC.hpp>
+#include <network/Ethernet.hpp>
+#include <utility/Atomic.hpp>
 
 namespace DEPOS {
 
@@ -232,21 +233,13 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
     }
 };
 
-class DWC_Ether_QoS_Buffer : private NetworkBuffer::InternalData, public NetworkBuffer {
+class DWC_Ether_QoS_Buffer : public NetworkBuffer {
   public:
-    using NetworkBuffer::size;
-    using NetworkBuffer::start;
+    DWC_Ether_QoS_Buffer(void *data = nullptr, size_t length = 0)
+        : NetworkBuffer(data, length) {}
 
-    DWC_Ether_QoS_Buffer(void *data = nullptr, size_t length = 0, uint32_t id = 0)
-        : NetworkBuffer::InternalData(static_cast<uint8_t *>(data), length, 0),
-          NetworkBuffer(static_cast<NetworkBuffer::InternalData *>(this)),
-          _id(id) {}
-
-    uint32_t id() const { return _id; }
-    void id(uint32_t i) { _id = i; }
-
-  private:
-    uint32_t _id;
+  public:
+    bool allocated;
 };
 
 template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
@@ -269,9 +262,16 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
 
         auto length() const { return des3 & 0x3FFF; }
         uint64_t buffer() const { return (static_cast<uint64_t>(des1) << 32) | des0; }
-        void buffer(uint64_t addr) {
-            des0 = static_cast<uint32_t>(addr);
-            des1 = static_cast<uint32_t>(addr >> 32);
+
+        void buffer(void *pointer) {
+            uintptr_t address = reinterpret_cast<uintptr_t>(pointer);
+            des0              = static_cast<uint32_t>(address);
+            des1              = static_cast<uint32_t>(address >> 32);
+        }
+
+        void buffer(uint64_t address) {
+            des0 = static_cast<uint32_t>(address);
+            des1 = static_cast<uint32_t>(address >> 32);
         }
     };
 
@@ -357,36 +357,16 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
             ;
     }
 
-    // static void interrupt(unsigned int) { s_instance->interrupt(); }
-
-    // void interrupt() {
-    //     volatile unsigned int &status = m_registers->interrupt_status;
-    //     unsigned int done             = 0;
-
-    //    // TraceIn();
-
-    //    // if (status & INTERRUPT_STATUS_RI) {
-    //    // done |= INTERRUPT_STATUS_RI;
-    //    // }
-
-    //    // if (status & INTERRUPT_STATUS_RBU) {
-    //    // Descriptor *current = reinterpret_cast<Descriptor
-    //    // *>(m_registers->current_rx_descriptor); unsigned int i =
-    //    // reinterpret_cast<long>(current - m_rx_descriptors); if
-    //    // (!m_rx_buffers[i].m_locked) { free(&m_rx_buffers[i]);
-    //    //}
-    //    // done |= INTERRUPT_STATUS_RBU;
-    //    // }
-
-    //    status |= done;
-    //}
-
     void release(DWC_Ether_QoS_Buffer *buffer) {
-        Descriptor &descriptor = m_rx_descriptors[buffer->id()];
-        descriptor.buffer(reinterpret_cast<uintptr_t>(buffer->internal()->start));
+        size_t i = buffer - &m_rx_buffers[0];
+
+        Descriptor &descriptor = m_rx_descriptors[i];
+        descriptor.buffer(buffer->start());
         descriptor.des2 = 0;
         descriptor.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
+
         Cache::flush(&descriptor, sizeof(Descriptor));
+
         Reg32(Address, CH0_RX_TAIL_POINTER) = reinterpret_cast<uintptr_t>(&descriptor);
     }
 
@@ -394,31 +374,31 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
         size_t i = 0;
         while (true) {
             DWC_Ether_QoS_Buffer *buffer = &m_tx_buffers[i];
-            if (!CPU::Atomic::tsl(buffer->internal()->references)) return buffer;
+            if (!CPU::Atomic::tsl(buffer->allocated)) return buffer;
             i = (i + 1) % Number;
         }
     }
 
-    void free(DWC_Ether_QoS_Buffer *buffer) { buffer->internal()->references = 0; }
+    void free(DWC_Ether_QoS_Buffer *buffer) { buffer->allocated = 0; }
 
     int send(const void *data, size_t length) {
+        size_t i = m_tx_head++ % Number;
+
+        Descriptor &descriptor = m_tx_descriptors[i];
+
+        descriptor.buffer(reinterpret_cast<uint64_t>(data));
+        descriptor.des2 = length & 0x3FFF;
+        descriptor.des3 = Descriptor::OWN | Descriptor::FD | Descriptor::LD | (length & 0x3FFF);
+
         Cache::flush(data, length);
-
-        Descriptor &d = m_tx_descriptors[m_tx_head];
-
-        m_tx_head = (m_tx_head + 1) % Number;
-
-        d.buffer(reinterpret_cast<uint64_t>(data));
-        d.des2 = length & 0x3FFF;
-        d.des3 = Descriptor::OWN | Descriptor::FD | Descriptor::LD | (length & 0x3FFF);
-        Cache::flush(&d, sizeof(Descriptor));
+        Cache::flush(&descriptor, sizeof(Descriptor));
 
         Reg32(Address, CH0_TX_TAIL_POINTER) = reinterpret_cast<uintptr_t>(m_tx_descriptors + m_tx_head);
 
         while (true) {
-            Cache::flush(&d, sizeof(Descriptor));
-            if (!(d.des3 & Descriptor::OWN)) {
-                return (d.des3 & Descriptor::ES) ? 0 : length;
+            Cache::flush(&descriptor, sizeof(Descriptor));
+            if (!(descriptor.des3 & Descriptor::OWN)) {
+                return (descriptor.des3 & Descriptor::ES) ? 0 : length;
             }
         }
     }
@@ -435,14 +415,12 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
 
         buffer->reset();
         buffer->length(descriptor->length());
-        buffer->id(m_rx_head);
 
         m_rx_head = (m_rx_head + 1) % Number;
         return buffer;
     }
 
   private:
-    static inline DWC_Ether_QoS_DMA *s_instance;
     static constexpr uintptr_t Address = MyTraits::Address;
     static constexpr size_t Number     = 10;
     static constexpr size_t MTU        = 1522;
@@ -452,8 +430,8 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
     Descriptor m_rx_descriptors[Number];
     DWC_Ether_QoS_Buffer m_rx_buffers[Number];
     DWC_Ether_QoS_Buffer m_tx_buffers[Number];
-    unsigned int m_tx_head;
-    unsigned int m_rx_head;
+    Atomic<size_t> m_tx_head;
+    Atomic<size_t> m_rx_head;
 };
 
 template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
@@ -481,73 +459,87 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     }
 };
 
-template <typename Tag> class DWC_Ether_QoS final : public NetworkAddressableDevice {
+template <typename Tag> class DWC_Ether_QoS final : public Ethernet::Device {
+
+    enum Registers {
+        CH0_INTERRUPT_ENABLE = 0x1134,
+        CH0_INTERRUPT_STATUS = 0x1160,
+    };
+
+    enum Bits {
+        INTERRUPT_ENABLE_NIE  = 1 << 15,
+        INTERRUPT_ENABLE_AIE  = 1 << 14,
+        INTERRUPT_ENABLE_RIE  = 1 << 6,
+        INTERRUPT_ENABLE_RBUE = 1 << 7,
+        INTERRUPT_STATUS_RI   = 1 << 6,
+        INTERRUPT_STATUS_RBU  = 1 << 7,
+    };
+
   public:
     using MyTraits = Traits<Tag>;
     using DMA      = DWC_Ether_QoS_DMA<MyTraits>;
     using MTL      = DWC_Ether_QoS_MTL<MyTraits::Address>;
     using PHY      = DWC_Ether_QoS_PHY<MyTraits::Address>;
     using MAC      = DWC_Ether_QoS_MAC<MyTraits::Address>;
-    using Address  = Ethernet::Address;
-    using Header   = Ethernet::Header;
 
-    using NetworkAddressableDevice::send;
+    using Ethernet::Device::send;
 
     DWC_Ether_QoS()
-        : _address(MyTraits::MAC) {
+        : address_(MyTraits::MAC) {
         TraceIn();
         PHY::init();
         DMA::reset();
-        m_dma = new DMA();
+        dma_ = new DMA();
         MAC::duplex(PHY::duplex());
         MAC::speed(PHY::speed());
         MTL::init();
         MAC::init();
         NetworkDevice::init();
+
+        IC::install(MyTraits::IRQs[0], onTrap);
+
+        reg(CH0_INTERRUPT_ENABLE) |= INTERRUPT_ENABLE_NIE | INTERRUPT_STATUS_RI;
+        reg(CH0_INTERRUPT_ENABLE) |= INTERRUPT_ENABLE_AIE | INTERRUPT_STATUS_RBU;
+
         TraceOut();
     }
 
-    NetworkBuffer *doAlloc(size_t length) override {
-        NetworkBuffer *buffer = m_dma->alloc();
-        buffer->advance(sizeof(Header));
-        buffer->length(length);
-        return buffer;
-    }
+    NetworkBuffer *doAlloc(size_t) override { return dma_->alloc(); }
+    int doSend(NetworkBuffer *buffer) override { return dma_->send(buffer->start(), buffer->length()); }
+    void doFree(NetworkBuffer *buffer) override { dma_->free(static_cast<DWC_Ether_QoS_Buffer *>(buffer)); }
 
-    int doSend(NetworkBuffer *buffer) override { return m_dma->send(buffer->start(), buffer->length()); }
+    NetworkBuffer *doReceive() override { return dma_->receive(); }
+    void doRelease(NetworkBuffer *buffer) override { dma_->release(static_cast<DWC_Ether_QoS_Buffer *>(buffer)); }
 
-    void doFree(NetworkBuffer *buffer) override { m_dma->free(static_cast<DWC_Ether_QoS_Buffer *>(buffer)); }
+    NetworkAddress address() const override { return address_; }
+    void address(const NetworkAddress &address) override { new (&address_) Address(address); }
 
-    NetworkBuffer *doReceive() override {
-        NetworkBuffer *buffer = m_dma->receive();
-        if (buffer) {
-            buffer->protocol(buffer->data<Header *>()->protocol());
-            buffer->advance(sizeof(Header));
+    void onTrap() {
+        volatile uint32_t &status = reg(CH0_INTERRUPT_STATUS);
+
+        if (status & INTERRUPT_STATUS_RI) {
+            onReceive();
+            status &= ~INTERRUPT_STATUS_RI;
         }
-        return buffer;
+
+        if (status & INTERRUPT_STATUS_RBU) {
+            status &= ~INTERRUPT_STATUS_RBU;
+            onReceive();
+        }
     }
 
-    void doRelease(NetworkBuffer *buffer) override { m_dma->release(static_cast<DWC_Ether_QoS_Buffer *>(buffer)); }
-
-    NetworkAddress address() const override { return _address; }
-
-    void address(const NetworkAddress &address) override { new (&_address) Address(address); }
-
-    int send(const NetworkAddress &destination, uint16_t protocol, NetworkBuffer *buffer) override {
-        buffer->rewind(sizeof(Header));
-        buffer->length(buffer->length() + sizeof(Header));
-        new (buffer->data()) Header(destination, address(), protocol);
-        return send(buffer);
-    };
+    static void onTrap(size_t) { instance()->onTrap(); }
 
     static auto *instance() {
         static DWC_Ether_QoS instance;
         return &instance;
     }
 
+    static volatile uint32_t &reg(size_t offset) { return *reinterpret_cast<uint32_t *>(MyTraits::Address + offset); }
+
   private:
-    Address _address;
-    DMA *m_dma;
+    Address address_;
+    DMA *dma_;
 };
 
 } // namespace DEPOS

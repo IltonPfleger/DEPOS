@@ -3,7 +3,7 @@
 #include <Spin.hpp>
 #include <Thread.hpp>
 
-#include <utils/Lists.hpp>
+#include <utility/collections/FIFO.hpp>
 
 namespace DEPOS {
 
@@ -15,7 +15,7 @@ class ConditionalVariable {
         size_t size;
     };
 
-    typedef Node<Signal> Link;
+    typedef collections::Node<Signal> Link;
 
   public:
     ConditionalVariable() = default;
@@ -53,7 +53,7 @@ class ConditionalVariable {
     size_t count() const { return _waiting; }
 
   private:
-    LIFO<Link> _waiters{};
+    collections::FIFO<Link> _waiters{};
     size_t _waiting{};
 };
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Semaphore.hpp>
 #include <Thread.hpp>
 #include <network/NetworkBuffer.hpp>
 #include <utility/Observer.hpp>
@@ -19,7 +20,8 @@ class NetworkDevice : public Observed<NetworkBuffer> {
 
   public:
     virtual ~NetworkDevice() = default;
-    NetworkBuffer *alloc(size_t size) { return doAlloc(size); }
+    virtual NetworkBuffer *alloc(size_t size) { return doAlloc(size); }
+    virtual NetworkBuffer *receive() { return doReceive(); }
 
     int send(NetworkBuffer *buffer) {
         int result = doSend(buffer);
@@ -27,29 +29,26 @@ class NetworkDevice : public Observed<NetworkBuffer> {
         return result;
     }
 
-    void init() { _thread = new Thread(worker, this); }
+    void init() { thread_ = new Thread(worker, this); }
 
-    void release(NetworkBuffer *buffer) {
-        if (CPU::Atomic::fdec(buffer->internal()->references) == 1) doRelease(buffer);
-    }
-
-    // void retain(const NetworkBuffer *buffer) { CPU::Atomic::finc(buffer->internal()->references); }
+    void onReceive() { pending_.v(); }
 
   private:
     static void *worker(void *argument) {
         auto *self = static_cast<NetworkDevice *>(argument);
         while (true) {
-            NetworkBuffer *buffer = self->doReceive();
+            self->pending_.p();
+            NetworkBuffer *buffer = self->receive();
             if (!buffer) continue;
-            buffer->internal()->references = 1;
             self->notify(*buffer);
-            self->release(buffer);
+            self->doRelease(buffer);
         }
         return nullptr;
     }
 
   private:
-    Thread *_thread;
+    Semaphore pending_;
+    Thread *thread_;
 };
 
 } // namespace DEPOS

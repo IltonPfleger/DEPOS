@@ -1,6 +1,7 @@
 #pragma once
 
 #include <network/GenericAddress.hpp>
+#include <network/NetworkAddressableDevice.hpp>
 
 namespace DEPOS {
 
@@ -26,25 +27,37 @@ class Ethernet {
         Protocol _protocol;
     } __attribute__((packed));
 
-    // Address broadcast() const { return Address({255, 255, 255, 255, 255, 255}); }
+    class Device : public NetworkAddressableDevice {
+      public:
+        using Address = Ethernet::Address;
+        using Header  = Ethernet::Header;
+        using NetworkDevice::send;
 
-    // class Device : public AddressableNetworkDevice {
-    //   public:
-    //     using AddressableNetworkDevice::address;
-    //     using AddressableNetworkDevice::send;
+        virtual ~Device() {}
 
-    //    virtual ~Device() {}
+        NetworkBuffer *alloc(size_t length) override {
+            NetworkBuffer *buffer = doAlloc(length);
+            buffer->advance(sizeof(Header));
+            buffer->length(length);
+            return buffer;
+        }
 
-    //    virtual int broadcast(NetworkProtocol p, NetworkBuffer &b) override {
-    //        Address d(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
-    //        return send(d, p, b);
-    //    }
+        NetworkBuffer *receive() override {
+            NetworkBuffer *buffer = doReceive();
+            if (buffer) {
+                buffer->protocol(buffer->data<Header *>()->protocol());
+                buffer->advance(sizeof(Header));
+            }
+            return buffer;
+        }
 
-    //    virtual int send(const NetworkAddress &d, NetworkProtocol p, NetworkBuffer &b) override {
-    //        new (b.start()) Header(d, address(), p);
-    //        return send(b);
-    //    }
-    //};
+        int send(const NetworkAddress &destination, uint16_t protocol, NetworkBuffer *buffer) override {
+            buffer->rewind(sizeof(Header));
+            buffer->length(buffer->length() + sizeof(Header));
+            new (buffer->data()) Header(destination, address(), protocol);
+            return send(buffer);
+        };
+    };
 };
 
 } // namespace DEPOS
