@@ -106,10 +106,11 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         };
 
         _block++;
-        memcpy(_buffer + _received, data, length);
-        _received += length;
-
         ack(block, source);
+
+        memcpy(_buffer + _received, data, length);
+
+        _received += length;
 
         if constexpr (Trace)
             if (block % 32 == 0) Console::print('#');

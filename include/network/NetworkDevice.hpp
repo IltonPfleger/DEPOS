@@ -17,6 +17,7 @@ class NetworkDevice : public Observed<NetworkBuffer> {
     virtual void doFree(NetworkBuffer *)    = 0;
     virtual NetworkBuffer *doReceive()      = 0;
     virtual void doRelease(NetworkBuffer *) = 0;
+    void onReceive() { pending_.v(); }
 
   public:
     virtual ~NetworkDevice() = default;
@@ -30,8 +31,6 @@ class NetworkDevice : public Observed<NetworkBuffer> {
     }
 
     void init() { thread_ = new Thread(worker, this); }
-
-    void onReceive() { pending_.v(); }
 
   private:
     static void *worker(void *argument) {

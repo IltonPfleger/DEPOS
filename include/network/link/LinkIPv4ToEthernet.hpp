@@ -16,13 +16,13 @@ class LinkIPv4ToEthernet : public NetworkLinkLayer, public Observer<NetworkBuffe
     using Router = ARP<EthernetDevice, IPv4>;
 
   public:
-    virtual ~LinkIPv4ToEthernet() = default;
-
     LinkIPv4ToEthernet(EthernetDevice &device)
         : device_(device),
           router_(Router(device_)) {
         device_.attach(this);
     }
+
+    virtual ~LinkIPv4ToEthernet() { device_.detach(this); }
 
     virtual NetworkBuffer *alloc(size_t length) override { return device_.alloc(length); }
 
