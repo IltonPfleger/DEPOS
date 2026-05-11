@@ -23,6 +23,8 @@ template <typename T> class Atomic {
         return CPU::Atomic::fdec(value_);
     }
 
+    bool cas(T &expected, T desired) { return CPU::Atomic::cas(value_, expected, desired); }
+
     T load() const { return CPU::Atomic::load(value_); }
 
     void store(T value) { CPU::Atomic::store(value_, value); }

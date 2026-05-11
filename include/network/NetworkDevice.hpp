@@ -3,6 +3,7 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 #include <network/NetworkBuffer.hpp>
+#include <utility/Atomic.hpp>
 #include <utility/Observer.hpp>
 
 namespace DEPOS {
@@ -17,7 +18,8 @@ class NetworkDevice : public Observed<NetworkBuffer> {
     virtual void doFree(NetworkBuffer *)    = 0;
     virtual NetworkBuffer *doReceive()      = 0;
     virtual void doRelease(NetworkBuffer *) = 0;
-    void onReceive() { pending_.v(); }
+
+    void onReceive() { semaphore_.v(); }
 
   public:
     virtual ~NetworkDevice() = default;
@@ -36,7 +38,7 @@ class NetworkDevice : public Observed<NetworkBuffer> {
     static void *worker(void *argument) {
         auto *self = static_cast<NetworkDevice *>(argument);
         while (true) {
-            self->pending_.p();
+            // self->semaphore_.p();
             NetworkBuffer *buffer = self->receive();
             if (!buffer) continue;
             self->notify(*buffer);
@@ -46,7 +48,8 @@ class NetworkDevice : public Observed<NetworkBuffer> {
     }
 
   private:
-    Semaphore pending_;
+    Atomic<size_t> pending_;
+    Semaphore semaphore_;
     Thread *thread_;
 };
 

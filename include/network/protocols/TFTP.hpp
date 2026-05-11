@@ -106,6 +106,7 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         };
 
         _block++;
+
         ack(block, source);
 
         memcpy(_buffer + _received, data, length);

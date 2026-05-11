@@ -357,19 +357,6 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
             ;
     }
 
-    void release(DWC_Ether_QoS_Buffer *buffer) {
-        size_t i = buffer - &m_rx_buffers[0];
-
-        Descriptor &descriptor = m_rx_descriptors[i];
-        descriptor.buffer(buffer->start());
-        descriptor.des2 = 0;
-        descriptor.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
-
-        Cache::flush(&descriptor, sizeof(Descriptor));
-
-        Reg32(Address, CH0_RX_TAIL_POINTER) = reinterpret_cast<uintptr_t>(&descriptor);
-    }
-
     DWC_Ether_QoS_Buffer *alloc() {
         size_t i = 0;
         while (true) {
@@ -404,8 +391,10 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
     }
 
     DWC_Ether_QoS_Buffer *receive() {
-        Descriptor *descriptor       = &m_rx_descriptors[m_rx_head];
-        DWC_Ether_QoS_Buffer *buffer = &m_rx_buffers[m_rx_head];
+        size_t i = m_rx_head++ % Number;
+
+        Descriptor *descriptor       = &m_rx_descriptors[i];
+        DWC_Ether_QoS_Buffer *buffer = &m_rx_buffers[i];
 
         Cache::flush(descriptor, sizeof(Descriptor));
 
@@ -416,8 +405,20 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
         buffer->reset();
         buffer->length(descriptor->length());
 
-        m_rx_head = (m_rx_head + 1) % Number;
         return buffer;
+    }
+
+    void release(DWC_Ether_QoS_Buffer *buffer) {
+        size_t i = m_rx_tail++ % Number;
+
+        Descriptor &descriptor = m_rx_descriptors[i];
+        descriptor.buffer(buffer->start());
+        descriptor.des2 = 0;
+        descriptor.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
+
+        Cache::flush(&descriptor, sizeof(Descriptor));
+
+        Reg32(Address, CH0_RX_TAIL_POINTER) = reinterpret_cast<uintptr_t>(&descriptor);
     }
 
   private:
@@ -432,6 +433,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
     DWC_Ether_QoS_Buffer m_tx_buffers[Number];
     Atomic<size_t> m_tx_head;
     Atomic<size_t> m_rx_head;
+    Atomic<size_t> m_rx_tail;
 };
 
 template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
