@@ -8,7 +8,7 @@
 #include <utility/Debug.hpp>
 
 #include <architecture/IC.hpp>
-#include <network/Ethernet.hpp>
+#include <drivers/ethernet/EthernetDevice.hpp>
 #include <utility/Atomic.hpp>
 
 namespace DEPOS {
@@ -459,7 +459,7 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
     }
 };
 
-template <typename Tag> class DWC_Ether_QoS final : public Ethernet::Device {
+template <typename Tag> class DWC_Ether_QoS final : public EthernetDevice {
 
     enum Registers {
         CH0_INTERRUPT_ENABLE = 0x1134,
@@ -481,8 +481,6 @@ template <typename Tag> class DWC_Ether_QoS final : public Ethernet::Device {
     using MTL      = DWC_Ether_QoS_MTL<MyTraits::Address>;
     using PHY      = DWC_Ether_QoS_PHY<MyTraits::Address>;
     using MAC      = DWC_Ether_QoS_MAC<MyTraits::Address>;
-
-    using Ethernet::Device::send;
 
     DWC_Ether_QoS()
         : address_(MyTraits::MAC) {
@@ -523,8 +521,8 @@ template <typename Tag> class DWC_Ether_QoS final : public Ethernet::Device {
         }
 
         if (status & INTERRUPT_STATUS_RBU) {
-            status &= ~INTERRUPT_STATUS_RBU;
             onReceive();
+            status &= ~INTERRUPT_STATUS_RBU;
         }
     }
 

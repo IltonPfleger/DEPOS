@@ -89,7 +89,7 @@ int main() {
     constexpr size_t LinuxMemorySize = 256 * MB;
 
     auto *link = new LinkIPv4ToEthernet(*Device::instance());
-    auto *ipv4 = new IPv4(IPv4::Address(192, 168, 1, 167), *Device::instance(), *link);
+    auto *ipv4 = new IPv4(IPv4::Address(192, 168, 1, 167), *link);
     auto *udp  = new UDP(ipv4);
     auto *tftp = new TFTP(*udp);
 

@@ -3,7 +3,6 @@
 #include <Meta.hpp>
 #include <machine/Machine.hpp>
 #include <network/GenericAddress.hpp>
-#include <network/NetworkAddressableDevice.hpp>
 #include <network/NetworkLinkLayer.hpp>
 #include <network/protocols/InternetChecksum.hpp>
 
@@ -61,19 +60,18 @@ class IPv4 : public Observer<NetworkBuffer>,
 
     } __attribute__((packed));
 
-    IPv4(const Address &address, NetworkAddressableDevice &device, NetworkLinkLayer &link)
-        : device_(device),
-          link_(link) {
+    IPv4(const Address &address, NetworkLinkLayer &link)
+        : link_(link) {
         _address = address;
         link_.bind(_address);
-        device_.attach(this);
+        link_.attach(this);
     }
 
-    ~IPv4() { device_.detach(this); }
+    ~IPv4() { link_.detach(this); }
 
     NetworkBuffer *alloc(size_t length) {
         size_t total          = length + sizeof(Header);
-        NetworkBuffer *buffer = device_.alloc(total);
+        NetworkBuffer *buffer = link_.alloc(total);
         buffer->advance(sizeof(Header));
         buffer->length(total);
         return buffer;
@@ -99,7 +97,6 @@ class IPv4 : public Observer<NetworkBuffer>,
 
   private:
     Address _address;
-    NetworkAddressableDevice &device_;
     NetworkLinkLayer &link_;
 };
 

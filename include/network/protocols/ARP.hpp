@@ -1,9 +1,8 @@
-#ifndef __DEPOS_NETWORK_PROTOCOLSARP_HEADER__
-#define __DEPOS_NETWORK_PROTOCOLSARP_HEADER__
+#ifndef __DEPOS_NETWORK_PROTOCOLS_ARP_HEADER__
+#define __DEPOS_NETWORK_PROTOCOLS_ARP_HEADER__
 
 #include <ConditionalVariable.hpp>
 #include <Thread.hpp>
-#include <network/NetworkAddressableDevice.hpp>
 #include <utility/collections/Hash.hpp>
 
 namespace DEPOS {
@@ -49,7 +48,7 @@ template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : pu
 
     typedef Hash<PA, Entry, 256, Hasher> Table;
 
-    ARP(NetworkAddressableDevice &device)
+    ARP(HardwareLayerType &device)
         : device_(device) {
         device_.attach(this);
     }
@@ -131,7 +130,7 @@ template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : pu
     }
 
   private:
-    NetworkAddressableDevice &device_;
+    HardwareLayerType &device_;
     Spin lock_;
     PA pa_;
     Table table_;

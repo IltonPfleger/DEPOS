@@ -1,8 +1,8 @@
 #ifndef __DEPOS_IPV4_TO_ETHERNET_LINK_LAYER__
 #define __DEPOS_IPV4_TO_ETHERNET_LINK_LAYER__
 
+#include <drivers/ethernet/EthernetDevice.hpp>
 #include <network/NetworkAddress.hpp>
-#include <network/NetworkAddressableDevice.hpp>
 #include <network/NetworkBuffer.hpp>
 #include <network/NetworkLinkLayer.hpp>
 #include <network/protocols/ARP.hpp>
@@ -10,17 +10,23 @@
 
 namespace DEPOS {
 
-class LinkIPv4ToEthernet : public NetworkLinkLayer {
+class LinkIPv4ToEthernet : public NetworkLinkLayer, public Observer<NetworkBuffer> {
     using MAC    = GenericAddress<6>;
     using IP     = GenericAddress<4>;
-    using Router = ARP<Ethernet, IPv4>;
+    using Router = ARP<EthernetDevice, IPv4>;
 
   public:
     virtual ~LinkIPv4ToEthernet() = default;
 
-    LinkIPv4ToEthernet(NetworkAddressableDevice &device)
+    LinkIPv4ToEthernet(EthernetDevice &device)
         : device_(device),
-          router_(Router(device_)) {}
+          router_(Router(device_)) {
+        device_.attach(this);
+    }
+
+    virtual NetworkBuffer *alloc(size_t length) override { return device_.alloc(length); }
+
+    virtual void update(NetworkBuffer buffer) override { notify(buffer); }
 
     virtual void bind(const NetworkAddress &address) override { router_.bind(address); }
 
@@ -41,7 +47,7 @@ class LinkIPv4ToEthernet : public NetworkLinkLayer {
     static constexpr IP IPv4Broadcast             = {255, 255, 255, 255};
 
   private:
-    NetworkAddressableDevice &device_;
+    EthernetDevice &device_;
     Router router_;
 };
 

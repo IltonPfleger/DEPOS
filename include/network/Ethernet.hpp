@@ -1,7 +1,7 @@
 #pragma once
 
 #include <network/GenericAddress.hpp>
-#include <network/NetworkAddressableDevice.hpp>
+#include <network/NetworkDevice.hpp>
 
 namespace DEPOS {
 
@@ -26,38 +26,6 @@ class Ethernet {
         Address _source;
         Protocol _protocol;
     } __attribute__((packed));
-
-    class Device : public NetworkAddressableDevice {
-      public:
-        using Address = Ethernet::Address;
-        using Header  = Ethernet::Header;
-        using NetworkDevice::send;
-
-        virtual ~Device() {}
-
-        NetworkBuffer *alloc(size_t length) override {
-            NetworkBuffer *buffer = doAlloc(length);
-            buffer->advance(sizeof(Header));
-            buffer->length(length);
-            return buffer;
-        }
-
-        NetworkBuffer *receive() override {
-            NetworkBuffer *buffer = doReceive();
-            if (buffer) {
-                buffer->protocol(buffer->data<Header *>()->protocol());
-                buffer->advance(sizeof(Header));
-            }
-            return buffer;
-        }
-
-        int send(const NetworkAddress &destination, uint16_t protocol, NetworkBuffer *buffer) override {
-            buffer->rewind(sizeof(Header));
-            buffer->length(buffer->length() + sizeof(Header));
-            new (buffer->data()) Header(destination, address(), protocol);
-            return send(buffer);
-        };
-    };
 };
 
 } // namespace DEPOS
