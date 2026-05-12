@@ -17,9 +17,8 @@ class EthernetDevice : public NetworkDevice {
     virtual void address(const NetworkAddress &) = 0;
 
     NetworkBuffer *alloc(size_t length) override {
-        NetworkBuffer *buffer = doAlloc(length);
+        NetworkBuffer *buffer = doAlloc(length + sizeof(Header));
         buffer->advance(sizeof(Header));
-        buffer->length(length);
         return buffer;
     }
 
@@ -34,7 +33,6 @@ class EthernetDevice : public NetworkDevice {
 
     int send(const NetworkAddress &destination, uint16_t protocol, NetworkBuffer *buffer) {
         buffer->rewind(sizeof(Header));
-        buffer->length(buffer->length() + sizeof(Header));
         new (buffer->data()) Header(destination, address(), protocol);
         return send(buffer);
     };

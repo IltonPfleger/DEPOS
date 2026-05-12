@@ -73,7 +73,6 @@ class IPv4 : public Observer<NetworkBuffer>,
         size_t total          = length + sizeof(Header);
         NetworkBuffer *buffer = link_.alloc(total);
         buffer->advance(sizeof(Header));
-        buffer->length(total);
         return buffer;
     }
 
@@ -86,11 +85,10 @@ class IPv4 : public Observer<NetworkBuffer>,
     }
 
     int send(const NetworkAddress &pa, uint8_t protocol, NetworkBuffer *buffer) {
+        size_t length = buffer->length() - buffer->offset();
         buffer->rewind(sizeof(Header));
 
-        new (buffer->data()) Header(pa, _address, protocol, buffer->length());
-
-        buffer->length(buffer->length() + sizeof(Header));
+        new (buffer->data()) Header(pa, _address, protocol, length);
 
         return link_.send(pa, buffer);
     }

@@ -1,32 +1,39 @@
 #ifndef __DEPOS_NETWORK_BUFFER__
 #define __DEPOS_NETWORK_BUFFER__
 
+#include <types.hpp>
+
 namespace DEPOS {
 
 class NetworkBuffer {
   public:
-    NetworkBuffer(void *start, size_t size, uint16_t protocol = 0)
+    NetworkBuffer(void *start, size_t head, size_t tail, uint16_t protocol = 0)
         : start_(static_cast<uint8_t *>(start)),
-          size_(size),
-          data_(start_),
-          length_(0),
+          head_(start_ + head),
+          tail_(start_ + tail),
           protocol_(protocol) {}
 
-    template <typename T = uint8_t *> [[nodiscard]] T data(this auto &&self) { return reinterpret_cast<T>(self.data_); }
+    void protocol(uint16_t p) { protocol_ = p; }
 
+    template <typename T = uint8_t *>
     [[nodiscard]]
-    uint8_t operator[](this auto &&self, size_t i) {
-        return self.data_[i];
+    T data(this auto &&self) {
+        return reinterpret_cast<T>(self.head_);
     }
 
     [[nodiscard]]
-    size_t protocol() const {
+    uint8_t operator[](this auto &&self, size_t i) {
+        return self.head_[i];
+    }
+
+    [[nodiscard]]
+    uint16_t protocol() const {
         return protocol_;
     }
 
     [[nodiscard]]
     size_t length() const {
-        return length_;
+        return static_cast<size_t>(tail_ - start_);
     }
 
     [[nodiscard]]
@@ -34,43 +41,60 @@ class NetworkBuffer {
         return start_;
     }
 
-    [[nodiscard]]
-    size_t size() const {
-        return size_;
-    }
+    //[[nodiscard]]
+    // size_t size() const {
+    //    return static_cast<size_t>(tail_ - start_);
+    //}
 
     [[nodiscard]]
     size_t offset() const {
-        return static_cast<size_t>(data() - start());
+        return static_cast<size_t>(head_ - start_);
     }
 
-    [[nodiscard]]
-    size_t remaining() const {
-        return size() - offset();
-    }
+    //[[nodiscard]]
+    // size_t remaining() const {
+    //    return size() - offset();
+    //}
 
-    void length(size_t l) { length_ = l; }
+    //[[nodiscard]]
+    // uint8_t *head() const {
+    //    return head_;
+    //}
 
-    void protocol(size_t p) { protocol_ = p; }
+    //[[nodiscard]]
+    // uint8_t *tail() const {
+    //    return tail_;
+    //}
 
-    void reset() { data_ = start(); }
+    // void head(uint8_t *h) { head_ = h; }
+
+    // void tail(uint8_t *t) { tail_ = t; }
 
     bool advance(size_t bytes) {
-        data_ += bytes;
+        head_ += bytes;
         return true;
     }
 
     bool rewind(size_t bytes) {
-        data_ -= bytes;
+        head_ -= bytes;
+        return true;
+    }
+
+    bool extend(size_t bytes) {
+        tail_ += bytes;
+        return true;
+    }
+
+    bool shrink(size_t bytes) {
+        tail_ -= bytes;
         return true;
     }
 
   private:
     uint8_t *const start_;
-    size_t size_;
 
-    uint8_t *data_;
-    size_t length_;
+    uint8_t *head_;
+    uint8_t *tail_;
 
     uint16_t protocol_;
 };

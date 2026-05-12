@@ -6,8 +6,6 @@
 
 namespace DEPOS {
 
-namespace hypervisor {
-
 template <typename Device> class VirtualSwitch : public Device::Observer, public Device::Observed {
     static constexpr unsigned int FrameSize = 1518;
     static constexpr int InternalQueueSize  = 16;
@@ -21,7 +19,6 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
     };
 
   public:
-    using Buffer = Device::Buffer;
     static auto instance() {
         static VirtualSwitch instance;
         return &instance;
@@ -29,25 +26,26 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
 
   public:
     VirtualSwitch()
-        : m_worker_thread(nullptr) {
+        : device_(Device::instance()) {
 
         for (int i = 0; i < InternalQueueSize; i++) {
             m_free.insert(&m_links[i]);
         }
 
-        m_devices = Device::instance();
-        m_devices->attach(this);
+        device_->attach(this);
         m_worker_thread = new Thread(entry, this);
     }
 
-    int send(const unsigned char *data, unsigned int length) {
-        // m_devices->send(data, length);
-        // return enqueue_copy(data, length);
+    NetworkBuffer *alloc(size_t length) { return device_->alloc(length); }
+
+    int send(NetworkBuffer *buffer) {
+        device_->send(buffer);
+        enqueue_copy(buffer->start(), buffer->length());
         return 0;
     }
 
-    void update(const Device::Buffer *buffer) {
-        enqueue_copy(reinterpret_cast<const unsigned char *>(buffer->data()), buffer->length());
+    void update(NetworkBuffer buffer) {
+        enqueue_copy(reinterpret_cast<const unsigned char *>(buffer.start()), buffer.length());
     }
 
   private:
@@ -71,40 +69,38 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
 
     void *run() {
         while (true) {
-            CPU::Interruptions::disable();
+            CPU::Interrupt::disable();
             m_spin.acquire();
             Link *link = m_received.remove();
             m_spin.release();
-            CPU::Interruptions::enable();
+            CPU::Interrupt::enable();
 
             if (link) {
                 InternalBuffer &buf = link->value();
 
-                typename Device::Buffer temp_buffer(buf.data, buf.size);
-                this->notify(&temp_buffer);
+                NetworkBuffer temp_buffer(buf.data, 0, buf.size);
+                this->notify(temp_buffer);
 
-                CPU::Interruptions::disable();
+                CPU::Interrupt::disable();
                 m_spin.acquire();
                 m_free.insert(link);
                 m_spin.release();
-                CPU::Interruptions::enable();
+                CPU::Interrupt::enable();
             }
         }
         return nullptr;
     }
 
   private:
-    using Link = Node<InternalBuffer>;
-    using List = FIFO<Link>;
+    using Link = collections::Node<InternalBuffer>;
+    using List = collections::FIFO<Link>;
 
-    Device *m_devices;
+    Device *device_;
     Thread *m_worker_thread;
     List m_free;
     List m_received;
     Link m_links[InternalQueueSize];
     Spin m_spin;
 };
-
-} // namespace hypervisor
 
 } // namespace DEPOS

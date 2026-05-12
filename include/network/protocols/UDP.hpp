@@ -26,20 +26,18 @@ class UDP : public Observer<NetworkBuffer, const NetworkAddress &, const Network
     }
 
     NetworkBuffer *alloc(size_t length) {
-        size_t total          = length + sizeof(Header);
-        NetworkBuffer *buffer = _handler->alloc(total);
+        NetworkBuffer *buffer = _handler->alloc(length + sizeof(Header));
         buffer->advance(sizeof(Header));
-        buffer->length(length);
         return buffer;
     }
 
     int send(const NetworkAddress &address, uint16_t port, NetworkBuffer *buffer) {
         buffer->rewind(sizeof(Header));
-        buffer->length(buffer->length() + sizeof(Header));
+        size_t length       = buffer->length() - buffer->offset();
         Header *header      = buffer->data<Header *>();
         header->source      = CPU::htobe16(_port);
         header->destination = CPU::htobe16(port);
-        header->length      = CPU::htobe16(buffer->length());
+        header->length      = CPU::htobe16(length);
         header->checksum    = 0;
         return _handler->send(address, Protocol, buffer);
     }
@@ -49,7 +47,6 @@ class UDP : public Observer<NetworkBuffer, const NetworkAddress &, const Network
         Header *header = buffer.data<Header *>();
         if (_port && header->destination != _port) return;
         buffer.advance(sizeof(Header));
-        buffer.length(CPU::htobe16(header->length) - sizeof(Header));
         notify(buffer, CPU::be16toh(header->destination), CPU::be16toh(header->source));
     }
 

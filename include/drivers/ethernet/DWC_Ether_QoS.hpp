@@ -235,8 +235,13 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
 
 class DWC_Ether_QoS_Buffer : public NetworkBuffer {
   public:
-    DWC_Ether_QoS_Buffer(void *data = nullptr, size_t length = 0)
-        : NetworkBuffer(data, length) {}
+    DWC_Ether_QoS_Buffer(void *data = nullptr)
+        : NetworkBuffer(data, 0, 0),
+          allocated(false) {}
+
+    DWC_Ether_QoS_Buffer(void *data, size_t head, size_t tail)
+        : NetworkBuffer(data, head, tail),
+          allocated(true) {}
 
   public:
     bool allocated;
@@ -315,14 +320,14 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
         for (size_t i = 0; i < Number; i++) {
             memset(&m_tx_descriptors[i], 0, sizeof(Descriptor));
             Cache::flush(m_tx_descriptors, sizeof(Descriptor));
-            new (&m_tx_buffers[i]) DWC_Ether_QoS_Buffer(new unsigned char[MTU], MTU);
+            new (&m_tx_buffers[i]) DWC_Ether_QoS_Buffer(new unsigned char[MTU]);
         }
 
         for (size_t i = 0; i < Number; i++) {
             DWC_Ether_QoS_Buffer &buffer = m_rx_buffers[i];
             Descriptor &descriptor       = m_rx_descriptors[i];
 
-            new (&buffer) DWC_Ether_QoS_Buffer(new unsigned char[MTU], MTU);
+            new (&buffer) DWC_Ether_QoS_Buffer(new unsigned char[MTU]);
 
             descriptor.buffer(reinterpret_cast<uintptr_t>(buffer.data()));
             descriptor.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
@@ -357,11 +362,14 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
             ;
     }
 
-    DWC_Ether_QoS_Buffer *alloc() {
+    DWC_Ether_QoS_Buffer *alloc(size_t length) {
         size_t i = 0;
         while (true) {
-            DWC_Ether_QoS_Buffer *buffer = &m_tx_buffers[i];
-            if (!CPU::Atomic::tsl(buffer->allocated)) return buffer;
+            DWC_Ether_QoS_Buffer &buffer = m_tx_buffers[i];
+            if (!CPU::Atomic::tsl(buffer.allocated)) {
+                new (&buffer) DWC_Ether_QoS_Buffer(buffer.start(), 0, length);
+                return &buffer;
+            }
             i = (i + 1) % Number;
         }
     }
@@ -402,8 +410,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
 
         Cache::flush(buffer, sizeof(DWC_Ether_QoS_Buffer));
 
-        buffer->reset();
-        buffer->length(descriptor->length());
+        new (buffer) DWC_Ether_QoS_Buffer(buffer->start(), 0, descriptor->length());
 
         return buffer;
     }
@@ -504,7 +511,7 @@ template <typename Tag> class DWC_Ether_QoS final : public EthernetDevice {
         TraceOut();
     }
 
-    NetworkBuffer *doAlloc(size_t) override { return dma_->alloc(); }
+    NetworkBuffer *doAlloc(size_t length) override { return dma_->alloc(length); }
     int doSend(NetworkBuffer *buffer) override { return dma_->send(buffer->start(), buffer->length()); }
     void doFree(NetworkBuffer *buffer) override { dma_->free(static_cast<DWC_Ether_QoS_Buffer *>(buffer)); }
 

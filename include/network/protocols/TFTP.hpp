@@ -37,7 +37,8 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         size_t name_length = strlen(filename);
 
         uint16_t *operation = packet->data<uint16_t *>();
-        *operation          = CPU::htobe16(Operation::RRQ);
+
+        *operation = CPU::htobe16(Operation::RRQ);
 
         char *ptr = reinterpret_cast<char *>(operation + 1);
 
@@ -53,9 +54,9 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         memcpy(ptr, k_blksize_string, sizeof(k_blksize_string));
         ptr += sizeof(k_blksize_string);
 
-        size_t total = reinterpret_cast<uint8_t *>(ptr) - reinterpret_cast<uint8_t *>(operation);
+        size_t total = 2 + name_length + 6 + 8 + sizeof(k_blksize_string) + 1;
 
-        packet->length(total);
+        packet->shrink(packet->length() - packet->offset() - total);
 
         _udp.send(_server_address, 69, packet);
 
@@ -80,7 +81,7 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         }
         case DATA: {
             uint16_t block = CPU::be16toh(*(header + 1));
-            size_t length  = packet.length() - 4;
+            size_t length  = packet.length() - packet.offset() - 4;
             uint8_t *data  = reinterpret_cast<uint8_t *>(header + 2);
             onData(data, block, length, source);
             break;
