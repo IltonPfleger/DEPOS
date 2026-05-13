@@ -17,9 +17,6 @@ template <typename Tag> class IPMSCANFD : public NetworkDevice {
   private:
     using Traits = DEPOS::Traits<Tag>;
 
-    // ============================================================
-    // Constants
-    // ============================================================
     static constexpr uintptr_t Base    = Traits::Address;
     static constexpr size_t MaxPayload = 8;
 
@@ -27,9 +24,6 @@ template <typename Tag> class IPMSCANFD : public NetworkDevice {
     static constexpr bool InternalLoopback = false;
     static constexpr bool ExternalLoopback = true;
 
-    // ============================================================
-    // Registeristers
-    // ============================================================
     enum class Register : uintptr_t {
         RBUF_ID    = 0x00,
         RBUF_CTL   = 0x04,
@@ -52,10 +46,6 @@ template <typename Tag> class IPMSCANFD : public NetworkDevice {
         F_SEG_1 = 0xAC,
         EALCAP  = 0xB0
     };
-
-    // ============================================================
-    // Bit Masks
-    // ============================================================
 
     enum Mask : uint8_t {
         RESET = 0x80,
@@ -95,9 +85,6 @@ template <typename Tag> class IPMSCANFD : public NetworkDevice {
         BUSOFF = 0x01
     };
 
-    // ============================================================
-    // Baudrate Table
-    // ============================================================
     struct BitTiming {
         size_t baudrate;
         size_t t[6];
@@ -223,7 +210,7 @@ template <typename Tag> class IPMSCANFD : public NetworkDevice {
         set8(Register::ERRINT, err);
     }
 
-    void configure(size_t kbps, bool internalLB, bool externalLB) {
+    void configure(size_t kbps, bool lbi, bool lbe) {
         for (const auto &cfg : TimingTable) {
             if (cfg.baudrate == kbps) {
                 setBaudrate(cfg);
@@ -231,9 +218,9 @@ template <typename Tag> class IPMSCANFD : public NetworkDevice {
             }
         }
 
-        if (internalLB) set8(Register::STATUS, LBI);
+        if (lbi) set8(Register::STATUS, LBI);
 
-        if (externalLB) {
+        if (lbe) {
             set8(Register::STATUS, LBE);
             set8(Register::RCTRL, SACK);
         }

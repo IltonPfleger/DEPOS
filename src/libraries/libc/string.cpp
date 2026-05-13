@@ -15,14 +15,13 @@ void *memcpy(void *dd, const void *ss, size_t n) {
     return dd;
 }
 
-void *memset(void *dd, int c, size_t n) {
-    uint8_t *d = static_cast<uint8_t *>(dd);
+void *memset(void *p, int c, size_t n) {
+    uint8_t *d = static_cast<uint8_t *>(p);
 
-    while (n--) {
+    while (n--)
         *d++ = static_cast<uint8_t>(c);
-    }
 
-    return dd;
+    return p;
 }
 
 int memcmp(const void *ptr1, const void *ptr2, size_t n) {

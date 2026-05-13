@@ -50,10 +50,10 @@ void Thread::epilogue() {
 
     switch (previous->m_state) {
     case State::READY:
-        s_scheduler.insert(&previous->m_link);
+        s_scheduler.insert(&previous->m_node);
         break;
     case State::WAITING:
-        previous->m_waiting->insert(&previous->m_link);
+        previous->m_waiting->insert(&previous->m_node);
         spin->release();
         break;
     case State::FINISHING:
@@ -69,8 +69,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
     : m_stack(Memory::alloc(Traits<Thread>::UserStackSize), Traits<Thread>::UserStackSize),
       m_kstack(Memory::alloc(Traits<Thread>::KernelStackSize), Traits<Thread>::KernelStackSize),
       m_waiting(0),
-      m_criterion(c),
-      m_link(Link(this, m_criterion)),
+      m_node(Node(this, c)),
       m_state(State::READY) {
 
     TraceIn(this);
@@ -79,7 +78,7 @@ Thread::Thread(Function f, Argument a, Criterion c)
 
     bool enabled = CPU::Interrupt::disable();
     CPU::Atomic::finc(s_count);
-    s_scheduler.insert(&m_link);
+    s_scheduler.insert(&m_node);
     if (enabled) CPU::Interrupt::enable();
 
     TraceOut();
@@ -102,7 +101,7 @@ void Thread::exit() {
 
     Thread *previous = running();
 
-    Link *next        = s_scheduler.remove();
+    Node *next        = s_scheduler.remove();
     previous->m_state = State::FINISHING;
 
     dispatch(previous, next->value());
@@ -134,7 +133,7 @@ void Thread::reschedule() {
 
     Thread *previous = running();
 
-    Link *next = s_scheduler.remove(Criterion::NORMAL);
+    Node *next = s_scheduler.remove(Criterion::NORMAL);
 
     if (next) {
         previous->m_state = State::READY;
@@ -155,7 +154,7 @@ void Thread::sleep(Queue *m_waiting, Spin *spin) {
     previous->m_state   = State::WAITING;
     previous->m_waiting = m_waiting;
 
-    Link *next = s_scheduler.remove();
+    Node *next = s_scheduler.remove();
 
     ERROR(!next);
 
@@ -165,14 +164,14 @@ void Thread::sleep(Queue *m_waiting, Spin *spin) {
 }
 
 void Thread::wakeup(Queue *m_waiting) {
-    Link *link = m_waiting->remove();
-    ERROR(!link);
-    Thread *awake    = link->value();
+    Node *node = m_waiting->remove();
+    ERROR(!node);
+    Thread *awake    = node->value();
     awake->m_state   = State::READY;
     awake->m_waiting = nullptr;
 
     bool enabled = CPU::Interrupt::disable();
-    s_scheduler.insert(&awake->m_link);
+    s_scheduler.insert(&awake->m_node);
     if (enabled) CPU::Interrupt::enable();
 }
 

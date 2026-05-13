@@ -12,8 +12,8 @@ class Thread {
 
     using Scheduler = DEPOS::Scheduler<Thread>;
     using Criterion = Scheduler::Criterion;
-    using Link      = Scheduler::Link;
-    using Queue     = collections::FIFO<Link>;
+    using Node      = Scheduler::Node;
+    using Queue     = collections::FIFO<Node>;
 
     using Return   = void *;
     using Argument = void *;
@@ -44,8 +44,7 @@ class Thread {
     Chunk m_stack;
     Chunk m_kstack;
     Queue *m_waiting;
-    Criterion m_criterion;
-    Link m_link;
+    Node m_node;
     volatile State m_state;
     Context *m_context;
 

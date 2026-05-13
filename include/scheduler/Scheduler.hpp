@@ -12,15 +12,17 @@ namespace DEPOS {
 template <typename T> class Scheduler {
   public:
     using Criterion = typename Traits<T>::Criterion;
-    using Link      = collections::Node<T *, Criterion>;
+    using Node      = collections::Node<T *, Criterion>;
 
-    Scheduler() = default;
+    Scheduler()
+        : _heads({nullptr}),
+          _collection() {}
 
-    Link *remove(Criterion minimum = Criterion::IDLE) {
+    Node *remove(Criterion minimum = Criterion::IDLE) {
         auto i = Criterion::HIGHER - 1;
 
         while (i >= minimum) {
-            if (Link *next = _collection.remove(i)) {
+            if (Node *next = _collection.remove(i)) {
                 head() = next->value();
                 return next;
             }
@@ -31,7 +33,7 @@ template <typename T> class Scheduler {
         return nullptr;
     }
 
-    void insert(Link *node) {
+    void insert(Node *node) {
         ERROR(!node);
         _collection.insert(node->criterion(), node);
     }
@@ -43,7 +45,7 @@ template <typename T> class Scheduler {
 
   private:
     T *_heads[Traits<CPU>::Active];
-    typename Criterion::template Collection<Link> _collection;
+    typename Criterion::template Collection<Node> _collection;
 };
 
 } // namespace DEPOS

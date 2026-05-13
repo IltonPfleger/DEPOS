@@ -14,13 +14,13 @@ class CPU {
 
     static void barrier() {
         static constinit volatile bool gsense = 1;
-        static volatile int count             = Traits<DEPOS::CPU>::Active;
+        static constinit volatile int ready   = Traits<DEPOS::CPU>::Active;
 
         auto sense   = !Atomic::load(gsense);
-        int position = Atomic::fdec(count);
+        int position = Atomic::fdec(ready);
 
         if (position == 1) {
-            Atomic::store(count, Traits<DEPOS::CPU>::Active);
+            Atomic::store(ready, Traits<DEPOS::CPU>::Active);
             Atomic::store(gsense, sense);
         } else {
             while (Atomic::load(gsense) != sense)

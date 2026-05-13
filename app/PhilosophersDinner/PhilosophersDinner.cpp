@@ -22,7 +22,6 @@ void *philosopher(void *p) {
     while (iterations--) {
         console->p();
         Console::println("<", CPU::id(), ">", " Filósofo ", id, " está pensando!");
-
         console->v();
 
         if (id == Number - 1) {
@@ -34,9 +33,7 @@ void *philosopher(void *p) {
         }
 
         console->p();
-
         Console::println("<", CPU::id(), ">", " Filósofo ", id, " está comendo!");
-
         console->v();
 
         forks[right]->v();
