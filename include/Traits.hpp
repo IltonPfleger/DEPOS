@@ -38,8 +38,8 @@ template <> struct Traits<Alarm> {
 };
 
 template <> struct Traits<Debug> {
-    static constexpr bool Error = false;
-    static constexpr bool Trace = false;
+    static constexpr bool Error = true;
+    static constexpr bool Trace = true;
 };
 
 template <> struct Traits<Console> {

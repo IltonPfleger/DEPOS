@@ -97,6 +97,8 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
         if (length == 0) return;
         NetworkBuffer *buffer = m_device->alloc(length);
         if (buffer) {
+            buffer->shrink(buffer->offset());
+            buffer->rewind(buffer->offset());
             memcpy(buffer->start(), data, length);
             m_device->send(buffer);
         }

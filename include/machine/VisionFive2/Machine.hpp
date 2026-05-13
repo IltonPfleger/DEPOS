@@ -70,20 +70,62 @@ class Clock : Driver {
     enum { GATE = 1 << 31 };
 
   public:
+    enum class AlwaysOnClock {
+        AONCRG_GMAC0_AHB                     = 0x8,
+        AONCRG_GMAC0_RMII_RTX                = 0x10,
+        AONCRG_GMAC0_AXI                     = 0xc,
+        AONCRG_GMAC0_TX                      = 0x14,
+        JH7110_GMAC5_AXI64_CLOCK_TX_INVERTER = 0x18,
+    };
+
     enum class SystemClock {
-        CLK_APB0                   = 0x30,
-        JH7110_CAN0_CTRL_CLK_APB   = 0x1cc,
-        JH7110_CAN0_CTRL_CLK_TIMER = 0x1d0,
-        JH7110_CAN0_CTRL_CLK_CORE  = 0x1d4,
+        CAN0_CTRL_CLK_APB   = 0x1cc,
+        CAN0_CTRL_CLK_TIMER = 0x1d0,
+        CAN0_CTRL_CLK_CORE  = 0x1d4,
+
+        CLK_GMAC5_AXI64_RX_INVERTER = 0x1a0,
+        CLK_GMAC5_AXI64_TX_INVERTER = 0x1a8,
+        CLK_GMAC5_AXI64_AHB         = 0x184,
+        CLK_GMAC5_AXI64_AXI         = 0x188,
+        CLK_GMAC0_GTX               = 0x1b0,
+        CLK_GMAC_PHY                = 0x1b8,
+        CLK_GMAC_SOURCE             = 0x18c,
     };
 
     enum class SystemClockReset {
-        RSTN_U0_CAN_CTRL_APB   = (3 << 16) | 15,
-        RSTN_U0_CAN_CTRL_CORE  = (3 << 16) | 16,
-        RSTN_U0_CAN_CTRL_TIMER = (3 << 16) | 17,
+        RSTN_U0_CAN_CTRL_APB          = (3 << 16) | 15,
+        RSTN_U0_CAN_CTRL_CORE         = (3 << 16) | 16,
+        RSTN_U0_CAN_CTRL_TIMER        = (3 << 16) | 17,
+        RSTN_U1_GMAC5_AXI64_ARESETN_I = (2 << 16) | 2,
+        RSTN_U1_GMAC5_AXI64_HRESET_N  = (2 << 16) | 3,
+    };
+
+    enum class AlwaysOnClockReset {
+        GMAC5_AXI64_RSTN_AXI = (0 << 16) | 0,
+        GMAC5_AXI64_RSTN_AHB = (0 << 16) | 1,
     };
 
     static void enable(SystemClock domain) { Reg32(k_sys_crg_base, static_cast<int>(domain)) |= GATE; }
+    static void enable(AlwaysOnClock domain) { Reg32(k_aon_crg_base, static_cast<int>(domain)) |= GATE; }
+
+    static void reset(AlwaysOnClockReset domain) {
+        int integer = static_cast<int>(domain);
+        int index   = (integer >> 16) & 0xFFFF;
+        int bit     = 1 << (integer & 0xFFFF);
+
+        uintptr_t assert = 0x38 + (4 * index);
+        uintptr_t status = 0x3c + (4 * index);
+
+        Reg32(k_aon_crg_base, assert) |= bit;
+
+        while (Reg32(k_aon_crg_base, status) & bit)
+            ;
+
+        Reg32(k_aon_crg_base, assert) &= ~bit;
+
+        while (!(Reg32(k_aon_crg_base, status) & bit))
+            ;
+    }
 
     static void reset(SystemClockReset domain) {
         int integer = static_cast<int>(domain);
@@ -108,86 +150,56 @@ class Clock : Driver {
         Reg32(k_sys_crg_base, static_cast<int>(domain)) &= ~0xFFFFFF;
         Reg32(k_sys_crg_base, static_cast<int>(domain)) |= value;
     }
+
+    static void invert(AlwaysOnClock domain, bool value) {
+        Reg32(k_sys_crg_base, static_cast<int>(domain)) &= ~(1 << 30);
+        Reg32(k_sys_crg_base, static_cast<int>(domain)) |= value << 30;
+    }
+
+    static void divisor(AlwaysOnClock domain, unsigned int value) {
+        Reg32(k_aon_crg_base, static_cast<int>(domain)) &= ~0xFFFFFF;
+        Reg32(k_aon_crg_base, static_cast<int>(domain)) |= value;
+    }
+
+    static void multiplex(AlwaysOnClock domain, unsigned int value) {
+        Reg32(k_aon_crg_base, static_cast<int>(domain)) &= ~(0x3F << 24);
+        Reg32(k_aon_crg_base, static_cast<int>(domain)) |= (value & 0x3F) << 24;
+    }
 };
 
 class VisionFive2 : Driver {
-    // static constexpr unsigned long k_sys_crg_base    = 0x13020000;
-    // static constexpr unsigned long k_aon_crg_base    = 0x17000000;
-    // static constexpr unsigned long k_aon_syscon_base = 0x17010000;
-
-    // enum {
-    //     SYSCRG_GMAC0_GTX       = 0x1b0,
-    //     SYSCRG_GMAC_PHY        = 0x1b8,
-    //     SYSCRG_GMAC5_AHB       = 0x184,
-    //     SYSCRG_GMAC5_AXI       = 0x188,
-    //     SYSCRG_GMAC_SOURCE     = 0x18c,
-    //     SYSCRG_SOFTWARE_RESET2 = 0x300,
-    //     SYSCRG_RESET_STATUS2   = 0x310,
-    //     AONCRG_GMAC0_AHB       = 0x8,
-    //     AONCRG_GMAC0_RMII_RTX  = 0x10,
-    //     AONCRG_GMAC0_AXI       = 0xc,
-    //     AONCRG_GMAC0_TX        = 0x14,
-    //     AONCRG_GMAC0_TX_INV    = 0x18,
-    //     AONCRG_SOFTWARE_RESET  = 0x38,
-    //     AONCRG_RESET_STATUS    = 0x3c,
-    // };
-
-    // enum {
-    //     GATE     = 1 << 31,
-    //     INVERTER = 1 << 30,
-    // };
-
-    // static void syscrg_init() {
-    //     Reg32(k_sys_crg_base, SYSCRG_GMAC_PHY) |= GATE;
-    //     Reg32(k_sys_crg_base, SYSCRG_GMAC_SOURCE) |= GATE;
-    //     Reg32(k_sys_crg_base, SYSCRG_GMAC5_AHB) |= GATE;
-    //     Reg32(k_sys_crg_base, SYSCRG_GMAC5_AXI) |= GATE;
-    //     Reg32(k_sys_crg_base, SYSCRG_GMAC0_GTX) |= GATE;
-    //     static constexpr auto RESET = (1 << 2) | (1 << 3);
-    //     Reg32(k_sys_crg_base, SYSCRG_SOFTWARE_RESET2) |= RESET;
-    //     while ((Reg32(k_sys_crg_base, SYSCRG_RESET_STATUS2) & RESET))
-    //         ;
-    //     Reg32(k_sys_crg_base, SYSCRG_SOFTWARE_RESET2) &= ~RESET;
-    //     while (!(Reg32(k_sys_crg_base, SYSCRG_RESET_STATUS2) & RESET))
-    //         ;
-    // }
-
-    // static void aoncrg_init() {
-    //     Reg32(k_aon_crg_base, AONCRG_GMAC0_RMII_RTX) = 30;
-    //     Reg32(k_aon_crg_base, AONCRG_GMAC0_TX) |= GATE;
-    //     Reg32(k_aon_crg_base, AONCRG_GMAC0_TX) |= (1 << 24);
-    //     Reg32(k_aon_crg_base, AONCRG_GMAC0_TX_INV) |= INVERTER;
-    //     Reg32(k_aon_crg_base, AONCRG_GMAC0_AHB) |= GATE;
-    //     Reg32(k_aon_crg_base, AONCRG_GMAC0_AXI) |= GATE;
-    //     Reg32(k_aon_crg_base, AONCRG_SOFTWARE_RESET) |= 3;
-    //     while ((Reg32(k_aon_crg_base, AONCRG_RESET_STATUS) & 3))
-    //         ;
-    //     Reg32(k_aon_crg_base, AONCRG_SOFTWARE_RESET) &= ~3;
-    //     while (!(Reg32(k_aon_crg_base, AONCRG_RESET_STATUS) & 3))
-    //         ;
-    // }
-
   public:
     static void init() {
         riscv64::init();
 
         if (riscv64::CPU::id() == Traits<CPU>::BSP) {
-            Clock::divisor(Clock::SystemClock::JH7110_CAN0_CTRL_CLK_CORE, 15);
-
-            Clock::enable(Clock::SystemClock::JH7110_CAN0_CTRL_CLK_APB);
-            Clock::enable(Clock::SystemClock::JH7110_CAN0_CTRL_CLK_TIMER);
-            Clock::enable(Clock::SystemClock::JH7110_CAN0_CTRL_CLK_CORE);
-
+            /* ---***--- GMAC0 ---***--- */
+            Clock::enable(Clock::SystemClock::CLK_GMAC_PHY);
+            Clock::enable(Clock::SystemClock::CLK_GMAC0_GTX);
+            Clock::enable(Clock::SystemClock::CLK_GMAC5_AXI64_AHB);
+            Clock::enable(Clock::SystemClock::CLK_GMAC5_AXI64_AXI);
+            Clock::enable(Clock::SystemClock::CLK_GMAC_SOURCE);
+            Clock::reset(Clock::SystemClockReset::RSTN_U1_GMAC5_AXI64_ARESETN_I);
+            Clock::reset(Clock::SystemClockReset::RSTN_U1_GMAC5_AXI64_HRESET_N);
+            Clock::divisor(Clock::AlwaysOnClock::AONCRG_GMAC0_RMII_RTX, 30);
+            Clock::enable(Clock::AlwaysOnClock::AONCRG_GMAC0_TX);
+            Clock::invert(Clock::AlwaysOnClock::JH7110_GMAC5_AXI64_CLOCK_TX_INVERTER, true);
+            Clock::multiplex(Clock::AlwaysOnClock::AONCRG_GMAC0_TX, 1);
+            Clock::enable(Clock::AlwaysOnClock::AONCRG_GMAC0_AHB);
+            Clock::enable(Clock::AlwaysOnClock::AONCRG_GMAC0_AXI);
+            Clock::reset(Clock::AlwaysOnClockReset::GMAC5_AXI64_RSTN_AXI);
+            Clock::reset(Clock::AlwaysOnClockReset::GMAC5_AXI64_RSTN_AHB);
+            /* ---***--- CAN0 ---***--- */
+            Clock::divisor(Clock::SystemClock::CAN0_CTRL_CLK_CORE, 15);
+            Clock::enable(Clock::SystemClock::CAN0_CTRL_CLK_APB);
+            Clock::enable(Clock::SystemClock::CAN0_CTRL_CLK_TIMER);
+            Clock::enable(Clock::SystemClock::CAN0_CTRL_CLK_CORE);
             Clock::reset(Clock::SystemClockReset::RSTN_U0_CAN_CTRL_APB);
             Clock::reset(Clock::SystemClockReset::RSTN_U0_CAN_CTRL_CORE);
             Clock::reset(Clock::SystemClockReset::RSTN_U0_CAN_CTRL_TIMER);
-
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_TXD, 42);
             GPIO::map(GPIO::InputSignal::GPI_SYS_IOMUX_U0_CAN_CTRL_RXD, 43);
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_STB, 47);
-
-            // syscrg_init();
-            // aoncrg_init();
         }
 
         Meta::forEach(Traits<UART>::Devices{}, []<typename T>() { T::init(); });

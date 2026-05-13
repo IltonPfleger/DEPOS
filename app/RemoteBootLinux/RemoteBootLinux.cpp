@@ -166,7 +166,6 @@ int main() {
 
     Console::print("\n *** Linux ***\n");
 
-    // auto *vm = new GenericVirtualMachine<Serial>(buffer, LinuxMemorySize);
     auto *vm = new GenericVirtualMachine<Serial, Network>(buffer, LinuxMemorySize);
     vm->start(0, dtb);
 

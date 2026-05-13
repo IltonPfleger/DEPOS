@@ -14,9 +14,9 @@ template <typename... Args> class Observed {
   public:
     Observed() = default;
 
-    void attach(Observer<Args...> *o) { m_observers.insert(&o->m_link); }
+    void attach(Observer<Args...> *o) { m_observers.insert(&o->link_); }
 
-    void detach(Observer<Args...> *o) { m_observers.remove(&o->m_link); }
+    void detach(Observer<Args...> *o) { m_observers.remove(&o->link_); }
 
     void notify(Args... args) {
         for (Link *l = m_observers.head(); l; l = l->next()) {
@@ -33,13 +33,14 @@ template <typename... Args> class Observer {
 
   public:
     Observer()
-        : m_link(this) {}
+        : link_(this) {}
+
     virtual ~Observer() = default;
 
     virtual void update(Args... args) = 0;
 
   private:
-    typename Observed<Args...>::Link m_link;
+    typename Observed<Args...>::Link link_;
 };
 
 } // namespace DEPOS
