@@ -7,7 +7,9 @@ namespace collections {
 
 template <typename T> class FIFO {
   public:
-    FIFO() = default;
+    FIFO()
+        : head_(nullptr),
+          tail_(nullptr) {}
 
     T *head() { return head_; }
 

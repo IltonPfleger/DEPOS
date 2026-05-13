@@ -30,7 +30,7 @@ MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
 CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic
-CCFLAGS += -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -O3
+CCFLAGS += -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -g -O3
 
 ifeq ($(MAKELEVEL),0)
 run norun debug: $(CONFIG)
