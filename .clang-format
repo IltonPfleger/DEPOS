@@ -9,3 +9,4 @@ AlignConsecutiveAssignments: true
 ColumnLimit: 120
 AllowShortIfStatementsOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
+IndentCaseLabels: true

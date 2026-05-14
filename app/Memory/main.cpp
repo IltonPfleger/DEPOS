@@ -10,31 +10,37 @@ static constexpr int Number     = 100;
 static constexpr int Iterations = 100;
 
 size_t size(int &seed) {
-    switch (seed++ % 25) {
-    case 1: return 1;
-    case 2: return 2;
-    case 3: return 4;
-    case 4: return 8;
-    case 5: return 16;
-    case 6: return 32;
-    case 7: return 64;
-    case 8: return 128;
-    case 9: return 256;
-    case 10: return 512;
-    case 11: return 1024;
-    case 12: return 2048;
-    case 13: return 4096;
-    case 14: return 4 - 1;
-    case 15: return 8 - 1;
-    case 16: return 16 - 1;
-    case 17: return 32 - 1;
-    case 18: return 64 - 1;
-    case 19: return 128 - 1;
-    case 20: return 256 - 1;
-    case 21: return 512 - 1;
-    case 22: return 1024 - 1;
-    case 23: return 2048 - 1;
-    case 24: return 4096 - 1;
+    switch (seed++ % 31) {
+        case 1: return 1;
+        case 2: return 2;
+        case 3: return 4;
+        case 4: return 8;
+        case 5: return 16;
+        case 6: return 32;
+        case 7: return 64;
+        case 8: return 128;
+        case 9: return 256;
+        case 10: return 512;
+        case 11: return 1024;
+        case 12: return 2048;
+        case 13: return 4096;
+        case 14: return 8192;
+        case 15: return 16384;
+        case 16: return 32768;
+        case 17: return 4 - 1;
+        case 18: return 8 - 1;
+        case 19: return 16 - 1;
+        case 20: return 32 - 1;
+        case 21: return 64 - 1;
+        case 22: return 128 - 1;
+        case 23: return 256 - 1;
+        case 24: return 512 - 1;
+        case 25: return 1024 - 1;
+        case 26: return 2048 - 1;
+        case 27: return 4096 - 1;
+        case 28: return 8192 - 1;
+        case 29: return 16384 - 1;
+        case 30: return 32768 - 1;
     }
     return 0;
 }
