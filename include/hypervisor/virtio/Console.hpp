@@ -53,7 +53,7 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
         size_t total = 0;
         int current  = head;
 
-        VirtQueue::RingDescriptor *descriptor = queue.get(current);
+        RingDescriptor *descriptor = queue.get(current);
 
         total += print(descriptor);
 
@@ -66,7 +66,7 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
         return total;
     }
 
-    size_t print(VirtQueue::RingDescriptor *descriptor) {
+    size_t print(RingDescriptor *descriptor) {
         auto *data      = reinterpret_cast<uint8_t *>(descriptor->address);
         uint32_t length = descriptor->length;
         for (uint32_t j = 0; j < descriptor->length; j++)
@@ -81,7 +81,7 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
         this->m_header.id                        = 3;
         this->m_header.vendor                    = 0x554d4551;
         this->m_header.host_features             = 1 << 27;
-        this->m_header.max_number_of_descriptors = k_number;
+        this->m_header.max_number_of_descriptors = NumberOfDescriptors;
         Device::instance()->attach(this);
     }
 
@@ -90,7 +90,7 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
     static constexpr int IRQ           = 32;
 
   private:
-    static const int k_number = 32;
+    static const int NumberOfDescriptors = 32;
 
   private:
     VirtualMachine &owner_;

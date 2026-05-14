@@ -76,7 +76,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
         size_t total = 0;
         int current  = head;
 
-        VirtQueue::RingDescriptor *descriptor = queue.get(current);
+        RingDescriptor *descriptor = queue.get(current);
         total += descriptor->length;
 
         if (descriptor->length >= sizeof(NetworkHeader)) {

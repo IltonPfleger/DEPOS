@@ -1,37 +1,38 @@
 #pragma once
 
 #include <types.hpp>
+#include <utility/Debug.hpp>
 
 namespace DEPOS {
 
 namespace virtio {
 
+struct RingDescriptor {
+    uint64_t address;
+    uint32_t length;
+    uint16_t flags;
+    uint16_t next;
+} __attribute__((packed));
+
+struct RingAvailable {
+    uint16_t flags;
+    uint16_t index;
+    uint16_t *ring() { return reinterpret_cast<uint16_t *>(reinterpret_cast<uintptr_t>(this) + 4); };
+} __attribute__((packed));
+
+struct RingUsedElement {
+    uint32_t id;
+    uint32_t length;
+};
+
+struct RingUsed {
+    uint16_t flags;
+    uint16_t index;
+    RingUsedElement *ring() { return reinterpret_cast<RingUsedElement *>(reinterpret_cast<uintptr_t>(this) + 4); };
+} __attribute__((packed));
+
 class VirtQueue {
   public:
-    struct RingDescriptor {
-        uint64_t address;
-        uint32_t length;
-        uint16_t flags;
-        uint16_t next;
-    } __attribute__((packed));
-
-    struct RingAvailable {
-        uint16_t flags;
-        uint16_t index;
-        uint16_t *ring() { return reinterpret_cast<uint16_t *>(reinterpret_cast<uintptr_t>(this) + 4); };
-    } __attribute__((packed));
-
-    struct RingUsedElement {
-        uint32_t id;
-        uint32_t length;
-    };
-
-    struct RingUsed {
-        uint16_t flags;
-        uint16_t index;
-        RingUsedElement *ring() { return reinterpret_cast<RingUsedElement *>(reinterpret_cast<uintptr_t>(this) + 4); };
-    } __attribute__((packed));
-
     VirtQueue() = default;
 
     VirtQueue(uintptr_t address, uint32_t size, uint32_t align)
@@ -56,8 +57,13 @@ class VirtQueue {
     }
 
     bool available() { return m_last_available_index != m_available->index; }
+
     int alloc() { return m_available->ring()[m_last_available_index++ % m_size]; }
-    RingDescriptor *get(unsigned int id) { return &m_descriptors[id]; }
+
+    RingDescriptor *get(uint32_t id) {
+        assert(id <= m_size);
+        return &m_descriptors[id];
+    }
 
     void free(unsigned int id, unsigned int length = 0) {
         uint16_t index               = m_used->index % m_size;
