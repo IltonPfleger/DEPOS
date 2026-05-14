@@ -1,4 +1,3 @@
-#include <libraries/libc/string.h>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
 #include <utility/Debug.hpp>
@@ -6,10 +5,10 @@
 using namespace DEPOS;
 
 void *operator new(unsigned long size, Heap::Location) {
-    using Header   = Heap::Header;
+    using Header = Heap::Header;
+
     Header *header = reinterpret_cast<Header *>(Memory::alloc(size + sizeof(Header)));
-    header->size   = size;
-    // memset(header + 1, 0xFF, size);
+    header->size   = size + sizeof(Header);
     return header + 1;
 }
 
@@ -20,8 +19,9 @@ void *operator new[](unsigned long size, Heap::Location location) { return ::ope
 void *operator new(unsigned long, void *p) { return p; }
 
 void operator delete(void *p) {
-    ERROR(!p);
-    using Header   = Heap::Header;
+    using Header = Heap::Header;
+
+    assert(p);
     Header *header = reinterpret_cast<Header *>(p) - 1;
     Memory::free(header, header->size);
 }

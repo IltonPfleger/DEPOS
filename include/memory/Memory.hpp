@@ -8,7 +8,8 @@ namespace DEPOS {
 
 class Memory {
   private:
-    using Allocator = allocators::Buddy<Traits<Memory>::Order>;
+    // using Allocator = allocators::Buddy<Traits<Memory>::PageSize, Traits<Memory>::Size>;
+    using Allocator = allocators::Buddy<1, Traits<Memory>::Size>;
 
   public:
     static void init();

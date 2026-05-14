@@ -30,7 +30,7 @@ class Thread {
     static void yield();
     static void reschedule();
     static void onTick();
-    static void join(Thread *);
+    static void join(Thread &);
 
   private:
     static Thread *running();

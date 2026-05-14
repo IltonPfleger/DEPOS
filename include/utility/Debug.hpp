@@ -11,6 +11,18 @@ static constexpr const char *TraceInEnd       = ") {";
 
 #define __LOCATION__ __PRETTY_FUNCTION__
 
+#define assert(expr, ...)                                                                                              \
+    if constexpr (DEPOS::Traits<DEPOS::Debug>::Error) {                                                                \
+        if (!(expr)) {                                                                                                 \
+            DEPOS::Console::panic();                                                                                   \
+            DEPOS::Console::println(ErrorPrefix, __LOCATION__);                                                        \
+            DEPOS::Console::println(ExpressionPrefix, #expr);                                                          \
+            __VA_OPT__(DEPOS::Console::println(MessagePrefix, __VA_ARGS__);)                                           \
+            for (;;)                                                                                                   \
+                ;                                                                                                      \
+        }                                                                                                              \
+    }
+
 #define ERROR(expr, ...)                                                                                               \
     if constexpr (DEPOS::Traits<DEPOS::Debug>::Error) {                                                                \
         if (expr) {                                                                                                    \

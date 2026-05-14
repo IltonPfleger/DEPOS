@@ -9,13 +9,52 @@ using namespace DEPOS;
 static constexpr int Number     = 100;
 static constexpr int Iterations = 100;
 
+size_t size(int &seed) {
+    switch (seed++ % 25) {
+    case 1: return 1;
+    case 2: return 2;
+    case 3: return 4;
+    case 4: return 8;
+    case 5: return 16;
+    case 6: return 32;
+    case 7: return 64;
+    case 8: return 128;
+    case 9: return 256;
+    case 10: return 512;
+    case 11: return 1024;
+    case 12: return 2048;
+    case 13: return 4096;
+    case 14: return 4 - 1;
+    case 15: return 8 - 1;
+    case 16: return 16 - 1;
+    case 17: return 32 - 1;
+    case 18: return 64 - 1;
+    case 19: return 128 - 1;
+    case 20: return 256 - 1;
+    case 21: return 512 - 1;
+    case 22: return 1024 - 1;
+    case 23: return 2048 - 1;
+    case 24: return 4096 - 1;
+    }
+    return 0;
+}
+
 void *allocators(void *) {
     int iterations = Iterations;
-    int size       = (Traits<Memory>::Size - Traits<Memory>::Size / 8) / (Number * 2);
+    int seed       = 0;
 
     while (iterations--) {
-        unsigned char *buffer = new unsigned char[size];
-        memset(buffer, 0, size);
+        int s = size(seed);
+
+        volatile unsigned char *buffer = new unsigned char[s];
+
+        memset(const_cast<unsigned char *>(buffer), 0, s);
+
+        if (s > 0) {
+            buffer[0]     = ~0;
+            buffer[s - 1] = ~0;
+        }
+
         delete[] buffer;
     }
 
@@ -23,8 +62,6 @@ void *allocators(void *) {
 }
 
 int main(int, char *[]) {
-    TraceIn();
-
     Thread *threads[Number];
 
     for (long i = 0; i < Number; i++) {
@@ -34,6 +71,4 @@ int main(int, char *[]) {
     for (long i = 0; i < Number; i++) {
         delete threads[i];
     }
-
-    TraceOut();
 }

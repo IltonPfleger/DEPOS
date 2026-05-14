@@ -49,9 +49,7 @@ void Thread::epilogue() {
     Spin *spin        = s_spin[core];
 
     switch (previous->m_state) {
-    case State::READY:
-        s_scheduler.insert(&previous->m_node);
-        break;
+    case State::READY: s_scheduler.insert(&previous->m_node); break;
     case State::WAITING:
         previous->m_waiting->insert(&previous->m_node);
         spin->release();
@@ -60,8 +58,7 @@ void Thread::epilogue() {
         previous->m_state = State::FINISHED;
         CPU::Atomic::fdec(s_count);
         break;
-    default:
-        break;
+    default: break;
     }
 }
 
@@ -85,13 +82,13 @@ Thread::Thread(Function f, Argument a, Criterion c)
 }
 
 Thread::~Thread() {
-    Thread::join(this);
+    Thread::join(*this);
     Memory::free(m_stack.data(), m_stack.size());
     Memory::free(m_kstack.data(), m_kstack.size());
 }
 
-void Thread::join(Thread *joinable) {
-    while (joinable->m_state != State::FINISHED) {
+void Thread::join(Thread &joinable) {
+    while (joinable.m_state != State::FINISHED) {
         reschedule();
     }
 }
