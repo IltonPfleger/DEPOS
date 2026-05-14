@@ -31,7 +31,7 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
     }
 
     void update(const unsigned char *buffer, size_t size) override {
-        VirtQueue &queue = this->m_queues[RX];
+        Queue &queue = this->m_queues[RX];
 
         if (!queue.available()) return;
 
@@ -49,7 +49,7 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
         owner_.interrupt(IRQ);
     }
 
-    size_t process(VirtQueue &queue, int head) {
+    size_t process(Queue &queue, int head) {
         size_t total = 0;
         int current  = head;
 

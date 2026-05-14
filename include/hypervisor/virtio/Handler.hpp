@@ -2,7 +2,7 @@
 
 #include <Traits.hpp>
 #include <hypervisor/virtio/LegacyHeader.hpp>
-#include <hypervisor/virtio/VirtQueue.hpp>
+#include <hypervisor/virtio/Queue.hpp>
 #include <libraries/libc/string.h>
 #include <memory/Heap.hpp>
 #include <utility/Debug.hpp>
@@ -87,9 +87,9 @@ class Handler {
         uint32_t align   = self.m_header.queue_align;
 
         assert(i < MaxNumberOfQueues);
-        assert(self.owner_.memory().validate(Chunk(address, VirtQueue::size(length, align))));
+        assert(self.owner_.memory().validate(Chunk(address, Queue::size(length, align))));
 
-        new (&self.m_queues[i]) VirtQueue(address, length, align);
+        new (&self.m_queues[i]) Queue(address, length, align);
 
         self.m_header.queue_page_frame_number = source;
     }
@@ -101,7 +101,7 @@ class Handler {
 
   protected:
     LegacyHeader m_header;
-    Meta::Array<MaxNumberOfQueues, VirtQueue> m_queues;
+    Meta::Array<MaxNumberOfQueues, Queue> m_queues;
 };
 
 } // namespace virtio

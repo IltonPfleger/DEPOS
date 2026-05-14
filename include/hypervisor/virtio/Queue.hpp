@@ -31,11 +31,11 @@ struct RingUsed {
     RingUsedElement *ring() { return reinterpret_cast<RingUsedElement *>(reinterpret_cast<uintptr_t>(this) + 4); };
 } __attribute__((packed));
 
-class VirtQueue {
+class Queue {
   public:
-    VirtQueue() = default;
+    Queue() = default;
 
-    VirtQueue(uintptr_t address, uint32_t size, uint32_t align)
+    Queue(uintptr_t address, uint32_t size, uint32_t align)
         : m_address(address),
           m_size(size),
           m_last_available_index(0) {

@@ -72,7 +72,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
     }
 
   private:
-    size_t process(VirtQueue &queue, int head) {
+    size_t process(Queue &queue, int head) {
         size_t total = 0;
         int current  = head;
 
