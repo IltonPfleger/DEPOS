@@ -40,9 +40,6 @@ $(SYSTEM).bin : $(SYSTEM).elf $(ELF) $(COMPILED_TOOLS)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MAP) $(SYSTEM).elf
 	$(OBJCOPY) -O binary $(SYSTEM).elf $(SYSTEM).bin
 
-$(BINARY): $(ELF)
-	$(OBJCOPY) -O binary $< $@
-
 $(ELF): $(SYSTEM).elf
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS) all
 
@@ -56,6 +53,9 @@ $(BUILD)/%: $(TOOLS)/%.cpp
 $(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)
 	$(CC) $(MARCH_CCFLAGS) -MMD -MP -c $< -o $@
+
+%.bin: %.elf 
+	$(OBJCOPY) -O binary $< $@
 
 clean:
 	rm -rf build
