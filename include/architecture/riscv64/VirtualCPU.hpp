@@ -21,10 +21,8 @@ class VirtualCPU {
     static auto &current() { return s_current[CPU::id()]; }
 
   public:
-    VirtualCPU(VirtualMachine *vm, uintptr_t entry, size_t size)
-        : entry_(entry),
-          size_(size),
-          _mtimecmp(0),
+    VirtualCPU(VirtualMachine *vm)
+        : _mtimecmp(0),
           vm_(vm) {}
 
     template <typename... Args> void start(Args... args) {
@@ -32,7 +30,7 @@ class VirtualCPU {
 
         csrw<SupervisorMode::SATP>(0);
 
-        PMP::NAPOT<2>(entry_, size_, PMP::R | PMP::W | PMP::X);
+        PMP::NAPOT<2>(vm_->memory().start(), vm_->memory().size(), PMP::R | PMP::W | PMP::X);
 
         long mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt
@@ -55,7 +53,7 @@ class VirtualCPU {
 
         core_     = mhartid();
         current() = this;
-        csrw<MachineMode::EPC>(entry_);
+        csrw<MachineMode::EPC>(vm_->memory().start());
         CPU::mb();
         supervisor(args...);
     }
@@ -102,8 +100,6 @@ class VirtualCPU {
     static inline VirtualCPU *s_current[Traits<CPU>::Active];
 
   private:
-    uintptr_t entry_;
-    size_t size_;
     uintmax_t _mtimecmp;
     size_t core_;
     VirtualMachine *vm_;

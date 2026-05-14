@@ -9,7 +9,7 @@ namespace DEPOS {
 
 template <typename... Devices> class GenericVirtualMachine : public VirtualMachine {
     template <typename... D> struct DeviceCollection {
-        DeviceCollection(VirtualMachine *) {}
+        DeviceCollection(VirtualMachine &) {}
         bool read(uintptr_t, unsigned int *) { return false; }
         bool write(uintptr_t, unsigned int) { return false; }
     };
@@ -18,7 +18,7 @@ template <typename... Devices> class GenericVirtualMachine : public VirtualMachi
         Head _device;
         DeviceCollection<Tail...> _others;
 
-        DeviceCollection(VirtualMachine *machine)
+        DeviceCollection(VirtualMachine &machine)
             : _device(machine),
               _others(machine) {}
 
@@ -39,22 +39,23 @@ template <typename... Devices> class GenericVirtualMachine : public VirtualMachi
 
   public:
     GenericVirtualMachine(void *entry, size_t size)
-        : _devices(this),
-          _cpu(this, reinterpret_cast<uintptr_t>(entry), size) {}
+        : VirtualMachine(Chunk(entry, size)),
+          devices_(*this),
+          cpu_(this) {}
 
-    template <typename... Args> void start(Args... args) { _cpu.start(args...); }
+    template <typename... Args> void start(Args... args) { cpu_.start(args...); }
 
     virtual bool read(uintptr_t target, unsigned int *destination) override {
-        return _devices.read(target, destination);
+        return devices_.read(target, destination);
     }
 
-    virtual bool write(uintptr_t target, unsigned int source) override { return _devices.write(target, source); }
+    virtual bool write(uintptr_t target, unsigned int source) override { return devices_.write(target, source); }
 
-    virtual void interrupt(unsigned int id) override { _cpu.interrupt(id); }
+    virtual void interrupt(unsigned int id) override { cpu_.interrupt(id); }
 
   private:
-    DeviceCollection<Devices...> _devices;
-    VirtualCPU _cpu;
+    DeviceCollection<Devices...> devices_;
+    VirtualCPU cpu_;
 };
 
 } // namespace DEPOS

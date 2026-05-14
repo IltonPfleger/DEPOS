@@ -16,18 +16,21 @@ struct NetworkHeader {
 };
 
 template <typename Device, uintptr_t Base> class Network : public Handler, public Device::Observer {
+
+    friend Handler;
+
     enum { RX = 0, TX = 1 };
 
   public:
-    Network(VirtualMachine *owner)
-        : m_owner(owner) {
-        this->m_header.m_magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
-        this->m_header.m_version                   = 1;
-        this->m_header.m_id                        = 1;
-        this->m_header.m_vendor                    = 0x554d4551;
-        this->m_header.m_host_features             = 0;
-        this->m_header.m_max_number_of_descriptors = Number;
-        m_device                                   = Device::instance();
+    Network(VirtualMachine &owner)
+        : owner_(owner) {
+        this->m_header.magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
+        this->m_header.version                   = 1;
+        this->m_header.id                        = 1;
+        this->m_header.vendor                    = 0x554d4551;
+        this->m_header.host_features             = 0;
+        this->m_header.max_number_of_descriptors = Number;
+        m_device                                 = Device::instance();
         m_device->attach(this);
     }
 
@@ -41,7 +44,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
             size_t length = process(queue, head);
             queue.free(head, length);
             this->interrupt() |= 0x1;
-            m_owner->interrupt(IRQ);
+            owner_.interrupt(IRQ);
         }
     }
 
@@ -65,7 +68,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
 
         queue.free(id, descriptor->length);
         this->interrupt() |= 0x1;
-        m_owner->interrupt(IRQ);
+        owner_.interrupt(IRQ);
     }
 
   private:
@@ -114,7 +117,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
 
   private:
     Device *m_device;
-    VirtualMachine *m_owner;
+    VirtualMachine &owner_;
 };
 
 } // namespace virtio

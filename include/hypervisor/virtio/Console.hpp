@@ -12,6 +12,9 @@ namespace virtio {
 
 template <typename Device, uintptr_t Base>
 class Console : public Handler, public Observer<const unsigned char *, size_t> {
+
+    friend Handler;
+
     enum { RX = 0, TX = 1 };
 
   public:
@@ -43,7 +46,7 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
 
         queue.free(id, size);
         this->interrupt() |= 1;
-        m_owner->interrupt(IRQ);
+        owner_.interrupt(IRQ);
     }
 
     size_t process(VirtQueue &queue, int head) {
@@ -71,14 +74,14 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
         return length;
     }
 
-    Console(VirtualMachine *owner)
-        : m_owner(owner) {
-        this->m_header.m_magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
-        this->m_header.m_version                   = 1;
-        this->m_header.m_id                        = 3;
-        this->m_header.m_vendor                    = 0x554d4551;
-        this->m_header.m_host_features             = 1 << 27;
-        this->m_header.m_max_number_of_descriptors = k_number;
+    Console(VirtualMachine &owner)
+        : owner_(owner) {
+        this->m_header.magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
+        this->m_header.version                   = 1;
+        this->m_header.id                        = 3;
+        this->m_header.vendor                    = 0x554d4551;
+        this->m_header.host_features             = 1 << 27;
+        this->m_header.max_number_of_descriptors = k_number;
         Device::instance()->attach(this);
     }
 
@@ -90,7 +93,7 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
     static const int k_number = 32;
 
   private:
-    VirtualMachine *m_owner;
+    VirtualMachine &owner_;
 };
 
 } // namespace virtio

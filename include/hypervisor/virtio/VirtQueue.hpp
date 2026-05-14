@@ -38,12 +38,21 @@ class VirtQueue {
         : m_address(address),
           m_size(size),
           m_last_available_index(0) {
+
         m_descriptors = reinterpret_cast<RingDescriptor *>(address);
-        address += size * sizeof(RingDescriptor);
+
+        address += sizeof(RingDescriptor) * size;
+
         m_available = reinterpret_cast<RingAvailable *>(address);
-        address += 2 + 2 + (2 * size) + 2;
+
+        address += sizeof(uint16_t);
+        address += sizeof(uint16_t);
+        address += sizeof(uint16_t) * size;
+        address += sizeof(uint16_t);
+
         address = (address + align - 1) & ~(align - 1);
-        m_used  = reinterpret_cast<RingUsed *>(address);
+
+        m_used = reinterpret_cast<RingUsed *>(address);
     }
 
     bool available() { return m_last_available_index != m_available->index; }
@@ -55,6 +64,22 @@ class VirtQueue {
         m_used->ring()[index].id     = id;
         m_used->ring()[index].length = length;
         m_used->index++;
+    }
+
+    static constexpr uintptr_t size(uint32_t size, uint32_t align) {
+        uintptr_t address = 0;
+
+        address += size * sizeof(RingDescriptor);
+
+        address += 2 + 2 + (2 * size) + 2;
+
+        address = (address + align - 1) & ~(align - 1);
+
+        address += sizeof(uint16_t);
+        address += sizeof(uint16_t);
+        address += sizeof(RingUsedElement) * size;
+
+        return address;
     }
 
   public:

@@ -39,48 +39,34 @@ class Handler {
     template <typename Self> bool read(this Self &&self, uintptr_t address, uint32_t *destination) {
         const int offset = address - self.Address;
         switch (offset) {
-        case Register::Magic:
-        case Register::Version:
-        case Register::DeviceID:
-        case Register::VendorID:
-        case Register::Status:
-        case Register::DeviceFeatures:
-        case Register::QueueSizeMax:
-        case Register::InterruptStatus:
-            *destination = self.header(offset);
-            return true;
-        case Register::QueuePFN:
-            *destination = self.pfn();
-            return true;
-        default:
-            return false;
+            case Register::Magic:
+            case Register::Version:
+            case Register::DeviceID:
+            case Register::VendorID:
+            case Register::Status:
+            case Register::DeviceFeatures:
+            case Register::QueueSizeMax:
+            case Register::InterruptStatus: *destination = self.header(offset); return true;
+            case Register::QueuePFN: *destination = self.pfn(); return true;
+            default: return false;
         }
     }
 
     template <typename Self> bool write(this Self &&self, uintptr_t address, uint32_t value) {
         const auto offset = address - self.Address;
         switch (offset) {
-        case Register::GuestPageSize:
-        case Register::Status:
-        case Register::QueueSelector:
-        case Register::DeviceFeaturesSelector:
-        case Register::DriverFeaturesSelector:
-        case Register::DriverFeatures:
-        case Register::QueueSize:
-        case Register::QueueAlignment:
-            self.header(offset) = value;
-            return true;
-        case Register::QueuePFN:
-            self.pfn(value);
-            return true;
-        case Register::InterruptAck:
-            self.interrupt() &= ~value;
-            return true;
-        case Register::QueueNotify:
-            self.notify(value);
-            return true;
-        default:
-            return false;
+            case Register::GuestPageSize:
+            case Register::Status:
+            case Register::QueueSelector:
+            case Register::DeviceFeaturesSelector:
+            case Register::DriverFeaturesSelector:
+            case Register::DriverFeatures:
+            case Register::QueueSize:
+            case Register::QueueAlignment: self.header(offset) = value; return true;
+            case Register::QueuePFN: self.pfn(value); return true;
+            case Register::InterruptAck: self.interrupt() &= ~value; return true;
+            case Register::QueueNotify: self.notify(value); return true;
+            default: return false;
         }
     }
 
@@ -90,18 +76,25 @@ class Handler {
     }
 
     uint32_t pfn(this auto &self) {
-        if (self.m_header.m_guest_page_size == 0) return 0;
-        return self.m_queues[self.m_header.m_queue_selector].m_address / self.m_header.m_guest_page_size;
+        if (self.m_header.guest_page_size == 0) return 0;
+        return self.m_queues[self.m_header.queue_selector].m_address / self.m_header.guest_page_size;
     }
 
     void pfn(this auto &self, uint32_t source) {
-        uint32_t address = source * self.m_header.m_guest_page_size;
-        new (&self.m_queues[self.m_header.m_queue_selector])
-            VirtQueue(address, self.m_header.m_queue_number, self.m_header.m_queue_align);
-        self.m_header.m_queue_page_frame_number = source;
+        uint32_t i       = self.m_header.queue_selector;
+        uint32_t address = source * self.m_header.guest_page_size;
+        uint32_t length  = self.m_header.queue_length;
+        uint32_t align   = self.m_header.queue_align;
+
+        assert(i < MaxNumberOfQueues);
+        assert(self.owner_.memory().validate(Chunk(address, VirtQueue::size(length, align))));
+
+        new (&self.m_queues[i]) VirtQueue(address, length, align);
+
+        self.m_header.queue_page_frame_number = source;
     }
 
-    auto &interrupt(this auto &self) { return self.m_header.m_interrupt_status; }
+    auto &interrupt(this auto &self) { return self.m_header.interrupt_status; }
 
   private:
     static constexpr size_t MaxNumberOfQueues = 2;
