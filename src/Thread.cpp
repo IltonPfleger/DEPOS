@@ -1,5 +1,6 @@
 #include <Thread.hpp>
 #include <Traits.hpp>
+#include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
 #include <memory/Memory.hpp>
 #include <utility/Debug.hpp>
@@ -21,9 +22,15 @@ Thread::Return Thread::idle(Argument) {
     }
 
     CPU::Interrupt::disable();
+
     CPU::barrier();
+
     if (CPU::id() == Traits<CPU>::BSP) Trace("\n*** Shutdown! ***\n");
-    CPU::halt();
+
+    CPU::barrier();
+
+    Machine::shutdown();
+
     return 0;
 }
 
@@ -49,16 +56,16 @@ void Thread::epilogue() {
     Spin *spin        = s_spin[core];
 
     switch (previous->m_state) {
-    case State::READY: s_scheduler.insert(&previous->m_node); break;
-    case State::WAITING:
-        previous->m_waiting->insert(&previous->m_node);
-        spin->release();
-        break;
-    case State::FINISHING:
-        previous->m_state = State::FINISHED;
-        CPU::Atomic::fdec(s_count);
-        break;
-    default: break;
+        case State::READY: s_scheduler.insert(&previous->m_node); break;
+        case State::WAITING:
+            previous->m_waiting->insert(&previous->m_node);
+            spin->release();
+            break;
+        case State::FINISHING:
+            previous->m_state = State::FINISHED;
+            CPU::Atomic::fdec(s_count);
+            break;
+        default: break;
     }
 }
 

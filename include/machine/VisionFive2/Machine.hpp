@@ -3,10 +3,6 @@
 #include <Traits.hpp>
 #include <architecture/riscv64/init.hpp>
 #include <drivers/Driver.hpp>
-#include <drivers/cache/SiFiveU74L2CacheController.hpp>
-#include <drivers/can/IPMSCANFD.hpp>
-#include <drivers/ethernet/DWC_Ether_QoS.hpp>
-#include <drivers/uart/UART16550.hpp>
 #include <memory/Memory.hpp>
 
 namespace DEPOS {
@@ -205,6 +201,13 @@ class VisionFive2 : Driver {
         Meta::forEach(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
         riscv64::CPU::barrier();
     }
+
+    static void shutdown() { CPU::halt(); }
 };
 
 } // namespace DEPOS
+
+#include <drivers/cache/SiFiveU74L2CacheController.hpp>
+#include <drivers/can/IPMSCANFD.hpp>
+#include <drivers/ethernet/DWC_Ether_QoS.hpp>
+#include <drivers/uart/UART16550.hpp>

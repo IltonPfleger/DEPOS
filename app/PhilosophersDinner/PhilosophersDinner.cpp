@@ -44,8 +44,6 @@ void *philosopher(void *p) {
 }
 
 int main(int, char *[]) {
-    TraceIn();
-
     Thread *threads[Number];
 
     console = new Semaphore(0);
@@ -62,8 +60,6 @@ int main(int, char *[]) {
     console->v();
 
     for (long i = 0; i < Number; i++) {
-        Thread::join(threads[i]);
+        Thread::join(*threads[i]);
     }
-
-    TraceOut();
 }
