@@ -10,7 +10,7 @@ class VirtualMemoryManager {
     VirtualMemoryManager(const Chunk &&chunk)
         : chunk_(chunk) {}
 
-    bool validate(const Chunk &&chunk) const { return chunk_.overlaps(chunk); }
+    bool validate(const Chunk &&chunk) const { return chunk_.contains(chunk); }
     uintptr_t start() const { return chunk_.start(); }
     size_t size() const { return chunk_.size(); }
 

@@ -50,6 +50,11 @@ class Chunk {
     }
 
     [[nodiscard]]
+    constexpr bool contains(const Chunk &other) const {
+        return start() <= other.start() && end() >= other.end();
+    }
+
+    [[nodiscard]]
     constexpr bool overlaps(const Chunk &other) const {
         return start() < other.end() && other.start() < end();
     }
