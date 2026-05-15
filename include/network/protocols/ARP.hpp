@@ -1,5 +1,5 @@
-#ifndef __DEPOS_NETWORK_PROTOCOLS_ARP_HEADER__
-#define __DEPOS_NETWORK_PROTOCOLS_ARP_HEADER__
+#ifndef __DEPOS_NETWORK_PROTOCOLS_ARP__
+#define __DEPOS_NETWORK_PROTOCOLS_ARP__
 
 #include <ConditionalVariable.hpp>
 #include <Thread.hpp>

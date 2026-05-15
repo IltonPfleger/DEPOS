@@ -17,22 +17,22 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
 
   public:
     TFTP(UDP &udp)
-        : _udp(udp),
-          _semaphore(0),
-          _done(true) {
-        _udp.attach(this);
+        : udp_(udp),
+          semaphore_(0),
+          done_(true) {
+        udp_.attach(this);
     }
 
     size_t request(const NetworkAddress &&address, const char *filename, void *buffer, size_t size) {
-        _buffer         = static_cast<uint8_t *>(buffer);
-        _buffer_size    = size;
-        _received       = 0;
-        _block          = 1;
-        _done           = false;
-        _error          = false;
-        _server_address = address;
+        buffer_      = static_cast<uint8_t *>(buffer);
+        buffer_size_ = size;
+        received_    = 0;
+        block_       = 1;
+        done_        = false;
+        error_       = false;
+        _server      = address;
 
-        NetworkBuffer *packet = _udp.alloc(256);
+        NetworkBuffer *packet = udp_.alloc(256);
 
         size_t name_length = strlen(filename);
 
@@ -58,13 +58,13 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
 
         packet->shrink(packet->length() - packet->offset() - total);
 
-        _udp.send(_server_address, 69, packet);
+        udp_.send(_server, 69, packet);
 
-        _semaphore.p();
+        semaphore_.p();
 
-        if (!_error) {
+        if (!error_) {
             Console::println("\n[OK]");
-            return _received;
+            return received_;
         }
 
         return 0;
@@ -75,65 +75,65 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         uint16_t operation = CPU::be16toh(*header);
 
         switch (operation) {
-        case OACK: {
-            ack(0, source);
-            break;
-        }
-        case DATA: {
-            uint16_t block = CPU::be16toh(*(header + 1));
-            size_t length  = packet.length() - packet.offset() - 4;
-            uint8_t *data  = reinterpret_cast<uint8_t *>(header + 2);
-            onData(data, block, length, source);
-            break;
-        }
-        case ERROR: {
-            onError();
-            break;
-        }
+            case OACK: {
+                ack(0, source);
+                break;
+            }
+            case DATA: {
+                uint16_t block = CPU::be16toh(*(header + 1));
+                size_t length  = packet.length() - packet.offset() - 4;
+                uint8_t *data  = reinterpret_cast<uint8_t *>(header + 2);
+                onData(data, block, length, source);
+                break;
+            }
+            case ERROR: {
+                onError();
+                break;
+            }
         }
     }
 
     void onData(uint8_t *data, uint16_t block, size_t length, uint16_t source) {
-        if (_done) return;
+        if (done_) return;
 
-        if (_received + length > _buffer_size) {
+        if (received_ + length > buffer_size_) {
             onError();
             return;
         }
 
-        if (block != _block) {
-            ack(_block - 1, source);
+        if (block != block_) {
+            ack(block_ - 1, source);
             return;
         };
 
-        _block++;
+        block_++;
 
         ack(block, source);
 
-        memcpy(_buffer + _received, data, length);
+        memcpy(buffer_ + received_, data, length);
 
-        _received += length;
+        received_ += length;
 
         if constexpr (Trace)
             if (block % 32 == 0) Console::print('#');
 
         if (length < k_blksize_int) {
-            _done = true;
-            _semaphore.v();
+            done_ = true;
+            semaphore_.v();
         }
     }
 
     void onError() {
-        _error = true;
-        _semaphore.v();
+        error_ = true;
+        semaphore_.v();
     }
 
     void ack(uint16_t block, uint16_t source) {
-        NetworkBuffer *buffer = _udp.alloc(4);
+        NetworkBuffer *buffer = udp_.alloc(4);
         uint16_t *payload     = buffer->data<uint16_t *>();
         payload[0]            = CPU::htobe16(Operation::ACK);
         payload[1]            = CPU::htobe16(block);
-        _udp.send(_server_address, source, buffer);
+        udp_.send(_server, source, buffer);
     }
 
   private:
@@ -142,19 +142,19 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
     static constexpr bool Trace                       = true;
 
   private:
-    UDP &_udp;
-    NetworkAddress _server_address;
-    Semaphore _semaphore;
+    UDP &udp_;
+    NetworkAddress _server;
+    Semaphore semaphore_;
 
-    uint8_t *_buffer;
-    size_t _buffer_size;
+    uint8_t *buffer_;
+    size_t buffer_size_;
 
-    size_t _received;
+    size_t received_;
 
-    uint16_t _block;
+    uint16_t block_;
 
-    volatile bool _done;
-    volatile bool _error;
+    volatile bool done_;
+    volatile bool error_;
 };
 
 } // namespace DEPOS

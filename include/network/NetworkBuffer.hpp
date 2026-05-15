@@ -41,34 +41,10 @@ class NetworkBuffer {
         return start_;
     }
 
-    //[[nodiscard]]
-    // size_t size() const {
-    //    return static_cast<size_t>(tail_ - start_);
-    //}
-
     [[nodiscard]]
     size_t offset() const {
         return static_cast<size_t>(head_ - start_);
     }
-
-    //[[nodiscard]]
-    // size_t remaining() const {
-    //    return size() - offset();
-    //}
-
-    //[[nodiscard]]
-    // uint8_t *head() const {
-    //    return head_;
-    //}
-
-    //[[nodiscard]]
-    // uint8_t *tail() const {
-    //    return tail_;
-    //}
-
-    // void head(uint8_t *h) { head_ = h; }
-
-    // void tail(uint8_t *t) { tail_ = t; }
 
     bool advance(size_t bytes) {
         head_ += bytes;

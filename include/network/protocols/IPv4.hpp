@@ -8,13 +8,6 @@
 
 namespace DEPOS {
 
-struct NetworkLayerBuffer {
-    NetworkBuffer buffer;
-    NetworkAddress destination;
-    NetworkAddress source;
-    uint8_t protocol;
-};
-
 class IPv4 : public Observer<NetworkBuffer>,
              public Observed<NetworkBuffer, const NetworkAddress &, const NetworkAddress &, uint8_t> {
   public:
