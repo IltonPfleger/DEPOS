@@ -8,11 +8,12 @@ APPLICATIONS := $(HERE)/app
 TOOLS        := $(HERE)/tools
 
 SYSTEM      := $(BUILD)/DEPOS
-IMAGE       := $(BUILD)/Image.bin
+IMAGE       := $(BUILD)/Image
 CONFIG      := $(BUILD)/Config
 
 CONFIGURATOR := $(TOOLS)/TraitsLoggerGenerator
 TRAITS := $(shell find $(HERE) -name "Traits.hpp")
+HASH := $(BUILD)/Traits.hash
 MAPPER   := $(BUILD)/Mapper
 
 TOOL    := riscv64-linux-gnu
@@ -26,27 +27,26 @@ DD      := dd
 TRUNCATE := truncate
 QEMU    := qemu-system-riscv64
 
+ARCH ?= riscv64
 MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
 CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic -Wfatal-errors
-CCFLAGS += -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -g -O3
+CCFLAGS += -D__ARCH=$(ARCH) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -g -O3
 
-ifeq ($(MAKELEVEL),0)
-run norun debug: $(CONFIG)
-	$(MAKE) $@
-else
-build: $(IMAGE)
-endif
+build: $(IMAGE).img
 
-$(CONFIG): $(TRAITS)
+$(HASH): $(TRAITS)
+	@mkdir -p $(dir $@)
+	@cat $^ | sha256sum > $@
+
+MACH_CCFLAGS := $(CCFLAGS)
+
+-include $(CONFIG)
+-include $(HERE)/include/machine/$(MACHINE)/Makedefs.mk
+
+$(CONFIG): $(HASH)
 	mkdir -p $(dir $@)
 	g++ $(CCFLAGS) -E $(HERE)/include/Traits.hpp -w -Wno-error=pragma-once-outside-header | $(CONFIGURATOR) > $(CONFIG).cpp
 	g++ $(CCFLAGS) $(CONFIG).cpp -o $(CONFIG).elf
 	$(CONFIG).elf > $@
-
-MARCH_CCFLAGS = $(CCFLAGS)
-ifneq ($(MAKECMDGOALS),clean)
--include $(CONFIG)
-include $(HERE)/include/machine/$(MACHINE)/Makedefs.mk
-endif

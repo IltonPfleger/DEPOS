@@ -1,6 +1,5 @@
 include Makedefs.mk
 
-COMPILED_TOOLS := $(patsubst $(TOOLS)/%.cpp,$(BUILD)/%, $(wildcard $(TOOLS)/*.cpp))
 SOURCES       := $(shell find src -name '*.cpp')
 OBJECTS       := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SOURCES))
 DEPENDENCIES  := $(OBJECTS:.o=.d)
@@ -9,31 +8,22 @@ MAP           := $(BUILD)/MemoryMap
 ELF       := $(BUILD)/$(APPLICATION).elf
 BINARY       := $(BUILD)/$(APPLICATION).bin
 
-ifneq ($(MAKELEVEL),0)
+run: $(IMAGE).img
+	-$(QEMU) -M $(MACHINE) -smp $(CPU_Count) -bios none -nographic -m $(Memory_Size)b -kernel $<
 
-norun: $(IMAGE)
-
-run: $(IMAGE)
-	-$(QEMU) -M $(MACHINE) -smp $(CPU_Count) -bios none -nographic -m $(Memory_Size)b -kernel $(IMAGE)
-
-debug: $(IMAGE)
-	-$(QEMU) -M $(MACHINE) -smp $(CPU_Count) -bios none -nographic -m $(Memory_Size)b -kernel $(IMAGE) -S -gdb tcp::1234
-
-endif
+debug: $(IMAGE).img
+	-$(QEMU) -M $(MACHINE) -smp $(CPU_Count) -bios none -nographic -m $(Memory_Size)b -kernel $< -S -gdb tcp::1234
 
 $(OBJECTS): $(CONFIG)
 
 gdb:
-	$(GDB)\
-		-ex "file build/DEPOS.elf"\
-		-ex "target extended-remote:1234"\
+	$(GDB) -ex "file build/DEPOS.elf" -ex "target extended-remote:1234"\
 
-$(IMAGE): $(SYSTEM).bin $(BINARY)
-	$(DD) bs=1M conv=notrunc if=$(SYSTEM).bin of=$(IMAGE)
-	$(DD) bs=1M conv=notrunc if=$(BINARY) of=$(IMAGE) oflag=seek_bytes seek=$$(( $(Application_Addr) - $(MemoryMap_BootStart) ))
-	$(TRUNCATE) -s %$(Memory_PageSize) $(IMAGE)
+$(IMAGE).bin: $(SYSTEM).bin $(BINARY)
+	$(DD) bs=1M conv=notrunc if=$(SYSTEM).bin of=$@
+	$(DD) bs=1M conv=notrunc if=$(BINARY) of=$@ oflag=seek_bytes seek=$$(( $(Application_Addr) - $(MemoryMap_BootStart) ))
 
-$(SYSTEM).bin : $(SYSTEM).elf $(ELF) $(COMPILED_TOOLS)
+$(SYSTEM).bin : $(SYSTEM).elf $(ELF) $(MAPPER)
 	$(MAPPER) $(ELF) $(MAP)
 	$(OBJCOPY) --update-section .__app_mm__=$(MAP) $(SYSTEM).elf
 	$(MAPPER) $(SYSTEM).elf $(MAP)
@@ -44,7 +34,7 @@ $(ELF): $(SYSTEM).elf
 	make APPLICATION=$(APPLICATION) -C $(APPLICATIONS) all
 
 $(SYSTEM).elf: $(OBJECTS)
-	$(LD) --no-gc-sections -e _init --section-start=.init=$(MemoryMap_BootStart) --image-base=$(MemoryMap_BootStart) -o $@ $(OBJECTS)
+	$(LD) --no-gc-sections -e _init --section-start=.init=$(MemoryMap_BootStart) --image-base=$(MemoryMap_BootStart) -o $@ $^
 
 $(BUILD)/%: $(TOOLS)/%.cpp 
 	mkdir -p $(dir $@)
@@ -52,7 +42,7 @@ $(BUILD)/%: $(TOOLS)/%.cpp
 
 $(BUILD)/%.o: src/%.cpp 
 	mkdir -p $(dir $@)
-	$(CC) $(MARCH_CCFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(MACH_CCFLAGS) -MMD -MP -c $< -o $@
 
 %.bin: %.elf 
 	$(OBJCOPY) -O binary $< $@

@@ -1,2 +1,7 @@
 include $(HERE)/include/architecture/riscv64/Makedefs.mk
-MARCH_CCFLAGS += -march=rv64g_zicsr -mabi=lp64
+MACH_CCFLAGS += -march=rv64g_zicsr -mabi=lp64
+
+%.img: %.bin
+	mkdir -p $(dir $@)
+	cp -f $< $@
+	$(TRUNCATE) -s 4096 $@

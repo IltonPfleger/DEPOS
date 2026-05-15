@@ -26,7 +26,7 @@ $(BUILD)/$(APPLICATION).o: $(OBJECTS)
 
 $(BUILD)/%.cpp.o: %.cpp $(CONFIG)
 	@mkdir -p $(dir $@)
-	$(CC) $(MARCH_CCFLAGS) -I../include -MMD -MP -c $< -o $@
+	$(CC) $(MACH_CCFLAGS) -I../include -MMD -MP -c $< -o $@
 
 -include $(DEPENDENCIES)
 
