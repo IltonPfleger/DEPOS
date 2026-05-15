@@ -162,12 +162,9 @@ template <uintptr_t Base> class DWC_Ether_QoS_PHY {
 
     static unsigned speed() {
         switch ((MDIO::read(Phy, STATUS) >> 14) & 0x3) {
-        case 2:
-            return 1000;
-        case 1:
-            return 100;
-        default:
-            return 10;
+            case 2: return 1000;
+            case 1: return 100;
+            default: return 10;
         }
     }
 
@@ -217,18 +214,18 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
     static void speed(unsigned int speed) {
         TraceIn(speed);
         switch (speed) {
-        case 1000:
-            Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_PS;
-            Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_FES;
-            break;
-        case 100:
-            Reg32(Base, CONFIGURATION) |= CONFIGURATION_FES;
-            Reg32(Base, CONFIGURATION) |= CONFIGURATION_FES;
-            break;
-        case 10:
-            Reg32(Base, CONFIGURATION) |= CONFIGURATION_PS;
-            Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_FES;
-            break;
+            case 1000:
+                Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_PS;
+                Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_FES;
+                break;
+            case 100:
+                Reg32(Base, CONFIGURATION) |= CONFIGURATION_FES;
+                Reg32(Base, CONFIGURATION) |= CONFIGURATION_FES;
+                break;
+            case 10:
+                Reg32(Base, CONFIGURATION) |= CONFIGURATION_PS;
+                Reg32(Base, CONFIGURATION) &= ~CONFIGURATION_FES;
+                break;
         }
     }
 };

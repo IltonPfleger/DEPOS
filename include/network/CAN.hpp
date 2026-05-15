@@ -35,7 +35,7 @@ class CAN {
   public:
     class Buffer : public NetworkBuffer {
       public:
-        Buffer(uint32_t id = 0, bool ide = false, bool rtr = false, size_t length = 8)
+        Buffer(uint32_t id = 0, size_t length = 8, bool ide = false, bool rtr = false)
             : NetworkBuffer(&m_frame.data, 0, length),
               m_frame(Header(id, ide, rtr), 0) {}
 

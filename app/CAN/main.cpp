@@ -7,25 +7,11 @@ using namespace DEPOS;
 int main(int, char *[]) {
     using Device = IPMSCANFD<CAN0>;
 
-    // static uintmax_t id   = 0;
-    // static uintmax_t data = 0;
-
     auto device = Device::instance();
 
     while (1) {
-        // Console::println("OI");
-        // NetworkBuffer *raw  = device.alloc(8);
-        // CAN::Buffer *buffer = static_cast<CAN::Buffer *>(raw);
-        // new (buffer) CAN::Buffer(0, false, false, 8);
-        //// memset(buffer->data(), 0, 8);
-        ////*buffer->data<unsigned int *>() = 0;
-        ////*(buffer->data<unsigned int *>() + 1) = 0;
-        // device.send(buffer);
-
-        //   Buffer b0(id);
-        //*b0.data<decltype(&data)>() = data;
-        //   b0.length(sizeof(data));
-        //   can.send(&b0);
+        unsigned char data[] = {0, 1, 2, 4};
+        device.send(0, data, 4);
 
         NetworkBuffer *raw = device.doReceive();
 
@@ -34,9 +20,8 @@ int main(int, char *[]) {
             Console::println("ID: ", Console::Hex(buffer->id()));
             Console::println("Length: ", buffer->length());
             Console::println("Data: ", Console::Hex(*buffer->data<uintptr_t *>()));
-            device.doRelease(raw);
+            device.release(raw);
         }
     }
-
     return 0;
 }

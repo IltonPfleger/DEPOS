@@ -2,18 +2,11 @@
 
 #include <Traits.hpp>
 #include <architecture/IC.hpp>
-// #include <drivers/Driver.hpp>
-// #include <kernel/Alarm.hpp>
-#include <network/CAN.hpp>
-#include <network/NetworkDevice.hpp>
-// #include <network/can/CAN.hpp>
-// #include <shared/console/Console.hpp>
-// #include <shared/libraries/libc/string.h>
-// #include <shared/utility/Align.hpp>
+#include <drivers/can/CANDevice.hpp>
 
 namespace DEPOS {
 
-template <typename Tag> class IPMSCANFD : public NetworkDevice {
+template <typename Tag> class IPMSCANFD : public CANDevice {
   private:
     using Traits = DEPOS::Traits<Tag>;
 
@@ -149,7 +142,7 @@ template <typename Tag> class IPMSCANFD : public NetworkDevice {
         bool ide = ctl & IDE;
         bool rtr = ctl & RTR;
 
-        auto *frame = new CAN::Buffer(id, ide, rtr, dlc);
+        auto *frame = new CAN::Buffer(id, dlc, ide, rtr);
 
         if (!rtr) {
             auto *data = frame->data<uint32_t *>();
@@ -186,21 +179,11 @@ template <typename Tag> class IPMSCANFD : public NetworkDevice {
         const char *msg = "Unknown Error";
 
         switch (cause) {
-        case 0x20:
-            msg = "Bit Error";
-            break;
-        case 0x40:
-            msg = "Form Error";
-            break;
-        case 0x60:
-            msg = "Stuff Error";
-            break;
-        case 0x80:
-            msg = "ACK Error";
-            break;
-        case 0xA0:
-            msg = "CRC Error";
-            break;
+            case 0x20: msg = "Bit Error"; break;
+            case 0x40: msg = "Form Error"; break;
+            case 0x60: msg = "Stuff Error"; break;
+            case 0x80: msg = "ACK Error"; break;
+            case 0xA0: msg = "CRC Error"; break;
         }
 
         if (status & BUSOFF) msg = "Bus Off";

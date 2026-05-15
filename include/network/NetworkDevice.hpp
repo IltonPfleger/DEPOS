@@ -24,6 +24,7 @@ class NetworkDevice : public Observed<NetworkBuffer> {
   public:
     virtual ~NetworkDevice() = default;
     virtual NetworkBuffer *alloc(size_t size) { return doAlloc(size); }
+    virtual void release(NetworkBuffer *buffer) { return doRelease(buffer); }
     virtual NetworkBuffer *receive() { return doReceive(); }
 
     int send(NetworkBuffer *buffer) {
