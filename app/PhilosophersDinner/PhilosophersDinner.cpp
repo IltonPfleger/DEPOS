@@ -5,7 +5,7 @@
 
 using namespace DEPOS;
 
-static constexpr int Number     = 10;
+static constexpr int Number     = 100;
 static constexpr int Iterations = 100;
 
 Semaphore *forks[Number];

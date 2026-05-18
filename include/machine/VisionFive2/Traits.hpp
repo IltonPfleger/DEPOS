@@ -16,9 +16,15 @@ class GMAC0;
 class IPv4;
 class IC;
 class CAN0;
+class PMIC0;
+class PMIC;
+class I2C;
+class I2C5;
 class CacheController;
 class Ethernet;
 
+template <typename> class DesignWare_I2C_Controller;
+template <typename> class AXP15060_Controller;
 template <typename> class SiFiveU74L2CacheController;
 template <typename> class UART16550;
 template <typename> class DWC_Ether_QoS;
@@ -57,13 +63,16 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long KernelAddr = RamStart;
 
     /* *** MMIO *** */
-    static constexpr unsigned long MMIO  = 0x00000000;
-    static constexpr unsigned long GMAC0 = 0x16030000;
-    static constexpr unsigned long GMAC1 = 0x16040000;
-    static constexpr unsigned long UART0 = 0x10000000;
-    static constexpr unsigned long CAN0  = 0x130D0000;
-    static constexpr unsigned long CLINT = 0x2000000;
-    static constexpr unsigned long PLIC  = 0x0C000000;
+    static constexpr unsigned long MMIO   = 0x00000000;
+    static constexpr unsigned long GMAC0  = 0x16030000;
+    static constexpr unsigned long GMAC1  = 0x16040000;
+    static constexpr unsigned long UART0  = 0x10000000;
+    static constexpr unsigned long CAN0   = 0x130D0000;
+    static constexpr unsigned long I2C5   = 0x12050000;
+    static constexpr unsigned long CLINT  = 0x2000000;
+    static constexpr unsigned long PLIC   = 0x0C000000;
+    static constexpr unsigned long SYSCRG = 0x13020000;
+    static constexpr unsigned long AONCRG = 0x17000000;
 };
 
 template <> struct Traits<CacheController> {
@@ -119,6 +128,27 @@ template <> struct Traits<Ethernet> {
 template <> struct Traits<CAN0> {
     static constexpr unsigned long Address = Traits<MemoryMap>::CAN0;
     static constexpr unsigned int IRQs[]   = {112, 115};
+};
+
+/* ********** I2C ********** */
+template <> struct Traits<I2C5> {
+    static constexpr unsigned long Address = Traits<MemoryMap>::I2C5;
+};
+
+template <> struct Traits<I2C> {
+    typedef Meta::TypeList<DesignWare_I2C_Controller<I2C5>> Devices;
+    static constexpr unsigned int NumberOfDevices = Devices::Length;
+};
+
+/* ********** PMIC ********** */
+template <> struct Traits<PMIC0> {
+    static constexpr unsigned long Address      = 0x36;
+    static constexpr unsigned int Voltages[][3] = {{2, 800, 1040}};
+};
+
+template <> struct Traits<PMIC> {
+    typedef Meta::TypeList<AXP15060_Controller<PMIC0>> Devices;
+    static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 
 } // namespace DEPOS

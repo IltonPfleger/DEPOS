@@ -2,6 +2,7 @@
 
 #include <Traits.hpp>
 #include <architecture/riscv64/init.hpp>
+#include <drivers/dvfs/JH7110_DVFS_Controller.hpp>
 #include <machine/VisionFive2/ClockController.hpp>
 #include <machine/VisionFive2/GPIO.hpp>
 
@@ -11,6 +12,7 @@ class VisionFive2 : Driver {
   public:
     static void init() {
         riscv64::init();
+
         if (riscv64::CPU::id() == Traits<CPU>::BSP) {
             /* ---***--- GMAC0 ---***--- */
             ClockController::enable(ClockController::SYSCRG_CLK_GMAC_PHY);
@@ -40,6 +42,8 @@ class VisionFive2 : Driver {
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_TXD, 42);
             GPIO::map(GPIO::InputSignal::GPI_SYS_IOMUX_U0_CAN_CTRL_RXD, 43);
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_STB, 47);
+
+            JH7110_DVFS_Controller().set({1500000000, 1040});
         }
 
         Meta::forEach(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
