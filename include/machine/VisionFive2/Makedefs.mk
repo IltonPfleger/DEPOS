@@ -4,4 +4,4 @@ MACH_CCFLAGS += -march=rv64g_zicsr -mabi=lp64
 %.img: %.bin
 	mkdir -p $(dir $@)
 	cp -f $< $@
-	$(TRUNCATE) -s 4096 $@
+	$(TRUNCATE) -s %4096 $@

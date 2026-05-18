@@ -22,7 +22,7 @@ class CPU : public ArchitectureCommon::CPU {
     using NotSupervisorContext = Meta::IF<!Virtualized, DEPOS::riscv64::MachineContext<>, HypervisorContext>::Result;
     using Context              = Meta::IF<Supervisor, SupervisorContext<>, NotSupervisorContext>::Result;
 
-    static void halt() { asm("csrc mstatus, 0x8; 1: wfi; j 1b"); }
+    static void halt() { asm("1: wfi; j 1b"); }
     static auto idle() { asm("wfi"); }
     static void syscall() { asm("ecall"); }
     static void mb() { asm("fence iorw, iorw" ::: "memory"); }

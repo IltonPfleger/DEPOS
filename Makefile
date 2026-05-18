@@ -14,7 +14,6 @@ run: $(IMAGE).img
 debug: $(IMAGE).img
 	-$(QEMU) -M $(MACHINE) -smp $(CPU_Count) -bios none -nographic -m $(Memory_Size)b -kernel $< -S -gdb tcp::1234
 
-
 gdb:
 	$(GDB) -ex "file build/DEPOS.elf" -ex "target extended-remote:1234"\
 

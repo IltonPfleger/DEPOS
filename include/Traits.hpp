@@ -28,7 +28,7 @@ template <> struct Traits<Kernel> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr Hz TickFrequency = 1000;
+    static constexpr Hz TickFrequency = 100;
     static constexpr bool Enable      = true;
 };
 
