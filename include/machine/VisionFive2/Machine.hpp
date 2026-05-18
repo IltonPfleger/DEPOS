@@ -63,103 +63,115 @@ class Clock : Driver {
     static const uintptr_t k_aon_crg_base    = 0x17000000;
     static const uintptr_t k_aon_syscon_base = 0x17010000;
 
-    enum { GATE = 1 << 31 };
+    enum { SYSCRG = 0LL << 63, AONCRG = 1LL << 63, GATE = 1 << 31 };
 
   public:
-    enum class AlwaysOnClock {
-        AONCRG_GMAC0_AHB                     = 0x8,
-        AONCRG_GMAC0_RMII_RTX                = 0x10,
-        AONCRG_GMAC0_AXI                     = 0xc,
-        AONCRG_GMAC0_TX                      = 0x14,
-        JH7110_GMAC5_AXI64_CLOCK_TX_INVERTER = 0x18,
+    enum {
+        SYSCRG_CLK_GMAC_PHY                = SYSCRG | 0x1b8,
+        SYSCRG_CLK_GMAC0_GTX               = SYSCRG | 0x1b0,
+        SYSCRG_CLK_GMAC_SOURCE             = SYSCRG | 0x18c,
+        SYSCRG_CLK_GMAC5_AXI64_RX_INVERTER = SYSCRG | 0x1a0,
+        SYSCRG_CLK_GMAC5_AXI64_TX_INVERTER = SYSCRG | 0x1a8,
+        SYSCRG_CLK_GMAC5_AXI64_AHB         = SYSCRG | 0x184,
+        SYSCRG_CLK_GMAC5_AXI64_AXI         = SYSCRG | 0x188,
+
+        SYSCRG_CLK_CAN0_CTRL_APB   = SYSCRG | 0x1cc,
+        SYSCRG_CLK_CAN0_CTRL_TIMER = SYSCRG | 0x1d0,
+        SYSCRG_CLK_CAN0_CTRL_CORE  = SYSCRG | 0x1d4,
+
+        SYSCRG_CLK_RSTN_U0_CAN_CTRL_APB          = SYSCRG | (3 << 16) | 15,
+        SYSCRG_CLK_RSTN_U0_CAN_CTRL_CORE         = SYSCRG | (3 << 16) | 16,
+        SYSCRG_CLK_RSTN_U0_CAN_CTRL_TIMER        = SYSCRG | (3 << 16) | 17,
+        SYSCRG_CLK_RSTN_U1_GMAC5_AXI64_ARESETN_I = SYSCRG | (2 << 16) | 2,
+        SYSCRG_CLK_RSTN_U1_GMAC5_AXI64_HRESET_N  = SYSCRG | (2 << 16) | 3,
+
+        AONCRG_CLK_GMAC0_AHB               = AONCRG | 0x8,
+        AONCRG_CLK_GMAC0_RMII_RTX          = AONCRG | 0x10,
+        AONCRG_CLK_GMAC0_AXI               = AONCRG | 0xc,
+        AONCRG_CLK_GMAC0_TX                = AONCRG | 0x14,
+        AONCRG_CLK_GMAC5_AXI64_TX_INVERTER = AONCRG | 0x18,
+
+        AONCRG_CLK_RSTN_GMAC5_AXI64_AXI = AONCRG | (0 << 16) | 0,
+        AONCRG_CLK_RSTN_GMAC5_AXI64_AHB = AONCRG | (0 << 16) | 1,
     };
 
-    enum class SystemClock {
-        CAN0_CTRL_CLK_APB   = 0x1cc,
-        CAN0_CTRL_CLK_TIMER = 0x1d0,
-        CAN0_CTRL_CLK_CORE  = 0x1d4,
+    static void enable(uint64_t id) {
+        bool aon = id & AONCRG;
+        id &= ~AONCRG;
+        if (aon) {
+            Reg32(k_aon_crg_base, id) |= GATE;
+        } else {
+            Reg32(k_sys_crg_base, id) |= GATE;
+        }
+    }
 
-        CLK_GMAC5_AXI64_RX_INVERTER = 0x1a0,
-        CLK_GMAC5_AXI64_TX_INVERTER = 0x1a8,
-        CLK_GMAC5_AXI64_AHB         = 0x184,
-        CLK_GMAC5_AXI64_AXI         = 0x188,
-        CLK_GMAC0_GTX               = 0x1b0,
-        CLK_GMAC_PHY                = 0x1b8,
-        CLK_GMAC_SOURCE             = 0x18c,
-    };
+    static void divide(uint64_t id, uint32_t value) {
+        bool aon = id & AONCRG;
+        uintptr_t address;
+        id &= ~AONCRG;
+        if (aon) {
+            address = k_aon_crg_base;
+        } else {
+            address = k_sys_crg_base;
+        }
+        Reg32(address, id) &= ~0xFFFFFF;
+        Reg32(address, id) |= value;
+    }
 
-    enum class SystemClockReset {
-        RSTN_U0_CAN_CTRL_APB          = (3 << 16) | 15,
-        RSTN_U0_CAN_CTRL_CORE         = (3 << 16) | 16,
-        RSTN_U0_CAN_CTRL_TIMER        = (3 << 16) | 17,
-        RSTN_U1_GMAC5_AXI64_ARESETN_I = (2 << 16) | 2,
-        RSTN_U1_GMAC5_AXI64_HRESET_N  = (2 << 16) | 3,
-    };
+    static void invert(uintptr_t id, bool value) {
+        bool aon = id & AONCRG;
+        uintptr_t address;
+        id &= ~AONCRG;
+        if (aon) {
+            address = k_aon_crg_base;
+        } else {
+            address = k_sys_crg_base;
+        }
+        Reg32(address, id) &= ~(1 << 30);
+        Reg32(address, id) |= value << 30;
+    }
 
-    enum class AlwaysOnClockReset {
-        GMAC5_AXI64_RSTN_AXI = (0 << 16) | 0,
-        GMAC5_AXI64_RSTN_AHB = (0 << 16) | 1,
-    };
+    static void multiplex(uintptr_t id, unsigned int value) {
+        bool aon = id & AONCRG;
+        uintptr_t address;
+        id &= ~AONCRG;
+        if (aon) {
+            address = k_aon_crg_base;
+        } else {
+            address = k_sys_crg_base;
+        }
+        Reg32(address, id) &= ~(0x3F << 24);
+        Reg32(address, id) |= (value & 0x3F) << 24;
+    }
 
-    static void enable(SystemClock domain) { Reg32(k_sys_crg_base, static_cast<int>(domain)) |= GATE; }
-    static void enable(AlwaysOnClock domain) { Reg32(k_aon_crg_base, static_cast<int>(domain)) |= GATE; }
+    static void reset(uint64_t id) {
+        bool aon  = id & AONCRG;
+        int index = (id >> 16) & 0xFFFF;
+        int bit   = 1 << (id & 0xFFFF);
+        uintptr_t address;
+        uintptr_t assert;
+        uintptr_t status;
 
-    static void reset(AlwaysOnClockReset domain) {
-        int integer = static_cast<int>(domain);
-        int index   = (integer >> 16) & 0xFFFF;
-        int bit     = 1 << (integer & 0xFFFF);
+        id &= ~AONCRG;
+        if (aon) {
+            address = k_aon_crg_base;
+            assert  = 0x38 + (4 * index);
+            status  = 0x3c + (4 * index);
+        } else {
+            address = k_sys_crg_base;
+            assert  = 0x2f8 + (4 * index);
+            status  = 0x308 + (4 * index);
+        }
 
-        uintptr_t assert = 0x38 + (4 * index);
-        uintptr_t status = 0x3c + (4 * index);
+        Reg32(address, assert) |= bit;
 
-        Reg32(k_aon_crg_base, assert) |= bit;
-
-        while (Reg32(k_aon_crg_base, status) & bit)
+        while (Reg32(address, status) & bit)
             ;
 
-        Reg32(k_aon_crg_base, assert) &= ~bit;
+        Reg32(address, assert) &= ~bit;
 
-        while (!(Reg32(k_aon_crg_base, status) & bit))
+        while (!(Reg32(address, status) & bit))
             ;
-    }
-
-    static void reset(SystemClockReset domain) {
-        int integer = static_cast<int>(domain);
-        int index   = (integer >> 16) & 0xFFFF;
-        int bit     = 1 << (integer & 0xFFFF);
-
-        uintptr_t assert = 0x2f8 + (4 * index);
-        uintptr_t status = 0x308 + (4 * index);
-
-        Reg32(k_sys_crg_base, assert) |= bit;
-
-        while (Reg32(k_sys_crg_base, status) & bit)
-            ;
-
-        Reg32(k_sys_crg_base, assert) &= ~bit;
-
-        while (!(Reg32(k_sys_crg_base, status) & bit))
-            ;
-    }
-
-    static void divisor(SystemClock domain, unsigned int value) {
-        Reg32(k_sys_crg_base, static_cast<int>(domain)) &= ~0xFFFFFF;
-        Reg32(k_sys_crg_base, static_cast<int>(domain)) |= value;
-    }
-
-    static void invert(AlwaysOnClock domain, bool value) {
-        Reg32(k_sys_crg_base, static_cast<int>(domain)) &= ~(1 << 30);
-        Reg32(k_sys_crg_base, static_cast<int>(domain)) |= value << 30;
-    }
-
-    static void divisor(AlwaysOnClock domain, unsigned int value) {
-        Reg32(k_aon_crg_base, static_cast<int>(domain)) &= ~0xFFFFFF;
-        Reg32(k_aon_crg_base, static_cast<int>(domain)) |= value;
-    }
-
-    static void multiplex(AlwaysOnClock domain, unsigned int value) {
-        Reg32(k_aon_crg_base, static_cast<int>(domain)) &= ~(0x3F << 24);
-        Reg32(k_aon_crg_base, static_cast<int>(domain)) |= (value & 0x3F) << 24;
     }
 };
 
@@ -170,29 +182,38 @@ class VisionFive2 : Driver {
 
         if (riscv64::CPU::id() == Traits<CPU>::BSP) {
             /* ---***--- GMAC0 ---***--- */
-            Clock::enable(Clock::SystemClock::CLK_GMAC_PHY);
-            Clock::enable(Clock::SystemClock::CLK_GMAC0_GTX);
-            Clock::enable(Clock::SystemClock::CLK_GMAC5_AXI64_AHB);
-            Clock::enable(Clock::SystemClock::CLK_GMAC5_AXI64_AXI);
-            Clock::enable(Clock::SystemClock::CLK_GMAC_SOURCE);
-            Clock::reset(Clock::SystemClockReset::RSTN_U1_GMAC5_AXI64_ARESETN_I);
-            Clock::reset(Clock::SystemClockReset::RSTN_U1_GMAC5_AXI64_HRESET_N);
-            Clock::divisor(Clock::AlwaysOnClock::AONCRG_GMAC0_RMII_RTX, 30);
-            Clock::enable(Clock::AlwaysOnClock::AONCRG_GMAC0_TX);
-            Clock::invert(Clock::AlwaysOnClock::JH7110_GMAC5_AXI64_CLOCK_TX_INVERTER, true);
-            Clock::multiplex(Clock::AlwaysOnClock::AONCRG_GMAC0_TX, 1);
-            Clock::enable(Clock::AlwaysOnClock::AONCRG_GMAC0_AHB);
-            Clock::enable(Clock::AlwaysOnClock::AONCRG_GMAC0_AXI);
-            Clock::reset(Clock::AlwaysOnClockReset::GMAC5_AXI64_RSTN_AXI);
-            Clock::reset(Clock::AlwaysOnClockReset::GMAC5_AXI64_RSTN_AHB);
+            Clock::enable(Clock::SYSCRG_CLK_GMAC_PHY);
+            Clock::enable(Clock::SYSCRG_CLK_GMAC0_GTX);
+            Clock::enable(Clock::SYSCRG_CLK_GMAC_SOURCE);
+            Clock::enable(Clock::SYSCRG_CLK_GMAC5_AXI64_AHB);
+            Clock::enable(Clock::SYSCRG_CLK_GMAC5_AXI64_AXI);
+
+            Clock::reset(Clock::SYSCRG_CLK_RSTN_U1_GMAC5_AXI64_ARESETN_I);
+            Clock::reset(Clock::SYSCRG_CLK_RSTN_U1_GMAC5_AXI64_HRESET_N);
+
+            Clock::divide(Clock::AONCRG_CLK_GMAC0_RMII_RTX, 30);
+
+            Clock::enable(Clock::AONCRG_CLK_GMAC0_TX);
+
+            Clock::invert(Clock::AONCRG_CLK_GMAC5_AXI64_TX_INVERTER, true);
+
+            Clock::multiplex(Clock::AONCRG_CLK_GMAC0_TX, 1);
+
+            Clock::enable(Clock::AONCRG_CLK_GMAC0_AHB);
+            Clock::enable(Clock::AONCRG_CLK_GMAC0_AXI);
+
+            Clock::reset(Clock::AONCRG_CLK_RSTN_GMAC5_AXI64_AXI);
+            Clock::reset(Clock::AONCRG_CLK_RSTN_GMAC5_AXI64_AHB);
+
             /* ---***--- CAN0 ---***--- */
-            Clock::divisor(Clock::SystemClock::CAN0_CTRL_CLK_CORE, 15);
-            Clock::enable(Clock::SystemClock::CAN0_CTRL_CLK_APB);
-            Clock::enable(Clock::SystemClock::CAN0_CTRL_CLK_TIMER);
-            Clock::enable(Clock::SystemClock::CAN0_CTRL_CLK_CORE);
-            Clock::reset(Clock::SystemClockReset::RSTN_U0_CAN_CTRL_APB);
-            Clock::reset(Clock::SystemClockReset::RSTN_U0_CAN_CTRL_CORE);
-            Clock::reset(Clock::SystemClockReset::RSTN_U0_CAN_CTRL_TIMER);
+            Clock::divide(Clock::SYSCRG_CLK_CAN0_CTRL_CORE, 15);
+            Clock::enable(Clock::SYSCRG_CLK_CAN0_CTRL_APB);
+            Clock::enable(Clock::SYSCRG_CLK_CAN0_CTRL_TIMER);
+            Clock::enable(Clock::SYSCRG_CLK_CAN0_CTRL_CORE);
+
+            Clock::reset(Clock::SYSCRG_CLK_RSTN_U0_CAN_CTRL_APB);
+            Clock::reset(Clock::SYSCRG_CLK_RSTN_U0_CAN_CTRL_CORE);
+            Clock::reset(Clock::SYSCRG_CLK_RSTN_U0_CAN_CTRL_TIMER);
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_TXD, 42);
             GPIO::map(GPIO::InputSignal::GPI_SYS_IOMUX_U0_CAN_CTRL_RXD, 43);
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_STB, 47);
