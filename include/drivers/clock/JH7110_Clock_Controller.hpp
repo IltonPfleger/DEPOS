@@ -89,11 +89,11 @@ class PLL0 : Driver {
     static const uintptr_t k_sys_syscon_base = 0x13030000;
 };
 
-class JH7110_Clock_Controller : Driver {
-    static const uintptr_t k_sys_crg_base    = 0x13020000;
-    static const uintptr_t k_sys_syscon_base = 0x13030000;
-    static const uintptr_t k_aon_crg_base    = 0x17000000;
-    static const uintptr_t k_aon_syscon_base = 0x17010000;
+template <typename> class JH7110_Clock_Controller : Driver {
+    static const uintptr_t k_sys_crg_base    = Traits<MemoryMap>::SYSCRG;
+    static const uintptr_t k_sys_syscon_base = Traits<MemoryMap>::SYS_SYSCON;
+    static const uintptr_t k_aon_crg_base    = Traits<MemoryMap>::AONCRG;
+    static const uintptr_t k_aon_syscon_base = Traits<MemoryMap>::AON_SYSCON;
 
     enum { SYSCRG = 0LL << 63, AONCRG = 1LL << 63, GATE = 1 << 31 };
 

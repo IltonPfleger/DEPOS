@@ -64,16 +64,18 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long KernelAddr = RamStart;
 
     /* *** MMIO *** */
-    static constexpr unsigned long MMIO   = 0x00000000;
-    static constexpr unsigned long GMAC0  = 0x16030000;
-    static constexpr unsigned long GMAC1  = 0x16040000;
-    static constexpr unsigned long UART0  = 0x10000000;
-    static constexpr unsigned long CAN0   = 0x130D0000;
-    static constexpr unsigned long I2C5   = 0x12050000;
-    static constexpr unsigned long CLINT  = 0x2000000;
-    static constexpr unsigned long PLIC   = 0x0C000000;
-    static constexpr unsigned long SYSCRG = 0x13020000;
-    static constexpr unsigned long AONCRG = 0x17000000;
+    static constexpr unsigned long MMIO       = 0x00000000;
+    static constexpr unsigned long GMAC0      = 0x16030000;
+    static constexpr unsigned long GMAC1      = 0x16040000;
+    static constexpr unsigned long UART0      = 0x10000000;
+    static constexpr unsigned long CAN0       = 0x130D0000;
+    static constexpr unsigned long I2C5       = 0x12050000;
+    static constexpr unsigned long CLINT      = 0x2000000;
+    static constexpr unsigned long PLIC       = 0x0C000000;
+    static constexpr unsigned long SYSCRG     = 0x13020000;
+    static constexpr unsigned long AONCRG     = 0x17000000;
+    static constexpr unsigned long SYS_SYSCON = 0x13030000;
+    static constexpr unsigned long AON_SYSCON = 0x17010000;
 };
 
 template <> struct Traits<CacheController> {

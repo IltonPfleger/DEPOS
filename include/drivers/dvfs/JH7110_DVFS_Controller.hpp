@@ -11,6 +11,7 @@
 namespace DEPOS {
 
 class JH7110_DVFS_Controller : public DVFS_Controller {
+    typedef JH7110_Clock_Controller<void> Clock_Controller;
 
     static constexpr PState States[] = {
         {1500000000, 1040000},
@@ -45,7 +46,7 @@ class JH7110_DVFS_Controller : public DVFS_Controller {
 
         Timer::uspin(1);
 
-        JH7110_Clock_Controller::divide(JH7110_Clock_Controller::SYSCRG_CLK_CPU_CORE, divisor);
+        Clock_Controller::divide(Clock_Controller::SYSCRG_CLK_CPU_CORE, divisor);
 
         return true;
     }
@@ -54,9 +55,7 @@ class JH7110_DVFS_Controller : public DVFS_Controller {
 
     uintmax_t voltage() { return pmic_.voltage(2); }
 
-    uintmax_t clock() {
-        return 1500000000 / JH7110_Clock_Controller::divisor(JH7110_Clock_Controller::SYSCRG_CLK_CPU_CORE);
-    }
+    uintmax_t clock() { return 1500000000 / Clock_Controller::divisor(Clock_Controller::SYSCRG_CLK_CPU_CORE); }
 
   private:
     DesignWare_I2C_Controller<I2C5> i2c_;

@@ -9,7 +9,7 @@
 namespace DEPOS {
 
 class VisionFive2 : Driver {
-    using ClockController = JH7110_Clock_Controller;
+    using Clock_Controller = JH7110_Clock_Controller<void>;
 
   public:
     static void init() {
@@ -21,11 +21,11 @@ class VisionFive2 : Driver {
 
             dvfs.set(dvfs.available().pstates[0]);
 
-            ClockController::divide(ClockController::SYSCRG_CLK_CPU_CORE, 2);
+            Clock_Controller::divide(Clock_Controller::SYSCRG_CLK_CPU_CORE, 2);
 
             uint32_t delay = 100;
 
-            ClockController::multiplex(ClockController::SYSCRG_CLK_CPU_ROOT, 0);
+            Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 0);
 
             Timer::uspin(delay);
 
@@ -33,7 +33,7 @@ class VisionFive2 : Driver {
 
             Timer::uspin(delay);
 
-            ClockController::multiplex(ClockController::SYSCRG_CLK_CPU_ROOT, 1);
+            Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 1);
 
             dvfs.set(dvfs.available().pstates[dvfs.available().length - 1]);
         }
@@ -42,29 +42,29 @@ class VisionFive2 : Driver {
 
         if (riscv64::CPU::id() == Traits<CPU>::BSP) {
             /* ---***--- GMAC0 ---***--- */
-            ClockController::enable(ClockController::SYSCRG_CLK_GMAC_PHY);
-            ClockController::enable(ClockController::SYSCRG_CLK_GMAC0_GTX);
-            ClockController::enable(ClockController::SYSCRG_CLK_GMAC_SOURCE);
-            ClockController::enable(ClockController::SYSCRG_CLK_GMAC5_AXI64_AHB);
-            ClockController::enable(ClockController::SYSCRG_CLK_GMAC5_AXI64_AXI);
-            ClockController::reset(ClockController::SYSCRG_CLK_RSTN_U1_GMAC5_AXI64_ARESETN_I);
-            ClockController::reset(ClockController::SYSCRG_CLK_RSTN_U1_GMAC5_AXI64_HRESET_N);
-            ClockController::divide(ClockController::AONCRG_CLK_GMAC0_RMII_RTX, 30);
-            ClockController::enable(ClockController::AONCRG_CLK_GMAC0_TX);
-            ClockController::invert(ClockController::AONCRG_CLK_GMAC5_AXI64_TX_INVERTER, true);
-            ClockController::multiplex(ClockController::AONCRG_CLK_GMAC0_TX, 1);
-            ClockController::enable(ClockController::AONCRG_CLK_GMAC0_AHB);
-            ClockController::enable(ClockController::AONCRG_CLK_GMAC0_AXI);
-            ClockController::reset(ClockController::AONCRG_CLK_RSTN_GMAC5_AXI64_AXI);
-            ClockController::reset(ClockController::AONCRG_CLK_RSTN_GMAC5_AXI64_AHB);
+            Clock_Controller::enable(Clock_Controller::SYSCRG_CLK_GMAC_PHY);
+            Clock_Controller::enable(Clock_Controller::SYSCRG_CLK_GMAC0_GTX);
+            Clock_Controller::enable(Clock_Controller::SYSCRG_CLK_GMAC_SOURCE);
+            Clock_Controller::enable(Clock_Controller::SYSCRG_CLK_GMAC5_AXI64_AHB);
+            Clock_Controller::enable(Clock_Controller::SYSCRG_CLK_GMAC5_AXI64_AXI);
+            Clock_Controller::reset(Clock_Controller::SYSCRG_CLK_RSTN_U1_GMAC5_AXI64_ARESETN_I);
+            Clock_Controller::reset(Clock_Controller::SYSCRG_CLK_RSTN_U1_GMAC5_AXI64_HRESET_N);
+            Clock_Controller::divide(Clock_Controller::AONCRG_CLK_GMAC0_RMII_RTX, 30);
+            Clock_Controller::enable(Clock_Controller::AONCRG_CLK_GMAC0_TX);
+            Clock_Controller::invert(Clock_Controller::AONCRG_CLK_GMAC5_AXI64_TX_INVERTER, true);
+            Clock_Controller::multiplex(Clock_Controller::AONCRG_CLK_GMAC0_TX, 1);
+            Clock_Controller::enable(Clock_Controller::AONCRG_CLK_GMAC0_AHB);
+            Clock_Controller::enable(Clock_Controller::AONCRG_CLK_GMAC0_AXI);
+            Clock_Controller::reset(Clock_Controller::AONCRG_CLK_RSTN_GMAC5_AXI64_AXI);
+            Clock_Controller::reset(Clock_Controller::AONCRG_CLK_RSTN_GMAC5_AXI64_AHB);
             /* ---***--- CAN0 ---***--- */
-            ClockController::divide(ClockController::SYSCRG_CLK_CAN0_CTRL_CORE, 15);
-            ClockController::enable(ClockController::SYSCRG_CLK_CAN0_CTRL_APB);
-            ClockController::enable(ClockController::SYSCRG_CLK_CAN0_CTRL_TIMER);
-            ClockController::enable(ClockController::SYSCRG_CLK_CAN0_CTRL_CORE);
-            ClockController::reset(ClockController::SYSCRG_CLK_RSTN_U0_CAN_CTRL_APB);
-            ClockController::reset(ClockController::SYSCRG_CLK_RSTN_U0_CAN_CTRL_CORE);
-            ClockController::reset(ClockController::SYSCRG_CLK_RSTN_U0_CAN_CTRL_TIMER);
+            Clock_Controller::divide(Clock_Controller::SYSCRG_CLK_CAN0_CTRL_CORE, 15);
+            Clock_Controller::enable(Clock_Controller::SYSCRG_CLK_CAN0_CTRL_APB);
+            Clock_Controller::enable(Clock_Controller::SYSCRG_CLK_CAN0_CTRL_TIMER);
+            Clock_Controller::enable(Clock_Controller::SYSCRG_CLK_CAN0_CTRL_CORE);
+            Clock_Controller::reset(Clock_Controller::SYSCRG_CLK_RSTN_U0_CAN_CTRL_APB);
+            Clock_Controller::reset(Clock_Controller::SYSCRG_CLK_RSTN_U0_CAN_CTRL_CORE);
+            Clock_Controller::reset(Clock_Controller::SYSCRG_CLK_RSTN_U0_CAN_CTRL_TIMER);
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_TXD, 42);
             GPIO::map(GPIO::InputSignal::GPI_SYS_IOMUX_U0_CAN_CTRL_RXD, 43);
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_STB, 47);
