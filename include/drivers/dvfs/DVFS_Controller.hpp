@@ -17,6 +17,8 @@ class DVFS_Controller {
 
     virtual ~DVFS_Controller()             = default;
     virtual bool set(const PState &)       = 0;
+    virtual uintmax_t voltage()            = 0;
+    virtual uintmax_t clock()              = 0;
     virtual const PStateTable &available() = 0;
 };
 

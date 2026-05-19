@@ -140,6 +140,18 @@ class JH7110_Clock_Controller : Driver {
         }
     }
 
+    static uint32_t divisor(uint64_t id) {
+        bool aon = id & AONCRG;
+        uintptr_t address;
+        id &= ~AONCRG;
+        if (aon) {
+            address = k_aon_crg_base;
+        } else {
+            address = k_sys_crg_base;
+        }
+        return Reg32(address, id) & ~0xFFFFFF;
+    }
+
     static void divide(uint64_t id, uint32_t value) {
         bool aon = id & AONCRG;
         uintptr_t address;

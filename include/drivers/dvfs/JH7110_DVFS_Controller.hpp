@@ -51,11 +51,11 @@ class JH7110_DVFS_Controller : public DVFS_Controller {
     }
 
     virtual const PStateTable &available() override { return Available; }
+
     uintmax_t voltage() { return pmic_.voltage(2); }
 
-  private:
-    static volatile uint32_t &reg32(uint32_t offset) {
-        return *reinterpret_cast<volatile uint32_t *>(Traits<MemoryMap>::SYSCRG + offset);
+    uintmax_t clock() {
+        return 1500000000 / JH7110_Clock_Controller::divisor(JH7110_Clock_Controller::SYSCRG_CLK_CPU_CORE);
     }
 
   private:
