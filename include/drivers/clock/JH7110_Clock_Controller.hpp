@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Traits.hpp>
 #include <drivers/Driver.hpp>
 
@@ -49,7 +51,6 @@ class PLL0 : Driver {
         prediv(2);
         fbdiv(125);
         postdiv1(0);
-        // frac(0);
 
         pd(0);
     }
@@ -88,7 +89,7 @@ class PLL0 : Driver {
     static const uintptr_t k_sys_syscon_base = 0x13030000;
 };
 
-class ClockController : Driver {
+class JH7110_Clock_Controller : Driver {
     static const uintptr_t k_sys_crg_base    = 0x13020000;
     static const uintptr_t k_sys_syscon_base = 0x13030000;
     static const uintptr_t k_aon_crg_base    = 0x17000000;
@@ -128,78 +129,6 @@ class ClockController : Driver {
         AONCRG_CLK_RSTN_GMAC5_AXI64_AXI = AONCRG | (0 << 16) | 0,
         AONCRG_CLK_RSTN_GMAC5_AXI64_AHB = AONCRG | (0 << 16) | 1,
     };
-
-    // static void pll0_pd(uint32_t value) {
-    //     Reg32(k_sys_syscon_base, 0x20) &= ~(1 << 27);
-    //     Reg32(k_sys_syscon_base, 0x20) |= (value << 27);
-    // }
-    // static void pll0_prediv(uint32_t value) {
-    //     Reg32(k_sys_syscon_base, 0x24) &= ~(0x3F);
-    //     Reg32(k_sys_syscon_base, 0x24) |= value;
-    // }
-    // static void pll0_fbdiv(uint32_t value) {
-    //     Reg32(k_sys_syscon_base, 0x1c) &= ~(0xFFF);
-    //     Reg32(k_sys_syscon_base, 0x1c) |= value;
-    // }
-    // static void pll0_frac(uint32_t value) {
-    //     Reg32(k_sys_syscon_base, 0x20) &= ~(0xFFFFFF);
-    //     Reg32(k_sys_syscon_base, 0x20) |= value;
-    // }
-
-    // static void pll0_postdiv1(uint32_t value) {
-    //     Reg32(k_sys_syscon_base, 0x20) &= ~(0x3 << 28);
-    //     Reg32(k_sys_syscon_base, 0x20) |= (value & 0x3) << 28;
-    // }
-
-    // static void pll0_dacpd(uint32_t value) {
-    //     Reg32(k_sys_syscon_base, 0x18) &= ~(1 << 24);
-    //     Reg32(k_sys_syscon_base, 0x18) |= value << 24;
-    // }
-
-    // static void pll0_dsmpd(uint32_t value) {
-    //     Reg32(k_sys_syscon_base, 0x18) &= ~(1 << 25);
-    //     Reg32(k_sys_syscon_base, 0x18) |= value << 25;
-    // }
-
-    // static void pll0(uint64_t) {
-    //     pll0_pd(1);
-    //     pll0_dacpd(1);
-    //     pll0_dsmpd(1);
-    //     pll0_prediv(2);
-    //     pll0_fbdiv(125);
-    //     pll0_postdiv1(0);
-    //     pll0_pd(0);
-    // }
-
-    // static uint64_t pll0() {
-    //     uint32_t dacpd, dsmpd;
-    //     uint32_t prediv, fbdiv, postdiv1;
-    //     uint64_t frac;
-    //     uint64_t refclk = 24000000ULL;
-
-    //    dacpd = (Reg32(k_sys_syscon_base, 0x18) >> 24) & 0x1;
-    //    dsmpd = (Reg32(k_sys_syscon_base, 0x18) >> 25) & 0x1;
-
-    //    prediv = Reg32(k_sys_syscon_base, 0x24) & 0x3F;
-    //    fbdiv  = Reg32(k_sys_syscon_base, 0x1c) & 0xFFF;
-
-    //    postdiv1 = 1 << ((Reg32(k_sys_syscon_base, 0x20) >> 28) & 0x3);
-
-    //    frac = Reg32(k_sys_syscon_base, 0x20) & 0xFFFFFF;
-
-    //    if (dacpd == 1 && dsmpd == 1) {
-    //        frac = 0;
-    //        return (refclk * fbdiv) / (prediv * postdiv1);
-    //    }
-
-    //    if (dacpd == 0 && dsmpd == 0) {
-    //        uint64_t numerator;
-    //        numerator = ((uint64_t)fbdiv << 24) + frac;
-    //        return (refclk * numerator) / ((uint64_t)prediv * postdiv1 * (1 << 24));
-    //    }
-
-    //    return 0;
-    //}
 
     static void enable(uint64_t id) {
         bool aon = id & AONCRG;

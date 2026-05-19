@@ -10,8 +10,14 @@ class DVFS_Controller {
         uint32_t voltage;
     };
 
-    virtual ~DVFS_Controller()        = default;
-    virtual bool set(const PState &&) = 0;
+    struct PStateTable {
+        size_t length;
+        const PState *pstates;
+    };
+
+    virtual ~DVFS_Controller()             = default;
+    virtual bool set(const PState &)       = 0;
+    virtual const PStateTable &available() = 0;
 };
 
 } // namespace DEPOS

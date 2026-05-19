@@ -3,6 +3,7 @@
 
 #include <Alarm.hpp>
 #include <architecture/Timer.hpp>
+#include <drivers/clock/JH7110_Clock_Controller.hpp>
 #include <drivers/dvfs/DVFS_Controller.hpp>
 #include <drivers/i2c/DesignWare_I2C_Controller.hpp>
 #include <drivers/pmic/AXP15060_Controller.hpp>
@@ -10,32 +11,46 @@
 namespace DEPOS {
 
 class JH7110_DVFS_Controller : public DVFS_Controller {
-    static constexpr uint64_t Frequencys[] = {375000000, 500000000, 750000000, 1500000000};
 
-    enum { DIV = 0x004 };
+    static constexpr PState States[] = {
+        {1500000000, 1040000},
+        {750000000, 900000},
+        {500000000, 900000},
+        {375000000, 900000},
+    };
+
+    static constexpr PStateTable Available = {(sizeof(States) / sizeof(PState)), States};
 
   public:
     JH7110_DVFS_Controller()
         : i2c_(),
           pmic_(i2c_) {}
 
-    virtual bool set(const PState &&pstate) override {
-        // uint32_t div = Frequencys[3] / pstate.frequency;
+    virtual bool set(const PState &pstate) override {
+        PState selected;
+        bool found = false;
 
-        // Console::println(div, ' ', reg32(DIV));
+        for (auto &i : States) {
+            if (i.frequency == pstate.frequency && i.voltage == pstate.voltage) {
+                selected = i;
+                found    = true;
+            }
+        }
 
-        // if (div == 0) return false;
-        // if (div > 7) return false;
+        if (!found) return false;
+
+        uint32_t divisor = 1500000000 / selected.frequency;
 
         if (!pmic_.voltage(2, pstate.voltage)) return false;
 
-        // Timer::uspin(1);
+        Timer::uspin(1);
 
-        // reg32(DIV) = div;
+        JH7110_Clock_Controller::divide(JH7110_Clock_Controller::SYSCRG_CLK_CPU_CORE, divisor);
 
         return true;
     }
 
+    virtual const PStateTable &available() override { return Available; }
     uintmax_t voltage() { return pmic_.voltage(2); }
 
   private:

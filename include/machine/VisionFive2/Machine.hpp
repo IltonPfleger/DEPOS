@@ -2,43 +2,43 @@
 
 #include <Traits.hpp>
 #include <architecture/riscv64/init.hpp>
+#include <drivers/clock/JH7110_Clock_Controller.hpp>
 #include <drivers/dvfs/JH7110_DVFS_Controller.hpp>
-#include <machine/VisionFive2/ClockController.hpp>
 #include <machine/VisionFive2/GPIO.hpp>
 
 namespace DEPOS {
 
 class VisionFive2 : Driver {
+    using ClockController = JH7110_Clock_Controller;
+
   public:
     static void init() {
         riscv64::init();
 
         if (riscv64::CPU::id() == Traits<CPU>::BSP) {
 
-            JH7110_DVFS_Controller().set({0, 800});
+            JH7110_DVFS_Controller dvfs;
 
-            Console::println("\nVoltage: ", JH7110_DVFS_Controller().voltage());
-            Console::println("Clock: ", PLL0::rate());
-            measure();
+            dvfs.set(dvfs.available().pstates[0]);
+
+            ClockController::divide(ClockController::SYSCRG_CLK_CPU_CORE, 2);
 
             uint32_t delay = 100;
 
             ClockController::multiplex(ClockController::SYSCRG_CLK_CPU_ROOT, 0);
+
             Timer::uspin(delay);
 
             PLL0::rate(1500000000);
 
             Timer::uspin(delay);
+
             ClockController::multiplex(ClockController::SYSCRG_CLK_CPU_ROOT, 1);
 
-            Console::println("\nVoltage: ", JH7110_DVFS_Controller().voltage());
-            Console::println("Clock: ", PLL0::rate());
-            measure();
+            dvfs.set(dvfs.available().pstates[dvfs.available().length - 1]);
         }
 
         riscv64::CPU::barrier();
-        while (1)
-            ;
 
         if (riscv64::CPU::id() == Traits<CPU>::BSP) {
             /* ---***--- GMAC0 ---***--- */
@@ -68,25 +68,10 @@ class VisionFive2 : Driver {
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_TXD, 42);
             GPIO::map(GPIO::InputSignal::GPI_SYS_IOMUX_U0_CAN_CTRL_RXD, 43);
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_STB, 47);
-
-            // Console::println(JH7110_DVFS_Controller().set({1500000000, 800}));
-            //  while (1)
-            //      ;
-            //  JH7110_DVFS_Controller().set({1500000000, 500});
         }
 
         Meta::forEach(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
         riscv64::CPU::barrier();
-    }
-
-    static void measure() {
-        bool enabled            = riscv64::CPU::Interrupt::disable();
-        uintmax_t start         = Timer::now();
-        volatile unsigned int i = 10000;
-        while (i)
-            i = i - 1;
-        Console::println(Timer::now() - start);
-        if (enabled) riscv64::CPU::Interrupt::enable();
     }
 
     static void shutdown() { CPU::halt(); }

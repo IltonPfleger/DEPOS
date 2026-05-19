@@ -20,6 +20,7 @@ class PMIC0;
 class PMIC;
 class I2C;
 class I2C5;
+class DVFS;
 class CacheController;
 class Ethernet;
 
