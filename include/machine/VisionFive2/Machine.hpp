@@ -14,21 +14,29 @@ class VisionFive2 : Driver {
         riscv64::init();
 
         if (riscv64::CPU::id() == Traits<CPU>::BSP) {
+
+            JH7110_DVFS_Controller().set({0, 800});
+
+            Console::println("\nVoltage: ", JH7110_DVFS_Controller().voltage());
+            Console::println("Clock: ", PLL0::rate());
+            measure();
+
             uint32_t delay = 100;
 
             ClockController::multiplex(ClockController::SYSCRG_CLK_CPU_ROOT, 0);
             Timer::uspin(delay);
-            Console::println(PLL0::rate());
+
             PLL0::rate(1500000000);
+
             Timer::uspin(delay);
             ClockController::multiplex(ClockController::SYSCRG_CLK_CPU_ROOT, 1);
-            Console::println(PLL0::rate());
-            Console::println(JH7110_DVFS_Controller().voltage());
-            // Console::println(JH7110_DVFS_Controller().set({1500000000, 1040}));
+
+            Console::println("\nVoltage: ", JH7110_DVFS_Controller().voltage());
+            Console::println("Clock: ", PLL0::rate());
+            measure();
         }
 
         riscv64::CPU::barrier();
-        Console::println("WHILE");
         while (1)
             ;
 
@@ -69,16 +77,19 @@ class VisionFive2 : Driver {
 
         Meta::forEach(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
         riscv64::CPU::barrier();
-        if (CPU::id() == Traits<CPU>::BSP) start = Timer::now();
     }
 
-    static void shutdown() {
-        if (CPU::id() == Traits<CPU>::BSP) Console::println(Timer::now() - start);
-        CPU::halt();
+    static void measure() {
+        bool enabled            = riscv64::CPU::Interrupt::disable();
+        uintmax_t start         = Timer::now();
+        volatile unsigned int i = 10000;
+        while (i)
+            i = i - 1;
+        Console::println(Timer::now() - start);
+        if (enabled) riscv64::CPU::Interrupt::enable();
     }
 
-  private:
-    static inline uintmax_t start;
+    static void shutdown() { CPU::halt(); }
 };
 
 } // namespace DEPOS
