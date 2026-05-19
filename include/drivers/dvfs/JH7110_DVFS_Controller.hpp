@@ -12,7 +12,7 @@ namespace DEPOS {
 class JH7110_DVFS_Controller : public DVFS_Controller {
     static constexpr uint64_t Frequencys[] = {375000000, 500000000, 750000000, 1500000000};
 
-    enum { ROOT = 0x000, DIV = 0x004 };
+    enum { DIV = 0x004 };
 
   public:
     JH7110_DVFS_Controller()
@@ -20,17 +20,23 @@ class JH7110_DVFS_Controller : public DVFS_Controller {
           pmic_(i2c_) {}
 
     virtual bool set(const PState &&pstate) override {
-        uint32_t div = Frequencys[3] / pstate.frequency;
+        // uint32_t div = Frequencys[3] / pstate.frequency;
 
-        if (div > 7) return false;
+        // Console::println(div, ' ', reg32(DIV));
+
+        // if (div == 0) return false;
+        // if (div > 7) return false;
+
         if (!pmic_.voltage(2, pstate.voltage)) return false;
 
-        Timer::uspin(1);
+        // Timer::uspin(1);
 
-        reg32(DIV) = div;
+        // reg32(DIV) = div;
 
         return true;
     }
+
+    uintmax_t voltage() { return pmic_.voltage(2); }
 
   private:
     static volatile uint32_t &reg32(uint32_t offset) {

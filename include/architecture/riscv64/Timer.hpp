@@ -26,7 +26,7 @@ class Timer : public ArchitectureCommon::Timer {
         ArchitectureCommon::Timer::onTick(CPU::id());
     }
 
-    static inline uint64_t us() { return CLINT::mtime() * 1'000'000 / Traits<CLINT>::Clock; }
+    static inline uint64_t us() { return (CLINT::mtime() * 1'000'000) / Traits<CLINT>::Clock; }
     static inline uint64_t now() { return us(); }
 
     static void uspin(uintmax_t microseconds) {

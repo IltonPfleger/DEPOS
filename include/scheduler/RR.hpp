@@ -10,12 +10,12 @@ namespace DEPOS {
 class RR {
 
   public:
-    enum : uint8_t { IDLE = 0, NORMAL = 1, MAX = 2 };
+    enum : uint8_t { IDLE = 0, NORMAL = 1, HIGHER = 2 };
 
     RR(uint8_t rank)
         : rank_(rank) {}
 
-    operator size_t() const { return rank_; }
+    operator uint8_t() const { return rank_; }
 
     template <typename T> struct Collection {
       public:
@@ -33,8 +33,8 @@ class RR {
         }
 
       private:
-        collections::FIFO<T> queues_[MAX];
-        Spin lock_[MAX];
+        collections::FIFO<T> queues_[HIGHER];
+        Spin lock_[HIGHER];
     };
 
   private:

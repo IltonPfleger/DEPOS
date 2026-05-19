@@ -1,3 +1,4 @@
+#include <Alarm.hpp>
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 #include <utility/Console.hpp>
@@ -6,7 +7,7 @@
 using namespace DEPOS;
 
 static constexpr int Number     = 100;
-static constexpr int Iterations = 100;
+static constexpr int Iterations = 10;
 
 Semaphore *forks[Number];
 Semaphore *console;

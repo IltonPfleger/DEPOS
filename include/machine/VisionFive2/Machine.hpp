@@ -14,6 +14,25 @@ class VisionFive2 : Driver {
         riscv64::init();
 
         if (riscv64::CPU::id() == Traits<CPU>::BSP) {
+            uint32_t delay = 100;
+
+            ClockController::multiplex(ClockController::SYSCRG_CLK_CPU_ROOT, 0);
+            Timer::uspin(delay);
+            Console::println(PLL0::rate());
+            PLL0::rate(1500000000);
+            Timer::uspin(delay);
+            ClockController::multiplex(ClockController::SYSCRG_CLK_CPU_ROOT, 1);
+            Console::println(PLL0::rate());
+            Console::println(JH7110_DVFS_Controller().voltage());
+            // Console::println(JH7110_DVFS_Controller().set({1500000000, 1040}));
+        }
+
+        riscv64::CPU::barrier();
+        Console::println("WHILE");
+        while (1)
+            ;
+
+        if (riscv64::CPU::id() == Traits<CPU>::BSP) {
             /* ---***--- GMAC0 ---***--- */
             ClockController::enable(ClockController::SYSCRG_CLK_GMAC_PHY);
             ClockController::enable(ClockController::SYSCRG_CLK_GMAC0_GTX);
@@ -30,7 +49,6 @@ class VisionFive2 : Driver {
             ClockController::enable(ClockController::AONCRG_CLK_GMAC0_AXI);
             ClockController::reset(ClockController::AONCRG_CLK_RSTN_GMAC5_AXI64_AXI);
             ClockController::reset(ClockController::AONCRG_CLK_RSTN_GMAC5_AXI64_AHB);
-
             /* ---***--- CAN0 ---***--- */
             ClockController::divide(ClockController::SYSCRG_CLK_CAN0_CTRL_CORE, 15);
             ClockController::enable(ClockController::SYSCRG_CLK_CAN0_CTRL_APB);
@@ -43,14 +61,24 @@ class VisionFive2 : Driver {
             GPIO::map(GPIO::InputSignal::GPI_SYS_IOMUX_U0_CAN_CTRL_RXD, 43);
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_STB, 47);
 
-            JH7110_DVFS_Controller().set({1500000000, 1040});
+            // Console::println(JH7110_DVFS_Controller().set({1500000000, 800}));
+            //  while (1)
+            //      ;
+            //  JH7110_DVFS_Controller().set({1500000000, 500});
         }
 
         Meta::forEach(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
         riscv64::CPU::barrier();
+        if (CPU::id() == Traits<CPU>::BSP) start = Timer::now();
     }
 
-    static void shutdown() { CPU::halt(); }
+    static void shutdown() {
+        if (CPU::id() == Traits<CPU>::BSP) Console::println(Timer::now() - start);
+        CPU::halt();
+    }
+
+  private:
+    static inline uintmax_t start;
 };
 
 } // namespace DEPOS

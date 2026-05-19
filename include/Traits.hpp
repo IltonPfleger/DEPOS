@@ -28,7 +28,7 @@ template <> struct Traits<Kernel> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr Hz TickFrequency = 100;
+    static constexpr Hz TickFrequency = 10'000;
     static constexpr bool Enable      = true;
 };
 
@@ -58,7 +58,7 @@ template <> struct Traits<Thread> {
     static constexpr bool IsolatedKernelStack = Traits<Application>::Virtualized || Traits<Debug>::Error;
     static constexpr size_t UserStackSize     = Traits<Memory>::StackSize;
     static constexpr size_t KernelStackSize   = IsolatedKernelStack ? Traits<Memory>::StackSize : 0;
-    using Criterion                           = FixedCore;
+    using Criterion                           = RR;
 };
 
 } // namespace DEPOS

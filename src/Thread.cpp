@@ -17,6 +17,7 @@ void Thread::entry(Function f, Argument a) {
 
 Thread::Return Thread::idle(Argument) {
     while (s_count > Traits<CPU>::Active) {
+        // Console::print(CPU::id());
         CPU::idle();
         reschedule();
     }
