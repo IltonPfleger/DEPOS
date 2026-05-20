@@ -16,13 +16,13 @@ class Timer {
     }
 
   private:
-    static constexpr uintmax_t TimerTickFrequency  = Traits<DEPOS::Timer>::TickFrequency;
-    static constexpr uintmax_t AlarmTickFrequency  = TimerTickFrequency / Traits<Alarm>::TickFrequency;
-    static constexpr uintmax_t ThreadTickFrequency = TimerTickFrequency / Traits<Thread>::TickFrequency;
-    static constexpr uintmax_t Active              = Traits<DEPOS::CPU>::Active;
+    static constexpr uintmax_t TimerFrequency  = Traits<DEPOS::Timer>::Frequency;
+    static constexpr uintmax_t AlarmFrequency  = TimerFrequency / Traits<Alarm>::Frequency;
+    static constexpr uintmax_t ThreadFrequency = TimerFrequency / Traits<Thread>::Frequency;
+    static constexpr uintmax_t Active          = Traits<DEPOS::CPU>::Active;
 
-    using ThreadTicker = Ticker<ThreadTickFrequency, Thread::onTick, Active>;
-    using AlarmTicker  = Ticker<AlarmTickFrequency, Alarm::onTick, Active>;
+    using ThreadTicker = Ticker<ThreadFrequency, Thread::onTick, Active>;
+    using AlarmTicker  = Ticker<AlarmFrequency, Alarm::onTick, Active>;
 
     static inline constinit Meta::Tuple<ThreadTicker, AlarmTicker> m_tickers{};
 };

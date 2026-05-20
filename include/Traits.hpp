@@ -27,13 +27,13 @@ template <> struct Traits<Kernel> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr Hz TickFrequency = 10'000;
-    static constexpr bool Enable      = true;
+    static constexpr Hz Frequency = 10'000;
+    static constexpr bool Enable  = true;
 };
 
 template <> struct Traits<Alarm> {
-    static constexpr Hz TickFrequency = Traits<Timer>::TickFrequency;
-    static constexpr bool Enable      = true;
+    static constexpr Hz Frequency = Traits<Timer>::Frequency;
+    static constexpr bool Enable  = true;
 };
 
 template <> struct Traits<Debug> {
@@ -57,7 +57,7 @@ template <> struct Traits<Scheduler> {
 namespace DEPOS {
 
 template <> struct Traits<Thread> {
-    static constexpr Hz TickFrequency         = Traits<Timer>::TickFrequency;
+    static constexpr Hz Frequency             = Traits<Timer>::Frequency;
     static constexpr bool IsolatedKernelStack = Traits<Application>::Virtualized || Traits<Debug>::Error;
     static constexpr size_t UserStackSize     = Traits<Memory>::StackSize;
     static constexpr size_t KernelStackSize   = IsolatedKernelStack ? Traits<Memory>::StackSize : 0;

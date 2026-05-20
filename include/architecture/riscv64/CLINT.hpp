@@ -42,7 +42,7 @@ class CLINT : Driver {
   public:
     static constexpr unsigned long Address = Traits<CLINT>::Address;
     static constexpr unsigned long Clock   = Traits<CLINT>::Clock;
-    static constexpr unsigned long Ticks   = Clock / Traits<DEPOS::Timer>::TickFrequency;
+    static constexpr unsigned long Ticks   = Clock / Traits<DEPOS::Timer>::Frequency;
 };
 
 } // namespace riscv64
