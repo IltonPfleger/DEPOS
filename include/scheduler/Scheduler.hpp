@@ -9,10 +9,10 @@
 
 namespace DEPOS {
 
-template <typename T> class Scheduler {
+class Scheduler {
   public:
-    using Criterion = typename Traits<T>::Criterion;
-    using Node      = collections::Node<T *, Criterion>;
+    using Criterion = typename Traits<Scheduler>::Criterion;
+    using Node      = collections::Node<Thread *, Criterion>;
 
     Scheduler()
         : _heads({nullptr}),
@@ -38,13 +38,13 @@ template <typename T> class Scheduler {
         _collection.insert(node->criterion(), node);
     }
 
-    T *current() { return head(); }
+    Thread *current() { return head(); }
 
   private:
-    auto &head() { return _heads[CPU::id()]; }
+    Thread *&head() { return _heads[CPU::id()]; }
 
   private:
-    T *_heads[Traits<CPU>::Active];
+    Thread *_heads[Traits<CPU>::Active];
     typename Criterion::template Collection<Node> _collection;
 };
 

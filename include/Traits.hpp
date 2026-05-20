@@ -18,8 +18,7 @@ class Alarm;
 class Console;
 class CPU;
 class IPv4;
-
-template <typename U> class Scheduler;
+class Scheduler;
 
 template <typename T> struct Traits;
 
@@ -43,7 +42,11 @@ template <> struct Traits<Debug> {
 };
 
 template <> struct Traits<Console> {
-    static constexpr unsigned int Columns = 100;
+    static constexpr size_t Columns = 100;
+};
+
+template <> struct Traits<Scheduler> {
+    typedef RR Criterion;
 };
 
 } // namespace DEPOS
@@ -58,7 +61,6 @@ template <> struct Traits<Thread> {
     static constexpr bool IsolatedKernelStack = Traits<Application>::Virtualized || Traits<Debug>::Error;
     static constexpr size_t UserStackSize     = Traits<Memory>::StackSize;
     static constexpr size_t KernelStackSize   = IsolatedKernelStack ? Traits<Memory>::StackSize : 0;
-    using Criterion                           = RR;
 };
 
 } // namespace DEPOS

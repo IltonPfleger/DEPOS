@@ -10,7 +10,7 @@ class Thread {
   public:
     enum class State { RUNNING, READY, WAITING, FINISHING, FINISHED };
 
-    using Scheduler = DEPOS::Scheduler<Thread>;
+    using Scheduler = DEPOS::Scheduler;
     using Criterion = Scheduler::Criterion;
     using Node      = Scheduler::Node;
     using Queue     = collections::FIFO<Node>;
