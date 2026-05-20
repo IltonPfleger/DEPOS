@@ -20,8 +20,6 @@ class JH7110_DVFS_Controller : public DVFS_Controller {
         {375000000, 900000},
     };
 
-    static constexpr PStateTable Available = {(sizeof(States) / sizeof(PState)), States};
-
   public:
     JH7110_DVFS_Controller()
         : i2c_(),
@@ -51,7 +49,7 @@ class JH7110_DVFS_Controller : public DVFS_Controller {
         return true;
     }
 
-    virtual const PStateTable &available() override { return Available; }
+    virtual Span<const PState> available() override { return Span(States, sizeof(States) / sizeof(PState)); }
 
     uintmax_t voltage() { return pmic_.voltage(2); }
 

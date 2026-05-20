@@ -19,7 +19,7 @@ class VisionFive2 : Driver {
 
             JH7110_DVFS_Controller dvfs;
 
-            dvfs.set(dvfs.available().pstates[0]);
+            dvfs.set(dvfs.available()[0]);
 
             Clock_Controller::divide(Clock_Controller::SYSCRG_CLK_CPU_CORE, 2);
 
@@ -35,7 +35,7 @@ class VisionFive2 : Driver {
 
             Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 1);
 
-            dvfs.set(dvfs.available().pstates[dvfs.available().length - 1]);
+            dvfs.set(dvfs.available()[dvfs.available().length() - 1]);
         }
 
         riscv64::CPU::barrier();

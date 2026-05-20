@@ -1,5 +1,7 @@
-#ifndef __DEPOS_DVFS__
-#define __DEPOS_DVFS__
+#ifndef __DEPOS_DVFS_CONTROLLER__
+#define __DEPOS_DVFS_CONTROLLER__
+
+#include <utility/Span.hpp>
 
 namespace DEPOS {
 
@@ -10,16 +12,11 @@ class DVFS_Controller {
         uint32_t voltage;
     };
 
-    struct PStateTable {
-        size_t length;
-        const PState *pstates;
-    };
-
     virtual ~DVFS_Controller()             = default;
     virtual bool set(const PState &)       = 0;
     virtual uintmax_t voltage()            = 0;
     virtual uintmax_t clock()              = 0;
-    virtual const PStateTable &available() = 0;
+    virtual Span<const PState> available() = 0;
 };
 
 } // namespace DEPOS
