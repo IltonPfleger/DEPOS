@@ -1,9 +1,9 @@
-#include <architecture/Timer.hpp>
-#include <machine/Machine.hpp>
-
 #include <Application.hpp>
 #include <Thread.hpp>
+#include <architecture/Timer.hpp>
+#include <machine/Machine.hpp>
 #include <memory/Memory.hpp>
+#include <monitor/Monitor.hpp>
 
 using namespace DEPOS;
 
@@ -11,19 +11,15 @@ extern "C" void init() {
     if (CPU::id() == Traits<CPU>::BSP) {
         Console::println(' ');
         TraceIn();
-    }
-
-    CPU::barrier();
-
-    if constexpr (Traits<Timer>::Enable) Timer::init();
-
-    if (CPU::id() == Traits<CPU>::BSP) {
         Memory::init();
         Thread::init();
         Application::init();
     }
 
+    if constexpr (Traits<Timer>::Enable) Timer::init();
+
     CPU::barrier();
+
     Thread::run();
 }
 

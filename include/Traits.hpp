@@ -19,6 +19,7 @@ class Console;
 class CPU;
 class IPv4;
 class Scheduler;
+class Monitor;
 
 template <typename T> struct Traits;
 
@@ -37,8 +38,9 @@ template <> struct Traits<Alarm> {
 };
 
 template <> struct Traits<Debug> {
-    static constexpr bool Error = true;
-    static constexpr bool Trace = true;
+    static constexpr bool Enable = true;
+    static constexpr bool Error  = Enable && true;
+    static constexpr bool Trace  = Enable && true;
 };
 
 template <> struct Traits<Console> {
@@ -47,6 +49,12 @@ template <> struct Traits<Console> {
 
 template <> struct Traits<Scheduler> {
     typedef RR Criterion;
+};
+
+template <> struct Traits<Monitor> {
+    static constexpr bool Enable   = true;
+    static constexpr size_t Length = 100;
+    static constexpr Hz Frequency  = Traits<Timer>::Frequency;
 };
 
 } // namespace DEPOS

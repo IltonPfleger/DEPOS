@@ -28,7 +28,7 @@ $(ELF): $(BUILD)/$(APPLICATION).o
 
 $(BUILD)/$(APPLICATION).o: $(APPLICATION).cpp $(KERNEL_BLOB) $(DTB_BLOB) $(INITRAMFS_BLOB)
 	@mkdir -p $(dir $@)
-	$(CC) -D__INITRAMFS__=$(INITRAMFS_BLOB) -D__KERNEL__=$(KERNEL_BLOB) -D__DTB__=$(DTB_BLOB) $(MARCH_CCFLAGS) -I$(BUILD) -I../include -MMD -MP -c $< -o $@
+	$(CC) -D__INITRAMFS__=$(INITRAMFS_BLOB) -D__KERNEL__=$(KERNEL_BLOB) -D__DTB__=$(DTB_BLOB) $(MACH_CCFLAGS) -I$(BUILD) -I../include -MMD -MP -c $< -o $@
 
 $(DTB_BLOB): $(DTB)
 	@mkdir -p $(dir $@)

@@ -65,12 +65,12 @@ class VirtualCPU {
 
     static void onTick() {
         if (!current()) return;
-        if (CLINT::mtime() >= current()->_mtimecmp) csrs<MachineMode::IP>(SupervisorMode::TI);
+        if (CLINT::mtime() >= current()->_mtimecmp) doTimerInterrupt();
     }
 
     static void onInterProcessorInterrupt() {
         if (!current()) return;
-        if (current()->plic_.pending()) csrs<MachineMode::IP>(SupervisorMode::EI);
+        if (current()->plic_.pending()) doExternalInterrupt();
     }
 
     static void reset(unsigned long r) {
@@ -95,6 +95,10 @@ class VirtualCPU {
             return current()->plic_.write(address - Traits<MemoryMap>::PLIC, source);
         }
     }
+
+  private:
+    static void doTimerInterrupt() { csrs<MachineMode::IP>(SupervisorMode::TI); }
+    static void doExternalInterrupt() { csrs<MachineMode::IP>(SupervisorMode::EI); }
 
   private:
     static inline VirtualCPU *s_current[Traits<CPU>::Active];
