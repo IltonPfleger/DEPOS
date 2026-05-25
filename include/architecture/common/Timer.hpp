@@ -3,7 +3,6 @@
 #include <Alarm.hpp>
 #include <Thread.hpp>
 #include <Traits.hpp>
-#include <monitor/Monitor.hpp>
 #include <utility/Ticker.hpp>
 
 namespace DEPOS {
@@ -28,11 +27,10 @@ class Timer {
     static constexpr uintmax_t MonitorEnable    = Traits<Monitor>::Enable;
     static constexpr uintmax_t Active           = Traits<DEPOS::CPU>::Active;
 
-    using ThreadTicker  = Ticker<ThreadFrequency, Thread::onTick, Active>;
-    using AlarmTicker   = Ticker<AlarmFrequency, Alarm::onTick, Active>;
-    using MonitorTicker = Meta::IF<MonitorEnable, Ticker<MonitorFrequency, Monitor::onTick, Active>, Meta::Empty>;
+    using ThreadTicker = Ticker<ThreadFrequency, Thread::onTick, Active>;
+    using AlarmTicker  = Ticker<AlarmFrequency, Alarm::onTick, Active>;
 
-    static inline constinit Meta::Tuple<ThreadTicker, AlarmTicker, MonitorTicker::Result> m_tickers{};
+    static inline constinit Meta::Tuple<ThreadTicker, AlarmTicker> m_tickers{};
 };
 
 } // namespace ArchitectureCommon

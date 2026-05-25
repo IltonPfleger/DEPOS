@@ -29,7 +29,7 @@ QEMU    := qemu-system-riscv64
 
 ARCH ?= riscv64
 MACHINE ?= virt
-APPLICATION ?= HelloWorld
+#APPLICATION ?= HelloWorld
 
 CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic -Wfatal-errors
 CCFLAGS += -D__ARCH=$(ARCH) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -g -O3

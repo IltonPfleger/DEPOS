@@ -3,7 +3,6 @@
 #include <architecture/Timer.hpp>
 #include <machine/Machine.hpp>
 #include <memory/Memory.hpp>
-#include <monitor/Monitor.hpp>
 
 using namespace DEPOS;
 

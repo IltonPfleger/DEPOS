@@ -42,7 +42,7 @@ class JH7110_DVFS_Controller : public DVFS_Controller {
 
         if (!pmic_.voltage(2, pstate.voltage)) return false;
 
-        Timer::uspin(1);
+        Timer::udelay(1);
 
         Clock_Controller::divide(Clock_Controller::SYSCRG_CLK_CPU_CORE, divisor);
 

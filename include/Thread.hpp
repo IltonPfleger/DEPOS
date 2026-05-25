@@ -20,6 +20,10 @@ class Thread {
     using Function = Return (*)(Argument);
     using Context  = CPU::Context;
 
+    Thread(const Thread &)            = delete;
+    Thread(const Thread &&)           = delete;
+    Thread &operator=(Thread &&)      = delete;
+    Thread &operator=(const Thread &) = delete;
     Thread(Function, Argument = 0, Criterion = Criterion::NORMAL);
     ~Thread();
 

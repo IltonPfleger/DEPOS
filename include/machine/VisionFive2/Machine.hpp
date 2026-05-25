@@ -27,11 +27,11 @@ class VisionFive2 : Driver {
 
             Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 0);
 
-            Timer::uspin(delay);
+            Timer::udelay(delay);
 
             PLL0::rate(1500000000);
 
-            Timer::uspin(delay);
+            Timer::udelay(delay);
 
             Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 1);
 
