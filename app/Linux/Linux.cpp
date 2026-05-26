@@ -170,7 +170,7 @@ int main() {
 
     typedef GenericVirtualMachine<Serial> MyMachine;
     MyMachine *vm = new MyMachine(kernel, LinuxMemorySize);
-    vm->start(0, dtb);
+    vm->activate(0, dtb);
 
     return 0;
 }

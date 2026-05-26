@@ -3,6 +3,7 @@
 #include <architecture/VirtualCPU.hpp>
 #include <hypervisor/DeviceTree.hpp>
 #include <hypervisor/GenericVirtualMachine.hpp>
+#include <hypervisor/VirtualSwitch.hpp>
 #include <hypervisor/virtio/Console.hpp>
 #include <hypervisor/virtio/Network.hpp>
 #include <machine/Machine.hpp>
@@ -22,7 +23,7 @@ class EPOS_VirtualMachineLauncher {
 
     static void *worker(void *pointer) {
         typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NetworkDevice;
-        typedef virtio::Network<NetworkDevice, 0x30200000> Network;
+        typedef virtio::Network<VirtualSwitch<NetworkDevice>, 0x30200000> Network;
         typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
         typedef virtio::Console<SerialDevice, 0x30000000> Serial;
 
@@ -30,7 +31,7 @@ class EPOS_VirtualMachineLauncher {
         auto *epos                        = static_cast<unsigned char *>(Memory::alloc(VirtualMachineMemorySize));
         self->tftp_->request(IPv4::Address(192, 168, 1, 100), "EPOS.bin", epos, VirtualMachineMemorySize);
         auto *vm = new GenericVirtualMachine<Serial, Network>(epos, VirtualMachineMemorySize);
-        vm->activate(1);
+        vm->activate(1, 15);
         return nullptr;
     }
 
@@ -39,11 +40,125 @@ class EPOS_VirtualMachineLauncher {
     Thread thread_;
 };
 
-unsigned char *align(unsigned char *p, long alignment) {
-    long addr = reinterpret_cast<long>(p);
-    addr      = (addr + alignment - 1) & ~(alignment - 1);
-    return reinterpret_cast<unsigned char *>(addr);
-}
+class Linux_VirtualMachineLauncher {
+  public:
+    Linux_VirtualMachineLauncher(TFTP *tftp)
+        : tftp_(tftp),
+          thread_(worker, this) {};
+
+    static void *worker(void *pointer) {
+        typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NetworkDevice;
+        typedef virtio::Network<NetworkDevice, 0x30200000> Network;
+        typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
+        typedef virtio::Console<SerialDevice, 0x30000000> Serial;
+
+        Linux_VirtualMachineLauncher *self = reinterpret_cast<Linux_VirtualMachineLauncher *>(pointer);
+
+        auto *buffer = static_cast<unsigned char *>(Memory::alloc(VirtualMachineMemorySize));
+        auto address = reinterpret_cast<uintptr_t>(buffer);
+
+        auto *current    = buffer;
+        size_t remaining = VirtualMachineMemorySize;
+
+        auto *kernel       = current;
+        size_t kernel_size = self->tftp_->request(IPv4::Address(192, 168, 1, 100), "Image", kernel, remaining);
+
+        current += kernel_size;
+        remaining -= kernel_size;
+
+        DeviceTree *dtb = self->rdtb(&current, &remaining);
+        // current = align(current, MB);
+
+        // size_t dtb_size = self->tftp_->request(IPv4::Address(192, 168, 1, 100), "guest.dtb", dtb, remaining);
+
+        // current += dtb_size;
+        current = align(current, MB);
+        remaining -= kernel_size;
+
+        unsigned char *initramfs = current;
+        size_t initramfs_size =
+            self->tftp_->request(IPv4::Address(192, 168, 1, 100), "initramfs.cpio.gz", initramfs, remaining);
+
+        current += initramfs_size;
+        current = align(current, MB);
+        remaining -= initramfs_size;
+
+        ERROR(!dtb->valid(), "Invalid Device Tree!\n");
+
+        unsigned int irq;
+        unsigned int regs[4];
+
+        // Memory
+        regs[0] = CPU::htobe32(address >> 32);
+        regs[1] = CPU::htobe32(address);
+        regs[2] = CPU::htobe32(VirtualMachineMemorySize >> 32);
+        regs[3] = CPU::htobe32(VirtualMachineMemorySize);
+        dtb->edit("memory@0", "reg", regs, sizeof(regs));
+
+        // Initramfs
+        regs[0] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs) >> 32);
+        regs[1] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs));
+        regs[2] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs + initramfs_size) >> 32);
+        regs[3] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs + initramfs_size));
+        dtb->edit("chosen", "linux,initrd-start", regs, sizeof(regs[0]) * 2);
+        dtb->edit("chosen", "linux,initrd-end", &regs[2], sizeof(regs[0]) * 2);
+
+        // Serial
+        typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
+        typedef virtio::Console<SerialDevice, 0x30000000> Serial;
+        irq     = CPU::htobe32(Serial::IRQ);
+        regs[0] = CPU::htobe32(Serial::Address >> 32);
+        regs[1] = CPU::htobe32(Serial::Address);
+        regs[2] = CPU::htobe32(0x0);
+        regs[3] = CPU::htobe32(0x1000);
+        dtb->edit("virtio_mmio@1", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
+        dtb->edit("virtio_mmio@1", "reg", regs, sizeof(regs));
+        dtb->edit("virtio_mmio@1", "interrupts", &irq, sizeof(irq));
+
+        // Network
+        typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NetworkDevice;
+        typedef virtio::Network<NetworkDevice, 0x30200000> Network;
+        irq     = CPU::htobe32(Network::IRQ);
+        regs[0] = CPU::htobe32(Network::Address >> 32);
+        regs[1] = CPU::htobe32(Network::Address);
+        regs[2] = CPU::htobe32(0x0);
+        regs[3] = CPU::htobe32(0x1000);
+        dtb->edit("virtio_mmio@2", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
+        dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
+        dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
+
+        Console::print("\n *** Linux ***\n");
+
+        auto *vm = new GenericVirtualMachine<Serial, Network>(buffer, VirtualMachineMemorySize);
+        vm->activate(0, dtb);
+
+        return nullptr;
+    }
+
+  private:
+    static unsigned char *align(unsigned char *pointer, long alignment) {
+        uintptr_t address = reinterpret_cast<uintptr_t>(pointer);
+        address           = (address + alignment - 1) & ~(alignment - 1);
+        return reinterpret_cast<unsigned char *>(address);
+    }
+
+    DeviceTree *rdtb(unsigned char **current, size_t *remaining) {
+        *current = align(*current, MB);
+
+        auto *address = reinterpret_cast<DeviceTree *>(*current);
+        size_t size   = tftp_->request(IPv4::Address(192, 168, 1, 100), "guest.dtb", address, *remaining);
+
+        *current += size;
+        *remaining -= size;
+
+        return address;
+    }
+
+  private:
+    TFTP *tftp_;
+    Thread thread_;
+    DeviceTree *dtb_;
+};
 
 int main() {
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
@@ -54,88 +169,7 @@ int main() {
     auto *tftp = new TFTP(*udp);
 
     EPOS_VirtualMachineLauncher vm0(tftp);
-
-    // constexpr size_t LinuxMemorySize = 256 * MB;
-
-    // auto *buffer = static_cast<unsigned char *>(Memory::alloc(LinuxMemorySize));
-    // auto address = reinterpret_cast<uintptr_t>(buffer);
-
-    // auto *current    = buffer;
-    // size_t remaining = LinuxMemorySize;
-
-    // auto *kernel       = current;
-    // size_t kernel_size = tftp->request(IPv4::Address(192, 168, 1, 100), "Image", kernel, remaining);
-
-    // current += kernel_size;
-    // remaining -= kernel_size;
-    // current = align(current, MB);
-
-    // auto *dtb       = reinterpret_cast<DeviceTree *>(current);
-    // size_t dtb_size = tftp->request(IPv4::Address(192, 168, 1, 100), "guest.dtb", dtb, remaining);
-
-    // current += dtb_size;
-    // current = align(current, MB);
-    // remaining -= kernel_size;
-
-    // unsigned char *initramfs = current;
-    // size_t initramfs_size = tftp->request(IPv4::Address(192, 168, 1, 100), "initramfs.cpio.gz", initramfs,
-    // remaining);
-
-    // current += initramfs_size;
-    // current = align(current, MB);
-    // remaining -= initramfs_size;
-
-    // auto *epos = static_cast<unsigned char *>(Memory::alloc(LinuxMemorySize));
-    // tftp->request(IPv4::Address(192, 168, 1, 100), "EPOS.bin", epos, LinuxMemorySize);
-
-    // ERROR(!dtb->valid(), "Invalid Device Tree!\n");
-
-    // unsigned int irq;
-    // unsigned int regs[4];
-
-    //// Memory
-    // regs[0] = CPU::htobe32(address >> 32);
-    // regs[1] = CPU::htobe32(address);
-    // regs[2] = CPU::htobe32(LinuxMemorySize >> 32);
-    // regs[3] = CPU::htobe32(LinuxMemorySize);
-    // dtb->edit("memory@0", "reg", regs, sizeof(regs));
-
-    //// Initramfs
-    // regs[0] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs) >> 32);
-    // regs[1] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs));
-    // regs[2] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs + initramfs_size) >> 32);
-    // regs[3] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs + initramfs_size));
-    // dtb->edit("chosen", "linux,initrd-start", regs, sizeof(regs[0]) * 2);
-    // dtb->edit("chosen", "linux,initrd-end", &regs[2], sizeof(regs[0]) * 2);
-
-    //// Serial
-    // typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
-    // typedef virtio::Console<SerialDevice, 0x30000000> Serial;
-    // irq     = CPU::htobe32(Serial::IRQ);
-    // regs[0] = CPU::htobe32(Serial::Address >> 32);
-    // regs[1] = CPU::htobe32(Serial::Address);
-    // regs[2] = CPU::htobe32(0x0);
-    // regs[3] = CPU::htobe32(0x1000);
-    // dtb->edit("virtio_mmio@1", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
-    // dtb->edit("virtio_mmio@1", "reg", regs, sizeof(regs));
-    // dtb->edit("virtio_mmio@1", "interrupts", &irq, sizeof(irq));
-
-    //// Network
-    // typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NetworkDevice;
-    // typedef virtio::Network<NetworkDevice, 0x30200000> Network;
-    // irq     = CPU::htobe32(Network::IRQ);
-    // regs[0] = CPU::htobe32(Network::Address >> 32);
-    // regs[1] = CPU::htobe32(Network::Address);
-    // regs[2] = CPU::htobe32(0x0);
-    // regs[3] = CPU::htobe32(0x1000);
-    // dtb->edit("virtio_mmio@2", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
-    // dtb->edit("virtio_mmio@2", "reg", regs, sizeof(regs));
-    // dtb->edit("virtio_mmio@2", "interrupts", &irq, sizeof(irq));
-
-    // Console::print("\n *** Linux ***\n");
-
-    // auto *vm = new GenericVirtualMachine<Serial, Network>(buffer, LinuxMemorySize);
-    // vm->start(0, dtb);
+    // Linux_VirtualMachineLauncher vm1(tftp);
 
     return 0;
 }
