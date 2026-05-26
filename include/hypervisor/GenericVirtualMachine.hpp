@@ -43,7 +43,7 @@ template <typename... Devices> class GenericVirtualMachine : public VirtualMachi
           devices_(*this),
           cpu_(this) {}
 
-    template <typename... Args> void start(Args... args) { cpu_.start(args...); }
+    template <typename... Args> void activate(Args... args) { cpu_.activate(args...); }
 
     virtual bool read(uintptr_t target, unsigned int *destination) override {
         return devices_.read(target, destination);

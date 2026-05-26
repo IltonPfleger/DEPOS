@@ -48,7 +48,7 @@ template <> struct Traits<Console> {
 };
 
 template <> struct Traits<Scheduler> {
-    typedef RR Criterion;
+    typedef FixedCore Criterion;
 };
 
 template <> struct Traits<Monitor> {

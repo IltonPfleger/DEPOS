@@ -25,7 +25,7 @@ class VirtualCPU {
         : _mtimecmp(0),
           vm_(vm) {}
 
-    template <typename... Args> void start(Args... args) {
+    template <typename... Args> void activate(Args... args) {
         CPU::Interrupt::disable();
 
         csrw<SupervisorMode::SATP>(0);

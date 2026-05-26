@@ -11,13 +11,9 @@ DEPENDENCIES := $(OBJECTS:.o=.d)
 
 all: $(ELF) EPOS
 
-$(ELF): $(BUILD)/$(APPLICATION).o
+$(ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
-	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(Application_Addr) --image-base=$(Application_Addr) -o $@ $<
-
-$(BUILD)/$(APPLICATION).o: $(OBJECTS)
-	@mkdir -p $(dir $@)
-	$(LD) -e main -r $(OBJECTS) -o $@
+	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(Application_Addr) --image-base=$(Application_Addr) -o $@ $^
 
 $(BUILD)/%.cpp.o: %.cpp $(CONFIG) 
 	@mkdir -p $(dir $@)
