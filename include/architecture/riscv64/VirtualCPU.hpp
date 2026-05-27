@@ -4,7 +4,6 @@
 #include <Traits.hpp>
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/CPU.hpp>
-#include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/PMP.hpp>
 #include <architecture/riscv64/VirtualPLIC.hpp>
@@ -23,22 +22,23 @@ class VirtualCPU {
   public:
     VirtualCPU(VirtualMachine *vm)
         : _mtimecmp(0),
+          first_(true),
           vm_(vm) {}
 
     template <typename... Args> void activate(Args... args) {
-        CPU::Interrupt::disable();
+        bool enabled = CPU::Interrupt::disable();
 
         csrw<SupervisorMode::SATP>(0);
 
         PMP::NAPOT<2>(vm_->memory().start(), vm_->memory().size(), PMP::R | PMP::W | PMP::X);
 
-        long mideleg = 0;
+        uintmax_t mideleg = 0;
         mideleg |= 1 << 1; // Supervisor Software Interrupt
         mideleg |= 1 << 5; // Supervisor Timer Interrupt
         mideleg |= 1 << 9; // Supervisor External Interrupt
         csrw<MachineMode::MIDELEG>(mideleg);
 
-        long medeleg = 0;
+        uintmax_t medeleg = 0;
         medeleg |= 1 << 3;  // Breakpoint
         medeleg |= 1 << 4;  // Load Address Misaligned
         medeleg |= 1 << 8;  // Environment Call From U-Mode
@@ -53,9 +53,14 @@ class VirtualCPU {
 
         core_     = mhartid();
         current() = this;
-        csrw<MachineMode::EPC>(vm_->memory().start());
-        CPU::mb();
-        supervisor(args...);
+
+        if (first_) {
+            first_ = false;
+            csrw<MachineMode::EPC>(vm_->memory().start());
+            supervisor(args...);
+        }
+
+        if (enabled) CPU::Interrupt::enable();
     }
 
     void interrupt(unsigned int id) {
@@ -106,6 +111,7 @@ class VirtualCPU {
   private:
     uintmax_t _mtimecmp;
     size_t core_;
+    bool first_;
     VirtualMachine *vm_;
     VirtualPLIC plic_;
 };

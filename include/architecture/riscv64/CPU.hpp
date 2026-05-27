@@ -4,7 +4,7 @@
 #include <Traits.hpp>
 #include <architecture/Endian.hpp>
 #include <architecture/common/CPU.hpp>
-#include <architecture/riscv64/ContextHandler.hpp>
+#include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/CoreContextHandler.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/csrs.hpp>

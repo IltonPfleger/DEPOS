@@ -28,7 +28,7 @@ template <> struct Traits<Kernel> {
 };
 
 template <> struct Traits<Timer> {
-    static constexpr Hz Frequency = 10'000;
+    static constexpr Hz Frequency = 1000;
     static constexpr bool Enable  = true;
 };
 
@@ -48,13 +48,7 @@ template <> struct Traits<Console> {
 };
 
 template <> struct Traits<Scheduler> {
-    typedef FixedCore Criterion;
-};
-
-template <> struct Traits<Monitor> {
-    static constexpr bool Enable   = true;
-    static constexpr size_t Length = 100;
-    static constexpr Hz Frequency  = Traits<Timer>::Frequency;
+    typedef RR Criterion;
 };
 
 } // namespace DEPOS

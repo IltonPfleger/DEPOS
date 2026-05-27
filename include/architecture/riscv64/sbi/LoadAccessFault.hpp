@@ -1,6 +1,6 @@
 #pragma once
 
-#include <architecture/riscv64/Context.hpp>
+#include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/ExceptionHandler.hpp>
 #include <architecture/riscv64/MMU.hpp>
 #include <architecture/riscv64/Modes.hpp>
@@ -18,7 +18,7 @@ class LoadAccessFault {
   public:
     static constexpr unsigned int CODE = 5;
 
-    static void dispatch(size_t id, Context *c) {
+    static void dispatch(size_t id, ContextFrame *c) {
         if (((c->status >> 11) & 0x3) == 1) {
             uintptr_t address        = PageTable::virt2phys(csrr<MachineMode::TVAL>());
             uintptr_t pc             = PageTable::virt2phys(c->pc);

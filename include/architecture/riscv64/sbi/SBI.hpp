@@ -1,6 +1,6 @@
 #pragma once
 
-#include <architecture/riscv64/Context.hpp>
+#include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/PMP.hpp>
 #include <architecture/riscv64/csrs.hpp>

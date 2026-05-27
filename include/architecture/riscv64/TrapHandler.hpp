@@ -14,11 +14,11 @@ class TrapHandler {
   private:
     using ID      = size_t;
     using Index   = uintmax_t;
-    using Handler = void (*)(ID, Context *);
+    using Handler = void (*)(ID, ContextFrame *);
 
     static Index irq2index(ID id, Type type) { return id + (type * NumberOfExceptions); }
 
-    static void dispatch(Context *c) {
+    static void dispatch(ContextFrame *c) {
         uintmax_t cause = c->cause;
         Type type       = (Type)(cause >> 63);
         ID id           = cause & ~(1ULL << 63);
@@ -32,9 +32,9 @@ class TrapHandler {
 
     template <typename Privilege, bool ChangeStack>
     __attribute__((naked, optimize("O0"), aligned(4))) static void entry() {
-        using ContextHandler = ContextHandler<Privilege, ChangeStack>;
-        dispatch(ContextHandler::push());
-        ContextHandler::pop();
+        using Context = Context<Privilege, ChangeStack>;
+        dispatch(Context::push());
+        Context::pop();
     };
 
   public:

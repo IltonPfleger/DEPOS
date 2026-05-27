@@ -19,8 +19,8 @@ class MIC {
     using MachineContextHandler       = DEPOS::riscv64::MachineContext<ChangeStack>;
 
   protected:
-    static void forward(size_t, Context *) { CLINT::forward(); }
-    static void syscall(size_t, Context *context) {
+    static void forward(size_t, ContextFrame *) { CLINT::forward(); }
+    static void syscall(size_t, ContextFrame *context) {
         CLINT::syscall();
         context->pc += 4;
     }

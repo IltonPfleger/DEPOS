@@ -1,6 +1,6 @@
 #pragma once
 
-#include <architecture/riscv64/Context.hpp>
+#include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/PLIC.hpp>
 #include <utility/Debug.hpp>
 
@@ -16,7 +16,7 @@ class IC : Traits<PLIC> {
     static void doNothing(size_t) {}
 
   public:
-    static void onTrap(ID, Context *) {
+    static void onTrap(ID, ContextFrame *) {
         auto id = PLIC::claim();
         s_handlers[id](id);
         PLIC::complete(id);

@@ -3,7 +3,7 @@
 #include <Traits.hpp>
 #include <architecture/common/Timer.hpp>
 #include <architecture/riscv64/CLINT.hpp>
-#include <architecture/riscv64/Context.hpp>
+#include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/TrapHandler.hpp>
 #include <architecture/riscv64/VirtualCPU.hpp>
 
@@ -34,7 +34,7 @@ class Timer : public ArchitectureCommon::Timer {
     }
 
   private:
-    static void dispatch(size_t, Context *) {
+    static void dispatch(size_t, ContextFrame *) {
         if constexpr (Traits<Application>::Virtualized) {
             CLINT::write();
             VirtualCPU::onTick();

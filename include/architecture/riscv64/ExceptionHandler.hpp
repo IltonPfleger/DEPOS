@@ -29,7 +29,7 @@ class ExceptionHandler {
     // };
 
   public:
-    static void onTrap(size_t id, Context *c) {
+    static void onTrap(size_t id, ContextFrame *c) {
         Console::panic();
         Console::println("\nOhh, It's a Trap!");
         Console::println("context: ", c);

@@ -1,27 +1,243 @@
-#ifndef __RISCV64_CONTEXT_HEADER__
-#define __RISCV64_CONTEXT_HEADER__
+#ifndef __RISCV64_CONTEXT_HANDLER__
+#define __RISCV64_CONTEXT_HANDLER__
 
-#include <types.hpp>
+#include <Traits.hpp>
+#include <architecture/riscv64/ContextFrame.hpp>
+#include <architecture/riscv64/CoreContext.hpp>
+#include <architecture/riscv64/Modes.hpp>
+// #include <architecture/riscv64/VirtualCPU.hpp>
+#include <memory/Chunk.hpp>
 
 namespace DEPOS {
 
 namespace riscv64 {
 
-struct Context {
-    uint64_t ra, sp, gp, tp;
-    uint64_t t0, t1, t2;
-    uint64_t s0, s1;
-    uint64_t a0, a1, a2, a3, a4, a5, a6, a7;
-    uint64_t s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
-    uint64_t t3, t4, t5, t6;
-    uint64_t ksp;
-    uint64_t status, cause, value, pc;
+template <typename T, bool ChangeStack> class Context : public ContextFrame {
+  protected:
+    Context(const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
+        this->pc     = reinterpret_cast<uint64_t>(pc);
+        this->ra     = reinterpret_cast<uint64_t>(ra);
+        this->status = static_cast<uint64_t>(T::ME2ME);
+        this->a0     = reinterpret_cast<uint64_t>(a0);
+        this->a1     = reinterpret_cast<uint64_t>(a1);
+        this->ksp    = ksp.end();
+    }
 
-    uint64_t &operator[](size_t i) {
-        static uint64_t zero = 0;
-        if (i == 0) [[unlikely]]
-            return zero;
-        return (&ra)[i - 1];
+  public:
+    static Context *create(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
+        Context *context = reinterpret_cast<Context *>(usp.end()) - 1;
+        new (context) Context(ksp, pc, ra, a0, a1);
+        return context;
+    }
+
+    __attribute__((naked)) static void swap(void *previous, void *next) {
+        save();
+        asm("sd sp, 0(%0)" ::"r"(previous));
+        asm("mv sp, %0" ::"r"(next));
+        load();
+    }
+
+    __attribute__((always_inline)) static void load() {
+        if constexpr (ChangeStack) {
+            asm("csrr t0, %0" ::"i"(T::SCRATCH));
+            asm("ld t1, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, ksp)));
+            asm("sd t1, %0(t0)" ::"i"(__builtin_offsetof(CoreContext, ksp)));
+        }
+
+        asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(Context, status)));
+        asm("csrw %0, t0" ::"i"(T::STATUS));
+        asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(Context, pc)));
+        asm("csrw %0, t0" ::"i"(T::EPC));
+
+        asm("ld s0,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s0)));
+        asm("ld s1,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s1)));
+        asm("ld s2,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s2)));
+        asm("ld s3,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s3)));
+        asm("ld s4,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s4)));
+        asm("ld s5,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s5)));
+        asm("ld s6,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s6)));
+        asm("ld s7,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s7)));
+        asm("ld s8,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s8)));
+        asm("ld s9,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s9)));
+        asm("ld s10, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s10)));
+        asm("ld s11, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s11)));
+
+        asm("ld ra,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, ra)));
+        asm("ld a1,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a1)));
+        asm("ld a0,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a0)));
+
+        asm("addi sp, sp, %0" ::"i"(sizeof(Context)));
+
+        T::ret();
+    }
+
+    __attribute__((always_inline)) static void save() {
+        asm("addi sp, sp, %0" ::"i"(-sizeof(Context)));
+
+        asm("sd s0,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s0)));
+        asm("sd s1,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s1)));
+        asm("sd s2,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s2)));
+        asm("sd s3,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s3)));
+        asm("sd s4,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s4)));
+        asm("sd s5,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s5)));
+        asm("sd s6,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s6)));
+        asm("sd s7,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s7)));
+        asm("sd s8,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s8)));
+        asm("sd s9,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s9)));
+        asm("sd s10, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s10)));
+        asm("sd s11, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s11)));
+        asm("sd ra,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, pc)));
+
+        asm("csrr t0, %0" ::"i"(T::STATUS));
+        asm("or   t0, t0, %0" ::"r"(T::ME2ME));
+        asm("and  t0, t0, %0" ::"r"(~T::PIRQE));
+        asm("sd   t0, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, status)));
+
+        if constexpr (ChangeStack) {
+            asm("csrr t0, %0" ::"i"(T::SCRATCH));
+            asm("ld t1, %0(t0)" ::"i"(__builtin_offsetof(CoreContext, ksp)));
+            asm("sd t1, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, ksp)));
+        }
+    }
+
+    __attribute__((always_inline)) static inline ContextFrame *push() {
+        if constexpr (ChangeStack) {
+            asm("csrrw t0, %0, t0" ::"i"(T::SCRATCH));
+            asm("sd a0, %0(t0)" ::"i"(__builtin_offsetof(CoreContext, scratch0)));
+            asm("sd sp, %0(t0)" ::"i"(__builtin_offsetof(CoreContext, scratch1)));
+            asm("ld sp, %0(t0)" ::"i"(__builtin_offsetof(CoreContext, ksp)));
+            asm("mv a0, t0");
+            asm("csrrw t0, %0, t0" ::"i"(T::SCRATCH));
+        }
+
+        asm("addi sp, sp, %0" ::"i"(-sizeof(Context)));
+
+        asm("sd ra, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, ra)));
+        asm("sd gp, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, gp)));
+        asm("sd tp, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, tp)));
+        asm("sd t0, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, t0)));
+        asm("sd t1, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, t1)));
+        asm("sd t2, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, t2)));
+        asm("sd t3, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, t3)));
+        asm("sd t4, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, t4)));
+        asm("sd t5, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, t5)));
+        asm("sd t6, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, t6)));
+
+        if constexpr (ChangeStack) {
+            asm("ld t0, %0(a0)" : : "i"(__builtin_offsetof(CoreContext, scratch0)));
+            asm("sd t0, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, a0)));
+            asm("ld t0, %0(a0)" : : "i"(__builtin_offsetof(CoreContext, scratch1)));
+            asm("sd t0, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, sp)));
+        } else {
+            asm("sd a0, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, a0)));
+        }
+
+        asm("sd a1, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, a1)));
+        asm("sd a2, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, a2)));
+        asm("sd a3, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, a3)));
+        asm("sd a4, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, a4)));
+        asm("sd a5, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, a5)));
+        asm("sd a6, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, a6)));
+        asm("sd a7, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, a7)));
+
+        asm("csrr t0, %0; sd t0, %1(sp)" ::"i"(T::CAUSE), "i"(__builtin_offsetof(ContextFrame, cause)));
+        asm("blt t0, zero, 1f");
+        asm("sd s0,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s0)));
+        asm("sd s1,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s1)));
+        asm("sd s2,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s2)));
+        asm("sd s3,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s3)));
+        asm("sd s4,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s4)));
+        asm("sd s5,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s5)));
+        asm("sd s6,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s6)));
+        asm("sd s7,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s7)));
+        asm("sd s8,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s8)));
+        asm("sd s9,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s9)));
+        asm("sd s10, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s10)));
+        asm("sd s11, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s11)));
+        asm("1:");
+
+        asm("csrr t0, %0; sd t0, %1(sp)" ::"i"(T::STATUS), "i"(__builtin_offsetof(ContextFrame, status)));
+        asm("csrr t0, %0; sd t0, %1(sp)" ::"i"(T::EPC), "i"(__builtin_offsetof(ContextFrame, pc)));
+        asm("csrr t0, %0; sd t0, %1(sp)" ::"i"(T::TVAL), "i"(__builtin_offsetof(ContextFrame, value)));
+
+        register ContextFrame *sp asm("sp");
+        return sp;
+    }
+
+    __attribute__((always_inline)) static void pop() {
+        asm("ld t0, %0(sp); csrw %1, t0" ::"i"(__builtin_offsetof(ContextFrame, status)), "i"(T::STATUS));
+        asm("ld t0, %0(sp); csrw %1, t0" ::"i"(__builtin_offsetof(ContextFrame, pc)), "i"(T::EPC));
+
+        asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, cause)));
+        asm("blt t0, zero, 1f");
+        asm("ld s0,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s0)));
+        asm("ld s1,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s1)));
+        asm("ld s2,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s2)));
+        asm("ld s3,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s3)));
+        asm("ld s4,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s4)));
+        asm("ld s5,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s5)));
+        asm("ld s6,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s6)));
+        asm("ld s7,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s7)));
+        asm("ld s8,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s8)));
+        asm("ld s9,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s9)));
+        asm("ld s10, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s10)));
+        asm("ld s11, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s11)));
+        asm("1:");
+
+        asm("ld ra, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, ra)));
+        asm("ld gp, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, gp)));
+        asm("ld tp, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, tp)));
+        asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, t0)));
+        asm("ld t1, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, t1)));
+        asm("ld t2, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, t2)));
+        asm("ld t3, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, t3)));
+        asm("ld t4, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, t4)));
+        asm("ld t5, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, t5)));
+        asm("ld t6, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, t6)));
+        asm("ld a0, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a0)));
+        asm("ld a1, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a1)));
+        asm("ld a2, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a2)));
+        asm("ld a3, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a3)));
+        asm("ld a4, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a4)));
+        asm("ld a5, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a5)));
+        asm("ld a6, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a6)));
+        asm("ld a7, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a7)));
+
+        if constexpr (ChangeStack) {
+            asm("ld sp, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, sp)));
+        } else {
+            asm("addi sp, sp, %0" ::"i"(sizeof(Context)));
+        }
+
+        T::ret();
+    }
+};
+
+template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
+using MachineContext = Context<MachineMode, ChangeStack>;
+
+template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
+using SupervisorContext = Context<SupervisorMode, ChangeStack>;
+
+class HypervisorContext : public MachineContext<true> {
+    using Father = MachineContext<true>;
+
+    HypervisorContext(const Chunk &ksp, auto pc, auto ra, auto a0, auto a1)
+        : Father(ksp, pc, ra, a0, a1) {}
+
+  public:
+    static HypervisorContext *create(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
+        HypervisorContext *context = reinterpret_cast<HypervisorContext *>(usp.end()) - 1;
+        new (context) HypervisorContext(ksp, pc, ra, a0, a1);
+        return context;
+    }
+
+    static void swap(void *p, void *n) {
+        HypervisorContext *pp = reinterpret_cast<HypervisorContext *>(p);
+        HypervisorContext *nn = reinterpret_cast<HypervisorContext *>(n);
+        Father *previous      = static_cast<Father *>(pp);
+        Father *next          = static_cast<Father *>(nn);
+        Father::swap(previous, next);
     }
 };
 

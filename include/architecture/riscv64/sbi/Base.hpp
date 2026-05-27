@@ -1,6 +1,6 @@
 #pragma once
 
-#include <architecture/riscv64/Context.hpp>
+#include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/sbi/Time.hpp>
 
 namespace DEPOS {
@@ -23,44 +23,44 @@ class Base {
         GET_MIMPID                 = 6,
     };
 
-    static void handler(Context *c) {
+    static void handler(ContextFrame *c) {
         switch (c->a6) {
-        case GET_MVENDORID: {
-            c->a0 = 0;
-            c->a1 = csrr<MachineMode::VENDORID>();
-            break;
-        }
-        case GET_MARCHID: {
-            c->a0 = 0;
-            c->a1 = csrr<MachineMode::ARCHID>();
-            break;
-        }
-        case GET_MIMPID: {
-            c->a0 = 0;
-            c->a1 = csrr<MachineMode::IMPID>();
-            break;
-        }
-        case GET_SPEC_VERSION: {
-            c->a0 = 0;
-            c->a1 = 0x00000003;
-            break;
-        }
-        case GET_IMPLEMENTATION_ID: {
-            c->a0 = 0;
-            c->a1 = 1;
-            break;
-        }
-        case GET_IMPLEMENTATION_VERSION: {
-            c->a0 = 0;
-            c->a1 = 0x10007;
-            break;
-        }
-        case PROBE_EXTENSION: {
-            c->a1 = 0;
-            if (c->a0 == Time::EID) c->a1 = 1;
-            c->a0 = 0;
-            break;
-        }
+            case GET_MVENDORID: {
+                c->a0 = 0;
+                c->a1 = csrr<MachineMode::VENDORID>();
+                break;
+            }
+            case GET_MARCHID: {
+                c->a0 = 0;
+                c->a1 = csrr<MachineMode::ARCHID>();
+                break;
+            }
+            case GET_MIMPID: {
+                c->a0 = 0;
+                c->a1 = csrr<MachineMode::IMPID>();
+                break;
+            }
+            case GET_SPEC_VERSION: {
+                c->a0 = 0;
+                c->a1 = 0x00000003;
+                break;
+            }
+            case GET_IMPLEMENTATION_ID: {
+                c->a0 = 0;
+                c->a1 = 1;
+                break;
+            }
+            case GET_IMPLEMENTATION_VERSION: {
+                c->a0 = 0;
+                c->a1 = 0x10007;
+                break;
+            }
+            case PROBE_EXTENSION: {
+                c->a1 = 0;
+                if (c->a0 == Time::EID) c->a1 = 1;
+                c->a0 = 0;
+                break;
+            }
         }
     }
 };
