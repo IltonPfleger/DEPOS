@@ -70,8 +70,8 @@ class Chunk {
     }
 
   private:
-    const uintptr_t start_;
-    const size_t size_;
+    uintptr_t start_;
+    size_t size_;
 };
 
 } // namespace DEPOS

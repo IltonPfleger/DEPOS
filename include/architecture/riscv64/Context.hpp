@@ -1,5 +1,5 @@
-#ifndef __RISCV64_CONTEXT_HANDLER__
-#define __RISCV64_CONTEXT_HANDLER__
+#ifndef __DEPOS_RISCV64_CONTEXT__
+#define __DEPOS_RISCV64_CONTEXT__
 
 #include <Traits.hpp>
 #include <architecture/riscv64/ContextFrame.hpp>
@@ -9,9 +9,9 @@
 
 namespace DEPOS::riscv64 {
 
-template <typename T, bool ChangeStack> class Context : public ContextFrame {
+template <typename T, bool ChangeStack> class ContextTemplate : public ContextFrame {
   protected:
-    Context(const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
+    ContextTemplate(const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
         this->pc     = reinterpret_cast<uint64_t>(pc);
         this->ra     = reinterpret_cast<uint64_t>(ra);
         this->status = static_cast<uint64_t>(T::ME2ME);
@@ -21,9 +21,9 @@ template <typename T, bool ChangeStack> class Context : public ContextFrame {
     }
 
   public:
-    static Context *create(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
-        Context *context = reinterpret_cast<Context *>(usp.end()) - 1;
-        new (context) Context(ksp, pc, ra, a0, a1);
+    static ContextTemplate *create(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
+        auto *context = reinterpret_cast<ContextTemplate *>(usp.end()) - 1;
+        new (context) ContextTemplate(ksp, pc, ra, a0, a1);
         return context;
     }
 
@@ -41,9 +41,9 @@ template <typename T, bool ChangeStack> class Context : public ContextFrame {
             asm("sd t1, %0(t0)" ::"i"(__builtin_offsetof(CoreContext, ksp)));
         }
 
-        asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(Context, status)));
+        asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, status)));
         asm("csrw %0, t0" ::"i"(T::STATUS));
-        asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(Context, pc)));
+        asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, pc)));
         asm("csrw %0, t0" ::"i"(T::EPC));
 
         asm("ld s0,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s0)));
@@ -63,13 +63,13 @@ template <typename T, bool ChangeStack> class Context : public ContextFrame {
         asm("ld a1,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a1)));
         asm("ld a0,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a0)));
 
-        asm("addi sp, sp, %0" ::"i"(sizeof(Context)));
+        asm("addi sp, sp, %0" ::"i"(sizeof(ContextFrame)));
 
         T::ret();
     }
 
     __attribute__((always_inline)) static void save() {
-        asm("addi sp, sp, %0" ::"i"(-sizeof(Context)));
+        asm("addi sp, sp, %0" ::"i"(-sizeof(ContextFrame)));
 
         asm("sd s0,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s0)));
         asm("sd s1,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s1)));
@@ -107,7 +107,7 @@ template <typename T, bool ChangeStack> class Context : public ContextFrame {
             asm("csrrw t0, %0, t0" ::"i"(T::SCRATCH));
         }
 
-        asm("addi sp, sp, %0" ::"i"(-sizeof(Context)));
+        asm("addi sp, sp, %0" ::"i"(-sizeof(ContextFrame)));
 
         asm("sd ra, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, ra)));
         asm("sd gp, %0(sp)" : : "i"(__builtin_offsetof(ContextFrame, gp)));
@@ -203,7 +203,7 @@ template <typename T, bool ChangeStack> class Context : public ContextFrame {
         if constexpr (ChangeStack) {
             asm("ld sp, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, sp)));
         } else {
-            asm("addi sp, sp, %0" ::"i"(sizeof(Context)));
+            asm("addi sp, sp, %0" ::"i"(sizeof(ContextFrame)));
         }
 
         T::ret();
@@ -211,17 +211,27 @@ template <typename T, bool ChangeStack> class Context : public ContextFrame {
 };
 
 template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
-using MachineContext = Context<MachineMode, ChangeStack>;
+using MachineContext = ContextTemplate<MachineMode, ChangeStack>;
 
 template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
-using SupervisorContext = Context<SupervisorMode, ChangeStack>;
+using SupervisorContext = ContextTemplate<SupervisorMode, ChangeStack>;
 
-} // namespace DEPOS::riscv64
+struct GuestContextFrame {
+    // uint64_t sstatus; Shared With MSCRATCH
+    uint64_t sie; // Shared With MIE
+    uint64_t stvec;
+    uint64_t sscratch;
+    uint64_t sepc;
+    uint64_t scause;
+    uint64_t stval;
+    uint64_t sip; // Shared With MIP
+    uint64_t satp;
+    void *cpu;
+};
 
-namespace DEPOS::riscv64 {
-
-class HypervisorContext : public MachineContext<true> {
-    using Father = MachineContext<true>;
+class HypervisorContext : public GuestContextFrame, public MachineContext<true> {
+    using GuestMode = SupervisorMode;
+    using Father    = MachineContext<true>;
 
     HypervisorContext(const Chunk &ksp, auto pc, auto ra, auto a0, auto a1)
         : Father(ksp, pc, ra, a0, a1) {}
@@ -233,20 +243,53 @@ class HypervisorContext : public MachineContext<true> {
         return context;
     }
 
-    __attribute__((naked)) static void swap(void *previous, void *next) {
-        Father::save();
-        save();
-        asm("sd sp, 0(%0)" ::"r"(previous));
-        asm("mv sp, %0" ::"r"(next));
-        load();
-        Father::load();
-    }
+    static void swap(void *previous, void *next);
 
   private:
-    __attribute__((always_inline)) static void save() {}
-    __attribute__((always_inline)) static void load() {}
+    static constexpr uint32_t SIP      = __builtin_offsetof(GuestContextFrame, sip);
+    static constexpr uint32_t SIE      = __builtin_offsetof(GuestContextFrame, sie);
+    static constexpr uint32_t SATP     = __builtin_offsetof(GuestContextFrame, satp);
+    static constexpr uint32_t SSCRATCH = __builtin_offsetof(GuestContextFrame, sscratch);
+    static constexpr uint32_t STVEC    = __builtin_offsetof(GuestContextFrame, stvec);
+    static constexpr uint32_t STVAL    = __builtin_offsetof(GuestContextFrame, stval);
+    static constexpr uint32_t SCAUSE   = __builtin_offsetof(GuestContextFrame, scause);
+    static constexpr uint32_t SEPC     = __builtin_offsetof(GuestContextFrame, sepc);
+    static constexpr uint32_t OWNER    = __builtin_offsetof(GuestContextFrame, cpu);
+
+  private:
+    __attribute__((naked)) static void doSwap(void *, void *);
+    __attribute__((always_inline)) static void save();
+    __attribute__((always_inline)) static void load();
 };
 
 } // namespace DEPOS::riscv64
+
+inline void DEPOS::riscv64::HypervisorContext::save() {
+    asm("addi sp, sp, %0" ::"i"(-sizeof(GuestContextFrame)));
+    asm("csrr t0, sscratch; sd t0, %0(sp)" ::"i"(SSCRATCH));
+    asm("csrr t0, satp; sd t0, %0(sp)" ::"i"(SATP));
+    asm("csrr t0, stvec; sd t0, %0(sp)" ::"i"(STVEC));
+    asm("csrr t0, scause; sd t0, %0(sp)" ::"i"(SCAUSE));
+    asm("csrr t0, stval; sd t0, %0(sp)" ::"i"(STVAL));
+    asm("csrr t0, sepc; sd t0, %0(sp)" ::"i"(SEPC));
+    asm("csrr t0, mie; sd t0, %0(sp)" ::"i"(SIE));
+    asm("csrr t0, mip; sd t0, %0(sp)" ::"i"(SIP));
+
+    asm("csrr t0, %0" ::"i"(MachineMode::SCRATCH));
+    asm("ld t0, %0(t0)" : : "i"(__builtin_offsetof(CoreContext, scratch0)));
+    asm("sd t0, %0(sp)" ::"i"(OWNER));
+}
+
+inline void DEPOS::riscv64::HypervisorContext::load() {
+    asm("ld t0, %0(sp); csrw sscratch, t0" ::"i"(SSCRATCH));
+    asm("ld t0, %0(sp); csrw satp, t0" ::"i"(SATP));
+    asm("ld t0, %0(sp); csrw stvec, t0" ::"i"(STVEC));
+    asm("ld t0, %0(sp); csrw scause, t0" ::"i"(SCAUSE));
+    asm("ld t0, %0(sp); csrw stval, t0" ::"i"(STVAL));
+    asm("ld t0, %0(sp); csrw sepc, t0" ::"i"(SEPC));
+    asm("li t1, 0x222; ld t0, %0(sp); andi t0, t0, 0x222; csrc mip, t1; csrs mip, t0" ::"i"(SIP));
+    asm("li t1, 0x222; ld t0, %0(sp); andi t0, t0, 0x222; csrc mie, t1; csrs mie, t0" ::"i"(SIE));
+    asm("addi sp, sp, %0" ::"i"(sizeof(GuestContextFrame)));
+}
 
 #endif

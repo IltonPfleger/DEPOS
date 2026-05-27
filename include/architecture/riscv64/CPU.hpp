@@ -10,9 +10,7 @@
 #include <architecture/riscv64/csrs.hpp>
 #include <memory/Heap.hpp>
 
-namespace DEPOS {
-
-namespace riscv64 {
+namespace DEPOS::riscv64 {
 
 class CPU : public ArchitectureCommon::CPU {
   public:
@@ -98,6 +96,4 @@ class CPU : public ArchitectureCommon::CPU {
     }
 };
 
-} // namespace riscv64
-
-} // namespace DEPOS
+} // namespace DEPOS::riscv64

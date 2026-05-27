@@ -23,16 +23,21 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
 
   public:
     Network(VirtualMachine &owner)
-        : Handler(1, 0, NumberOfDescriptors),
-          owner_(owner) {
-        m_device = Device::instance();
+        : owner_(owner) {
+        this->m_header.magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
+        this->m_header.version                   = 1;
+        this->m_header.id                        = 1;
+        this->m_header.vendor                    = 0x554d4551;
+        this->m_header.host_features             = 0;
+        this->m_header.max_number_of_descriptors = Number;
+        m_device                                 = Device::instance();
         m_device->attach(this);
     }
 
     void notify(unsigned int source) {
         if (source != TX) return;
 
-        auto &queue = this->queues_[TX];
+        auto &queue = this->m_queues[TX];
 
         while (queue.available()) {
             int head      = queue.alloc();
@@ -47,7 +52,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
         auto data = buffer.start();
         auto size = buffer.length();
 
-        auto &queue = this->queues_[RX];
+        auto &queue = this->m_queues[RX];
 
         if (!queue.available()) return;
 
@@ -108,7 +113,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
     static constexpr size_t Size       = sizeof(LegacyHeader);
 
   private:
-    static constexpr uintptr_t NumberOfDescriptors = 128;
+    static constexpr uintptr_t Number = 128;
 
   private:
     Device *m_device;

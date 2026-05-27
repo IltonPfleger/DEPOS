@@ -95,9 +95,9 @@ class Queue {
     uintptr_t m_address;
     uint32_t m_size;
     uint16_t m_last_available_index;
-    RingDescriptor *m_descriptors = nullptr;
-    RingAvailable *m_available    = nullptr;
-    RingUsed *m_used              = nullptr;
+    RingDescriptor *m_descriptors;
+    RingAvailable *m_available;
+    RingUsed *m_used;
 };
 
 } // namespace virtio

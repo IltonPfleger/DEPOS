@@ -32,7 +32,7 @@ class TrapHandler {
 
     template <typename Privilege, bool ChangeStack>
     __attribute__((naked, optimize("O0"), aligned(4))) static void entry() {
-        using Context = Context<Privilege, ChangeStack>;
+        using Context = ContextTemplate<Privilege, ChangeStack>;
         dispatch(Context::push());
         Context::pop();
     };

@@ -17,13 +17,14 @@ class VirtualCPU {
         asm volatile("mret");
     }
 
-    static auto &current() { return s_current[CPU::id()]; }
-
   public:
     VirtualCPU(VirtualMachine *vm)
         : _mtimecmp(0),
           first_(true),
           vm_(vm) {}
+
+    static VirtualCPU *current() { return s_current[CPU::id()]; }
+    static void current(VirtualCPU *vcpu) { s_current[CPU::id()] = vcpu; }
 
     template <typename... Args> void activate(Args... args) {
         bool enabled = CPU::Interrupt::disable();
@@ -51,8 +52,8 @@ class VirtualCPU {
         csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
         csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
 
-        core_     = mhartid();
-        current() = this;
+        core_ = csrr<MachineMode::HARTID>();
+        current(this);
 
         if (first_) {
             first_ = false;

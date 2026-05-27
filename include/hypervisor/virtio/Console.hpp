@@ -12,21 +12,16 @@ namespace virtio {
 
 template <typename Device, uintptr_t Base>
 class Console : public Handler, public Observer<const unsigned char *, size_t> {
+
     friend Handler;
 
     enum { RX = 0, TX = 1 };
 
   public:
-    Console(VirtualMachine &owner)
-        : Handler(3, 0, NumberOfDescriptors),
-          owner_(owner) {
-        Device::instance()->attach(this);
-    }
-
     void notify(unsigned int source) {
         if (source != TX) return;
 
-        auto &queue = this->queues_[TX];
+        auto &queue = this->m_queues[TX];
 
         while (queue.available()) {
             int head      = queue.alloc();
@@ -36,7 +31,7 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
     }
 
     void update(const unsigned char *buffer, size_t size) override {
-        Queue &queue = this->queues_[RX];
+        Queue &queue = this->m_queues[RX];
 
         if (!queue.available()) return;
 
@@ -77,6 +72,17 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
         for (uint32_t j = 0; j < descriptor->length; j++)
             Device::instance()->putc(data[j]);
         return length;
+    }
+
+    Console(VirtualMachine &owner)
+        : owner_(owner) {
+        this->m_header.magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
+        this->m_header.version                   = 1;
+        this->m_header.id                        = 3;
+        this->m_header.vendor                    = 0x554d4551;
+        this->m_header.host_features             = 1 << 27;
+        this->m_header.max_number_of_descriptors = NumberOfDescriptors;
+        Device::instance()->attach(this);
     }
 
   public:
