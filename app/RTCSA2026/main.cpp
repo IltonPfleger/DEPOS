@@ -242,7 +242,7 @@ int main() {
     EPOS_VirtualMachineLauncher vm0(imager.epos(), Thread::Criterion(Thread::Criterion::NORMAL, 1));
 
     Linux_VirtualMachineLauncher vm1(imager.linux(), imager.initramfs(), imager.dtb(),
-                                     Thread::Criterion(Thread::Criterion::NORMAL, 2));
+                                     Thread::Criterion(Thread::Criterion::NORMAL, 1));
 
     while (1)
         Alarm::udelay(1'000'000);

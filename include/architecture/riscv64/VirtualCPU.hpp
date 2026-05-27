@@ -19,7 +19,7 @@ class VirtualCPU {
 
   public:
     VirtualCPU(VirtualMachine *vm)
-        : _mtimecmp(0),
+        : mtimecmp_(0),
           first_(true),
           vm_(vm) {}
 
@@ -71,7 +71,7 @@ class VirtualCPU {
 
     static void onTick() {
         if (!current()) return;
-        if (CLINT::mtime() >= current()->_mtimecmp) doTimerInterrupt();
+        if (CLINT::mtime() >= current()->mtimecmp_) doTimerInterrupt();
     }
 
     static void onInterProcessorInterrupt() {
@@ -81,7 +81,7 @@ class VirtualCPU {
 
     static void reset(unsigned long r) {
         csrc<MachineMode::IP>(SupervisorMode::TI);
-        current()->_mtimecmp = r;
+        current()->mtimecmp_ = r;
     }
 
     static bool read(unsigned long address, unsigned int *destination) {
@@ -110,7 +110,7 @@ class VirtualCPU {
     static inline VirtualCPU *s_current[Traits<CPU>::Active];
 
   private:
-    uintmax_t _mtimecmp;
+    uintmax_t mtimecmp_;
     size_t core_;
     bool first_;
     VirtualMachine *vm_;
