@@ -56,7 +56,10 @@ class Queue {
         m_used = reinterpret_cast<RingUsed *>(address);
     }
 
-    bool available() { return m_last_available_index != m_available->index; }
+    bool available() {
+        if (!m_available) return false;
+        return m_last_available_index != m_available->index;
+    }
 
     int alloc() { return m_available->ring()[m_last_available_index++ % m_size]; }
 
@@ -92,9 +95,9 @@ class Queue {
     uintptr_t m_address;
     uint32_t m_size;
     uint16_t m_last_available_index;
-    RingDescriptor *m_descriptors;
-    RingAvailable *m_available;
-    RingUsed *m_used;
+    RingDescriptor *m_descriptors = nullptr;
+    RingAvailable *m_available    = nullptr;
+    RingUsed *m_used              = nullptr;
 };
 
 } // namespace virtio

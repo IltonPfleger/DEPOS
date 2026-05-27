@@ -160,6 +160,23 @@ class Linux_VirtualMachineLauncher {
     DeviceTree *dtb_;
 };
 
+class InterferenceLauncher {
+  public:
+    InterferenceLauncher() {
+        for (auto &i : thread_)
+            i = new Thread(worker);
+    }
+
+    static void *worker(void *) {
+        while (1)
+            ;
+        return nullptr;
+    }
+
+  private:
+    Thread *thread_[Traits<CPU>::Active];
+};
+
 int main() {
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
 
@@ -168,8 +185,12 @@ int main() {
     auto *udp  = new UDP(ipv4);
     auto *tftp = new TFTP(*udp);
 
-    EPOS_VirtualMachineLauncher vm0(tftp);
-    // Linux_VirtualMachineLauncher vm1(tftp);
+    // EPOS_VirtualMachineLauncher vm0(tftp);
+    Linux_VirtualMachineLauncher vm1(tftp);
+    InterferenceLauncher i0;
+
+    while (1)
+        Alarm::udelay(1'000'000);
 
     return 0;
 }

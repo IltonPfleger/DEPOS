@@ -20,6 +20,6 @@ $(BUILD)/%.cpp.o: %.cpp $(CONFIG)
 	$(CC) $(MACH_CCFLAGS) -I../include -MMD -MP -c $< -o $@
 
 EPOS:
-	./EPOS.sh
+	#./EPOS.sh
 
 -include $(DEPENDENCIES)

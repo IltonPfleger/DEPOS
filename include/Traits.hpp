@@ -48,7 +48,8 @@ template <> struct Traits<Console> {
 };
 
 template <> struct Traits<Scheduler> {
-    typedef RR Criterion;
+    typedef FixedCore Criterion;
+    // typedef RR Criterion;
 };
 
 } // namespace DEPOS

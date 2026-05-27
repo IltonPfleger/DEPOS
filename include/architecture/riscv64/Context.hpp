@@ -233,16 +233,19 @@ class HypervisorContext : public MachineContext<true> {
         return context;
     }
 
-    static void swap(void *p, void *n) {
-        HypervisorContext *pp = reinterpret_cast<HypervisorContext *>(p);
-        HypervisorContext *nn = reinterpret_cast<HypervisorContext *>(n);
-        Father *previous      = static_cast<Father *>(pp);
-        Father *next          = static_cast<Father *>(nn);
-        Father::swap(previous, next);
+    __attribute__((naked)) static void swap(void *previous, void *next) {
+        Father::save();
+        save();
+        asm("sd sp, 0(%0)" ::"r"(previous));
+        asm("mv sp, %0" ::"r"(next));
+        load();
+        Father::load();
     }
-};
 
-// #include <architecture/riscv64/VirtualCPU.hpp>
+  private:
+    __attribute__((always_inline)) static void save() {}
+    __attribute__((always_inline)) static void load() {}
+};
 
 } // namespace DEPOS::riscv64
 
