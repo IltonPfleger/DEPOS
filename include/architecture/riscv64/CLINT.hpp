@@ -6,9 +6,7 @@
 #include <architecture/riscv64/csrs.hpp>
 #include <drivers/Driver.hpp>
 
-namespace DEPOS {
-
-namespace riscv64 {
+namespace DEPOS::riscv64 {
 
 class CLINT : Driver {
     enum Registers {
@@ -45,6 +43,4 @@ class CLINT : Driver {
     static constexpr unsigned long Ticks   = Clock / Traits<DEPOS::Timer>::Frequency;
 };
 
-} // namespace riscv64
-
-} // namespace DEPOS
+} // namespace DEPOS::riscv64

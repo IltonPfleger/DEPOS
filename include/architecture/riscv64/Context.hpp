@@ -5,12 +5,9 @@
 #include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/CoreContext.hpp>
 #include <architecture/riscv64/Modes.hpp>
-// #include <architecture/riscv64/VirtualCPU.hpp>
 #include <memory/Chunk.hpp>
 
-namespace DEPOS {
-
-namespace riscv64 {
+namespace DEPOS::riscv64 {
 
 template <typename T, bool ChangeStack> class Context : public ContextFrame {
   protected:
@@ -219,6 +216,10 @@ using MachineContext = Context<MachineMode, ChangeStack>;
 template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
 using SupervisorContext = Context<SupervisorMode, ChangeStack>;
 
+} // namespace DEPOS::riscv64
+
+namespace DEPOS::riscv64 {
+
 class HypervisorContext : public MachineContext<true> {
     using Father = MachineContext<true>;
 
@@ -241,8 +242,8 @@ class HypervisorContext : public MachineContext<true> {
     }
 };
 
-} // namespace riscv64
+// #include <architecture/riscv64/VirtualCPU.hpp>
 
-} // namespace DEPOS
+} // namespace DEPOS::riscv64
 
 #endif
