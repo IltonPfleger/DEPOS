@@ -18,19 +18,19 @@ class IC : Traits<PLIC> {
   public:
     static void onTrap(ID, ContextFrame *) {
         auto id = PLIC::claim();
-        s_handlers[id](id);
+        handlers_[id](id);
         PLIC::complete(id);
     }
 
     static void install(ID id, ExternalHandler handler) {
         ERROR(id >= NumberOfInterruptions);
-        s_handlers[id] = handler;
+        handlers_[id] = handler;
         PLIC::priority(id, 1);
         PLIC::enable(id);
     }
 
   private:
-    static constinit inline ExternalHandler s_handlers[NumberOfInterruptions] = {doNothing};
+    static constinit inline ExternalHandler handlers_[NumberOfInterruptions] = {doNothing};
 };
 
 } // namespace riscv64

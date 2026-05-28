@@ -8,8 +8,6 @@ namespace DEPOS {
 namespace riscv64 {
 
 class PLIC : Driver {
-    static constexpr unsigned long Address = Traits<MemoryMap>::PLIC;
-
     enum {
         PRIORITY  = 0x000000,
         PENDING   = 0x001000,
@@ -52,6 +50,9 @@ class PLIC : Driver {
             disable(i);
         }
     }
+
+  private:
+    static constexpr unsigned long Address = Traits<MemoryMap>::PLIC;
 };
 
 } // namespace riscv64
