@@ -43,7 +43,6 @@ template <typename Tag> class DesignWare_I2C_Controller : public I2C_Controller 
             uint32_t cmd = READ_DATA_COMMAND;
 
             if (last && stop) cmd |= STOP_DATA_COMMAND;
-
             if (!wait_tx_not_full()) return false;
 
             reg32(DATA) = cmd;
@@ -71,7 +70,6 @@ template <typename Tag> class DesignWare_I2C_Controller : public I2C_Controller 
             uint32_t cmd = data[i];
 
             if (last && stop) cmd |= STOP_DATA_COMMAND;
-
             if (!wait_tx_not_full()) return false;
 
             reg32(DATA) = cmd;

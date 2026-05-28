@@ -16,7 +16,7 @@ TRAITS := $(shell find $(HERE) -name "Traits.hpp")
 HASH := $(BUILD)/Traits.hash
 MAPPER   := $(BUILD)/Mapper
 
-TOOL    := riscv64-linux-gnu
+TOOL    := riscv64-unknown-elf
 CC      := $(TOOL)-g++
 LD      := $(TOOL)-ld
 NM      := $(TOOL)-nm

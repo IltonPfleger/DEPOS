@@ -5,9 +5,9 @@ namespace DEPOS {
 
 class I2C_Controller {
   public:
-    virtual ~I2C_Controller() = default;
-    virtual bool read(uint8_t, void *, size_t, bool);
-    virtual bool write(uint8_t, const void *, size_t, bool);
+    virtual ~I2C_Controller()                               = default;
+    virtual bool read(uint8_t, void *, size_t, bool)        = 0;
+    virtual bool write(uint8_t, const void *, size_t, bool) = 0;
 };
 
 } // namespace DEPOS
