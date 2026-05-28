@@ -122,10 +122,12 @@ void Thread::init() {
 }
 
 void Thread::run() {
-    unsigned char buffer[sizeof(Thread)];
-    Thread *previous  = reinterpret_cast<Thread *>(buffer);
-    previous->m_state = State::FINISHED;
-    Thread *next      = s_scheduler.remove()->value();
+    unsigned char context[sizeof(Context)] = {0};
+    unsigned char buffer[sizeof(Thread)]   = {0};
+    Thread *previous                       = reinterpret_cast<Thread *>(buffer);
+    previous->m_context                    = reinterpret_cast<Context *>(context);
+    previous->m_state                      = State::FINISHED;
+    Thread *next                           = s_scheduler.remove()->value();
     dispatch(previous, next);
 }
 

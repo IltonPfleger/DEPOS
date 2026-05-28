@@ -8,6 +8,7 @@
 #include <architecture/riscv64/PMP.hpp>
 #include <architecture/riscv64/VirtualPLIC.hpp>
 #include <hypervisor/VirtualMachine.hpp>
+#include <utility/Console.hpp>
 
 namespace DEPOS::riscv64 {
 
@@ -23,13 +24,11 @@ class VirtualCPU {
           first_(true),
           vm_(vm) {}
 
-    static VirtualCPU *current() { return s_current[CPU::id()]; }
-    static void current(VirtualCPU *vcpu) { s_current[CPU::id()] = vcpu; }
+    static VirtualCPU *current() { return current_[CPU::id()]; }
+    static void current(VirtualCPU *self) { current_[CPU::id()] = self; }
 
     template <typename... Args> void activate(Args... args) {
         bool enabled = CPU::Interrupt::disable();
-
-        csrw<SupervisorMode::SATP>(0);
 
         PMP::NAPOT<2>(vm_->memory().start(), vm_->memory().size(), PMP::R | PMP::W | PMP::X);
 
@@ -49,15 +48,15 @@ class VirtualCPU {
         medeleg |= 1 << 15; // Store Page Fault
         csrw<MachineMode::MEDELEG>(medeleg);
 
-        csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
-        csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
-
         core_ = csrr<MachineMode::HARTID>();
         current(this);
 
         if (first_) {
             first_ = false;
+            csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
+            csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
             csrw<MachineMode::EPC>(vm_->memory().start());
+            csrw<SupervisorMode::SATP>(0);
             supervisor(args...);
         }
 
@@ -107,7 +106,7 @@ class VirtualCPU {
     static void doExternalInterrupt() { csrs<MachineMode::IP>(SupervisorMode::EI); }
 
   private:
-    static inline VirtualCPU *s_current[Traits<CPU>::Active];
+    static constinit inline VirtualCPU *current_[Traits<CPU>::Active] = {nullptr};
 
   private:
     uintmax_t mtimecmp_;

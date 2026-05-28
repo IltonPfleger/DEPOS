@@ -32,7 +32,7 @@ MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
 CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic -Wfatal-errors
-CCFLAGS += -D__ARCH=$(ARCH) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -g -O3
+CCFLAGS += -D__ARCH=$(ARCH) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -g
 
 build: $(IMAGE).img
 

@@ -10,7 +10,7 @@
 namespace DEPOS::riscv64 {
 
 template <typename T, bool ChangeStack> class ContextTemplate : public ContextFrame {
-  protected:
+  public:
     ContextTemplate(const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
         this->pc     = reinterpret_cast<uint64_t>(pc);
         this->ra     = reinterpret_cast<uint64_t>(ra);
@@ -20,7 +20,6 @@ template <typename T, bool ChangeStack> class ContextTemplate : public ContextFr
         this->ksp    = ksp.end();
     }
 
-  public:
     static ContextTemplate *create(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
         auto *context = reinterpret_cast<ContextTemplate *>(usp.end()) - 1;
         new (context) ContextTemplate(ksp, pc, ra, a0, a1);
@@ -218,23 +217,25 @@ using SupervisorContext = ContextTemplate<SupervisorMode, ChangeStack>;
 
 struct GuestContextFrame {
     // uint64_t sstatus; Shared With MSCRATCH
+    uint64_t cpu;
     uint64_t sie; // Shared With MIE
     uint64_t stvec;
     uint64_t sscratch;
+    uint64_t satp;
     uint64_t sepc;
     uint64_t scause;
     uint64_t stval;
     uint64_t sip; // Shared With MIP
-    uint64_t satp;
-    void *cpu;
 };
 
-class HypervisorContext : public GuestContextFrame, public MachineContext<true> {
+class HypervisorContext {
     using GuestMode = SupervisorMode;
     using Father    = MachineContext<true>;
 
     HypervisorContext(const Chunk &ksp, auto pc, auto ra, auto a0, auto a1)
-        : Father(ksp, pc, ra, a0, a1) {}
+        : father_(ksp, pc, ra, a0, a1) {
+        guest_.cpu = 0;
+    }
 
   public:
     static HypervisorContext *create(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
@@ -260,6 +261,10 @@ class HypervisorContext : public GuestContextFrame, public MachineContext<true> 
     __attribute__((naked)) static void doSwap(void *, void *);
     __attribute__((always_inline)) static void save();
     __attribute__((always_inline)) static void load();
+
+  private:
+    GuestContextFrame guest_;
+    Father father_;
 };
 
 } // namespace DEPOS::riscv64
@@ -274,7 +279,6 @@ inline void DEPOS::riscv64::HypervisorContext::save() {
     asm("csrr t0, sepc; sd t0, %0(sp)" ::"i"(SEPC));
     asm("csrr t0, mie; sd t0, %0(sp)" ::"i"(SIE));
     asm("csrr t0, mip; sd t0, %0(sp)" ::"i"(SIP));
-
     asm("csrr t0, %0" ::"i"(MachineMode::SCRATCH));
     asm("ld t0, %0(t0)" : : "i"(__builtin_offsetof(CoreContext, scratch0)));
     asm("sd t0, %0(sp)" ::"i"(OWNER));

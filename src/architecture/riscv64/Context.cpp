@@ -2,6 +2,7 @@
 #include <architecture/riscv64/CoreContextHandler.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/VirtualCPU.hpp>
+#include <utility/Console.hpp>
 
 __attribute__((naked)) void DEPOS::riscv64::HypervisorContext::doSwap(void *previous, void *next) {
     Father::save();
@@ -15,13 +16,14 @@ __attribute__((naked)) void DEPOS::riscv64::HypervisorContext::doSwap(void *prev
 void DEPOS::riscv64::HypervisorContext::swap(void *previous, void *next) {
     HypervisorContext *ncontext = reinterpret_cast<HypervisorContext *>(next);
 
-    VirtualCPU *ncpu = reinterpret_cast<VirtualCPU *>(ncontext->cpu);
+    VirtualCPU *ncpu = reinterpret_cast<VirtualCPU *>(ncontext->guest_.cpu);
     VirtualCPU *pcpu = VirtualCPU::current();
 
-    if (ncpu)
+    if (ncpu) {
         ncpu->activate();
-    else
+    } else {
         VirtualCPU::current(nullptr);
+    }
 
     CoreContextHandler<MachineMode>::current()->scratch0 = reinterpret_cast<uintptr_t>(pcpu);
     doSwap(previous, next);
