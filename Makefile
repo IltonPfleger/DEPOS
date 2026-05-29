@@ -1,6 +1,7 @@
 include Makedefs.mk
 
-SOURCES       := $(shell find src -name '*.cpp')
+SOURCES       := $(shell find src -name '*.cpp' | grep -v '*architecture*' | grep -v '*machine*')
+SOURCES 	  += $(shell find src/architecture/$(ARCH) -name '*.cpp')
 OBJECTS       := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SOURCES))
 DEPENDENCIES  := $(OBJECTS:.o=.d)
 MAP           := $(BUILD)/MemoryMap
