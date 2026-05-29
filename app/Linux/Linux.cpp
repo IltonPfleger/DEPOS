@@ -1,7 +1,6 @@
 #include <Thread.hpp>
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
-#include <hypervisor/DeviceTree.hpp>
 #include <hypervisor/GenericVirtualMachine.hpp>
 #include <hypervisor/dtb/FDT_Builder.hpp>
 #include <hypervisor/virtio/Console.hpp>
@@ -38,7 +37,8 @@ class LinuxLauncher {
           dtb_(nullptr),
           vm_(nullptr) {
 
-        start_                 = static_cast<unsigned char *>(Memory::alloc(size_));
+        start_ = static_cast<unsigned char *>(Memory::alloc(size_));
+
         unsigned char *current = start_;
 
         memcpy(current, kernel, kernel.length());
@@ -71,11 +71,10 @@ class LinuxLauncher {
     size_t dtb(void *buffer, size_t capacity) {
         FDT_Builder fdt(buffer, capacity);
 
-        dtb_              = static_cast<unsigned char *>(buffer);
-        uint64_t ram_base = reinterpret_cast<uint64_t>(start_);
-        uint64_t ram_size = static_cast<uint64_t>(size_);
-        uint64_t initrd_s = reinterpret_cast<uint64_t>(initramfs_.data());
-        uint64_t initrd_e = initrd_s + initramfs_.length();
+        dtb_                  = static_cast<unsigned char *>(buffer);
+        uint64_t base         = reinterpret_cast<uint64_t>(start_);
+        uint64_t initrd_start = reinterpret_cast<uint64_t>(initramfs_.data());
+        uint64_t initrd_end   = initrd_start + initramfs_.length();
 
         fdt.begin("");
         {
@@ -87,9 +86,9 @@ class LinuxLauncher {
             fdt.begin("chosen");
             {
                 fdt.add("bootargs", "console=hvc0 loglevel=8");
-                uint32_t regs0[] = {CPU::hi32(initrd_s), CPU::lo32(initrd_s)};
+                uint32_t regs0[] = {CPU::hi32(initrd_start), CPU::lo32(initrd_start)};
                 fdt.add("linux,initrd-start", regs0, 2);
-                uint32_t regs1[] = {CPU::hi32(initrd_e), CPU::lo32(initrd_e)};
+                uint32_t regs1[] = {CPU::hi32(initrd_end), CPU::lo32(initrd_end)};
                 fdt.add("linux,initrd-end", regs1, 2);
             }
             fdt.end();
@@ -123,7 +122,7 @@ class LinuxLauncher {
             fdt.begin("memory");
             {
                 fdt.add("device_type", "memory");
-                uint32_t regs[] = {CPU::hi32(ram_base), CPU::lo32(ram_base), CPU::hi32(ram_size), CPU::lo32(ram_size)};
+                uint32_t regs[] = {CPU::hi32(base), CPU::lo32(base), CPU::hi32(size_), CPU::lo32(size_)};
                 fdt.add("reg", regs, 4);
             }
             fdt.end();
@@ -207,10 +206,10 @@ int main() {
     Span<const uint8_t> initramfs(static_cast<const uint8_t *>(LinuxImage::Initramfs), sizeof(LinuxImage::Initramfs));
 
     LinuxLauncher vm0(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    LinuxLauncher vm1(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    LinuxLauncher vm2(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    LinuxLauncher vm3(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    LinuxLauncher vm4(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    // LinuxLauncher vm1(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    // LinuxLauncher vm2(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    // LinuxLauncher vm3(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    // LinuxLauncher vm4(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
 
     while (1)
         ;

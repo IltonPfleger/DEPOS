@@ -3,8 +3,7 @@
 
 #include <architecture/CPU.hpp>
 #include <hypervisor/dtb/FDT_Header.hpp>
-#include <hypervisor/dtb/FDT_Node.hpp>
-#include <hypervisor/dtb/FDT_ReserveEntry.hpp>
+#include <hypervisor/dtb/FDT_ReservedEntry.hpp>
 #include <libraries/libc/string.h>
 
 namespace DEPOS {
@@ -56,7 +55,7 @@ class FDT_Builder {
 
         size_t end          = cursor_;
         size_t strings_size = capacity_ - strings_cursor_;
-        size_t p            = sizeof(FDT_Header) + sizeof(FDT_ReserveEntry);
+        size_t p            = sizeof(FDT_Header) + sizeof(FDT_ReservedEntry);
 
         while (p + 4 < end) {
             uint32_t tag = CPU::be32toh(*reinterpret_cast<uint32_t *>(buffer_ + p));
@@ -89,14 +88,14 @@ class FDT_Builder {
         FDT_Header *header        = reinterpret_cast<FDT_Header *>(buffer_);
         header->magic             = CPU::htobe32(FDT_MAGIC);
         header->totalsize         = CPU::htobe32(end + strings_size);
-        header->off_dt_struct     = CPU::htobe32(sizeof(FDT_Header) + sizeof(FDT_ReserveEntry));
+        header->off_dt_struct     = CPU::htobe32(sizeof(FDT_Header) + sizeof(FDT_ReservedEntry));
         header->off_dt_strings    = CPU::htobe32(end);
         header->off_mem_rsvmap    = CPU::htobe32(sizeof(FDT_Header));
         header->version           = CPU::htobe32(17);
         header->last_comp_version = CPU::htobe32(16);
         header->boot_cpuid_phys   = 0;
         header->size_dt_strings   = CPU::htobe32(strings_size);
-        header->size_dt_struct    = CPU::htobe32(end - sizeof(FDT_Header) + sizeof(FDT_ReserveEntry));
+        header->size_dt_struct    = CPU::htobe32(end - sizeof(FDT_Header) + sizeof(FDT_ReservedEntry));
 
         return end + strings_size;
     }

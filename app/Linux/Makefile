@@ -1,34 +1,27 @@
 include ../../Makedefs.mk
 
-ELF := $(BUILD)/$(APPLICATION).elf
-BIN := $(BUILD)/$(APPLICATION).bin
-BUILD := $(BUILD)/$(APPLICATION)
+TARGET_BUILD_DIR := $(BUILD)/$(APPLICATION)
 
-SOURCES := $(wildcard $(APPLICATION)/*.cpp)
-OBJECTS := $(patsubst $(APPLICATION)/%.cpp,$(BUILD)/$(APPLICATION)/%.o,$(SOURCES))
+ELF := $(BUILD)/$(APPLICATION).elf
+
+SOURCES := $(shell find . -name '*.cpp')
+OBJECTS := $(patsubst %.cpp,$(TARGET_BUILD_DIR)/%.o,$(SOURCES))
 DEPENDENCIES := $(OBJECTS:.o=.d)
 
 KERNEL = Image
 INITRAMFS = initramfs.cpio
-KERNEL_BLOB = $(KERNEL).inc
-INITRAMFS_BLOB = $(INITRAMFS).inc
-#KERNEL_BLOB = $(BUILD)/$(KERNEL).inc
-#INITRAMFS_BLOB = $(BUILD)/$(INITRAMFS).inc
-INITRAMFS_ADDR=$(shell cat Traits.hpp | grep "DTB =" | sed -E 's/.*= (0x[0-9A-Fa-f]+);.*/\1/')
+KERNEL_BLOB = $(TARGET_BUILD_DIR)/$(KERNEL).inc
+INITRAMFS_BLOB = $(TARGET_BUILD_DIR)/$(INITRAMFS).inc
 
-all: $(BIN)
+all: $(ELF)
 
-$(BIN): $(ELF)
+$(ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
-	$(OBJCOPY) -O binary $< $@
+	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(Application_Addr) --image-base=$(Application_Addr) -o $@ $^
 
-$(ELF): $(BUILD)/$(APPLICATION).o
+$(TARGET_BUILD_DIR)/%.o: %.cpp $(KERNEL_BLOB) $(INITRAMFS_BLOB)
 	@mkdir -p $(dir $@)
-	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(Application_Addr) --image-base=$(Application_Addr) -o $@ $<
-
-$(BUILD)/$(APPLICATION).o: $(APPLICATION).cpp $(KERNEL_BLOB) $(INITRAMFS_BLOB)
-	@mkdir -p $(dir $@)
-	$(CC) -D__INITRAMFS__=$(INITRAMFS_BLOB) -D__KERNEL__=$(KERNEL_BLOB) $(MACH_CCFLAGS) -I$(BUILD) -I../include -MMD -MP -c $< -o $@
+	$(CC) -D__INITRAMFS__=$(INITRAMFS_BLOB) -D__KERNEL__=$(KERNEL_BLOB) $(MACH_CCFLAGS) -I$(TARGET_BUILD_DIR) -I../include -MMD -MP -c $< -o $@
 
 $(KERNEL_BLOB): $(KERNEL)
 	@mkdir -p $(dir $@)
