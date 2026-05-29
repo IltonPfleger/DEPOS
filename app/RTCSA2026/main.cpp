@@ -1,6 +1,6 @@
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
-#include <architecture/VCPU.hpp>
+#include <architecture/VirtualCPU.hpp>
 #include <hypervisor/DeviceTree.hpp>
 #include <hypervisor/GenericVirtualMachine.hpp>
 #include <hypervisor/VirtualSwitch.hpp>

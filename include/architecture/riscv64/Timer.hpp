@@ -5,7 +5,7 @@
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/TrapHandler.hpp>
-#include <architecture/riscv64/VCPU.hpp>
+#include <architecture/riscv64/VirtualCPU.hpp>
 
 namespace DEPOS::riscv64 {
 
@@ -33,7 +33,7 @@ class Timer : public ArchitectureCommon::Timer {
     static void dispatch(size_t, ContextFrame *) {
         if constexpr (Traits<Application>::Virtualized) {
             CLINT::write();
-            VCPU::onTick();
+            VirtualCPU::onTick();
         } else if (!Traits<RISCV>::Supervisor) {
             CLINT::write();
         } else {

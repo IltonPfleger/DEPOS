@@ -11,7 +11,7 @@ namespace DEPOS {
 // } // namespace virtio
 //
 // namespace riscv64 {
-// class VCPU;
+// class VirtualCPU;
 // }
 //
 // namespace hypervisor {
@@ -28,10 +28,10 @@ template <> struct Traits<Application> {
 //  typedef Meta::TypeList<virtio::Console<UART16550<UART0>, 0x30000000>,
 //                         virtio::Network<hypervisor::VirtualSwitch<DWC_Ether_QoS<GMAC0>>, 0x30200000>,
 //                         // virtio::Network<DWC_Ether_QoS<GMAC0>, 0x30200000>,
-//                         riscv64::VCPU>
+//                         riscv64::VirtualCPU>
 //      Devices;
 
-// typedef Meta::TypeList<riscv64::VCPU, virtio::Console<UART16550<UART0>, 0x30000000>>
+// typedef Meta::TypeList<riscv64::VirtualCPU, virtio::Console<UART16550<UART0>, 0x30000000>>
 // Devices;
 //};
 

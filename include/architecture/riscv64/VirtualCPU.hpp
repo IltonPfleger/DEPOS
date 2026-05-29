@@ -6,20 +6,20 @@
 #include <architecture/riscv64/CPU.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/PMP.hpp>
-#include <architecture/riscv64/VPLIC.hpp>
+#include <architecture/riscv64/VirtualPLIC.hpp>
 #include <hypervisor/VirtualMachine.hpp>
 
 namespace DEPOS::riscv64 {
 
-class VCPU {
+class VirtualCPU {
   public:
-    VCPU(VirtualMachine *vm)
+    VirtualCPU(VirtualMachine *vm)
         : mtimecmp_(0),
           first_(true),
           vm_(vm) {}
 
-    static VCPU *current() { return current_[CPU::id()]; }
-    static void current(VCPU *self) { current_[CPU::id()] = self; }
+    static VirtualCPU *current() { return current_[CPU::id()]; }
+    static void current(VirtualCPU *self) { current_[CPU::id()] = self; }
 
     void activate(auto... args) {
         bool enabled = CPU::Interrupt::disable();
@@ -101,14 +101,14 @@ class VCPU {
                                          | 1 << 15; // Store Page Fault
 
   private:
-    static constinit inline VCPU *current_[Traits<CPU>::Active] = {nullptr};
+    static constinit inline VirtualCPU *current_[Traits<CPU>::Active] = {nullptr};
 
   private:
     uintmax_t mtimecmp_;
     size_t core_;
     bool first_;
     VirtualMachine *vm_;
-    VPLIC plic_;
+    VirtualPLIC plic_;
 };
 
 } // namespace DEPOS::riscv64
