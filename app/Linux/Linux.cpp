@@ -146,10 +146,10 @@ class Interference {
 int main() {
     TraceIn();
 
-    Interference i;
+    // Interference i;
     LinuxLauncher vm0(128 * 1024 * 1024, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    LinuxLauncher vm1(128 * 1024 * 1024, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    LinuxLauncher vm2(128 * 1024 * 1024, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    // LinuxLauncher vm1(128 * 1024 * 1024, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    // LinuxLauncher vm2(128 * 1024 * 1024, Thread::Criterion(Thread::Criterion::NORMAL, 1));
 
     while (1)
         ;

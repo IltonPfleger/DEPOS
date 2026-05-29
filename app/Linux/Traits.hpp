@@ -11,7 +11,7 @@ class Virtual;
 // } // namespace virtio
 
 // namespace riscv64 {
-// class VirtualCPU;
+// class VCPU;
 // }
 
 class Application;
@@ -22,7 +22,7 @@ template <> struct Traits<Application> {
 
 // template <> struct Traits<Virtual> {
 //     typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result Serial;
-//     typedef Meta::TypeList<virtio::Console<Serial, 0x30000000>, riscv64::VirtualCPU> Devices;
+//     typedef Meta::TypeList<virtio::Console<Serial, 0x30000000>, riscv64::VCPU> Devices;
 // };
 
 } // namespace DEPOS

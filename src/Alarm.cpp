@@ -3,7 +3,7 @@
 
 namespace DEPOS {
 
-bool Alarm::elapsed(Microsecond us) { return static_cast<intmax_t>(Timer::now() - us) >= 0; }
+bool Alarm::elapsed(Microsecond us) { return static_cast<intmax_t>(Timer::us() - us) >= 0; }
 
 void Alarm::at(Microsecond us) {
     int core = CPU::id();
@@ -17,7 +17,7 @@ void Alarm::at(Microsecond us) {
     Thread::sleep(&link.value(), &stub);
 }
 
-void Alarm::udelay(Microsecond us) { Alarm::at(Timer::now() + us); }
+void Alarm::udelay(Microsecond us) { Alarm::at(Timer::us() + us); }
 
 void Alarm::onTick() {
     int core   = CPU::id();

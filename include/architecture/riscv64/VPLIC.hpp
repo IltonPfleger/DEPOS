@@ -6,7 +6,7 @@ namespace DEPOS {
 
 namespace riscv64 {
 
-class VirtualPLIC {
+class VPLIC {
     enum {
         PRIORITY  = 0x000000,
         PENDING   = 0x001000,
@@ -16,7 +16,7 @@ class VirtualPLIC {
     };
 
   public:
-    VirtualPLIC() = default;
+    VPLIC() = default;
 
     bool pending() { return m_irq; }
 

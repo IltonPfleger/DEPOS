@@ -1,52 +1,33 @@
-#ifndef __DEPOS_RISCV64_VIRTUAL_CPU__
-#define __DEPOS_RISCV64_VIRTUAL_CPU__
+#ifndef __DEPOS_RISCV64_VCPU__
+#define __DEPOS_RISCV64_VCPU__
 
 #include <Traits.hpp>
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/CPU.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/PMP.hpp>
-#include <architecture/riscv64/VirtualPLIC.hpp>
+#include <architecture/riscv64/VPLIC.hpp>
 #include <hypervisor/VirtualMachine.hpp>
-#include <utility/Console.hpp>
 
 namespace DEPOS::riscv64 {
 
-class VirtualCPU {
-    template <typename... Args> __attribute__((naked)) static void supervisor(Args... args) {
-        ((void)args, ...);
-        asm volatile("mret");
-    }
-
+class VCPU {
   public:
-    VirtualCPU(VirtualMachine *vm)
+    VCPU(VirtualMachine *vm)
         : mtimecmp_(0),
           first_(true),
           vm_(vm) {}
 
-    static VirtualCPU *current() { return current_[CPU::id()]; }
-    static void current(VirtualCPU *self) { current_[CPU::id()] = self; }
+    static VCPU *current() { return current_[CPU::id()]; }
+    static void current(VCPU *self) { current_[CPU::id()] = self; }
 
-    template <typename... Args> void activate(Args... args) {
+    void activate(auto... args) {
         bool enabled = CPU::Interrupt::disable();
 
         PMP::NAPOT<2>(vm_->memory().start(), vm_->memory().size(), PMP::R | PMP::W | PMP::X);
 
-        uintmax_t mideleg = 0;
-        mideleg |= 1 << 1; // Supervisor Software Interrupt
-        mideleg |= 1 << 5; // Supervisor Timer Interrupt
-        mideleg |= 1 << 9; // Supervisor External Interrupt
-        csrw<MachineMode::MIDELEG>(mideleg);
-
-        uintmax_t medeleg = 0;
-        medeleg |= 1 << 3;  // Breakpoint
-        medeleg |= 1 << 4;  // Load Address Misaligned
-        medeleg |= 1 << 8;  // Environment Call From U-Mode
-        medeleg |= 1 << 10; // Environment Call From VS-Mode
-        medeleg |= 1 << 12; // Instruction Page Fault
-        medeleg |= 1 << 13; // Load Page Fault
-        medeleg |= 1 << 15; // Store Page Fault
-        csrw<MachineMode::MEDELEG>(medeleg);
+        csrw<MachineMode::MIDELEG>(MIDELEG);
+        csrw<MachineMode::MEDELEG>(MEDELEG);
 
         core_ = csrr<MachineMode::HARTID>();
         current(this);
@@ -57,7 +38,7 @@ class VirtualCPU {
             csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
             csrw<MachineMode::EPC>(vm_->memory().start());
             csrw<SupervisorMode::SATP>(0);
-            supervisor(args...);
+            dispatch(args...);
         }
 
         if (enabled) CPU::Interrupt::enable();
@@ -104,16 +85,30 @@ class VirtualCPU {
   private:
     static void doTimerInterrupt() { csrs<MachineMode::IP>(SupervisorMode::TI); }
     static void doExternalInterrupt() { csrs<MachineMode::IP>(SupervisorMode::EI); }
+    __attribute__((naked)) static void dispatch(auto... args) {
+        (static_cast<void>(args), ...);
+        asm("mret");
+    }
 
   private:
-    static constinit inline VirtualCPU *current_[Traits<CPU>::Active] = {nullptr};
+    static constexpr uintmax_t MIDELEG = SupervisorMode::SI | SupervisorMode::TI | SupervisorMode::EI;
+    static constexpr uintmax_t MEDELEG = 1 << 3     // Breakpoint
+                                         | 1 << 4   // Load Address Misaligned
+                                         | 1 << 8   // Environment Call From U-Mode
+                                         | 1 << 10  // Environment Call From VS-Mode
+                                         | 1 << 12  // Instruction Page Fault
+                                         | 1 << 13  // Load Page Fault
+                                         | 1 << 15; // Store Page Fault
+
+  private:
+    static constinit inline VCPU *current_[Traits<CPU>::Active] = {nullptr};
 
   private:
     uintmax_t mtimecmp_;
     size_t core_;
     bool first_;
     VirtualMachine *vm_;
-    VirtualPLIC plic_;
+    VPLIC plic_;
 };
 
 } // namespace DEPOS::riscv64
