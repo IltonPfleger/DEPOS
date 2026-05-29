@@ -44,8 +44,15 @@ template <typename T> class Span {
     }
 
     [[nodiscard]]
-    constexpr operator void *(this auto &&self) {
-        return self.data();
+    constexpr operator const void *() const {
+        return static_cast<const void *>(_data);
+    }
+
+    [[nodiscard]]
+    constexpr operator void *()
+        requires(!Meta::Const<T>)
+    {
+        return static_cast<void *>(_data);
     }
 
     [[nodiscard]]

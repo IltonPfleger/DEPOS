@@ -24,12 +24,14 @@ class CPU : public ArchitectureCommon::CPU {
     static auto idle() { asm("wfi"); }
     static void syscall() { asm("ecall"); }
     static void mb() { asm("fence iorw, iorw" ::: "memory"); }
-    static uint64_t htobe64(uint64_t x) { return Endian::le2be64(x); }
-    static uint32_t htobe32(uint32_t x) { return Endian::le2be32(x); }
-    static uint16_t htobe16(uint16_t x) { return Endian::le2be16(x); }
-    static uint64_t be64toh(uint64_t x) { return htobe64(x); }
-    static uint32_t be32toh(uint32_t x) { return htobe32(x); }
-    static uint16_t be16toh(uint16_t x) { return htobe16(x); }
+    static constexpr uint32_t hi32(uint64_t v) { return static_cast<uint32_t>(v >> 32); }
+    static constexpr uint32_t lo32(uint64_t v) { return static_cast<uint32_t>(v); }
+    static constexpr uint64_t htobe64(uint64_t x) { return Endian::le2be64(x); }
+    static constexpr uint32_t htobe32(uint32_t x) { return Endian::le2be32(x); }
+    static constexpr uint16_t htobe16(uint16_t x) { return Endian::le2be16(x); }
+    static constexpr uint64_t be64toh(uint64_t x) { return htobe64(x); }
+    static constexpr uint32_t be32toh(uint32_t x) { return htobe32(x); }
+    static constexpr uint16_t be16toh(uint16_t x) { return htobe16(x); }
 
     template <bool M = !Supervisor> static size_t id() {
         if constexpr (M) return csrr<MachineMode::HARTID>() - Traits<CPU>::Offset;

@@ -3,9 +3,11 @@
 #include <architecture/CPU.hpp>
 #include <hypervisor/DeviceTree.hpp>
 #include <hypervisor/GenericVirtualMachine.hpp>
+#include <hypervisor/dtb/FDT_Builder.hpp>
 #include <hypervisor/virtio/Console.hpp>
 #include <machine/Machine.hpp>
 #include <utility/Console.hpp>
+#include <utility/Span.hpp>
 
 #define ___STR(X) #X
 #define __STR(X) ___STR(X)
@@ -18,11 +20,6 @@ struct LinuxImage {
     alignas(2 * MB) static constexpr unsigned char Kernel[] = {
 #include __STR(__KERNEL__)
     };
-
-    alignas(1 * MB) static constexpr unsigned char Dtb[] = {
-#include __STR(__DTB__)
-    };
-
     alignas(1 * MB) static constexpr unsigned char Initramfs[] = {
 #include __STR(__INITRAMFS__)
     };
@@ -32,50 +29,35 @@ class LinuxLauncher {
   public:
     using SerialDevice = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
     using Serial       = virtio::Console<SerialDevice, 0x30000000>;
-    using MyMachine    = GenericVirtualMachine<Serial>;
+    using LinuxMachine = GenericVirtualMachine<Serial>;
 
-    LinuxLauncher(size_t size, Thread::Criterion criterion)
+    LinuxLauncher(size_t size, Span<const uint8_t> kernel, Span<const uint8_t> initramfs, Thread::Criterion criterion)
         : size_(size),
           start_(nullptr),
-          kernel_(nullptr),
-          initramfs_(nullptr),
+          initramfs_(initramfs),
           dtb_(nullptr),
           vm_(nullptr) {
-        image();
-        new Thread(worker, this, criterion);
-    }
 
-    void image() {
-        start_                 = reinterpret_cast<unsigned char *>(Memory::alloc(size_));
-        uintptr_t address      = reinterpret_cast<uintptr_t>(start_);
+        start_                 = static_cast<unsigned char *>(Memory::alloc(size_));
         unsigned char *current = start_;
 
-        kernel_ = current;
-        current += sizeof(LinuxImage::Kernel);
+        memcpy(current, kernel, kernel.length());
+        current += kernel.length();
 
-        current = align(current, MB);
-        dtb_    = reinterpret_cast<DeviceTree *>(current);
-        current += sizeof(LinuxImage::Dtb);
-        current = align(current, MB);
+        current = align(current, 4 * MB);
+        memcpy(current, initramfs, initramfs.length());
+        initramfs_ = Span<const uint8_t>(current, initramfs.length());
+        current += initramfs.length();
 
-        initramfs_            = current;
-        size_t initramfs_size = sizeof(LinuxImage::Initramfs);
-        current += initramfs_size;
-        current = align(current, MB);
+        dtb(current, size_ - initramfs.length() - kernel.length());
 
-        memcpy(kernel_, LinuxImage::Kernel, sizeof(LinuxImage::Kernel));
-        memcpy(dtb_, LinuxImage::Dtb, sizeof(LinuxImage::Dtb));
-        memcpy(initramfs_, LinuxImage::Initramfs, sizeof(LinuxImage::Initramfs));
-
-        ERROR(!dtb_->valid(), "Invalid Device Tree!\n");
-
-        dtb(address, initramfs_size);
+        new Thread(worker, this, criterion);
     }
 
     static void *worker(void *pointer) {
         LinuxLauncher *self = reinterpret_cast<LinuxLauncher *>(pointer);
         Console::println("\n *** Linux is at core ", CPU::id(), " ***");
-        MyMachine *vm = new MyMachine(self->kernel_, self->size_);
+        LinuxMachine *vm = new LinuxMachine(self->start_, self->size_);
         vm->activate(0, self->dtb_);
         return nullptr;
     }
@@ -86,40 +68,115 @@ class LinuxLauncher {
         return reinterpret_cast<unsigned char *>(address);
     }
 
-    void dtb(uintptr_t base_address, size_t initramfs_size) {
-        unsigned int irq;
-        unsigned int regs[4];
+    size_t dtb(void *buffer, size_t capacity) {
+        FDT_Builder fdt(buffer, capacity);
 
-        regs[0] = CPU::htobe32(base_address >> 32);
-        regs[1] = CPU::htobe32(base_address);
-        regs[2] = CPU::htobe32(size_ >> 32);
-        regs[3] = CPU::htobe32(size_);
-        dtb_->edit("memory@0", "reg", regs, sizeof(regs));
+        dtb_              = static_cast<unsigned char *>(buffer);
+        uint64_t ram_base = reinterpret_cast<uint64_t>(start_);
+        uint64_t ram_size = static_cast<uint64_t>(size_);
+        uint64_t initrd_s = reinterpret_cast<uint64_t>(initramfs_.data());
+        uint64_t initrd_e = initrd_s + initramfs_.length();
 
-        regs[0] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs_) >> 32);
-        regs[1] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs_));
-        regs[2] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs_ + initramfs_size) >> 32);
-        regs[3] = CPU::htobe32(reinterpret_cast<unsigned long>(initramfs_ + initramfs_size));
-        dtb_->edit("chosen", "linux,initrd-start", regs, sizeof(regs[0]) * 2);
-        dtb_->edit("chosen", "linux,initrd-end", &regs[2], sizeof(regs[0]) * 2);
+        fdt.begin("");
+        {
+            fdt.add("#address-cells", 2);
+            fdt.add("#size-cells", 2);
+            fdt.add("compatible", "riscv-virtio");
+            fdt.add("model", "riscv-virtio,qemu");
 
-        irq     = CPU::htobe32(Serial::IRQ);
-        regs[0] = CPU::htobe32(Serial::Address >> 32);
-        regs[1] = CPU::htobe32(Serial::Address);
-        regs[2] = CPU::htobe32(0x0);
-        regs[3] = CPU::htobe32(0x1000);
-        dtb_->edit("virtio_mmio@1", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
-        dtb_->edit("virtio_mmio@1", "reg", regs, sizeof(regs));
-        dtb_->edit("virtio_mmio@1", "interrupts", &irq, sizeof(irq));
+            fdt.begin("chosen");
+            {
+                fdt.add("bootargs", "console=hvc0 loglevel=8");
+                uint32_t regs0[] = {CPU::hi32(initrd_s), CPU::lo32(initrd_s)};
+                fdt.add("linux,initrd-start", regs0, 2);
+                uint32_t regs1[] = {CPU::hi32(initrd_e), CPU::lo32(initrd_e)};
+                fdt.add("linux,initrd-end", regs1, 2);
+            }
+            fdt.end();
+
+            fdt.begin("cpus");
+            {
+                fdt.add("#address-cells", 1);
+                fdt.add("#size-cells", 0u);
+                fdt.add("timebase-frequency", 0x989680);
+                fdt.begin("cpu@0");
+                {
+                    fdt.add("device_type", "cpu");
+                    fdt.add("reg", 0u);
+                    fdt.add("status", "okay");
+                    fdt.add("compatible", "riscv");
+                    fdt.add("riscv,isa", "rv64imafdcsu");
+                    fdt.add("mmu-type", "riscv,sv39");
+                    fdt.begin("interrupt-controller");
+                    {
+                        fdt.add("#interrupt-cells", 1);
+                        fdt.add("interrupt-controller");
+                        fdt.add("compatible", "riscv,cpu-intc");
+                        fdt.add("phandle", 0x01);
+                    }
+                    fdt.end();
+                }
+                fdt.end();
+            }
+            fdt.end();
+
+            fdt.begin("memory");
+            {
+                fdt.add("device_type", "memory");
+                uint32_t regs[] = {CPU::hi32(ram_base), CPU::lo32(ram_base), CPU::hi32(ram_size), CPU::lo32(ram_size)};
+                fdt.add("reg", regs, 4);
+            }
+            fdt.end();
+
+            fdt.begin("soc");
+            {
+                fdt.add("#address-cells", 2);
+                fdt.add("#size-cells", 2);
+                fdt.add("compatible", "simple-bus");
+                fdt.add("ranges");
+
+                fdt.begin("interrupt-controller@c000000");
+                {
+                    fdt.add("compatible", "riscv,plic0");
+
+                    uint32_t regs0[] = {0x00, 0xc000000, 0x00, 0x4000000};
+                    fdt.add("reg", regs0, 4);
+
+                    fdt.add("interrupt-controller");
+                    fdt.add("#interrupt-cells", 1);
+                    fdt.add("riscv,ndev", 0x35);
+
+                    uint32_t regs1[] = {0x01, 0x0b, 0x01, 0x09};
+                    fdt.add("interrupts-extended", regs1, 4);
+                    fdt.add("phandle", 0x02);
+                }
+                fdt.end();
+
+                fdt.begin("virtio_mmio@30000000");
+                {
+                    uint64_t address = 0x30000000;
+                    uint32_t irq     = 32;
+                    uint32_t regs[]  = {CPU::hi32(address), CPU::lo32(address), 0x00, 0x1000};
+                    fdt.add("compatible", "virtio,mmio");
+                    fdt.add("reg", regs, 4);
+                    fdt.add("interrupts", irq);
+                    fdt.add("interrupt-parent", 0x02);
+                }
+                fdt.end();
+            }
+            fdt.end();
+        }
+        fdt.end();
+
+        return fdt.finish();
     }
 
   private:
     size_t size_;
     unsigned char *start_;
-    unsigned char *kernel_;
-    unsigned char *initramfs_;
-    DeviceTree *dtb_;
-    MyMachine *vm_;
+    Span<const uint8_t> initramfs_;
+    unsigned char *dtb_;
+    LinuxMachine *vm_;
 };
 
 class Interference {
@@ -146,10 +203,14 @@ class Interference {
 int main() {
     TraceIn();
 
-    // Interference i;
-    LinuxLauncher vm0(128 * 1024 * 1024, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    // LinuxLauncher vm1(128 * 1024 * 1024, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    // LinuxLauncher vm2(128 * 1024 * 1024, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    Span<const uint8_t> kernel(static_cast<const uint8_t *>(LinuxImage::Kernel), sizeof(LinuxImage::Kernel));
+    Span<const uint8_t> initramfs(static_cast<const uint8_t *>(LinuxImage::Initramfs), sizeof(LinuxImage::Initramfs));
+
+    LinuxLauncher vm0(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    LinuxLauncher vm1(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    LinuxLauncher vm2(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    LinuxLauncher vm3(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    LinuxLauncher vm4(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
 
     while (1)
         ;

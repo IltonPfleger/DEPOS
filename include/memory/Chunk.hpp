@@ -15,7 +15,7 @@ class Chunk {
         : start_(start),
           size_(size) {}
 
-    constexpr Chunk(void *start, size_t size)
+    constexpr Chunk(const void *start, size_t size)
         : start_(reinterpret_cast<uintptr_t>(start)),
           size_(size) {}
 

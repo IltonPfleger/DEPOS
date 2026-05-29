@@ -19,12 +19,12 @@ class VirtualCPU {
           vm_(vm) {}
 
     static VirtualCPU *current() { return current_[CPU::id()]; }
-    static void current(VirtualCPU *self) { current_[CPU::id()] = self; }
+    static void current(VirtualCPU *current) { current_[CPU::id()] = current; }
 
     void activate(auto... args) {
         bool enabled = CPU::Interrupt::disable();
 
-        PMP::NAPOT<2>(vm_->memory().start(), vm_->memory().size(), PMP::R | PMP::W | PMP::X);
+        PMP::NAPOT<1>(vm_->memory().start(), vm_->memory().size(), PMP::R | PMP::W | PMP::X);
 
         csrw<MachineMode::MIDELEG>(MIDELEG);
         csrw<MachineMode::MEDELEG>(MEDELEG);

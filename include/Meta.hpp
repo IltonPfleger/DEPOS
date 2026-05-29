@@ -110,6 +110,18 @@ template <> struct IsInteger<long long> {
 template <> struct IsInteger<unsigned long long> {
     static constexpr bool Result = true;
 };
+template <typename T> struct IsConst {
+    static constexpr bool Result = false;
+};
+template <typename T> struct IsConst<const T> {
+    static constexpr bool Result = true;
+};
+template <typename T> struct IsVoid {
+    static constexpr bool Result = false;
+};
+template <> struct IsVoid<void> {
+    static constexpr bool Result = true;
+};
 
 template <typename T>
 concept Integer = IsInteger<T>::Result;
@@ -121,16 +133,11 @@ template <Integer T> struct IsSigned {
 template <typename T>
 concept Signed = IsSigned<T>::Result;
 
-template <typename T> struct IsVoid {
-    static constexpr bool Result = false;
-};
-
-template <> struct IsVoid<void> {
-    static constexpr bool Result = true;
-};
-
 template <typename T>
 concept Void = IsVoid<T>::Result;
+
+template <typename T>
+concept Const = IsConst<T>::Result;
 
 } // namespace Meta
 

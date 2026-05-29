@@ -29,9 +29,6 @@ class LoadAccessFault {
                 return;
             }
         }
-        // Console::println(PageTable::virt2phys(csrr<MachineMode::TVAL>()));
-        // Console::println(Console::Hex(PageTable::virt2phys(c->pc)));
-        // Console::println(Console::Hex(*reinterpret_cast<unsigned int *>(PageTable::virt2phys(c->pc))));
         c->value = PageTable::virt2phys(c->value);
         ExceptionHandler::onTrap(id, c);
     }

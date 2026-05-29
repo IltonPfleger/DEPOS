@@ -38,7 +38,7 @@ class ImageReceiver {
   private:
     void receive_linux() {
         auto *start = current_;
-        size_t size = tftp_->request(IPv4::Address(192, 168, 1, 100), "Image", start, remaining_);
+        size_t size = tftp_->request(IPv4::Address(192, 168, 1, 100), "RTCSAImage", start, remaining_);
 
         linux_ = Chunk(start, size);
         current_ += size;
@@ -99,43 +99,46 @@ class ImageReceiver {
     Chunk epos_;
 };
 
-class EPOS_VirtualMachineLauncher {
-  public:
-    EPOS_VirtualMachineLauncher(const Chunk &chunk,
-                                Thread::Criterion criterion = Thread::Criterion(Thread::Criterion::NORMAL, 0))
-        : chunk_(chunk),
-          thread_(worker, this, criterion) {}
-
-  private:
-    static void *worker(void *pointer) {
-        typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NetworkDevice;
-        typedef virtio::Network<VirtualSwitch<NetworkDevice>, 0x30200000> Network;
-        typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
-        typedef virtio::Console<SerialDevice, 0x30000000> Serial;
-
-        auto *self = reinterpret_cast<EPOS_VirtualMachineLauncher *>(pointer);
-
-        auto *epos = static_cast<unsigned char *>(Memory::alloc(VirtualMachineMemorySize));
-
-        memcpy(epos, reinterpret_cast<void *>(self->chunk_.start()), self->chunk_.size());
-
-        auto *vm = new GenericVirtualMachine<Serial, Network>(epos, VirtualMachineMemorySize);
-
-        vm->activate(1, 15);
-        return nullptr;
-    }
-
-  private:
-    const Chunk &chunk_;
-    Thread thread_;
-};
+// class EPOS_VirtualMachineLauncher {
+//   public:
+//     EPOS_VirtualMachineLauncher(const Chunk &chunk,
+//                                 Thread::Criterion criterion = Thread::Criterion(Thread::Criterion::NORMAL, 0))
+//         : chunk_(chunk),
+//           thread_(worker, this, criterion) {}
+//
+//   private:
+//     static void *worker(void *pointer) {
+//         typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NetworkDevice;
+//         typedef virtio::Network<VirtualSwitch<NetworkDevice>, 0x30200000> Network;
+//         typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
+//         typedef virtio::Console<SerialDevice, 0x30000000> Serial;
+//
+//         auto *self = reinterpret_cast<EPOS_VirtualMachineLauncher *>(pointer);
+//
+//         auto *epos = static_cast<unsigned char *>(Memory::alloc(VirtualMachineMemorySize));
+//
+//         memcpy(epos, reinterpret_cast<void *>(self->chunk_.start()), self->chunk_.size());
+//
+//         auto *vm = new GenericVirtualMachine<Serial, Network>(epos, VirtualMachineMemorySize);
+//
+//         vm->activate(1, 15);
+//         return nullptr;
+//     }
+//
+//   private:
+//     const Chunk &chunk_;
+//     Thread thread_;
+// };
 
 class Linux_VirtualMachineLauncher {
+    typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
+    typedef virtio::Console<SerialDevice, 0x30000000> Serial;
+
   public:
     Linux_VirtualMachineLauncher(const Chunk &kernel,
                                  const Chunk &initramfs,
                                  const Chunk &dtb,
-                                 Thread::Criterion criterion = Thread::Criterion(Thread::Criterion::NORMAL, 0))
+                                 Thread::Criterion criterion)
         : kernel_(kernel),
           initramfs_(initramfs),
           dtb_(dtb),
@@ -143,75 +146,55 @@ class Linux_VirtualMachineLauncher {
 
   private:
     static void *worker(void *pointer) {
-        typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
-        typedef virtio::Console<SerialDevice, 0x30000000> Serial;
-
         auto *self = reinterpret_cast<Linux_VirtualMachineLauncher *>(pointer);
 
-        auto *buffer = static_cast<unsigned char *>(Memory::alloc(VirtualMachineMemorySize));
-
-        unsigned char *current = buffer;
+        auto *buffer           = static_cast<unsigned char *>(Memory::alloc(VirtualMachineMemorySize));
         uintptr_t base         = reinterpret_cast<uintptr_t>(buffer);
+        unsigned char *current = buffer;
 
         memcpy(current, reinterpret_cast<void *>(self->kernel_.start()), self->kernel_.size());
-
         current += self->kernel_.size();
+
         current = align(current, MB);
-
-        unsigned char *dtb_mem = current;
-
-        memcpy(dtb_mem, reinterpret_cast<void *>(self->dtb_.start()), self->dtb_.size());
-
-        DeviceTree *dtb = reinterpret_cast<DeviceTree *>(dtb_mem);
-
+        memcpy(current, reinterpret_cast<void *>(self->dtb_.start()), self->dtb_.size());
+        DeviceTree *dtb = reinterpret_cast<DeviceTree *>(current);
         ERROR(!dtb->valid(), "Invalid Device Tree!\n");
-
         current += self->dtb_.size();
-        current = align(current, MB);
 
+        current                  = align(current, MB);
         unsigned char *initramfs = current;
-
         memcpy(initramfs, reinterpret_cast<void *>(self->initramfs_.start()), self->initramfs_.size());
+        current += self->initramfs_.size();
 
-        size_t initramfs_size = self->initramfs_.size();
-
-        current += initramfs_size;
-        current = align(current, MB);
-
+        // Memory
         unsigned int regs[4];
-
         regs[0] = CPU::htobe32(base >> 32);
         regs[1] = CPU::htobe32(base);
         regs[2] = CPU::htobe32(VirtualMachineMemorySize >> 32);
         regs[3] = CPU::htobe32(VirtualMachineMemorySize);
-
         dtb->edit("memory@0", "reg", regs, sizeof(regs));
 
+        // Initramfs
         regs[0] = CPU::htobe32(reinterpret_cast<uintptr_t>(initramfs) >> 32);
         regs[1] = CPU::htobe32(reinterpret_cast<uintptr_t>(initramfs));
-        regs[2] = CPU::htobe32(reinterpret_cast<uintptr_t>(initramfs + initramfs_size) >> 32);
-        regs[3] = CPU::htobe32(reinterpret_cast<uintptr_t>(initramfs + initramfs_size));
-
+        regs[2] = CPU::htobe32(reinterpret_cast<uintptr_t>(initramfs + self->initramfs_.size()) >> 32);
+        regs[3] = CPU::htobe32(reinterpret_cast<uintptr_t>(initramfs + self->initramfs_.size()));
         dtb->edit("chosen", "linux,initrd-start", regs, sizeof(regs[0]) * 2);
         dtb->edit("chosen", "linux,initrd-end", &regs[2], sizeof(regs[0]) * 2);
 
+        // Console
         unsigned int irq = CPU::htobe32(Serial::IRQ);
-
-        regs[0] = CPU::htobe32(Serial::Address >> 32);
-        regs[1] = CPU::htobe32(Serial::Address);
-        regs[2] = CPU::htobe32(0x0);
-        regs[3] = CPU::htobe32(0x1000);
-
+        regs[0]          = CPU::htobe32(Serial::Address >> 32);
+        regs[1]          = CPU::htobe32(Serial::Address);
+        regs[2]          = CPU::htobe32(0x0);
+        regs[3]          = CPU::htobe32(0x1000);
         dtb->edit("virtio_mmio@1", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
         dtb->edit("virtio_mmio@1", "reg", regs, sizeof(regs));
         dtb->edit("virtio_mmio@1", "interrupts", &irq, sizeof(irq));
 
         Console::print("\n *** Linux ***\n");
-
         auto *vm = new GenericVirtualMachine<Serial>(buffer, VirtualMachineMemorySize);
-
         vm->activate(0, dtb);
-
         return nullptr;
     }
 
@@ -238,11 +221,14 @@ int main() {
     auto *tftp = new TFTP(*udp);
 
     ImageReceiver imager(tftp);
+    const Chunk &linux     = imager.linux();
+    const Chunk &initramfs = imager.initramfs();
+    const Chunk &dtb       = imager.dtb();
 
-    EPOS_VirtualMachineLauncher vm0(imager.epos(), Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    // EPOS_VirtualMachineLauncher vm0(imager.epos(), Thread::Criterion(Thread::Criterion::NORMAL, 1));
 
-    Linux_VirtualMachineLauncher vm1(imager.linux(), imager.initramfs(), imager.dtb(),
-                                     Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    Linux_VirtualMachineLauncher vm0(linux, initramfs, dtb, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    // Linux_VirtualMachineLauncher vm1(linux, initramfs, dtb, Thread::Criterion(Thread::Criterion::NORMAL, 1));
 
     while (1)
         Alarm::udelay(1'000'000);
