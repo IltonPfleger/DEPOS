@@ -15,32 +15,22 @@ class VisionFive2 : Driver {
     static void init() {
         riscv64::init();
 
-        if (riscv64::CPU::id() == Traits<CPU>::BSP) {
-
+        if (CPU::id() == Traits<CPU>::BSP) {
             JH7110_DVFS_Controller dvfs;
-
             dvfs.set(dvfs.available()[0]);
-
             Clock_Controller::divide(Clock_Controller::SYSCRG_CLK_CPU_CORE, 2);
-
             uint32_t delay = 100;
-
             Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 0);
-
             Timer::udelay(delay);
-
             PLL0::rate(1500000000);
-
             Timer::udelay(delay);
-
             Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 1);
-
             dvfs.set(dvfs.available()[dvfs.available().length() - 1]);
         }
 
-        riscv64::CPU::barrier();
+        CPU::barrier();
 
-        if (riscv64::CPU::id() == Traits<CPU>::BSP) {
+        if (CPU::id() == Traits<CPU>::BSP) {
             /* ---***--- GMAC0 ---***--- */
             Clock_Controller::enable(Clock_Controller::SYSCRG_CLK_GMAC_PHY);
             Clock_Controller::enable(Clock_Controller::SYSCRG_CLK_GMAC0_GTX);
@@ -71,7 +61,7 @@ class VisionFive2 : Driver {
         }
 
         Meta::forEach(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
-        riscv64::CPU::barrier();
+        CPU::barrier();
     }
 
     static void shutdown() { CPU::halt(); }

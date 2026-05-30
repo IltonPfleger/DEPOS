@@ -235,13 +235,10 @@ int main() {
     const auto &linux     = receiver.linux();
     const auto &initramfs = receiver.initramfs();
 
-    // delete tftp;
-    // delete udp;
-    // delete ipv4;
-    // delete link;
-
     LinuxLauncher vm0(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
     LinuxLauncher vm1(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    LinuxLauncher vm3(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+	LinuxLauncher vm4(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
 
     while (1)
         Alarm::udelay(100'000'000);
