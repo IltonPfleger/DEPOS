@@ -27,7 +27,7 @@ class Receiver {
 
         rlinux();
         rinitramfs();
-        // repos();
+        repos();
     }
 
     const auto &linux() const { return linux_; }

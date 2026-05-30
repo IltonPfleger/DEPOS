@@ -21,7 +21,7 @@ class Alarm {
     static bool elapsed(Microsecond);
 
   private:
-    static inline List s_delays[Traits<CPU>::Active];
+    static inline List delays_[Traits<CPU>::Active];
 };
 
 } // namespace DEPOS

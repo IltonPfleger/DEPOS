@@ -10,7 +10,7 @@ void Alarm::at(Microsecond us) {
     Link link(Thread::Queue{}, us);
 
     bool enabled = CPU::Interrupt::disable();
-    s_delays[core].insert(&link);
+    delays_[core].insert(&link);
     if (enabled) CPU::Interrupt::enable();
 
     Spin stub;
@@ -21,7 +21,7 @@ void Alarm::udelay(Microsecond us) { Alarm::at(Timer::us() + us); }
 
 void Alarm::onTick() {
     int core   = CPU::id();
-    List &list = s_delays[core];
+    List &list = delays_[core];
 
     Link *head = list.head();
     while (head && elapsed(head->criterion())) {

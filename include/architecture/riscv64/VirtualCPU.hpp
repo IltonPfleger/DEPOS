@@ -19,6 +19,7 @@ class VirtualCPU {
           vm_(vm) {}
 
     static VirtualCPU *current() { return current_[CPU::id()]; }
+
     static void current(VirtualCPU *current) { current_[CPU::id()] = current; }
 
     void activate(auto... args) {
@@ -86,7 +87,9 @@ class VirtualCPU {
 
   private:
     static void doTimerInterrupt() { csrs<MachineMode::IP>(SupervisorMode::TI); }
+
     static void doExternalInterrupt() { csrs<MachineMode::IP>(SupervisorMode::EI); }
+
     __attribute__((naked)) static void dispatch(auto... args) {
         (static_cast<void>(args), ...);
         asm("mret");
