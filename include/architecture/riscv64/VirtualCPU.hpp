@@ -22,7 +22,7 @@ class VirtualCPU {
     static void current(VirtualCPU *current) { current_[CPU::id()] = current; }
 
     void activate(auto... args) {
-        bool enabled = CPU::Interrupt::disable();
+        CPU::Interrupt::disable();
 
         PMP::NAPOT<1>(vm_->memory().start(), vm_->memory().size(), PMP::R | PMP::W | PMP::X);
 
@@ -40,13 +40,15 @@ class VirtualCPU {
             csrw<SupervisorMode::SATP>(0);
             dispatch(args...);
         }
-
-        if (enabled) CPU::Interrupt::enable();
     }
 
     void interrupt(unsigned int id) {
         plic_.interrupt(id);
-        CLINT::ipi(core_);
+        if (core_ == CPU::id()) {
+            doExternalInterrupt();
+        } else {
+            CLINT::ipi(core_);
+        }
     }
 
     static void onTick() {

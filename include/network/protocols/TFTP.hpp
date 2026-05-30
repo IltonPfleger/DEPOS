@@ -23,6 +23,8 @@ class TFTP : public Observer<NetworkBuffer, uint16_t, uint16_t> {
         udp_.attach(this);
     }
 
+    ~TFTP() { udp_.detach(this); }
+
     size_t request(const NetworkAddress &&address, const char *filename, void *buffer, size_t size) {
         buffer_      = static_cast<uint8_t *>(buffer);
         buffer_size_ = size;

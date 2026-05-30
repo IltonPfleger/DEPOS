@@ -216,16 +216,15 @@ template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
 using SupervisorContext = ContextTemplate<SupervisorMode, ChangeStack>;
 
 struct GuestContextFrame {
-    // uint64_t sstatus; Shared With MSCRATCH
-    uint64_t cpu;
-    uint64_t sie; // Shared With MIE
-    uint64_t stvec;
-    uint64_t sscratch;
-    uint64_t satp;
-    uint64_t sepc;
-    uint64_t scause;
-    uint64_t stval;
-    uint64_t sip; // Shared With MIP
+    uint64_t sie      = 0;
+    uint64_t stvec    = 0;
+    uint64_t sscratch = 0;
+    uint64_t satp     = 0;
+    uint64_t sepc     = 0;
+    uint64_t scause   = 0;
+    uint64_t stval    = 0;
+    uint64_t sip      = 0;
+    uint64_t cpu      = 0;
 };
 
 class HypervisorContext {
@@ -233,9 +232,8 @@ class HypervisorContext {
     using Father    = MachineContext<true>;
 
     HypervisorContext(const Chunk &ksp, auto pc, auto ra, auto a0, auto a1)
-        : father_(ksp, pc, ra, a0, a1) {
-        guest_.cpu = 0;
-    }
+        : guest_(),
+          father_(ksp, pc, ra, a0, a1) {}
 
   public:
     static HypervisorContext *create(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {

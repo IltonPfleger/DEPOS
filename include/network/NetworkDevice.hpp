@@ -33,12 +33,17 @@ class NetworkDevice : public Observed<NetworkBuffer> {
         return result;
     }
 
-    void init() { thread_ = new Thread(worker, this); }
+    void init() {
+        running_ = true;
+        thread_  = new Thread(worker, this);
+    }
+
+    void stop() { running_ = false; }
 
   private:
     static void *worker(void *argument) {
         auto *self = static_cast<NetworkDevice *>(argument);
-        while (true) {
+        while (self->running_) {
             // self->semaphore_.p();
             NetworkBuffer *buffer = self->receive();
             if (!buffer) continue;
@@ -49,9 +54,9 @@ class NetworkDevice : public Observed<NetworkBuffer> {
     }
 
   private:
-    Atomic<size_t> pending_;
     Semaphore semaphore_;
     Thread *thread_;
+    volatile bool running_;
 };
 
 } // namespace DEPOS

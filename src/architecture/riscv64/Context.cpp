@@ -1,5 +1,6 @@
 #include <architecture/riscv64/Context.hpp>
 #include <architecture/riscv64/CoreContextHandler.hpp>
+#include <architecture/riscv64/MMU.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/VirtualCPU.hpp>
 #include <utility/Console.hpp>
@@ -21,6 +22,7 @@ void DEPOS::riscv64::HypervisorContext::swap(void *previous, void *next) {
 
     if (ncpu) {
         ncpu->activate();
+        MMU::TLB::flush();
     } else {
         VirtualCPU::current(nullptr);
     }

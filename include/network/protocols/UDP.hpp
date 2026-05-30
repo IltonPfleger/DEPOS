@@ -25,6 +25,8 @@ class UDP : public Observer<NetworkBuffer, const NetworkAddress &, const Network
         _handler->attach(this);
     }
 
+    ~UDP() { _handler->detach(this); }
+
     NetworkBuffer *alloc(size_t length) {
         NetworkBuffer *buffer = _handler->alloc(length + sizeof(Header));
         buffer->advance(sizeof(Header));

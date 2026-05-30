@@ -1,7 +1,6 @@
 #pragma once
 
 #include <architecture/riscv64/sbi/Base.hpp>
-#include <architecture/riscv64/sbi/Core.hpp>
 #include <architecture/riscv64/sbi/FWFT.hpp>
 #include <architecture/riscv64/sbi/Time.hpp>
 
@@ -14,7 +13,6 @@ class Syscall {
         switch (c->a7) {
             case Base::EID: Base::handler(c); break;
             case Time::EID: Time::handler(c); break;
-            case Core::EID: Core::handler(c); break;
             case FWFT::EID: FWFT::handler(c); break;
             default: ExceptionHandler::onTrap(id, c);
         }

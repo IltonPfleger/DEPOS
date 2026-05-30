@@ -43,10 +43,9 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long VirtualRamStart = 0xffffffff80000000;
     static constexpr unsigned long VirtualRamEnd   = VirtualRamStart + Traits<Memory>::Size;
 
-    static constexpr unsigned long RamStart =
-        Traits<Kernel>::Multitask ? VirtualRamStart : PhysicalRamStart;
-    static constexpr unsigned long RamEnd =
-        Traits<Kernel>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
+    static constexpr unsigned long RamStart  = Traits<Kernel>::Multitask ? VirtualRamStart : PhysicalRamStart;
+    static constexpr unsigned long RamEnd    = Traits<Kernel>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
+    static constexpr unsigned long BootStart = RamStart;
 
     static constexpr unsigned long KernelAddr = RamStart;
 
@@ -69,9 +68,9 @@ template <> struct Traits<UART> {
 };
 
 template <> struct Traits<CLINT> {
-    static constexpr bool Enable         = Traits<Timer>::Enable;
-    static constexpr unsigned long Address  = Traits<MemoryMap>::CLINT;
-    static constexpr unsigned long Clock = 10'000'000;
+    static constexpr bool Enable           = Traits<Timer>::Enable;
+    static constexpr unsigned long Address = Traits<MemoryMap>::CLINT;
+    static constexpr unsigned long Clock   = 10'000'000;
 };
 
 template <> struct Traits<IC> {
@@ -80,8 +79,9 @@ template <> struct Traits<IC> {
 };
 
 template <> struct Traits<PLIC> {
-    static constexpr bool Enable        = true;
-    static constexpr int Contexts[5][2] = {
+    static constexpr bool Enable               = true;
+    static constexpr int NumberOfInterruptions = 30;
+    static constexpr int Contexts[5][2]        = {
         {0, -1}, // Hart 0: M->0, S->N/A
         {1, 2},  // Hart 1: M->1, S->2
         {3, 4},  // Hart 2: M->3, S->4

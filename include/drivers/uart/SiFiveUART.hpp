@@ -2,12 +2,11 @@
 
 #include <architecture/IC.hpp>
 #include <drivers/Driver.hpp>
-#include <utils/Observer.hpp>
+#include <utility/Observer.hpp>
 
 namespace DEPOS {
 
-template <typename Tag>
-class SiFiveUART : public Driver, public Observed<const unsigned char *, size_t> {
+template <typename Tag> class SiFiveUART : public Driver, public Observed<const unsigned char *, size_t> {
     using MyTraits                         = Traits<SiFiveUART<Tag>>;
     static constexpr unsigned long Address = MyTraits::Address;
 
@@ -30,7 +29,7 @@ class SiFiveUART : public Driver, public Observed<const unsigned char *, size_t>
         Reg32(Address, IE) |= RXIRQ;
     }
 
-    static void handler(unsigned int) {
+    static void handler(size_t) {
         unsigned char buffer[8];
         unsigned int i = 0;
         while (i < sizeof(buffer)) {
@@ -45,7 +44,7 @@ class SiFiveUART : public Driver, public Observed<const unsigned char *, size_t>
   public:
     static void init() {
         for (auto IRQ : MyTraits::IRQs)
-            IC::bind(IRQ, handler);
+            IC::install(IRQ, handler);
     }
 
     static SiFiveUART *instance() {

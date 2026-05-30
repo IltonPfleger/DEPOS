@@ -206,7 +206,7 @@ int main() {
     Span<const uint8_t> initramfs(static_cast<const uint8_t *>(LinuxImage::Initramfs), sizeof(LinuxImage::Initramfs));
 
     LinuxLauncher vm0(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    // LinuxLauncher vm1(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    LinuxLauncher vm1(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
     // LinuxLauncher vm2(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
     // LinuxLauncher vm3(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
     // LinuxLauncher vm4(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
