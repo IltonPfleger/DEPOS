@@ -6,19 +6,8 @@
 
 /* Headers */
 #define __HEADER_NAME(X) X.hpp
-#define __HEADER_ARCH(X) <architecture/__ARCH/__HEADER_NAME(X)>
 #define __HEADER_MACHINE(X) <machine/__MACHINE/__HEADER_NAME(X)>
 #define __HEADER_APPLICATION(X) <app/__APPLICATION/__HEADER_NAME(X)>
-
-/* Architecture */
-#ifdef __ARCH
-#define __CPU_HEADER __HEADER_ARCH(CPU)
-#define __MMU_HEADER __HEADER_ARCH(MMU)
-#define __TIMER_HEADER __HEADER_ARCH(Timer)
-#define __IC_HEADER __HEADER_ARCH(IC)
-#define __PMU_HEADER __HEADER_ARCH(PMU)
-#define __VCPU_HEADER __HEADER_ARCH(VirtualCPU)
-#endif
 
 /* Machine */
 #ifdef __MACHINE
