@@ -222,6 +222,33 @@ class LinuxLauncher {
     LinuxMachine *vm_;
 };
 
+class EPOS_Launcher {
+  public:
+    EPOS_Launcher(size_t size, const Span<const uint8_t> &epos, Thread::Criterion criterion)
+        : epos_(epos),
+          buffer_(static_cast<unsigned char *>(Memory::alloc(size)), size),
+          thread_(worker, this, criterion) {}
+
+  private:
+    static void *worker(void *pointer) {
+        typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NetworkDevice;
+        typedef virtio::Network<VirtualSwitch<NetworkDevice>, 0x30200000> Network;
+        typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
+        typedef virtio::Console<SerialDevice, 0x30000000> Serial;
+
+        auto *self = reinterpret_cast<EPOS_Launcher *>(pointer);
+        memcpy(self->buffer_.data(), self->epos_.data(), self->epos_.length());
+        auto *vm = new GenericVirtualMachine<Serial, Network>(self->buffer_.data(), self->buffer_.length());
+        vm->activate(1, 15);
+        return nullptr;
+    }
+
+  private:
+    const Span<const uint8_t> &epos_;
+    Span<uint8_t> buffer_;
+    Thread thread_;
+};
+
 int main() {
     typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
 
@@ -234,21 +261,18 @@ int main() {
 
     const auto &linux     = receiver.linux();
     const auto &initramfs = receiver.initramfs();
+    const auto &epos      = receiver.epos();
 
     LinuxLauncher vm0(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    LinuxLauncher vm1(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    LinuxLauncher vm3(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-	LinuxLauncher vm4(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    EPOS_Launcher vm1(128 * 1024 * 1024, epos, Thread::Criterion(Thread::Criterion::NORMAL, 1));
 
     while (1)
         Alarm::udelay(100'000'000);
 }
 
-//
-////
-//// class EPOS_VirtualMachineLauncher {
+//// class EPOS_Launcher {
 ////   public:
-////     EPOS_VirtualMachineLauncher(const Chunk &chunk,
+////     EPOS_Launcher(const Chunk &chunk,
 ////                                 Thread::Criterion criterion = Thread::Criterion(Thread::Criterion::NORMAL, 0))
 ////         : chunk_(chunk),
 ////           thread_(worker, this, criterion) {}
@@ -260,7 +284,7 @@ int main() {
 ////         typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
 ////         typedef virtio::Console<SerialDevice, 0x30000000> Serial;
 ////
-////         auto *self = reinterpret_cast<EPOS_VirtualMachineLauncher *>(pointer);
+////         auto *self = reinterpret_cast<EPOS_Launcher *>(pointer);
 ////
 ////         auto *epos = static_cast<unsigned char *>(Memory::alloc(VirtualMachineMemorySize));
 ////
@@ -372,7 +396,7 @@ int main() {
 //    const Chunk &initramfs = receiver.initramfs();
 //    const Chunk &dtb       = receiver.dtb();
 //
-//    // EPOS_VirtualMachineLauncher vm0(receiver.epos(), Thread::Criterion(Thread::Criterion::NORMAL, 1));
+//    // EPOS_Launcher vm0(receiver.epos(), Thread::Criterion(Thread::Criterion::NORMAL, 1));
 //
 //    Linux_VirtualMachineLauncher vm0(linux, initramfs, dtb, Thread::Criterion(Thread::Criterion::NORMAL, 1));
 //    // Linux_VirtualMachineLauncher vm1(linux, initramfs, dtb, Thread::Criterion(Thread::Criterion::NORMAL, 1));
