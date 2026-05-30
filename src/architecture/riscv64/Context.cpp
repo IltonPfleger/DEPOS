@@ -5,7 +5,7 @@
 #include <architecture/riscv64/VirtualCPU.hpp>
 #include <utility/Console.hpp>
 
-__attribute__((naked)) void DEPOS::riscv64::HypervisorContext::doSwap(void *previous, void *next) {
+__attribute__((naked)) void DEPOS::HypervisorContext::doSwap(void *previous, void *next) {
     Father::save();
     save();
     asm("sd sp, 0(%0)" ::"r"(previous));
@@ -14,7 +14,7 @@ __attribute__((naked)) void DEPOS::riscv64::HypervisorContext::doSwap(void *prev
     Father::load();
 }
 
-void DEPOS::riscv64::HypervisorContext::swap(void *previous, void *next) {
+void DEPOS::HypervisorContext::swap(void *previous, void *next) {
     HypervisorContext *ncontext = reinterpret_cast<HypervisorContext *>(next);
 
     VirtualCPU *ncpu = reinterpret_cast<VirtualCPU *>(ncontext->guest_.cpu);

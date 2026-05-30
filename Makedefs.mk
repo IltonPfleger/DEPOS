@@ -42,11 +42,11 @@ $(HASH): $(TRAITS)
 
 MACH_CCFLAGS := $(CCFLAGS)
 
--include $(CONFIG)
--include $(HERE)/include/machine/$(MACHINE)/Makedefs.mk
-
 $(CONFIG): $(HASH)
 	mkdir -p $(dir $@)
 	g++ $(CCFLAGS) -E $(HERE)/include/Traits.hpp -w -Wno-error=pragma-once-outside-header | $(CONFIGURATOR) > $(CONFIG).cpp
 	g++ $(CCFLAGS) $(CONFIG).cpp -o $(CONFIG).elf
 	$(CONFIG).elf > $@
+
+-include $(CONFIG)
+-include $(HERE)/include/machine/$(MACHINE)/Makedefs.mk
