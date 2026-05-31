@@ -6,19 +6,25 @@
 namespace DEPOS {
 
 class NetworkBuffer {
+    friend class NetworkDevice;
+
   public:
-    NetworkBuffer(void *start, size_t head, size_t tail, uint16_t protocol = 0)
+    NetworkBuffer(void *start, size_t head, size_t tail, uint32_t *references)
         : start_(static_cast<uint8_t *>(start)),
           head_(start_ + head),
           tail_(start_ + tail),
-          protocol_(protocol) {}
-
-    void protocol(uint16_t p) { protocol_ = p; }
+          references_(references) {}
 
     template <typename T = uint8_t *>
     [[nodiscard]]
     T data(this auto &&self) {
         return reinterpret_cast<T>(self.head_);
+    }
+
+    template <typename T = uint8_t *>
+    [[nodiscard]]
+    T start(this auto &&self) {
+        return reinterpret_cast<T>(self.start_);
     }
 
     [[nodiscard]]
@@ -27,18 +33,14 @@ class NetworkBuffer {
     }
 
     [[nodiscard]]
-    uint16_t protocol() const {
-        return protocol_;
+    size_t references() const {
+        assert(references_);
+        return *references_;
     }
 
     [[nodiscard]]
     size_t length() const {
         return static_cast<size_t>(tail_ - start_);
-    }
-
-    [[nodiscard]]
-    uint8_t *start() const {
-        return start_;
     }
 
     [[nodiscard]]
@@ -72,7 +74,7 @@ class NetworkBuffer {
     uint8_t *head_;
     uint8_t *tail_;
 
-    uint16_t protocol_;
+    uint32_t *references_;
 };
 
 } // namespace DEPOS

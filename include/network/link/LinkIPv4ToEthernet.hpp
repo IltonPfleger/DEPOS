@@ -26,7 +26,11 @@ class LinkIPv4ToEthernet : public NetworkLinkLayer, public Observer<NetworkBuffe
 
     virtual NetworkBuffer *alloc(size_t length) override { return device_.alloc(length); }
 
-    virtual void update(NetworkBuffer buffer) override { notify(buffer); }
+    virtual void update(NetworkBuffer buffer) override {
+        auto *header = reinterpret_cast<Ethernet::Header *>(buffer.start());
+        if (header->protocol() != IPv4::ProtocolValue) return;
+        notify(buffer);
+    }
 
     virtual void bind(const NetworkAddress &address) override { router_.bind(address); }
 

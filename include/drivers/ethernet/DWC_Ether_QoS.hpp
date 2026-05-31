@@ -233,15 +233,18 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
 class DWC_Ether_QoS_Buffer : public NetworkBuffer {
   public:
     DWC_Ether_QoS_Buffer(void *data = nullptr)
-        : NetworkBuffer(data, 0, 0),
-          allocated(false) {}
+        : NetworkBuffer(data, 0, 0, &references_),
+          allocated(false),
+          references_(0) {}
 
     DWC_Ether_QoS_Buffer(void *data, size_t head, size_t tail)
-        : NetworkBuffer(data, head, tail),
-          allocated(true) {}
+        : NetworkBuffer(data, head, tail, &references_),
+          allocated(true),
+          references_(0) {}
 
   public:
     bool allocated;
+    uint32_t references_;
 };
 
 template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
@@ -409,6 +412,8 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
 
         new (buffer) DWC_Ether_QoS_Buffer(buffer->start(), 0, descriptor->length());
 
+        buffer->references_ = 1;
+
         return buffer;
     }
 
@@ -466,7 +471,6 @@ template <unsigned long Base> class DWC_Ether_QoS_MTL : Driver {
 };
 
 template <typename Tag> class DWC_Ether_QoS final : public EthernetDevice {
-
     enum Registers {
         CH0_INTERRUPT_ENABLE = 0x1134,
         CH0_INTERRUPT_STATUS = 0x1160,

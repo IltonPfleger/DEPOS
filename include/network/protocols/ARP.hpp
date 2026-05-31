@@ -76,7 +76,10 @@ template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : pu
 
   private:
     void update(NetworkBuffer buffer) {
-        if (buffer.protocol() != ProtocolValue) return;
+        {
+            typename HardwareLayerType::Header *header = buffer.start<typename HardwareLayerType::Header *>();
+            if (header->protocol() != ProtocolValue) return;
+        }
         Header *header = buffer.data<Header *>();
         if (CPU::be16toh(header->operation) == REPLY) {
             onReply(*header);

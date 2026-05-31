@@ -24,10 +24,7 @@ class EthernetDevice : public NetworkDevice {
 
     NetworkBuffer *receive() override {
         NetworkBuffer *buffer = doReceive();
-        if (buffer) {
-            buffer->protocol(buffer->data<Header *>()->protocol());
-            buffer->advance(sizeof(Header));
-        }
+        if (buffer) buffer->advance(sizeof(Header));
         return buffer;
     }
 

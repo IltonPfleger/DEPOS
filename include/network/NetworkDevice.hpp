@@ -24,8 +24,13 @@ class NetworkDevice : public Observed<NetworkBuffer> {
   public:
     virtual ~NetworkDevice() = default;
     virtual NetworkBuffer *alloc(size_t size) { return doAlloc(size); }
-    virtual void release(NetworkBuffer *buffer) { return doRelease(buffer); }
     virtual NetworkBuffer *receive() { return doReceive(); }
+
+    void release(NetworkBuffer *buffer) {
+        if (CPU::Atomic::fdec(*buffer->references_) == 1) return doRelease(buffer);
+    }
+
+    void retain(NetworkBuffer *buffer) { CPU::Atomic::finc(*buffer->references_); }
 
     int send(NetworkBuffer *buffer, bool free = true) {
         int result = doSend(buffer);
@@ -45,10 +50,15 @@ class NetworkDevice : public Observed<NetworkBuffer> {
         auto *self = static_cast<NetworkDevice *>(argument);
         while (self->running_) {
             // self->semaphore_.p();
+
             NetworkBuffer *buffer = self->receive();
             if (!buffer) continue;
+
+            *buffer->references_ = 1;
+
             self->notify(*buffer);
-            self->doRelease(buffer);
+
+            self->release(buffer);
         }
         return nullptr;
     }

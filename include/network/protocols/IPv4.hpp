@@ -71,7 +71,6 @@ class IPv4 : public Observer<NetworkBuffer>,
 
   public:
     void update(NetworkBuffer buffer) {
-        if (buffer.protocol() != ProtocolValue) return;
         Header *header = buffer.data<Header *>();
         buffer.advance(header->length());
         notify(buffer, header->destination, header->source, header->protocol);

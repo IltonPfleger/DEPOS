@@ -12,20 +12,31 @@ template <typename... Args> class Observed {
     friend class Observer<Args...>;
 
   public:
-    Observed() = default;
+    Observed()
+        : obervers_(),
+          size_(0) {}
 
-    void attach(Observer<Args...> *o) { m_observers.insert(&o->link_); }
+    void attach(Observer<Args...> *o) {
+        obervers_.insert(&o->link_);
+        size_++;
+    }
 
-    void detach(Observer<Args...> *o) { m_observers.remove(&o->link_); }
+    void detach(Observer<Args...> *o) {
+        obervers_.remove(&o->link_);
+        size_--;
+    }
+
+    uint32_t size() { return size_; }
 
     void notify(Args... args) {
-        for (Link *l = m_observers.head(); l; l = l->next()) {
+        for (Link *l = obervers_.head(); l; l = l->next()) {
             l->value()->update(args...);
         }
     }
 
   private:
-    collections::SimpleList<Link> m_observers;
+    collections::SimpleList<Link> obervers_;
+    uint32_t size_;
 };
 
 template <typename... Args> class Observer {

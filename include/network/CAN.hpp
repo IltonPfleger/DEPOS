@@ -36,7 +36,7 @@ class CAN {
     class Buffer : public NetworkBuffer {
       public:
         Buffer(uint32_t id = 0, size_t length = 8, bool ide = false, bool rtr = false)
-            : NetworkBuffer(&m_frame.data, 0, length),
+            : NetworkBuffer(&m_frame.data, 0, length, nullptr),
               m_frame(Header(id, ide, rtr), 0) {}
 
         [[nodiscard]] const Header *header() const { return reinterpret_cast<const Header *>(&m_frame.header); }
