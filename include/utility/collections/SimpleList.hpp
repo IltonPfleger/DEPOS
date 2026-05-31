@@ -9,7 +9,7 @@ namespace collections {
 
 template <typename T> class SimpleList {
   public:
-    SimpleList()
+    constexpr SimpleList()
         : _head(nullptr) {}
 
     T *head(this auto &&self) { return self._head; }

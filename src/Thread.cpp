@@ -17,7 +17,7 @@ void Thread::entry(Function f, Argument a) {
 
 Thread::Return Thread::idle(Argument) {
     while (s_count > Traits<CPU>::Active) {
-        if constexpr (Traits<Timer>::Enable) CPU::idle();
+        // if constexpr (Traits<Timer>::Enable) CPU::idle();
         reschedule();
     }
 
@@ -113,8 +113,6 @@ void Thread::exit() {
 
 void Thread::init() {
     TraceIn();
-
-    new (&s_scheduler) Scheduler();
 
     for (int i = 0; i < Traits<CPU>::Active; ++i)
         new Thread(idle, 0, Criterion::IDLE);

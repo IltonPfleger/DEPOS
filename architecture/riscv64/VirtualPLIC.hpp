@@ -65,6 +65,7 @@ class VirtualPLIC {
                 *destination = m_threshold[context];
                 return true;
             } else if (reg == 4) {
+                csrc<MachineMode::IP>(SupervisorMode::EI);
                 *destination = claim(context);
                 return true;
             }
@@ -90,7 +91,6 @@ class VirtualPLIC {
                 m_threshold[context] = source;
                 return true;
             } else if (reg == 4) {
-                csrc<MachineMode::IP>(SupervisorMode::EI);
                 return true;
             }
         }

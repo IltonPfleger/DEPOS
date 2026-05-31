@@ -1,3 +1,4 @@
+// #include <SDs.hpp>
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
 #include <architecture/VirtualCPU.hpp>
@@ -11,7 +12,57 @@
 #include <network/protocols/TFTP.hpp>
 #include <utility/Span.hpp>
 
-using namespace DEPOS;
+#define ARTERY_PROJECT
+#define NO_DATA_SOURCE
+
+#include <boolean_filters.h>
+#include <main_traits.h>
+#include <seu.h>
+#include <smartdata.h>
+#include <transducer.h>
+#include <transformer.h>
+
+typedef void (*constructor_t)();
+
+extern constructor_t __init_array_start[];
+extern constructor_t __init_array_end[];
+
+void call_global_constructors() {
+    for (constructor_t *ctor = __init_array_start; ctor != __init_array_end; ++ctor) {
+        (*ctor)();
+    }
+}
+
+using DS          = Dynamics_State;
+using DS_Proxy    = Interested_SmartData<DS::Unit::Wrap<DS::UNIT>>;
+using OBRTF       = Object_Recognition_And_Tracking_Fuser;
+using OBRTF_Proxy = Interested_SmartData<OBRTF::Unit::Wrap<(SmartData::Unit::MOTION_VECTOR_LOCAL | 10)>>;
+using Device      = DEPOS::Meta::GetFromTypeList<DEPOS::Traits<DEPOS::Ethernet>::Devices, 0>::Result;
+
+void *node(void *) {
+    // SEU_SmartData *seu = new SEU_SmartData();
+
+    // Road_Parameters rp = Road_Parameters(0, 0, 0, 0, 0);
+    // rp.set_default();
+
+    // Unit_Dev_Expiry::List *ud_list = new Unit_Dev_Expiry::List();
+    // ud_list->insert((new Unit_Dev_Expiry(Dynamics_State::UNIT, 16, 100000))->link());
+    // ud_list->insert((new Unit_Dev_Expiry(Object_Recognition_And_Tracking_Fuser::UNIT, 23, 100000))->link());
+
+    // RSS_Safe_Distance *rss = new RSS_Safe_Distance(ud_list, &rp, &rp, 100000);
+    // seu->add_boolean_filter(rss);
+    //// DEPOS::Alarm::udelay(5'000'000);
+
+    //// auto *b = new OBRTF_Proxy(OBRTF_Proxy::Region(0, 0, 0, 100, OBRTF_Proxy::now(), INFINITE), 5'000);
+    ////(void)b;
+
+    new DS_Proxy(DS_Proxy::Region(0, 0, 0, 100, DS_Proxy::now(), INFINITE), 5'000);
+
+    while (1)
+        DEPOS::Alarm::udelay(100'000'000);
+}
+
+namespace DEPOS {
 
 constexpr size_t MB                       = 1024 * 1024;
 constexpr size_t VirtualMachineMemorySize = 128 * MB;
@@ -236,10 +287,12 @@ class EPOS_Launcher {
         typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
         typedef virtio::Console<SerialDevice, 0x30000000> Serial;
 
+        TraceIn(Thread::running());
+
         auto *self = reinterpret_cast<EPOS_Launcher *>(pointer);
         memcpy(self->buffer_.data(), self->epos_.data(), self->epos_.length());
         auto *vm = new GenericVirtualMachine<Serial, Network>(self->buffer_.data(), self->buffer_.length());
-        vm->activate(1, 15);
+        vm->activate(1);
         return nullptr;
     }
 
@@ -249,25 +302,40 @@ class EPOS_Launcher {
     Thread thread_;
 };
 
-int main() {
-    typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
+} // namespace DEPOS
 
-    auto *link = new LinkIPv4ToEthernet(*Device::instance());
-    auto *ipv4 = new IPv4(IPv4::Address(192, 168, 1, 167), *link);
-    auto *udp  = new UDP(ipv4);
-    auto *tftp = new TFTP(*udp);
+int main() {
+    using namespace DEPOS;
+
+    typedef DEPOS::Meta::GetFromTypeList<DEPOS::Traits<DEPOS::Ethernet>::Devices, 0>::Result Device;
+
+    auto *link = new DEPOS::LinkIPv4ToEthernet(*Device::instance());
+    auto *ipv4 = new DEPOS::IPv4(IPv4::Address(192, 168, 1, 167), *link);
+    auto *udp  = new DEPOS::UDP(ipv4);
+    auto *tftp = new DEPOS::TFTP(*udp);
 
     Receiver receiver(tftp);
 
-    const auto &linux     = receiver.linux();
-    const auto &initramfs = receiver.initramfs();
-    const auto &epos      = receiver.epos();
+    // const auto &linux     = receiver.linux();
+    // const auto &initramfs = receiver.initramfs();
+    const auto &epos = receiver.epos();
 
-    LinuxLauncher vm0(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    EPOS_Launcher vm1(128 * 1024 * 1024, epos, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    call_global_constructors();
+
+    TSTP::init();
+
+    EPOS_Launcher vm1(128 * 1024 * 1024, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 1));
+    // EPOS_Launcher vm2(128 * 1024 * 1024, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 2));
+
+    DEPOS::Alarm::udelay(2'000'000);
+
+    new DEPOS::Thread(node, 0, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 3));
+
+    // LinuxLauncher vm0(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    // DEPOS::Alarm::udelay(1);
 
     while (1)
-        Alarm::udelay(100'000'000);
+        DEPOS::Alarm::udelay(100'000'000);
 }
 
 //// class EPOS_Launcher {

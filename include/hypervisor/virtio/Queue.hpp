@@ -61,14 +61,15 @@ class Queue {
         return m_last_available_index != m_available->index;
     }
 
-    int alloc() { return m_available->ring()[m_last_available_index++ % m_size]; }
+    int alloc() { return m_available->ring()[CPU::Atomic::finc(m_last_available_index) % m_size]; }
 
     RingDescriptor *get(uint32_t id) {
-        assert(id <= m_size);
+        assert(id < m_size);
         return &m_descriptors[id];
     }
 
     void free(unsigned int id, unsigned int length = 0) {
+        assert(id < m_size);
         uint16_t index               = m_used->index % m_size;
         m_used->ring()[index].id     = id;
         m_used->ring()[index].length = length;

@@ -2,12 +2,9 @@
 
 #include <types.hpp>
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 void* malloc(DEPOS::size_t size);
+long atol(const char * str);
 
-#ifdef __cplusplus
 }
-#endif

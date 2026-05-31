@@ -7,9 +7,11 @@ namespace DEPOS {
 class Heap {
   public:
     struct Header {
+        unsigned long magic;
         unsigned long size;
     };
 
+    enum { MAGIC = ('H' << 24) | ('E' << 16) | ('A' << 8) | ('P' << 0) };
     enum Location { SYSTEM };
 };
 

@@ -269,28 +269,28 @@ class HypervisorContext {
 
 inline void DEPOS::HypervisorContext::save() {
     asm("addi sp, sp, %0" ::"i"(-sizeof(GuestContextFrame)));
-    asm("csrr t0, sscratch; sd t0, %0(sp)" ::"i"(SSCRATCH));
-    asm("csrr t0, satp; sd t0, %0(sp)" ::"i"(SATP));
-    asm("csrr t0, stvec; sd t0, %0(sp)" ::"i"(STVEC));
-    asm("csrr t0, scause; sd t0, %0(sp)" ::"i"(SCAUSE));
-    asm("csrr t0, stval; sd t0, %0(sp)" ::"i"(STVAL));
-    asm("csrr t0, sepc; sd t0, %0(sp)" ::"i"(SEPC));
-    asm("csrr t0, mie; sd t0, %0(sp)" ::"i"(SIE));
-    asm("csrr t0, mip; sd t0, %0(sp)" ::"i"(SIP));
-    asm("csrr t0, %0" ::"i"(MachineMode::SCRATCH));
-    asm("ld t0, %0(t0)" : : "i"(__builtin_offsetof(CoreContext, scratch0)));
-    asm("sd t0, %0(sp)" ::"i"(OWNER));
+    // asm("csrr t0, sscratch; sd t0, %0(sp)" ::"i"(SSCRATCH));
+    // asm("csrr t0, satp; sd t0, %0(sp)" ::"i"(SATP));
+    // asm("csrr t0, stvec; sd t0, %0(sp)" ::"i"(STVEC));
+    // asm("csrr t0, scause; sd t0, %0(sp)" ::"i"(SCAUSE));
+    // asm("csrr t0, stval; sd t0, %0(sp)" ::"i"(STVAL));
+    // asm("csrr t0, sepc; sd t0, %0(sp)" ::"i"(SEPC));
+    // asm("csrr t0, mie; sd t0, %0(sp)" ::"i"(SIE));
+    // asm("csrr t0, mip; sd t0, %0(sp)" ::"i"(SIP));
+    // asm("csrr t0, %0" ::"i"(MachineMode::SCRATCH));
+    // asm("ld t0, %0(t0)" : : "i"(__builtin_offsetof(CoreContext, scratch0)));
+    // asm("sd t0, %0(sp)" ::"i"(OWNER));
 }
 
 inline void DEPOS::HypervisorContext::load() {
-    asm("ld t0, %0(sp); csrw sscratch, t0" ::"i"(SSCRATCH));
-    asm("ld t0, %0(sp); csrw satp, t0" ::"i"(SATP));
-    asm("ld t0, %0(sp); csrw stvec, t0" ::"i"(STVEC));
-    asm("ld t0, %0(sp); csrw scause, t0" ::"i"(SCAUSE));
-    asm("ld t0, %0(sp); csrw stval, t0" ::"i"(STVAL));
-    asm("ld t0, %0(sp); csrw sepc, t0" ::"i"(SEPC));
-    asm("li t1, 0x222; ld t0, %0(sp); andi t0, t0, 0x222; csrc mip, t1; csrs mip, t0" ::"i"(SIP));
-    asm("li t1, 0x222; ld t0, %0(sp); andi t0, t0, 0x222; csrc mie, t1; csrs mie, t0" ::"i"(SIE));
+    // asm("ld t0, %0(sp); csrw sscratch, t0" ::"i"(SSCRATCH));
+    // asm("ld t0, %0(sp); csrw satp, t0" ::"i"(SATP));
+    // asm("ld t0, %0(sp); csrw stvec, t0" ::"i"(STVEC));
+    // asm("ld t0, %0(sp); csrw scause, t0" ::"i"(SCAUSE));
+    // asm("ld t0, %0(sp); csrw stval, t0" ::"i"(STVAL));
+    // asm("ld t0, %0(sp); csrw sepc, t0" ::"i"(SEPC));
+    // asm("li t1, 0x222; ld t0, %0(sp); andi t0, t0, 0x222; csrc mip, t1; csrs mip, t0" ::"i"(SIP));
+    // asm("li t1, 0x222; ld t0, %0(sp); andi t0, t0, 0x222; csrc mie, t1; csrs mie, t0" ::"i"(SIE));
     asm("addi sp, sp, %0" ::"i"(sizeof(GuestContextFrame)));
 }
 

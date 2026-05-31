@@ -27,9 +27,9 @@ class NetworkDevice : public Observed<NetworkBuffer> {
     virtual void release(NetworkBuffer *buffer) { return doRelease(buffer); }
     virtual NetworkBuffer *receive() { return doReceive(); }
 
-    int send(NetworkBuffer *buffer) {
+    int send(NetworkBuffer *buffer, bool free = true) {
         int result = doSend(buffer);
-        doFree(buffer);
+        if (free) doFree(buffer);
         return result;
     }
 

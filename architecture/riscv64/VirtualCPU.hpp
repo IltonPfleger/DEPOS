@@ -45,22 +45,20 @@ class VirtualCPU {
 
     void interrupt(unsigned int id) {
         plic_.interrupt(id);
-        if (core_ == CPU::id()) {
-            doExternalInterrupt();
-        } else {
-            CLINT::ipi(core_);
-        }
+        // if (core_ == csrr<MachineMode::HARTID>()) {
+        //     doExternalInterrupt();
+        // } else {
+        //     CLINT::ipi(core_);
+        // }
     }
 
     static void onTick() {
         if (!current()) return;
         if (CLINT::mtime() >= current()->mtimecmp_) doTimerInterrupt();
-    }
-
-    static void onInterProcessorInterrupt() {
-        if (!current()) return;
         if (current()->plic_.pending()) doExternalInterrupt();
     }
+
+    static void onInterProcessorInterrupt() { doExternalInterrupt(); }
 
     static void reset(unsigned long r) {
         csrc<MachineMode::IP>(SupervisorMode::TI);

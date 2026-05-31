@@ -9,7 +9,7 @@ namespace DEPOS {
 class Memory {
   private:
     // using Allocator = allocators::Buddy<Traits<Memory>::PageSize, Traits<Memory>::Size>;
-    using Allocator = allocators::Buddy<1, Traits<Memory>::Size>;
+    using Allocator = allocators::Buddy<1, Traits<Memory>::Order>;
 
   public:
     static void init();
@@ -18,7 +18,7 @@ class Memory {
     static uintptr_t virt2phys(uintptr_t);
 
   private:
-    static inline Allocator s_allocator;
+    static constinit inline Allocator s_allocator{};
     static inline Spin s_spin;
 };
 

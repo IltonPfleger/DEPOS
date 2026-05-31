@@ -14,7 +14,7 @@ class Scheduler {
     using Criterion = typename Traits<Scheduler>::Criterion;
     using Node      = collections::Node<Thread *, Criterion>;
 
-    Scheduler()
+    constexpr Scheduler()
         : _heads({nullptr}),
           _collection() {}
 

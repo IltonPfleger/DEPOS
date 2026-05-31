@@ -35,9 +35,9 @@ class Thread {
     static void reschedule();
     static void onTick();
     static void join(Thread &);
+    static Thread *running();
 
   private:
-    static Thread *running();
     static void dispatch(Thread *, Thread *, Spin *);
     static void entry(Function, Argument);
     static Return idle(Argument);
@@ -53,7 +53,7 @@ class Thread {
     Context *m_context;
 
   private:
-    static inline Scheduler s_scheduler;
+    static constinit inline Scheduler s_scheduler;
     static inline volatile unsigned int s_count;
     static inline Thread *s_previous[Traits<CPU>::Active];
     static inline Spin *s_spin[Traits<CPU>::Active];

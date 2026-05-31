@@ -7,7 +7,7 @@ namespace collections {
 
 template <typename T> class FIFO {
   public:
-    FIFO()
+    constexpr FIFO()
         : head_(nullptr),
           tail_(nullptr) {}
 

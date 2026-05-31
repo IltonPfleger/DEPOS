@@ -11,8 +11,6 @@ void Memory::init() {
 
     TraceIn();
 
-    s_allocator = Allocator();
-
     for (uintptr_t c = RamEnd - PageSize; c >= RamStart; c -= PageSize) {
         Chunk page(c, PageSize);
         if (page.overlaps(__kmm)) continue;
@@ -43,6 +41,7 @@ void *Memory::alloc(size_t size) {
     TraceOut(chunk);
 
     s_spin.release();
+
     return chunk;
 }
 

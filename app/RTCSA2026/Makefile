@@ -3,8 +3,9 @@ include ../../Makedefs.mk
 ELF := $(BUILD)/$(APPLICATION).elf
 BUILD := $(BUILD)/$(APPLICATION)
 
-SOURCES := $(shell find . -name '*.cpp')
-OBJECTS     := $(SOURCES:%=$(BUILD)/%.o)
+SOURCES := $(shell find . \( -name '*.cpp' -o -name '*.cc' \) -not -path '*/EPOS/*' | sed 's|^\./||')
+OBJECTS := $(patsubst %.cc,$(BUILD)/%.o,$(filter %.cc,$(SOURCES)))
+OBJECTS += $(patsubst %.cpp,$(BUILD)/%.o,$(filter %.cpp,$(SOURCES)))
 DEPENDENCIES := $(OBJECTS:.o=.d)
 
 .PHONY: EPOS
@@ -15,9 +16,26 @@ $(ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
 	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(Application_Addr) --image-base=$(Application_Addr) -o $@ $^
 
-$(BUILD)/%.cpp.o: %.cpp $(CONFIG) 
+$(BUILD)/%.o: %.cpp $(CONFIG) 
 	@mkdir -p $(dir $@)
-	$(CC) $(MACH_CCFLAGS) -I../include -MMD -MP -c $< -o $@
+	$(CC) $(MACH_CCFLAGS) -I. -Ismartdata/include -I../include -MMD -MP -c $< -o $@\
+		-Wno-deprecated-enum-enum-conversion -Wno-overflow \
+		-Wno-unused-parameter -Wno-pedantic \
+		-Wno-tautological-compare -Wno-volatile \
+		-Wno-ignored-qualifiers -Wno-deprecated-copy \
+		-Wno-return-type -Wno-maybe-uninitialized\
+		-Wno-unused-but-set-variable
+
+$(BUILD)/%.o: %.cc $(CONFIG)
+	@mkdir -p $(dir $@)
+	$(CC) $(MACH_CCFLAGS) -Ismartdata/include -I../../include \
+	      -MMD -MP -c $< -o $@ \
+	      -Wno-deprecated-enum-enum-conversion -Wno-overflow \
+	      -Wno-unused-parameter -Wno-pedantic \
+	      -Wno-tautological-compare -Wno-volatile \
+	      -Wno-ignored-qualifiers -Wno-deprecated-copy \
+	      -Wno-return-type -Wno-maybe-uninitialized\
+		  -Wno-unused-but-set-variable
 
 EPOS:
 	#./EPOS.sh

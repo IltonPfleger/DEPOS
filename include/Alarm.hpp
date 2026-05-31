@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Semaphore.hpp>
 #include <Spin.hpp>
 #include <Thread.hpp>
 #include <utility/collections/Node.hpp>

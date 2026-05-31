@@ -3,6 +3,7 @@
 
 #include <Spin.hpp>
 #include <types.hpp>
+#include <utility/Console.hpp>
 #include <utility/collections/FIFO.hpp>
 
 namespace DEPOS {
@@ -16,6 +17,16 @@ class FixedCore {
 
     FixedCore(size_t rank = NORMAL, size_t cpu = ANY, ...)
         : index_(build(rank, cpu)) {}
+
+    FixedCore(const FixedCore &other)
+        : index_(other.index_) {}
+
+    FixedCore &operator=(const FixedCore &other) {
+        if (this != &other) {
+            index_ = other.index_;
+        }
+        return *this;
+    }
 
     template <typename T> struct Collection {
         void insert(const FixedCore &c, T *t) {
