@@ -114,7 +114,7 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public LocalNetwork::Observer 
         return m_statistics;
     }
 
-    void update(NetworkBuffer buffer) {
+    void update(const NetworkBuffer &buffer) {
         // db<NIC>(TRC) << "UDPNIC::update " << buffer.length() << endl;
         //  DEPOS::Ethernet::Header *header = reinterpret_cast<DEPOS::Ethernet::Header *>(buffer.start());
         //// const unsigned char *data = buffer->data() + 14;

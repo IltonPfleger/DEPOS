@@ -7,7 +7,7 @@
 
 namespace DEPOS {
 
-template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : public Observer<NetworkBuffer> {
+template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : public Observer<const NetworkBuffer &> {
   public:
     enum : uint16_t { ProtocolValue = 0x0806 };
     enum : uint16_t { REQUEST = 1, REPLY = 2 };
@@ -75,7 +75,7 @@ template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : pu
     }
 
   private:
-    void update(NetworkBuffer buffer) {
+    void update(const NetworkBuffer &buffer) {
         {
             typename HardwareLayerType::Header *header = buffer.start<typename HardwareLayerType::Header *>();
             if (header->protocol() != ProtocolValue) return;

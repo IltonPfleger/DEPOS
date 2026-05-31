@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Semaphore.hpp>
 #include <Spin.hpp>
 #include <Traits.hpp>
 #include <machine/Machine.hpp>
@@ -7,15 +8,6 @@
 namespace DEPOS {
 
 template <typename Device> class VirtualSwitch : public Device::Observer, public Device::Observed {
-    static constexpr unsigned int FrameSize = 1518;
-    static constexpr int InternalQueueSize  = 16;
-
-    struct InternalBuffer {
-        unsigned char data[FrameSize];
-        unsigned int size;
-        InternalBuffer()
-            : size(0) {}
-    };
 
   public:
     static auto instance() {
@@ -27,66 +19,100 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
     VirtualSwitch()
         : device_(Device::instance()) {
 
-        for (int i = 0; i < InternalQueueSize; i++) {
-            free_.insert(&links_[i]);
+        for (size_t i = 0; i < InternalQueueSize; i++) {
+            sfree_.insert(&snodes_[i]);
+            rfree_.insert(&rnodes_[i]);
         }
 
         device_->attach(this);
-        thread_ = new Thread(entry, this);
+        running_ = true;
+        thread_  = new Thread(entry, this);
     }
+
+    ~VirtualSwitch() {
+        running_ = false;
+        delete thread_;
+    }
+
+    VirtualSwitch(const VirtualSwitch &)            = delete;
+    VirtualSwitch &operator=(const VirtualSwitch &) = delete;
 
     NetworkBuffer *alloc(size_t length) { return device_->alloc(length); }
 
     int send(NetworkBuffer *buffer) {
-        copy(buffer);
-        device_->send(buffer, true);
-        return 0;
-    }
+        size_t length = buffer->length();
 
-    void update(NetworkBuffer buffer) { copy(&buffer); }
-
-  private:
-    bool copy(NetworkBuffer *buffer) {
         bool enabled = CPU::Interrupt::disable();
         lock_.acquire();
-        Link *link = free_.remove();
+        auto *node = sfree_.remove();
         lock_.release();
         if (enabled) CPU::Interrupt::enable();
 
-        if (!link) return false;
+        if (!node) return 0;
 
-        InternalBuffer &i = link->value();
-        i.size            = buffer->length();
-        memcpy(i.data, buffer->start(), buffer->length());
+        node->value(buffer);
 
         enabled = CPU::Interrupt::disable();
         lock_.acquire();
-        received_.insert(link);
+        spending_.insert(node);
         lock_.release();
         if (enabled) CPU::Interrupt::enable();
 
-        return true;
+        semaphore_.v();
+
+        return length;
     }
 
-    static void *entry(void *p) { return reinterpret_cast<VirtualSwitch *>(p)->run(); }
+    void update(const NetworkBuffer &buffer) {
+        bool enabled = CPU::Interrupt::disable();
+        lock_.acquire();
+        auto *node = rfree_.remove();
+        lock_.release();
+        if (enabled) CPU::Interrupt::enable();
 
-    void *run() {
-        while (true) {
+        if (!node) return;
+
+        device_->retain(buffer);
+        node->value(&buffer);
+
+        enabled = CPU::Interrupt::disable();
+        lock_.acquire();
+        rpending_.insert(node);
+        lock_.release();
+        if (enabled) CPU::Interrupt::enable();
+
+        semaphore_.v();
+    }
+
+  private:
+    static void *entry(void *pointer) { return reinterpret_cast<VirtualSwitch *>(pointer)->worker(); }
+
+    void *worker() {
+        while (running_) {
+            semaphore_.p();
             CPU::Interrupt::disable();
             lock_.acquire();
-            Link *link = received_.remove();
+            SendNode *snode     = spending_.remove();
+            ReceivedNode *rnode = rpending_.remove();
             lock_.release();
             CPU::Interrupt::enable();
 
-            if (link) {
-                InternalBuffer &buf = link->value();
-
-                NetworkBuffer temp_buffer(buf.data, 0, buf.size);
-                this->notify(temp_buffer);
-
+            if (snode) {
+                this->notify(*snode->value());
+                device_->send(snode->value());
                 CPU::Interrupt::disable();
                 lock_.acquire();
-                free_.insert(link);
+                sfree_.insert(snode);
+                lock_.release();
+                CPU::Interrupt::enable();
+            }
+
+            if (rnode) {
+                this->notify(*rnode->value());
+                device_->release(const_cast<NetworkBuffer *>(rnode->value()));
+                CPU::Interrupt::disable();
+                lock_.acquire();
+                rfree_.insert(rnode);
                 lock_.release();
                 CPU::Interrupt::enable();
             }
@@ -95,15 +121,27 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
     }
 
   private:
-    using Link = collections::Node<InternalBuffer>;
-    using List = collections::FIFO<Link>;
+    static constexpr size_t InternalQueueSize = 16;
+
+    using SendNode     = collections::Node<NetworkBuffer *>;
+    using SendList     = collections::FIFO<SendNode>;
+    using ReceivedNode = collections::Node<const NetworkBuffer *>;
+    using ReceivedList = collections::FIFO<ReceivedNode>;
 
     Device *device_;
     Thread *thread_;
-    List free_{};
-    List received_{};
-    Link links_[InternalQueueSize];
-    Spin lock_{};
+    Spin lock_;
+
+    SendList sfree_;
+    SendList spending_;
+    SendNode snodes_[InternalQueueSize];
+
+    ReceivedList rfree_;
+    ReceivedList rpending_;
+    ReceivedNode rnodes_[InternalQueueSize];
+
+    volatile bool running_;
+    Semaphore semaphore_;
 };
 
 } // namespace DEPOS

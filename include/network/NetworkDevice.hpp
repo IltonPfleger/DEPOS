@@ -8,9 +8,10 @@
 
 namespace DEPOS {
 
-class NetworkDevice : public Observed<NetworkBuffer> {
+class NetworkDevice : public Observed<const NetworkBuffer &> {
   public:
-    using Observer = DEPOS::Observer<NetworkBuffer>;
+    using Observed = DEPOS::Observed<const NetworkBuffer &>;
+    using Observer = DEPOS::Observer<const NetworkBuffer &>;
 
   protected:
     virtual NetworkBuffer *doAlloc(size_t)  = 0;
@@ -26,11 +27,12 @@ class NetworkDevice : public Observed<NetworkBuffer> {
     virtual NetworkBuffer *alloc(size_t size) { return doAlloc(size); }
     virtual NetworkBuffer *receive() { return doReceive(); }
 
-    void release(NetworkBuffer *buffer) {
+    void release(const NetworkBuffer *constant) {
+        NetworkBuffer *buffer = const_cast<NetworkBuffer *>(constant);
         if (CPU::Atomic::fdec(*buffer->references_) == 1) return doRelease(buffer);
     }
 
-    void retain(NetworkBuffer *buffer) { CPU::Atomic::finc(*buffer->references_); }
+    void retain(const NetworkBuffer &buffer) { CPU::Atomic::finc(*buffer.references_); }
 
     int send(NetworkBuffer *buffer, bool free = true) {
         int result = doSend(buffer);

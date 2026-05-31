@@ -48,7 +48,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
         }
     }
 
-    void update(NetworkBuffer buffer) override {
+    void update(const NetworkBuffer &buffer) override {
         auto data = buffer.start();
         auto size = buffer.length();
 

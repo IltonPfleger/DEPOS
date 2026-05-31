@@ -10,7 +10,7 @@
 
 namespace DEPOS {
 
-class LinkIPv4ToEthernet : public NetworkLinkLayer, public Observer<NetworkBuffer> {
+class LinkIPv4ToEthernet : public NetworkLinkLayer, public Observer<const NetworkBuffer &> {
     using MAC    = GenericAddress<6>;
     using IP     = GenericAddress<4>;
     using Router = ARP<EthernetDevice, IPv4>;
@@ -26,7 +26,7 @@ class LinkIPv4ToEthernet : public NetworkLinkLayer, public Observer<NetworkBuffe
 
     virtual NetworkBuffer *alloc(size_t length) override { return device_.alloc(length); }
 
-    virtual void update(NetworkBuffer buffer) override {
+    virtual void update(const NetworkBuffer &buffer) override {
         auto *header = reinterpret_cast<Ethernet::Header *>(buffer.start());
         if (header->protocol() != IPv4::ProtocolValue) return;
         notify(buffer);
@@ -38,9 +38,7 @@ class LinkIPv4ToEthernet : public NetworkLinkLayer, public Observer<NetworkBuffe
         if (IP(address) == IPv4Broadcast) return device_.send(EthernetBroadcast, Ethertype, buffer);
 
         MAC solved;
-        if (router_.resolve(address, EthernetBroadcast, solved)) {
-            return device_.send(solved, Ethertype, buffer);
-        }
+        if (router_.resolve(address, EthernetBroadcast, solved)) return device_.send(solved, Ethertype, buffer);
 
         return 0;
     }

@@ -15,6 +15,9 @@ class NetworkBuffer {
           tail_(start_ + tail),
           references_(references) {}
 
+    NetworkBuffer()
+        : NetworkBuffer(nullptr, 0, 0, nullptr) {}
+
     template <typename T = uint8_t *>
     [[nodiscard]]
     T data(this auto &&self) {

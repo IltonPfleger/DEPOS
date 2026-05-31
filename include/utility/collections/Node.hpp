@@ -15,6 +15,7 @@ template <typename V = void, typename P = void, typename D = void> struct Node {
     void next(this auto &self, auto next) { self.m_next = next; }
 
     auto &value(this auto &self) { return self.m_value; }
+    void value(this auto &self, Value value) { self.m_value = value; }
 
     auto criterion(this auto &self) { return self.m_criterion; }
 
