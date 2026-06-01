@@ -21,6 +21,7 @@ template <typename Device> class NetworkVampire : Device::Observer {
     }
 
     ~NetworkVampire() {
+        device_->detach(this);
         running_ = false;
         semaphore_.v();
         delete thread_;
@@ -52,10 +53,8 @@ template <typename Device> class NetworkVampire : Device::Observer {
     static void *entry(void *pointer) { return reinterpret_cast<NetworkVampire *>(pointer)->worker(); }
 
     void *worker() {
-        while (true) {
+        while (running_) {
             semaphore_.p();
-
-            if (!running_) break;
 
             if (buffer_ == nullptr) continue;
 
