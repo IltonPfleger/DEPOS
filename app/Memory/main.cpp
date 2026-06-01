@@ -6,7 +6,7 @@
 
 using namespace DEPOS;
 
-static constexpr int Number     = 100;
+static constexpr int Number     = 10;
 static constexpr int Iterations = 100;
 
 size_t size(int &seed) {
@@ -27,20 +27,22 @@ size_t size(int &seed) {
         case 14: return 8192;
         case 15: return 16384;
         case 16: return 32768;
-        case 17: return 4 - 1;
-        case 18: return 8 - 1;
-        case 19: return 16 - 1;
-        case 20: return 32 - 1;
-        case 21: return 64 - 1;
-        case 22: return 128 - 1;
-        case 23: return 256 - 1;
-        case 24: return 512 - 1;
-        case 25: return 1024 - 1;
-        case 26: return 2048 - 1;
-        case 27: return 4096 - 1;
-        case 28: return 8192 - 1;
-        case 29: return 16384 - 1;
-        case 30: return 32768 - 1;
+        case 17: return 65536;
+        case 18: return 4 - 1;
+        case 19: return 8 - 1;
+        case 20: return 16 - 1;
+        case 21: return 32 - 1;
+        case 22: return 64 - 1;
+        case 23: return 128 - 1;
+        case 24: return 256 - 1;
+        case 25: return 512 - 1;
+        case 26: return 1024 - 1;
+        case 27: return 2048 - 1;
+        case 28: return 4096 - 1;
+        case 29: return 8192 - 1;
+        case 30: return 16384 - 1;
+        case 31: return 32768 - 1;
+        case 32: return 65536 - 1;
     }
     return 0;
 }

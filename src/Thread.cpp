@@ -59,7 +59,7 @@ void Thread::epilogue() {
         case State::READY: s_scheduler.insert(&previous->m_node); break;
         case State::WAITING:
             previous->m_waiting->insert(&previous->m_node);
-            spin->release();
+            if (spin) spin->release();
             break;
         case State::FINISHING:
             previous->m_state = State::FINISHED;
