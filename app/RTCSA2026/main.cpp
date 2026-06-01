@@ -303,6 +303,39 @@ class EPOS_Launcher {
     Thread thread_;
 };
 
+class Overhead {
+  public:
+    Overhead(Thread::Criterion criterion) {
+        for (size_t i = 0; i < Number; i++) {
+            new Periodic_Thread(500, worker1, nullptr, criterion);
+            new Periodic_Thread(500, worker2, nullptr, criterion);
+        }
+    }
+
+  private:
+    static void *worker1(void *) {
+        while (1) {
+            OBRTF_Proxy proxy(OBRTF_Proxy::Region(0, 0, 0, 100, OBRTF_Proxy::now(), INFINITE), 300'000);
+            (void)proxy;
+            Periodic_Thread::wait();
+        }
+
+        return nullptr;
+    }
+    static void *worker2(void *) {
+        while (1) {
+            DS_Proxy proxy(DS_Proxy::Region(0, 0, 0, 100, DS_Proxy::now(), INFINITE), 5'000);
+            (void)proxy;
+            Periodic_Thread::wait();
+        }
+
+        return nullptr;
+    }
+
+  private:
+    static constexpr size_t Number = 10;
+};
+
 } // namespace DEPOS
 
 int main() {
@@ -318,16 +351,17 @@ int main() {
     Receiver receiver(tftp);
 
     const size_t MemorySize = 1024 * 1024 * 128;
-    // const auto &linux       = receiver.linux();
-    // const auto &initramfs = receiver.initramfs();
-    const auto &epos = receiver.epos();
+    const auto &linux       = receiver.linux();
+    const auto &initramfs   = receiver.initramfs();
+    const auto &epos        = receiver.epos();
 
     call_global_constructors();
 
     TSTP::init();
 
     NetworkVampire<VirtualSwitch<Device>> vm(DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
-    // LinuxLauncher vm0(MemorySize, linux, initramfs, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
+    Overhead overhead(DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
+    LinuxLauncher vm0(MemorySize, linux, initramfs, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
     EPOS_Launcher vm1(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 1));
     EPOS_Launcher vm2(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 2));
 
