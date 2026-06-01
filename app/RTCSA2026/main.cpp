@@ -40,22 +40,19 @@ using OBRTF_Proxy = Interested_SmartData<OBRTF::Unit::Wrap<(SmartData::Unit::MOT
 using Device      = DEPOS::Meta::GetFromTypeList<DEPOS::Traits<DEPOS::Ethernet>::Devices, 0>::Result;
 
 void *node(void *) {
-    // SEU_SmartData *seu = new SEU_SmartData();
+    SEU_SmartData *seu = new SEU_SmartData();
 
-    // Road_Parameters rp = Road_Parameters(0, 0, 0, 0, 0);
-    // rp.set_default();
+    Road_Parameters rp = Road_Parameters(0, 0, 0, 0, 0);
+    rp.set_default();
 
-    // Unit_Dev_Expiry::List *ud_list = new Unit_Dev_Expiry::List();
-    // ud_list->insert((new Unit_Dev_Expiry(Dynamics_State::UNIT, 16, 100000))->link());
-    // ud_list->insert((new Unit_Dev_Expiry(Object_Recognition_And_Tracking_Fuser::UNIT, 23, 100000))->link());
+    Unit_Dev_Expiry::List *ud_list = new Unit_Dev_Expiry::List();
+    ud_list->insert((new Unit_Dev_Expiry(Dynamics_State::UNIT, 16, 100000))->link());
+    ud_list->insert((new Unit_Dev_Expiry(Object_Recognition_And_Tracking_Fuser::UNIT, 23, 100000))->link());
 
-    // RSS_Safe_Distance *rss = new RSS_Safe_Distance(ud_list, &rp, &rp, 100000);
-    // seu->add_boolean_filter(rss);
-    //// DEPOS::Alarm::udelay(5'000'000);
+    RSS_Safe_Distance *rss = new RSS_Safe_Distance(ud_list, &rp, &rp, 100000);
+    seu->add_boolean_filter(rss);
 
-    //// auto *b = new OBRTF_Proxy(OBRTF_Proxy::Region(0, 0, 0, 100, OBRTF_Proxy::now(), INFINITE), 5'000);
-    ////(void)b;
-
+    new OBRTF_Proxy(OBRTF_Proxy::Region(0, 0, 0, 100, OBRTF_Proxy::now(), INFINITE), 300'000);
     new DS_Proxy(DS_Proxy::Region(0, 0, 0, 100, DS_Proxy::now(), INFINITE), 5'000);
 
     while (1)
@@ -64,14 +61,11 @@ void *node(void *) {
 
 namespace DEPOS {
 
-constexpr size_t MB                       = 1024 * 1024;
-constexpr size_t VirtualMachineMemorySize = 128 * MB;
-
 class Receiver {
   public:
     Receiver(TFTP *tftp)
         : tftp_(tftp),
-          buffer_(static_cast<uint8_t *>(Memory::alloc(VirtualMachineMemorySize)), VirtualMachineMemorySize) {
+          buffer_(static_cast<uint8_t *>(Memory::alloc(BufferSize)), BufferSize) {
 
         current_   = buffer_.data();
         remaining_ = buffer_.length();
@@ -109,6 +103,9 @@ class Receiver {
         current_ += size;
         remaining_ -= size;
     }
+
+  private:
+    static constexpr size_t BufferSize = 128 * 1024 * 1024;
 
   private:
     TFTP *tftp_;
@@ -266,6 +263,9 @@ class LinuxLauncher {
     }
 
   private:
+    static constexpr size_t MB = 1024 * 1024;
+
+  private:
     size_t size_;
     unsigned char *start_;
     Span<const uint8_t> initramfs_;
@@ -316,161 +316,23 @@ int main() {
 
     Receiver receiver(tftp);
 
-    // const auto &linux     = receiver.linux();
-    // const auto &initramfs = receiver.initramfs();
-    const auto &epos = receiver.epos();
+    const size_t MemorySize = 1024 * 1024 * 128;
+    const auto &linux       = receiver.linux();
+    const auto &initramfs   = receiver.initramfs();
+    const auto &epos        = receiver.epos();
 
     call_global_constructors();
 
     TSTP::init();
 
-    EPOS_Launcher vm1(128 * 1024 * 1024, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 1));
-    // EPOS_Launcher vm2(128 * 1024 * 1024, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 2));
+    LinuxLauncher vm0(MemorySize, linux, initramfs, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
+    EPOS_Launcher vm1(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 1));
+    EPOS_Launcher vm2(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 2));
 
     DEPOS::Alarm::udelay(2'000'000);
 
     new DEPOS::Thread(node, 0, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 3));
 
-    // LinuxLauncher vm0(128 * 1024 * 1024, linux, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    // DEPOS::Alarm::udelay(1);
-
     while (1)
         DEPOS::Alarm::udelay(100'000'000);
 }
-
-//// class EPOS_Launcher {
-////   public:
-////     EPOS_Launcher(const Chunk &chunk,
-////                                 Thread::Criterion criterion = Thread::Criterion(Thread::Criterion::NORMAL, 0))
-////         : chunk_(chunk),
-////           thread_(worker, this, criterion) {}
-////
-////   private:
-////     static void *worker(void *pointer) {
-////         typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NetworkDevice;
-////         typedef virtio::Network<VirtualSwitch<NetworkDevice>, 0x30200000> Network;
-////         typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
-////         typedef virtio::Console<SerialDevice, 0x30000000> Serial;
-////
-////         auto *self = reinterpret_cast<EPOS_Launcher *>(pointer);
-////
-////         auto *epos = static_cast<unsigned char *>(Memory::alloc(VirtualMachineMemorySize));
-////
-////         memcpy(epos, reinterpret_cast<void *>(self->chunk_.start()), self->chunk_.size());
-////
-////         auto *vm = new GenericVirtualMachine<Serial, Network>(epos, VirtualMachineMemorySize);
-////
-////         vm->activate(1, 15);
-////         return nullptr;
-////     }
-////
-////   private:
-////     const Chunk &chunk_;
-////     Thread thread_;
-//// };
-//
-// class Linux_VirtualMachineLauncher {
-//    typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
-//    typedef virtio::Console<SerialDevice, 0x30000000> Serial;
-//
-//  public:
-//    Linux_VirtualMachineLauncher(const Chunk &kernel,
-//                                 const Chunk &initramfs,
-//                                 const Chunk &dtb,
-//                                 Thread::Criterion criterion)
-//        : kernel_(kernel),
-//          initramfs_(initramfs),
-//          dtb_(dtb),
-//          thread_(worker, this, criterion) {}
-//
-//  private:
-//    static void *worker(void *pointer) {
-//        auto *self = reinterpret_cast<Linux_VirtualMachineLauncher *>(pointer);
-//
-//        auto *buffer           = static_cast<unsigned char *>(Memory::alloc(VirtualMachineMemorySize));
-//        uintptr_t base         = reinterpret_cast<uintptr_t>(buffer);
-//        unsigned char *current = buffer;
-//
-//        memcpy(current, reinterpret_cast<void *>(self->kernel_.start()), self->kernel_.size());
-//        current += self->kernel_.size();
-//
-//        current = align(current, MB);
-//        memcpy(current, reinterpret_cast<void *>(self->dtb_.start()), self->dtb_.size());
-//        DeviceTree *dtb = reinterpret_cast<DeviceTree *>(current);
-//        ERROR(!dtb->valid(), "Invalid Device Tree!\n");
-//        current += self->dtb_.size();
-//
-//        current                  = align(current, MB);
-//        unsigned char *initramfs = current;
-//        memcpy(initramfs, reinterpret_cast<void *>(self->initramfs_.start()), self->initramfs_.size());
-//        current += self->initramfs_.size();
-//
-//        // Memory
-//        unsigned int regs[4];
-//        regs[0] = CPU::htobe32(base >> 32);
-//        regs[1] = CPU::htobe32(base);
-//        regs[2] = CPU::htobe32(VirtualMachineMemorySize >> 32);
-//        regs[3] = CPU::htobe32(VirtualMachineMemorySize);
-//        dtb->edit("memory@0", "reg", regs, sizeof(regs));
-//
-//        // Initramfs
-//        regs[0] = CPU::htobe32(reinterpret_cast<uintptr_t>(initramfs) >> 32);
-//        regs[1] = CPU::htobe32(reinterpret_cast<uintptr_t>(initramfs));
-//        regs[2] = CPU::htobe32(reinterpret_cast<uintptr_t>(initramfs + self->initramfs_.size()) >> 32);
-//        regs[3] = CPU::htobe32(reinterpret_cast<uintptr_t>(initramfs + self->initramfs_.size()));
-//        dtb->edit("chosen", "linux,initrd-start", regs, sizeof(regs[0]) * 2);
-//        dtb->edit("chosen", "linux,initrd-end", &regs[2], sizeof(regs[0]) * 2);
-//
-//        // Console
-//        unsigned int irq = CPU::htobe32(Serial::IRQ);
-//        regs[0]          = CPU::htobe32(Serial::Address >> 32);
-//        regs[1]          = CPU::htobe32(Serial::Address);
-//        regs[2]          = CPU::htobe32(0x0);
-//        regs[3]          = CPU::htobe32(0x1000);
-//        dtb->edit("virtio_mmio@1", "compatible", "virtio,mmio", sizeof("virtio,mmio"));
-//        dtb->edit("virtio_mmio@1", "reg", regs, sizeof(regs));
-//        dtb->edit("virtio_mmio@1", "interrupts", &irq, sizeof(irq));
-//
-//        Console::print("\n *** Linux ***\n");
-//        auto *vm = new GenericVirtualMachine<Serial>(buffer, VirtualMachineMemorySize);
-//        vm->activate(0, dtb);
-//        return nullptr;
-//    }
-//
-//  private:
-//    static unsigned char *align(unsigned char *p, long a) {
-//        uintptr_t addr = reinterpret_cast<uintptr_t>(p);
-//        addr           = (addr + a - 1) & ~(a - 1);
-//        return reinterpret_cast<unsigned char *>(addr);
-//    }
-//
-//  private:
-//    const Chunk &kernel_;
-//    const Chunk &initramfs_;
-//    const Chunk &dtb_;
-//    Thread thread_;
-//};
-//
-// int main() {
-//    typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result Device;
-//
-//    auto *link = new LinkIPv4ToEthernet(*Device::instance());
-//    auto *ipv4 = new IPv4(IPv4::Address(192, 168, 1, 167), *link);
-//    auto *udp  = new UDP(ipv4);
-//    auto *tftp = new TFTP(*udp);
-//
-//    Receiver receiver(tftp);
-//    const Chunk &linux     = receiver.linux();
-//    const Chunk &initramfs = receiver.initramfs();
-//    const Chunk &dtb       = receiver.dtb();
-//
-//    // EPOS_Launcher vm0(receiver.epos(), Thread::Criterion(Thread::Criterion::NORMAL, 1));
-//
-//    Linux_VirtualMachineLauncher vm0(linux, initramfs, dtb, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-//    // Linux_VirtualMachineLauncher vm1(linux, initramfs, dtb, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-//
-//    while (1)
-//        Alarm::udelay(1'000'000);
-//
-//    return 0;
-//}

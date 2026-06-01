@@ -50,7 +50,7 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public LocalNetwork::Observer 
     }
 
     Buffer *alloc(const Address &dst, const Protocol &prot, UInt32 once, UInt32 always, UInt32 payload) override {
-        db<UDPNIC>(ERR) << "UDPNIC::alloc(s=" << address() << ",d=" << dst << ",p=" << hex << prot << dec
+        db<UDPNIC>(TRC) << "UDPNIC::alloc(s=" << address() << ",d=" << dst << ",p=" << hex << prot << dec
                         << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
         Buffer *buf = new Buffer(this, 0);
@@ -69,14 +69,12 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public LocalNetwork::Observer 
     }
 
     int send(Buffer *buffer) override {
-        db<NIC>(ERR) << "UDPNIC::send(buf=" << buffer << ") size: " << buffer->size() << endl;
+        db<NIC>(TRC) << "UDPNIC::send(buf=" << buffer << ") size: " << buffer->size() << endl;
         unsigned int size      = buffer->size();
         NetworkBuffer *dbuffer = m_network->alloc(size);
         dbuffer->shrink(dbuffer->offset());
         dbuffer->rewind(dbuffer->offset());
         memcpy(dbuffer->data(), buffer->frame(), size);
-
-        // NetworkBuffer dbuffer(buffer->frame(), 0, buffer->size());
         m_network->send(dbuffer);
         free(buffer);
         return size;
@@ -115,18 +113,18 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public LocalNetwork::Observer 
     }
 
     void update(const NetworkBuffer &buffer) {
-        // db<NIC>(TRC) << "UDPNIC::update " << buffer.length() << endl;
-        //  DEPOS::Ethernet::Header *header = reinterpret_cast<DEPOS::Ethernet::Header *>(buffer.start());
-        //// const unsigned char *data = buffer->data() + 14;
-        //// Protocol prot      = PROTO_TSTP;
-        // UInt32 size        = buffer.length();
-        // TSC::Time_Stamp ts = TSC::time_stamp();
-        // Buffer *buf        = new Buffer(this, 0);
-        //// buf->fill(size, address(), address(), 0, 0, 0);
-        // buf->size(size);
-        // memcpy(buf->data(), buffer.start(), size);
-        // buf->sfdts = ts;
-        // notify(header->protocol(), buf);
+        db<NIC>(TRC) << "UDPNIC::update " << buffer.length() << endl;
+        DEPOS::Ethernet::Header *header = reinterpret_cast<DEPOS::Ethernet::Header *>(buffer.start());
+        // const unsigned char *data = buffer->data() + 14;
+        // Protocol prot      = PROTO_TSTP;
+        UInt32 size        = buffer.length();
+        TSC::Time_Stamp ts = TSC::time_stamp();
+        Buffer *buf        = new Buffer(this, 0);
+        // buf->fill(size, address(), address(), 0, 0, 0);
+        buf->size(size);
+        memcpy(buf->data(), buffer.start(), size);
+        buf->sfdts = ts;
+        notify(header->protocol(), buf);
     }
 
   private:

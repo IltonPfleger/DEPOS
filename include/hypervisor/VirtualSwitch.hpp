@@ -8,13 +8,6 @@
 namespace DEPOS {
 
 template <typename Device> class VirtualSwitch : public Device::Observer, public Device::Observed {
-
-  public:
-    static auto instance() {
-        static VirtualSwitch instance;
-        return &instance;
-    }
-
   public:
     VirtualSwitch()
         : device_(Device::instance()) {
@@ -33,9 +26,6 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
         running_ = false;
         delete thread_;
     }
-
-    VirtualSwitch(const VirtualSwitch &)            = delete;
-    VirtualSwitch &operator=(const VirtualSwitch &) = delete;
 
     NetworkBuffer *alloc(size_t length) { return device_->alloc(length); }
 
@@ -84,6 +74,11 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
         semaphore_.v();
     }
 
+    static auto instance() {
+        static VirtualSwitch instance;
+        return &instance;
+    }
+
   private:
     static void *entry(void *pointer) { return reinterpret_cast<VirtualSwitch *>(pointer)->worker(); }
 
@@ -121,7 +116,7 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
     }
 
   private:
-    static constexpr size_t InternalQueueSize = 16;
+    static constexpr size_t InternalQueueSize = 32;
 
     using SendNode     = collections::Node<NetworkBuffer *>;
     using SendList     = collections::FIFO<SendNode>;
