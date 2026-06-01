@@ -1,4 +1,5 @@
 // #include <SDs.hpp>
+#include <NetworkVampire.hpp>
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
 #include <architecture/VirtualCPU.hpp>
@@ -317,15 +318,16 @@ int main() {
     Receiver receiver(tftp);
 
     const size_t MemorySize = 1024 * 1024 * 128;
-    const auto &linux       = receiver.linux();
-    const auto &initramfs   = receiver.initramfs();
-    const auto &epos        = receiver.epos();
+    // const auto &linux       = receiver.linux();
+    // const auto &initramfs = receiver.initramfs();
+    const auto &epos = receiver.epos();
 
     call_global_constructors();
 
     TSTP::init();
 
-    LinuxLauncher vm0(MemorySize, linux, initramfs, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
+    NetworkVampire<VirtualSwitch<Device>> vm(DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
+    // LinuxLauncher vm0(MemorySize, linux, initramfs, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
     EPOS_Launcher vm1(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 1));
     EPOS_Launcher vm2(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 2));
 

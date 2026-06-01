@@ -4,6 +4,7 @@
 #include <Traits.hpp>
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/CPU.hpp>
+#include <architecture/riscv64/MMU.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/PMP.hpp>
 #include <architecture/riscv64/VirtualPLIC.hpp>
@@ -24,6 +25,8 @@ class VirtualCPU {
 
     void activate(auto... args) {
         CPU::Interrupt::disable();
+
+        MMU::TLB::flush();
 
         PMP::NAPOT<1>(vm_->memory().start(), vm_->memory().size(), PMP::R | PMP::W | PMP::X);
 

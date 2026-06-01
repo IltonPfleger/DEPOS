@@ -28,6 +28,8 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
     }
 
     NetworkBuffer *alloc(size_t length) { return device_->alloc(length); }
+    void release(const NetworkBuffer *buffer) { device_->release(buffer); }
+    void retain(const NetworkBuffer &buffer) { device_->retain(buffer); }
 
     int send(NetworkBuffer *buffer) {
         size_t length = buffer->length();
