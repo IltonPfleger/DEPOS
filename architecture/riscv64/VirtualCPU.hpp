@@ -115,6 +115,7 @@ class VirtualCPU {
     bool first_;
     VirtualMachine *vm_;
     VirtualPLIC plic_;
+    Spin lock_;
 };
 
 } // namespace DEPOS

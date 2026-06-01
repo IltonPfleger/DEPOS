@@ -20,7 +20,7 @@ class NetworkDevice : public Observed<const NetworkBuffer &> {
     virtual NetworkBuffer *doReceive()      = 0;
     virtual void doRelease(NetworkBuffer *) = 0;
 
-    void onReceive() { semaphore_.v(); }
+    void onReceive() {} // semaphore_.v(); }
 
   public:
     virtual ~NetworkDevice() = default;
@@ -34,9 +34,9 @@ class NetworkDevice : public Observed<const NetworkBuffer &> {
 
     void retain(const NetworkBuffer &buffer) { CPU::Atomic::finc(*buffer.references_); }
 
-    int send(NetworkBuffer *buffer, bool free = true) {
+    int send(NetworkBuffer *buffer) {
         int result = doSend(buffer);
-        if (free) doFree(buffer);
+        doFree(buffer);
         return result;
     }
 
@@ -54,6 +54,7 @@ class NetworkDevice : public Observed<const NetworkBuffer &> {
             // self->semaphore_.p();
 
             NetworkBuffer *buffer = self->receive();
+
             if (!buffer) continue;
 
             *buffer->references_ = 1;

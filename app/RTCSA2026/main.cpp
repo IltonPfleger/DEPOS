@@ -41,17 +41,17 @@ using OBRTF_Proxy = Interested_SmartData<OBRTF::Unit::Wrap<(SmartData::Unit::MOT
 using Device      = DEPOS::Meta::GetFromTypeList<DEPOS::Traits<DEPOS::Ethernet>::Devices, 0>::Result;
 
 void *node(void *) {
-    SEU_SmartData *seu = new SEU_SmartData();
+    // SEU_SmartData *seu = new SEU_SmartData();
 
-    Road_Parameters rp = Road_Parameters(0, 0, 0, 0, 0);
-    rp.set_default();
+    // Road_Parameters rp = Road_Parameters(0, 0, 0, 0, 0);
+    // rp.set_default();
 
-    Unit_Dev_Expiry::List *ud_list = new Unit_Dev_Expiry::List();
-    ud_list->insert((new Unit_Dev_Expiry(Dynamics_State::UNIT, 16, 100000))->link());
-    ud_list->insert((new Unit_Dev_Expiry(Object_Recognition_And_Tracking_Fuser::UNIT, 23, 100000))->link());
+    // Unit_Dev_Expiry::List *ud_list = new Unit_Dev_Expiry::List();
+    // ud_list->insert((new Unit_Dev_Expiry(Dynamics_State::UNIT, 16, 100000))->link());
+    // ud_list->insert((new Unit_Dev_Expiry(Object_Recognition_And_Tracking_Fuser::UNIT, 23, 100000))->link());
 
-    RSS_Safe_Distance *rss = new RSS_Safe_Distance(ud_list, &rp, &rp, 100000);
-    seu->add_boolean_filter(rss);
+    // RSS_Safe_Distance *rss = new RSS_Safe_Distance(ud_list, &rp, &rp, 100000);
+    // seu->add_boolean_filter(rss);
 
     new OBRTF_Proxy(OBRTF_Proxy::Region(0, 0, 0, 100, OBRTF_Proxy::now(), INFINITE), 300'000);
     new DS_Proxy(DS_Proxy::Region(0, 0, 0, 100, DS_Proxy::now(), INFINITE), 5'000);
@@ -359,16 +359,13 @@ int main() {
 
     TSTP::init();
 
-    NetworkVampire<VirtualSwitch<Device>> vm(DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
-    Overhead overhead(DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
-    LinuxLauncher vm0(MemorySize, linux, initramfs, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
-    EPOS_Launcher vm1(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 1));
-    EPOS_Launcher vm2(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 2));
+    // NetworkVampire<VirtualSwitch<Device>> vm(DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
+    // Overhead overhead(DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
+    new LinuxLauncher(MemorySize, linux, initramfs, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
+    new EPOS_Launcher(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 1));
+    new EPOS_Launcher(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 2));
 
     DEPOS::Alarm::udelay(2'000'000);
 
     new DEPOS::Thread(node, 0, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 3));
-
-    while (1)
-        DEPOS::Alarm::udelay(100'000'000);
 }

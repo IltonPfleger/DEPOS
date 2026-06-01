@@ -1,5 +1,6 @@
 #pragma once
 
+#include <architecture/CPU.hpp>
 #include <utility/Console.hpp>
 
 static constexpr const char *TracePrefix      = "[TRACE] ";
@@ -11,13 +12,14 @@ static constexpr const char *TraceInEnd       = ") {";
 
 #define __LOCATION__ __PRETTY_FUNCTION__
 
-#define assert(expr, ...)                                                                                              \
+#define assert(expression, ...)                                                                                        \
     if constexpr (DEPOS::Traits<DEPOS::Debug>::Error) {                                                                \
-        if (!(expr)) {                                                                                                 \
+        if (!(expression)) {                                                                                           \
+            DEPOS::CPU::Interrupt::disable();                                                                          \
             DEPOS::Console::panic();                                                                                   \
-            DEPOS::Console::println(ErrorPrefix, __LOCATION__);                                                        \
-            DEPOS::Console::println(ExpressionPrefix, #expr);                                                          \
-            __VA_OPT__(DEPOS::Console::println(MessagePrefix, __VA_ARGS__);)                                           \
+            DEPOS::Console::println("[ASSERT] ", __PRETTY_FUNCTION__);                                                 \
+            DEPOS::Console::println(#expression);                                                                      \
+            __VA_OPT__(DEPOS::Console::println(__VA_ARGS__);)                                                          \
             for (;;)                                                                                                   \
                 ;                                                                                                      \
         }                                                                                                              \

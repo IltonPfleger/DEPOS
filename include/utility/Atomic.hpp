@@ -34,7 +34,7 @@ template <typename T> class Atomic {
     operator T() const { return load(); }
 
   private:
-    volatile T value_;
+    T value_;
 };
 
 } // namespace DEPOS
