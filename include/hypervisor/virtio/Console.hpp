@@ -4,6 +4,7 @@
 #include <architecture/CPU.hpp>
 #include <hypervisor/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
+#include <utility/Console.hpp>
 #include <utility/Observer.hpp>
 
 namespace DEPOS {
@@ -67,10 +68,10 @@ class Console : public Handler, public Observer<const unsigned char *, size_t> {
     }
 
     size_t print(RingDescriptor *descriptor) {
-        auto *data      = reinterpret_cast<uint8_t *>(descriptor->address);
+        char *data      = reinterpret_cast<char *>(descriptor->address);
         uint32_t length = descriptor->length;
         for (uint32_t j = 0; j < descriptor->length; j++)
-            Device::instance()->putc(data[j]);
+            DEPOS::Console::print(data[j]);
         return length;
     }
 

@@ -1,19 +1,18 @@
 #pragma once
 
+#include <Semaphore.hpp>
+#include <Thread.hpp>
 #include <Traits.hpp>
 #include <hypervisor/VirtualMachine.hpp>
 #include <hypervisor/virtio/Handler.hpp>
 #include <memory/Heap.hpp>
 #include <network/NetworkDevice.hpp>
-#include <utility/Observer.hpp>
 
 namespace DEPOS {
 
 namespace virtio {
 
-struct NetworkHeader {
-    unsigned char padding[10];
-};
+typedef unsigned char NetworkHeader[10];
 
 template <typename Device, uintptr_t Base> class Network : public Handler, public Device::Observer {
 
@@ -23,7 +22,9 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
 
   public:
     Network(VirtualMachine &owner)
-        : owner_(owner) {
+        : owner_(owner),
+          running_(true),
+          thread_(entry, this) {
         this->m_header.magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
         this->m_header.version                   = 1;
         this->m_header.id                        = 1;
@@ -34,18 +35,15 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
         m_device->attach(this);
     }
 
+    ~Network() {
+        m_device->detach(this);
+        running_ = false;
+        semaphore_.v();
+    }
+
     void notify(unsigned int source) {
         if (source != TX) return;
-
-        auto &queue = this->m_queues[TX];
-
-        while (queue.available()) {
-            int head      = queue.alloc();
-            size_t length = process(queue, head);
-            queue.free(head, length);
-            this->interrupt() |= 0x1;
-            owner_.interrupt(IRQ);
-        }
+        semaphore_.v();
     }
 
     void update(const NetworkBuffer &buffer) override {
@@ -72,6 +70,27 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
     }
 
   private:
+    static void *entry(void *self) { return reinterpret_cast<Network *>(self)->worker(); }
+
+    void *worker() {
+        while (true) {
+            semaphore_.p();
+
+            if (!running_) break;
+
+            auto &queue = this->m_queues[TX];
+
+            while (queue.available()) {
+                int head      = queue.alloc();
+                size_t length = process(queue, head);
+                queue.free(head, length);
+                this->interrupt() |= 0x1;
+                owner_.interrupt(IRQ);
+            }
+        }
+        return nullptr;
+    }
+
     size_t process(Queue &queue, int head) {
         size_t total = 0;
         int current  = head;
@@ -118,6 +137,9 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
   private:
     Device *m_device;
     VirtualMachine &owner_;
+    volatile bool running_;
+    Semaphore semaphore_;
+    Thread thread_;
 };
 
 } // namespace virtio

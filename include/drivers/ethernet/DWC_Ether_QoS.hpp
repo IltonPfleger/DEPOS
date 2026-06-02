@@ -1,15 +1,15 @@
 #pragma once
 #include <Alarm.hpp>
 #include <architecture/CPU.hpp>
+#include <architecture/IC.hpp>
 #include <drivers/Driver.hpp>
+#include <drivers/ethernet/EthernetDevice.hpp>
 #include <libraries/libc/string.h>
 #include <machine/Machine.hpp>
 #include <memory/Heap.hpp>
-#include <utility/Debug.hpp>
-
-#include <architecture/IC.hpp>
-#include <drivers/ethernet/EthernetDevice.hpp>
 #include <utility/Atomic.hpp>
+#include <utility/Debug.hpp>
+#include <utility/collections/AtomicBoundedSimpleList.hpp>
 
 namespace DEPOS {
 
@@ -232,18 +232,14 @@ template <unsigned long Base> class DWC_Ether_QoS_MAC : Driver {
 
 class DWC_Ether_QoS_Buffer : public NetworkBuffer {
   public:
-    DWC_Ether_QoS_Buffer(void *data = nullptr)
-        : NetworkBuffer(data, 0, 0, &references_),
-          allocated(false),
-          references_(0) {}
+    DWC_Ether_QoS_Buffer()
+        : references_(0) {}
 
-    DWC_Ether_QoS_Buffer(void *data, size_t head, size_t tail)
+    DWC_Ether_QoS_Buffer(void *data, size_t head = 0, size_t tail = 0)
         : NetworkBuffer(data, head, tail, &references_),
-          allocated(true),
           references_(0) {}
 
   public:
-    bool allocated;
     uint32_t references_;
 };
 
@@ -317,10 +313,11 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
           m_rx_head(0) {
         TraceIn();
 
-        for (size_t i = 0; i < Number; i++) {
+        for (size_t i = 0; i < MyTraits::SendBufferCount; i++) {
             memset(&m_tx_descriptors[i], 0, sizeof(Descriptor));
             Cache::flush(m_tx_descriptors, sizeof(Descriptor));
-            new (&m_tx_buffers[i]) DWC_Ether_QoS_Buffer(new unsigned char[MTU]);
+            new (&sx_buffers_[i]) DWC_Ether_QoS_Buffer(new unsigned char[MTU]);
+            sx_list_.insert(&sx_buffers_[i]);
         }
 
         for (size_t i = 0; i < Number; i++) {
@@ -363,18 +360,14 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
     }
 
     DWC_Ether_QoS_Buffer *alloc(size_t length) {
-        size_t i = 0;
-        while (true) {
-            DWC_Ether_QoS_Buffer &buffer = m_tx_buffers[i];
-            if (!CPU::Atomic::tsl(buffer.allocated)) {
-                new (&buffer) DWC_Ether_QoS_Buffer(buffer.start(), 0, length);
-                return &buffer;
-            }
-            i = (i + 1) % Number;
-        }
+        DWC_Ether_QoS_Buffer *buffer;
+        while (!sx_list_.remove(&buffer))
+            ;
+        new (buffer) DWC_Ether_QoS_Buffer(buffer->start(), 0, length);
+        return buffer;
     }
 
-    void free(DWC_Ether_QoS_Buffer *buffer) { buffer->allocated = 0; }
+    void free(DWC_Ether_QoS_Buffer *buffer) { assert(sx_list_.insert(buffer)); }
 
     int send(const void *data, size_t length) {
         size_t i = m_tx_head++ % Number;
@@ -438,8 +431,11 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
   private:
     Descriptor m_tx_descriptors[Number];
     Descriptor m_rx_descriptors[Number];
+
+    AtomicBoundedSimpleList<DWC_Ether_QoS_Buffer, MyTraits::SendBufferCount> sx_list_;
+    DWC_Ether_QoS_Buffer sx_buffers_[MyTraits::SendBufferCount];
+
     DWC_Ether_QoS_Buffer m_rx_buffers[Number];
-    DWC_Ether_QoS_Buffer m_tx_buffers[Number];
     Atomic<size_t> m_tx_head;
     Atomic<size_t> m_rx_head;
     Atomic<size_t> m_rx_tail;

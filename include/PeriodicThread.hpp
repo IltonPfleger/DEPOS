@@ -51,7 +51,7 @@ class PeriodicThread : Semaphore, Thread {
         PeriodicThread *self = static_cast<PeriodicThread *>(argument);
         self->p();
         self->m_next = Timer::us() + self->m_period;
-        // self->m_arguments.m_function(self->m_arguments.m_argument);
+        self->m_arguments.m_function(self->m_arguments.m_argument);
         return 0;
     }
 

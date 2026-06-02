@@ -117,9 +117,11 @@ template <> struct Traits<UART> {
 
 /* ********** Ethernet ********** */
 template <> struct Traits<GMAC0> {
-    static constexpr unsigned long Address = Traits<MemoryMap>::GMAC0;
-    static constexpr unsigned char MAC[]   = {12, 34, 56, 78, 12, 34};
-    static constexpr unsigned int IRQs[]   = {9};
+    static constexpr uintptr_t Address         = Traits<MemoryMap>::GMAC0;
+    static constexpr size_t SendBufferCount    = 10;
+    static constexpr size_t ReceiveBufferCount = 10;
+    static constexpr unsigned char MAC[]       = {12, 34, 56, 78, 12, 34};
+    static constexpr unsigned int IRQs[]       = {9};
 };
 
 template <> struct Traits<Ethernet> {

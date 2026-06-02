@@ -16,16 +16,16 @@ class VisionFive2 : Driver {
         riscv64::init();
 
         if (CPU::id() == Traits<CPU>::BSP) {
-            JH7110_DVFS_Controller dvfs;
-            dvfs.set(dvfs.available()[0]);
-            Clock_Controller::divide(Clock_Controller::SYSCRG_CLK_CPU_CORE, 2);
-            uint32_t delay = 100;
-            Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 0);
-            Timer::udelay(delay);
-            PLL0::rate(1500000000);
-            Timer::udelay(delay);
-            Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 1);
-            dvfs.set(dvfs.available()[dvfs.available().length() - 1]);
+            // JH7110_DVFS_Controller dvfs;
+            // dvfs.set(dvfs.available()[0]);
+            // Clock_Controller::divide(Clock_Controller::SYSCRG_CLK_CPU_CORE, 2);
+            // uint32_t delay = 100;
+            // Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 0);
+            // Timer::udelay(delay);
+            // PLL0::rate(1500000000);
+            // Timer::udelay(delay);
+            // Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 1);
+            // dvfs.set(dvfs.available()[dvfs.available().length() - 1]);
         }
 
         CPU::barrier();

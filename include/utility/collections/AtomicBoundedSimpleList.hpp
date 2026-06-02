@@ -7,7 +7,7 @@ namespace DEPOS {
 
 template <typename T, size_t Capacity, size_t Internal = 0> class AtomicBoundedSimpleList {
   public:
-    AtomicBoundedSimpleList()
+    constexpr AtomicBoundedSimpleList()
         : head_(0),
           tail_(0),
           size_(0) {

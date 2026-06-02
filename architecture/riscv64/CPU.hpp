@@ -50,6 +50,11 @@ class CPU : public ArchitectureCommon::CPU {
             unsigned long status = csrrc<KernelMode::STATUS>(KernelMode::IRQE);
             return (status & KernelMode::IRQE) != 0;
         }
+
+        static bool enabled() {
+            unsigned long status = csrr<KernelMode::STATUS>();
+            return (status & KernelMode::IRQE) != 0;
+        }
     };
 
     __attribute__((naked, optimize("O0"))) static void init() {
