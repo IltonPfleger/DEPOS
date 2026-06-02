@@ -7,8 +7,8 @@
 #include <architecture/riscv64/MMU.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/PMP.hpp>
-#include <architecture/riscv64/VirtualPLIC.hpp>
 #include <hypervisor/VirtualMachine.hpp>
+#include <utility/Debug.hpp>
 
 namespace DEPOS {
 
@@ -23,9 +23,19 @@ class VirtualCPU {
 
     static void current(VirtualCPU *current) { current_[CPU::id()] = current; }
 
-    void activate(auto... args) {
+    void boot(auto... args) {
         CPU::Interrupt::disable();
 
+        activate();
+
+        csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
+        csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
+        csrw<MachineMode::EPC>(vm_->memory().start());
+        csrw<SupervisorMode::SATP>(0);
+        dispatch(args...);
+    }
+
+    void activate() {
         MMU::TLB::flush();
 
         PMP::NAPOT<1>(vm_->memory().start(), vm_->memory().size(), PMP::R | PMP::W | PMP::X);
@@ -35,61 +45,44 @@ class VirtualCPU {
 
         core_ = csrr<MachineMode::HARTID>();
         current(this);
+    }
 
-        if (first_) {
-            first_ = false;
-            csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
-            csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
-            csrw<MachineMode::EPC>(vm_->memory().start());
-            csrw<SupervisorMode::SATP>(0);
-            dispatch(args...);
+    void setExternalInterruptPending() {
+        if (core_ == csrr<MachineMode::HARTID>()) {
+            csrs<MachineMode::IP>(SupervisorMode::EI);
+        } else {
+            CLINT::ipi(core_);
         }
     }
 
-    void interrupt(unsigned int id) {
-        plic_.interrupt(id);
-        // if (core_ == csrr<MachineMode::HARTID>()) {
-        //     doExternalInterrupt();
-        // } else {
-        //     CLINT::ipi(core_);
-        // }
-    }
+    void clearExternalInterruptPending() { csrc<MachineMode::IP>(SupervisorMode::EI); }
+
+    static void onInterProcessorInterrupt() { csrs<MachineMode::IP>(SupervisorMode::EI); }
 
     static void onTick() {
         if (!current()) return;
-        if (CLINT::mtime() >= current()->mtimecmp_) doTimerInterrupt();
-        if (current()->plic_.pending()) doExternalInterrupt();
+        if (CLINT::mtime() >= current()->mtimecmp_) setTimerInterruptPending();
     }
 
-    static void onInterProcessorInterrupt() { doExternalInterrupt(); }
-
-    static void reset(unsigned long r) {
-        csrc<MachineMode::IP>(SupervisorMode::TI);
-        current()->mtimecmp_ = r;
+    static void mtimecmp(unsigned long mtimecmp) {
+        assert(current());
+        current()->mtimecmp_ = mtimecmp;
+        clearTimerInterruptPending();
     }
 
     static bool read(unsigned long address, unsigned int *destination) {
         if (!current()) return false;
-        if (current()->vm_->read(address, destination)) {
-            return true;
-        } else {
-            return current()->plic_.read(address - Traits<MemoryMap>::PLIC, destination);
-        }
+        return current()->vm_->read(address, destination);
     }
 
     static bool write(unsigned long address, unsigned int source) {
         if (!current()) return false;
-        if (current()->vm_->write(address, source)) {
-            return true;
-        } else {
-            return current()->plic_.write(address - Traits<MemoryMap>::PLIC, source);
-        }
+        return current()->vm_->write(address, source);
     }
 
   private:
-    static void doTimerInterrupt() { csrs<MachineMode::IP>(SupervisorMode::TI); }
-
-    static void doExternalInterrupt() { csrs<MachineMode::IP>(SupervisorMode::EI); }
+    static void setTimerInterruptPending() { csrs<MachineMode::IP>(SupervisorMode::TI); }
+    static void clearTimerInterruptPending() { csrc<MachineMode::IP>(SupervisorMode::TI); }
 
     __attribute__((naked)) static void dispatch(auto... args) {
         (static_cast<void>(args), ...);
@@ -114,8 +107,6 @@ class VirtualCPU {
     size_t core_;
     bool first_;
     VirtualMachine *vm_;
-    VirtualPLIC plic_;
-    Spin lock_;
 };
 
 } // namespace DEPOS

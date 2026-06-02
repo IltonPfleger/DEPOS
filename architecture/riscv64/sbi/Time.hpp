@@ -13,7 +13,7 @@ class Time {
     static constexpr unsigned int EID = 'T' << 24 | 'I' << 16 | 'M' << 8 | 'E';
 
     static void handler(ContextFrame *c) {
-        VirtualCPU::reset(c->a0);
+        VirtualCPU::mtimecmp(c->a0);
         c->a0 = 0;
         c->a1 = 0;
     }

@@ -3,6 +3,7 @@
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
 #include <architecture/VirtualCPU.hpp>
+#include <architecture/VirtualPLIC.hpp>
 #include <hypervisor/GenericVirtualMachine.hpp>
 #include <hypervisor/VirtualSwitch.hpp>
 #include <hypervisor/dtb/FDT_Builder.hpp>
@@ -120,9 +121,10 @@ class Receiver {
 
 class LinuxLauncher {
   public:
-    using SerialDevice = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
-    using Serial       = virtio::Console<SerialDevice, 0x30000000>;
-    using LinuxMachine = GenericVirtualMachine<Serial>;
+    using SerialDevice        = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
+    using Serial              = virtio::Console<SerialDevice, 0x30000000>;
+    using InterruptController = VirtualPLIC<0xc000000>;
+    using LinuxMachine        = GenericVirtualMachine<InterruptController, Serial>;
 
     LinuxLauncher(size_t size, Span<const uint8_t> kernel, Span<const uint8_t> initramfs, Thread::Criterion criterion)
         : size_(size),
@@ -275,6 +277,13 @@ class LinuxLauncher {
 };
 
 class EPOS_Launcher {
+    using NetworkDevice       = Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result;
+    using Network             = virtio::Network<VirtualSwitch<NetworkDevice>, 0x30200000>;
+    using SerialDevice        = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
+    using Serial              = virtio::Console<SerialDevice, 0x30000000>;
+    using InterruptController = VirtualPLIC<0xc000000>;
+    using EPOS_Machine        = GenericVirtualMachine<InterruptController, Serial, Network>;
+
   public:
     EPOS_Launcher(size_t size, const Span<const uint8_t> &epos, Thread::Criterion criterion)
         : epos_(epos),
@@ -283,16 +292,11 @@ class EPOS_Launcher {
 
   private:
     static void *worker(void *pointer) {
-        typedef Meta::GetFromTypeList<Traits<Ethernet>::Devices, 0>::Result NetworkDevice;
-        typedef virtio::Network<VirtualSwitch<NetworkDevice>, 0x30200000> Network;
-        typedef Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result SerialDevice;
-        typedef virtio::Console<SerialDevice, 0x30000000> Serial;
-
         TraceIn(Thread::running());
 
         auto *self = reinterpret_cast<EPOS_Launcher *>(pointer);
         memcpy(self->buffer_.data(), self->epos_.data(), self->epos_.length());
-        auto *vm = new GenericVirtualMachine<Serial, Network>(self->buffer_.data(), self->buffer_.length());
+        auto *vm = new EPOS_Machine(self->buffer_.data(), self->buffer_.length());
         vm->activate(1);
         return nullptr;
     }

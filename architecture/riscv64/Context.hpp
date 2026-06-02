@@ -5,7 +5,6 @@
 #include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/CoreContext.hpp>
 #include <architecture/riscv64/Modes.hpp>
-#include <architecture/riscv64/csrs.hpp>
 #include <memory/Chunk.hpp>
 
 namespace DEPOS {

@@ -18,10 +18,9 @@ class TrapHandler {
 
     static void dispatch(ContextFrame *c) {
         uintmax_t cause = c->cause;
-
-        Type type   = (Type)(cause >> 63);
-        ID id       = cause & ~(1ULL << 63);
-        Index index = irq2index(id, type);
+        Type type       = (Type)(cause >> 63);
+        ID id           = cause & ~(1ULL << 63);
+        Index index     = irq2index(id, type);
 
         ERROR(index >= NumberOfTrapHandlers);
         ERROR(!s_handlers[index]);

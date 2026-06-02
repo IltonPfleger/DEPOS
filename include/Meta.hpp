@@ -70,6 +70,15 @@ template <typename Head, typename... Tail, typename Function> void forEach(Tuple
     forEach(tuple.m_next, f);
 }
 
+template <typename Base, typename Derived> struct IsBaseOf {
+  private:
+    static char f(Base *);
+    static int f(...);
+
+  public:
+    static constexpr bool Result = sizeof(f((Derived *)nullptr)) == sizeof(char);
+};
+
 /* ------------------------------------------------------------------------- */
 /*                                 Types                                     */
 /* ------------------------------------------------------------------------- */
