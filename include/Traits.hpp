@@ -53,7 +53,8 @@ template <> struct Traits<Scheduler> {
 
 } // namespace DEPOS
 
-#include __MACHINE_TRAITS_HEADER
+#include <machine/Traits.hpp>
+
 #include __APPLICATION_TRAITS_HEADER
 
 namespace DEPOS {

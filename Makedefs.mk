@@ -31,8 +31,10 @@ ARCH ?= riscv64
 MACHINE ?= virt
 APPLICATION ?= HelloWorld
 
-CCFLAGS = -std=c++23 -I$(HERE) -I$(INCLUDE) -Wall -Wextra -Werror -pedantic -Wfatal-errors
-CCFLAGS += -D__ARCH=$(ARCH) -D__MACHINE=$(MACHINE) -D__APPLICATION=$(APPLICATION) -g -O
+CCFLAGS = -std=c++23
+CCFLAGS += -I$(HERE) -I$(INCLUDE) -I$(HERE)/architecture/$(ARCH) -I$(HERE)/machine/$(MACHINE)
+CCFLAGS += -Wall -Wextra -Werror -pedantic -Wfatal-errors
+CCFLAGS += -D__APPLICATION=$(APPLICATION) -g -O
 
 build: $(IMAGE).img
 
@@ -49,4 +51,4 @@ $(CONFIG): $(HASH)
 	$(CONFIG).elf > $@
 
 -include $(CONFIG)
--include $(HERE)/include/machine/$(MACHINE)/Makedefs.mk
+-include $(HERE)/machine/$(MACHINE)/Makedefs.mk
