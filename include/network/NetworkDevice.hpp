@@ -32,7 +32,7 @@ class NetworkDevice : public Observed<const NetworkBuffer &> {
         if (CPU::Atomic::fdec(*buffer->references_) == 1) return doRelease(buffer);
     }
 
-    void retain(const NetworkBuffer &buffer) { CPU::Atomic::finc(*buffer.references_); }
+    void retain(const NetworkBuffer *buffer) { CPU::Atomic::finc(*buffer->references_); }
 
     int send(NetworkBuffer *buffer) {
         int result = doSend(buffer);

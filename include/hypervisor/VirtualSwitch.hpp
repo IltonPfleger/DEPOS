@@ -38,7 +38,7 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
     }
 
     void update(const NetworkBuffer &buffer) {
-        device_->retain(buffer);
+        device_->retain(&buffer);
 
         while (!rpending_.insert(&buffer))
             ;

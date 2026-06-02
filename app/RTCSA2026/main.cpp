@@ -42,17 +42,17 @@ using OBRTF_Proxy = Interested_SmartData<OBRTF::Unit::Wrap<(SmartData::Unit::MOT
 using Device      = DEPOS::Meta::GetFromTypeList<DEPOS::Traits<DEPOS::Ethernet>::Devices, 0>::Result;
 
 void *node(void *) {
-    // SEU_SmartData *seu = new SEU_SmartData();
+    SEU_SmartData *seu = new SEU_SmartData();
 
-    // Road_Parameters rp = Road_Parameters(0, 0, 0, 0, 0);
-    // rp.set_default();
+    Road_Parameters rp = Road_Parameters(0, 0, 0, 0, 0);
+    rp.set_default();
 
-    // Unit_Dev_Expiry::List *ud_list = new Unit_Dev_Expiry::List();
-    // ud_list->insert((new Unit_Dev_Expiry(Dynamics_State::UNIT, 16, 100000))->link());
-    // ud_list->insert((new Unit_Dev_Expiry(Object_Recognition_And_Tracking_Fuser::UNIT, 23, 100000))->link());
+    Unit_Dev_Expiry::List *ud_list = new Unit_Dev_Expiry::List();
+    ud_list->insert((new Unit_Dev_Expiry(Dynamics_State::UNIT, 16, 100000))->link());
+    ud_list->insert((new Unit_Dev_Expiry(Object_Recognition_And_Tracking_Fuser::UNIT, 23, 100000))->link());
 
-    // RSS_Safe_Distance *rss = new RSS_Safe_Distance(ud_list, &rp, &rp, 100000);
-    // seu->add_boolean_filter(rss);
+    RSS_Safe_Distance *rss = new RSS_Safe_Distance(ud_list, &rp, &rp, 100000);
+    seu->add_boolean_filter(rss);
 
     new OBRTF_Proxy(OBRTF_Proxy::Region(0, 0, 0, 100, OBRTF_Proxy::now(), INFINITE), 300'000);
     new DS_Proxy(DS_Proxy::Region(0, 0, 0, 100, DS_Proxy::now(), INFINITE), 5'000);
