@@ -15,11 +15,11 @@ template <typename T> class POLO : public FIFO<T> {
             FIFO<T>::insert(node);
         } else {
             T *current = this->head_;
-            while (current->next() && current->next()->criterion() <= node->criterion()) {
-                current = current->next();
+            while (current->next && current->next->criterion() <= node->criterion()) {
+                current = current->next;
             }
-            node->next()    = current->next();
-            current->next() = node;
+            node->next    = current->next;
+            current->next = node;
         }
     }
 };

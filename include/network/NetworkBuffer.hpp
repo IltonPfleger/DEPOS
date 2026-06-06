@@ -2,6 +2,7 @@
 #define __DEPOS_NETWORK_BUFFER__
 
 #include <types.hpp>
+#include <utility/collections/Node.hpp>
 
 namespace DEPOS {
 
@@ -9,10 +10,13 @@ class NetworkBuffer {
     friend class NetworkDevice;
 
   public:
+    using Node = collections::Node<NetworkBuffer *>;
+
     NetworkBuffer(void *start, size_t head, size_t tail, uint32_t *references)
         : start_(static_cast<uint8_t *>(start)),
           head_(start_ + head),
           tail_(start_ + tail),
+          node_(this),
           references_(references) {}
 
     NetworkBuffer()
@@ -51,6 +55,11 @@ class NetworkBuffer {
         return static_cast<size_t>(head_ - start_);
     }
 
+    [[nodiscard]]
+    Node *node() const {
+        return const_cast<Node *>(&node_);
+    }
+
     bool advance(size_t bytes) {
         head_ += bytes;
         return true;
@@ -76,6 +85,8 @@ class NetworkBuffer {
 
     uint8_t *head_;
     uint8_t *tail_;
+
+    Node node_;
 
     uint32_t *references_;
 };

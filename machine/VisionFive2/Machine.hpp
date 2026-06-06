@@ -2,13 +2,14 @@
 
 #include <Traits.hpp>
 #include <architecture/riscv64/init.hpp>
+#include <drivers/cache/SiFiveU74_L2_CacheController.hpp>
 #include <drivers/clock/JH7110_Clock_Controller.hpp>
 #include <drivers/dvfs/JH7110_DVFS_Controller.hpp>
 #include <machine/VisionFive2/GPIO.hpp>
 
 namespace DEPOS {
 
-class VisionFive2 : Driver {
+class Machine : Driver {
     using Clock_Controller = JH7110_Clock_Controller<void>;
 
   public:
@@ -16,16 +17,16 @@ class VisionFive2 : Driver {
         riscv64::init();
 
         if (CPU::id() == Traits<CPU>::BSP) {
-            // JH7110_DVFS_Controller dvfs;
-            // dvfs.set(dvfs.available()[0]);
-            // Clock_Controller::divide(Clock_Controller::SYSCRG_CLK_CPU_CORE, 2);
-            // uint32_t delay = 100;
-            // Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 0);
-            // Timer::udelay(delay);
-            // PLL0::rate(1500000000);
-            // Timer::udelay(delay);
-            // Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 1);
-            // dvfs.set(dvfs.available()[dvfs.available().length() - 1]);
+            JH7110_DVFS_Controller dvfs;
+            dvfs.set(dvfs.available()[0]);
+            Clock_Controller::divide(Clock_Controller::SYSCRG_CLK_CPU_CORE, 2);
+            uint32_t delay = 100;
+            Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 0);
+            Timer::udelay(delay);
+            PLL0::rate(1500000000);
+            Timer::udelay(delay);
+            Clock_Controller::multiplex(Clock_Controller::SYSCRG_CLK_CPU_ROOT, 1);
+            dvfs.set(dvfs.available()[dvfs.available().length() - 1]);
         }
 
         CPU::barrier();
@@ -60,6 +61,7 @@ class VisionFive2 : Driver {
             GPIO::map(GPIO::OutputSignal::GPO_SYS_IOMUX_U0_CAN_CTRL_STB, 47);
         }
 
+        SiFiveU74_L2_CacheController<void>::init();
         Meta::forEach(Traits<UART>::Devices{}, []<typename T>() { T::init(); });
         CPU::barrier();
     }
@@ -69,7 +71,6 @@ class VisionFive2 : Driver {
 
 } // namespace DEPOS
 
-#include <drivers/cache/SiFiveU74L2CacheController.hpp>
 #include <drivers/can/IPMSCANFD.hpp>
 #include <drivers/ethernet/DWC_Ether_QoS.hpp>
 #include <drivers/uart/UART16550.hpp>

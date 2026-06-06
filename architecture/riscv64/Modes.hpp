@@ -6,15 +6,17 @@ namespace DEPOS {
 
 struct MachineMode {
     enum {
-        PP            = 3 << 11,
-        PP_M          = 3 << 11,
-        PP_S          = 1 << 11,
-        PP_U          = 0 << 11,
-        ME2ME         = PP_M,
-        ME2SUPERVISOR = PP_S,
-        ME2USER       = PP_U,
+        PP   = 3 << 11, // Previous Privilege
+        PP_M = 3 << 11, // Previous Privilege Machine
+        PP_S = 1 << 11, // Previous Privilege Supervisor
+        PP_U = 0 << 11, // Previous Privilege User
+        TW   = 1 << 21, // Timeout Wait
 
-        CY      = 1 << 0,
+        ME2ME = PP_M,
+        // ME2SUPERVISOR = PP_S,
+        // ME2USER       = PP_U,
+
+        CYCLE   = 1 << 0,
         TIME    = 1 << 1,
         INSTRET = 1 << 2,
 

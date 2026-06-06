@@ -20,7 +20,7 @@ __attribute__((naked)) static void supervisor() {
     csrw<SupervisorMode::SATP>(0);
     PMP::NAPOT<2>(0, 0, PMP::R | PMP::W | PMP::X);
     csrw<MachineMode::MIDELEG>(0x1666);
-    csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
+    csrs<MachineMode::STATUS>(MachineMode::PP_S | MachineMode::PIRQE);
     csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
     csrw<MachineMode::EPC>(__builtin_return_address(0));
     MachineMode::ret();
@@ -28,8 +28,6 @@ __attribute__((naked)) static void supervisor() {
 
 inline void init() {
     csrw<MachineMode::IE>(0);
-
-    // PMP::TOR<1>(__kmm.text.start(), __kmm.text.start() + __kmm.text.size(), PMP::R | PMP::X | PMP::LOCK);
 
     TrapHandler::init();
 

@@ -19,6 +19,11 @@ class Decoder {
         }
     };
 
+    [[nodiscard]] static constexpr bool wfi(uint32_t instruction) {
+        constexpr uint32_t encoding = 0x10500073;
+        return instruction == encoding;
+    }
+
     struct LD {};
     struct SD {};
 

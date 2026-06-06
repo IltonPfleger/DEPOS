@@ -5,7 +5,7 @@
 
 namespace DEPOS {
 
-template <typename> class SiFiveU74L2CacheController : Driver {
+template <typename> class SiFiveU74_L2_CacheController : Driver {
 
     enum { FLUSH_64 = 0x200, WAY_ENABLE = 0x8 };
 

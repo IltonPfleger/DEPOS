@@ -223,7 +223,6 @@ struct GuestContextFrame {
     uint64_t sepc     = 0;
     uint64_t scause   = 0;
     uint64_t stval    = 0;
-    uint64_t sip      = 0;
     uint64_t cpu      = 0;
 };
 
@@ -245,7 +244,6 @@ class HypervisorContext {
     static void swap(void *previous, void *next);
 
   private:
-    static constexpr uint32_t SIP      = __builtin_offsetof(GuestContextFrame, sip);
     static constexpr uint32_t SIE      = __builtin_offsetof(GuestContextFrame, sie);
     static constexpr uint32_t SATP     = __builtin_offsetof(GuestContextFrame, satp);
     static constexpr uint32_t SSCRATCH = __builtin_offsetof(GuestContextFrame, sscratch);
@@ -276,7 +274,6 @@ inline void DEPOS::HypervisorContext::save() {
     asm("csrr t0, stval; sd t0, %0(sp)" ::"i"(STVAL));
     asm("csrr t0, sepc; sd t0, %0(sp)" ::"i"(SEPC));
     asm("csrr t0, mie; sd t0, %0(sp)" ::"i"(SIE));
-    asm("csrr t0, mip; sd t0, %0(sp)" ::"i"(SIP));
     asm("csrr t0, %0" ::"i"(MachineMode::SCRATCH));
     asm("ld t0, %0(t0)" : : "i"(__builtin_offsetof(CoreContext, scratch0)));
     asm("sd t0, %0(sp)" ::"i"(OWNER));
@@ -289,7 +286,6 @@ inline void DEPOS::HypervisorContext::load() {
     asm("ld t0, %0(sp); csrw scause, t0" ::"i"(SCAUSE));
     asm("ld t0, %0(sp); csrw stval, t0" ::"i"(STVAL));
     asm("ld t0, %0(sp); csrw sepc, t0" ::"i"(SEPC));
-    asm("li t1, 0x222; ld t0, %0(sp); andi t0, t0, 0x222; csrc mip, t1; csrs mip, t0" ::"i"(SIP));
     asm("li t1, 0x222; ld t0, %0(sp); andi t0, t0, 0x222; csrc mie, t1; csrs mie, t0" ::"i"(SIE));
     asm("addi sp, sp, %0" ::"i"(sizeof(GuestContextFrame)));
 }

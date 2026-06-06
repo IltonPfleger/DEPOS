@@ -2,59 +2,61 @@
 
 #include <Spin.hpp>
 #include <Thread.hpp>
-
 #include <utility/collections/FIFO.hpp>
 
 namespace DEPOS {
 
 class ConditionalVariable {
-
-    struct Signal {
+  private:
+    struct Message {
         Thread::Queue thread;
         void *value;
         size_t size;
     };
 
-    typedef collections::Node<Signal> Link;
+    typedef collections::Node<Message> Link;
 
   public:
     ConditionalVariable() = default;
 
     size_t wait(Spin *lock, void *value = nullptr, size_t size = 0) {
         Link link;
-        Signal &signal = link.value();
-        signal.value   = value;
-        signal.size    = size;
+        Message &message = link.value();
+        message.value    = value;
+        message.size     = size;
 
-        _waiters.insert(&link);
-        _waiting++;
-        Thread::sleep(&signal.thread, lock);
+        waiters_.insert(&link);
+        waiting_++;
+        Thread::sleep(&message.thread, lock);
 
-        return signal.size;
+        return message.size;
     }
 
-    void signalize(const void *value = 0, size_t size = 0) {
-        Link *link = _waiters.remove();
-        if (!link) return;
+    bool send(const void *value = 0, size_t size = 0) {
+        Link *link = waiters_.remove();
 
-        Signal &signal = link->value();
+        if (!link) return false;
 
-        if (value && signal.value) {
-            signal.size = (size > signal.size) ? signal.size : size;
-            memcpy(signal.value, value, signal.size);
+        Message &message = link->value();
+
+        if (value && message.value) {
+            message.size = (size > message.size) ? message.size : size;
+            memcpy(message.value, value, message.size);
         } else {
-            signal.size = 0;
+            message.size = 0;
         }
 
-        _waiting--;
-        Thread::wakeup(&signal.thread);
+        waiting_--;
+        Thread::wakeup(&message.thread);
+
+        return true;
     }
 
-    size_t count() const { return _waiting; }
+    size_t count() const { return waiting_; }
 
   private:
-    collections::FIFO<Link> _waiters{};
-    size_t _waiting{};
+    collections::FIFO<Link> waiters_{};
+    size_t waiting_{};
 };
 
 } // namespace DEPOS

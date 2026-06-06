@@ -1,9 +1,11 @@
 #pragma once
 
+#include <Thread.hpp>
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/ExceptionHandler.hpp>
 #include <architecture/riscv64/Modes.hpp>
+#include <architecture/riscv64/Timer.hpp>
 #include <architecture/riscv64/sbi/Decoder.hpp>
 
 namespace DEPOS {

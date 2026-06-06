@@ -29,7 +29,7 @@ template <typename... Args> class Observed {
     uint32_t size() { return size_; }
 
     void notify(Args... args) {
-        for (Link *l = obervers_.head(); l; l = l->next()) {
+        for (Link *l = obervers_.head(); l; l = l->next) {
             l->value()->update(args...);
         }
     }

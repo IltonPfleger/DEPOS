@@ -20,7 +20,7 @@ class NetworkDevice : public Observed<const NetworkBuffer &> {
     virtual NetworkBuffer *doReceive()      = 0;
     virtual void doRelease(NetworkBuffer *) = 0;
 
-    void onReceive() {} // semaphore_.v(); }
+    void onReceive() { semaphore_.v(); }
 
   public:
     virtual ~NetworkDevice() = default;
@@ -42,16 +42,19 @@ class NetworkDevice : public Observed<const NetworkBuffer &> {
 
     void init() {
         running_ = true;
-        thread_  = new Thread(worker, this);
+        thread_  = new Thread(worker, this, Thread::Criterion::SYSTEM);
     }
 
-    void stop() { running_ = false; }
+    void stop() {
+        running_ = false;
+        delete thread_;
+    }
 
   private:
     static void *worker(void *argument) {
         auto *self = static_cast<NetworkDevice *>(argument);
         while (self->running_) {
-            // self->semaphore_.p();
+            self->semaphore_.p();
 
             NetworkBuffer *buffer = self->receive();
 

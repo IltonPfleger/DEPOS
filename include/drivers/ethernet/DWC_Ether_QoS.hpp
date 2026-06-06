@@ -9,7 +9,7 @@
 #include <memory/Heap.hpp>
 #include <utility/Atomic.hpp>
 #include <utility/Debug.hpp>
-#include <utility/collections/AtomicBoundedSimpleList.hpp>
+#include <utility/collections/FIFO.hpp>
 
 namespace DEPOS {
 
@@ -254,7 +254,8 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
 
         enum {
             OWN   = 1 << 31,
-            IOC   = 1 << 30,
+            R_IOC = 1 << 30,
+            T_IOC = 1 << 31,
             FD    = 1 << 29,
             LD    = 1 << 28,
             ES    = 1 << 15,
@@ -317,7 +318,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
             memset(&sx_descriptors_[i], 0, sizeof(Descriptor));
             Cache::flush(sx_descriptors_, sizeof(Descriptor));
             new (&sx_buffers_[i]) DWC_Ether_QoS_Buffer(new unsigned char[MTU]);
-            sx_list_.insert(&sx_buffers_[i]);
+            sx_list_.insert(sx_buffers_[i].node());
         }
 
         for (size_t i = 0; i < MyTraits::ReceiveBufferCount; i++) {
@@ -327,7 +328,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
             new (&buffer) DWC_Ether_QoS_Buffer(new unsigned char[MTU]);
 
             descriptor.buffer(reinterpret_cast<uintptr_t>(buffer.data()));
-            descriptor.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
+            descriptor.des3 = Descriptor::OWN | Descriptor::R_IOC | Descriptor::BUF1V;
 
             Cache::flush(&descriptor, sizeof(Descriptor));
         }
@@ -361,14 +362,14 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
     }
 
     DWC_Ether_QoS_Buffer *alloc(size_t length) {
-        DWC_Ether_QoS_Buffer *buffer;
-        while (!sx_list_.remove(&buffer))
-            ;
+        NetworkBuffer::Node *node = sx_list_.remove();
+        assert(node);
+        DWC_Ether_QoS_Buffer *buffer = static_cast<DWC_Ether_QoS_Buffer *>(node->value());
         new (buffer) DWC_Ether_QoS_Buffer(buffer->start(), 0, length);
         return buffer;
     }
 
-    void free(DWC_Ether_QoS_Buffer *buffer) { assert(sx_list_.insert(buffer)); }
+    void free(DWC_Ether_QoS_Buffer *buffer) { sx_list_.insert(buffer->node()); }
 
     int send(const void *data, size_t length) {
         size_t i = sx_head_++ % MyTraits::SendBufferCount;
@@ -376,7 +377,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
         Descriptor &descriptor = sx_descriptors_[i];
 
         descriptor.buffer(reinterpret_cast<uint64_t>(data));
-        descriptor.des2 = length & 0x3FFF;
+        descriptor.des2 = Descriptor::T_IOC | (length & 0x3FFF);
         descriptor.des3 = Descriptor::OWN | Descriptor::FD | Descriptor::LD | (length & 0x3FFF);
 
         Cache::flush(data, length);
@@ -384,12 +385,14 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
 
         Reg32(Address, CH0_TX_TAIL_POINTER) = reinterpret_cast<uintptr_t>(sx_descriptors_ + sx_head_);
 
-        while (true) {
-            Cache::flush(&descriptor, sizeof(Descriptor));
-            if (!(descriptor.des3 & Descriptor::OWN)) {
-                return (descriptor.des3 & Descriptor::ES) ? 0 : length;
-            }
-        }
+        // while (true) {
+        //     Cache::flush(&descriptor, sizeof(Descriptor));
+        //     if (!(descriptor.des3 & Descriptor::OWN)) {
+        //         return (descriptor.des3 & Descriptor::ES) ? 0 : length;
+        //     }
+        // }
+
+        return length;
     }
 
     DWC_Ether_QoS_Buffer *receive() {
@@ -417,7 +420,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
         Descriptor &descriptor = rx_descriprs_[i];
         descriptor.buffer(buffer->start());
         descriptor.des2 = 0;
-        descriptor.des3 = Descriptor::OWN | Descriptor::IOC | Descriptor::BUF1V;
+        descriptor.des3 = Descriptor::OWN | Descriptor::R_IOC | Descriptor::BUF1V;
 
         Cache::flush(&descriptor, sizeof(Descriptor));
 
@@ -429,7 +432,7 @@ template <typename MyTraits> class DWC_Ether_QoS_DMA : public Driver {
     static constexpr size_t MTU        = 1522;
 
   private:
-    AtomicBoundedSimpleList<DWC_Ether_QoS_Buffer, MyTraits::SendBufferCount> sx_list_;
+    collections::FIFO<NetworkBuffer::Node, true> sx_list_;
     Descriptor sx_descriptors_[MyTraits::SendBufferCount];
     DWC_Ether_QoS_Buffer sx_buffers_[MyTraits::SendBufferCount];
 
@@ -476,6 +479,8 @@ template <typename Tag> class DWC_Ether_QoS final : public EthernetDevice {
         INTERRUPT_ENABLE_NIE  = 1 << 15,
         INTERRUPT_ENABLE_AIE  = 1 << 14,
         INTERRUPT_ENABLE_RIE  = 1 << 6,
+        INTERRUPT_ENABLE_TIE  = 1 << 0,
+        INTERRUPT_STATUS_TI   = 1 << 0,
         INTERRUPT_ENABLE_RBUE = 1 << 7,
         INTERRUPT_STATUS_RI   = 1 << 6,
         INTERRUPT_STATUS_RBU  = 1 << 7,
@@ -500,10 +505,12 @@ template <typename Tag> class DWC_Ether_QoS final : public EthernetDevice {
         MAC::init();
         NetworkDevice::init();
 
-        IC::install(MyTraits::IRQs[0], onTrap);
+        for (auto &i : MyTraits::IRQs) {
+            IC::install(i, onTrap);
+        }
 
-        reg(CH0_INTERRUPT_ENABLE) |= INTERRUPT_ENABLE_NIE | INTERRUPT_STATUS_RI;
-        reg(CH0_INTERRUPT_ENABLE) |= INTERRUPT_ENABLE_AIE | INTERRUPT_STATUS_RBU;
+        reg(CH0_INTERRUPT_ENABLE) |= INTERRUPT_ENABLE_NIE | INTERRUPT_ENABLE_RIE;
+        reg(CH0_INTERRUPT_ENABLE) |= INTERRUPT_ENABLE_AIE | INTERRUPT_ENABLE_RBUE;
 
         TraceOut();
     }

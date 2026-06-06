@@ -17,13 +17,7 @@ void DEPOS::HypervisorContext::swap(void *previous, void *next) {
     HypervisorContext *ncontext = reinterpret_cast<HypervisorContext *>(next);
 
     VirtualCPU *ncpu = reinterpret_cast<VirtualCPU *>(ncontext->guest_.cpu);
-    VirtualCPU *pcpu = VirtualCPU::current();
-
-    if (ncpu) {
-        ncpu->activate();
-    } else {
-        VirtualCPU::current(nullptr);
-    }
+    VirtualCPU *pcpu = VirtualCPU::swap(ncpu);
 
     CoreContextHandler<MachineMode>::current()->scratch0 = reinterpret_cast<uintptr_t>(pcpu);
     doSwap(previous, next);

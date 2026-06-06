@@ -7,7 +7,8 @@ namespace DEPOS {
 
 class Semaphore {
   public:
-    Semaphore(int value = 0) : m_value(value) {}
+    Semaphore(int value = 0)
+        : m_value(value) {}
 
     void p() {
         m_spin.acquire();

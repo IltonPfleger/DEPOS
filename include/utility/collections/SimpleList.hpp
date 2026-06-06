@@ -17,7 +17,7 @@ template <typename T> class SimpleList {
     void insert(T *node) {
         if (!node) return;
 
-        node->next(this->_head);
+        node->next  = this->_head;
         this->_head = node;
     }
 
@@ -25,8 +25,8 @@ template <typename T> class SimpleList {
         if (!this->_head) return nullptr;
 
         T *node     = this->_head;
-        this->_head = node->next();
-        node->next(nullptr);
+        this->_head = node->next;
+        node->next  = nullptr;
 
         return node;
     }
@@ -39,17 +39,17 @@ template <typename T> class SimpleList {
 
         while (current && current != target) {
             previous = current;
-            current  = current->next();
+            current  = current->next;
         }
 
         if (!current) return false;
 
         if (previous)
-            previous->next(current->next());
+            previous->next = current->next;
         else
-            this->_head = current->next();
+            this->_head = current->next;
 
-        current->next(nullptr);
+        current->next = nullptr;
 
         return true;
     }

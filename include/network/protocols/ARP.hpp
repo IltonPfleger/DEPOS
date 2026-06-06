@@ -110,7 +110,7 @@ template <typename HardwareLayerType, typename ProtocolLayerType> class ARP : pu
         entry.pa    = received.spa;
         entry.ha    = received.sha;
         entry.valid = true;
-        entry.waiters.signalize();
+        entry.waiters.send();
         lock_.release();
     }
 

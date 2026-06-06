@@ -16,19 +16,16 @@ class VirtualCPU {
   public:
     VirtualCPU(VirtualMachine *vm)
         : mtimecmp_(0),
-          first_(true),
+          sip_(0),
+          core_(-1),
           vm_(vm) {}
-
-    static VirtualCPU *current() { return current_[CPU::id()]; }
-
-    static void current(VirtualCPU *current) { current_[CPU::id()] = current; }
 
     void boot(auto... args) {
         CPU::Interrupt::disable();
 
         activate();
 
-        csrs<MachineMode::STATUS>(MachineMode::ME2SUPERVISOR | MachineMode::PIRQE);
+        csrs<MachineMode::STATUS>(MachineMode::PP_S | MachineMode::PIRQE);
         csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
         csrw<MachineMode::EPC>(vm_->memory().start());
         csrw<SupervisorMode::SATP>(0);
@@ -45,51 +42,98 @@ class VirtualCPU {
 
         core_ = csrr<MachineMode::HARTID>();
         current(this);
+
+        sip(sip_);
+
+        onTick();
     }
 
-    void setExternalInterruptPending() {
-        if (core_ == csrr<MachineMode::HARTID>()) {
-            csrs<MachineMode::IP>(SupervisorMode::EI);
-        } else {
+    void setInterruptPending() {
+        sip_ |= SupervisorMode::EI;
+        if (current() == this) {
+            sip(this->sip_);
+        } else if (core_ > 0) {
             CLINT::ipi(core_);
         }
     }
 
-    void clearExternalInterruptPending() { csrc<MachineMode::IP>(SupervisorMode::EI); }
+    void clearInterruptPending() {
+        sip_ &= ~SupervisorMode::EI;
+        if (current() == this) {
+            sip(this->sip_);
+        } else if (core_ > 0) {
+            CLINT::ipi(core_);
+        }
+    }
 
-    static void onInterProcessorInterrupt() { csrs<MachineMode::IP>(SupervisorMode::EI); }
+    static void onInterProcessorInterrupt() { onExternalInterrupt(); }
 
     static void onTick() {
         if (!current()) return;
         if (CLINT::mtime() >= current()->mtimecmp_) setTimerInterruptPending();
     }
 
-    static void mtimecmp(unsigned long mtimecmp) {
-        assert(current());
-        current()->mtimecmp_ = mtimecmp;
-        clearTimerInterruptPending();
+    static void onExternalInterrupt() {
+        if (!current()) return;
+        sip(current()->sip_);
     }
 
-    static bool read(unsigned long address, unsigned int *destination) {
+    static uintmax_t mtimecmp() {
+        assert(current());
+        return current()->mtimecmp_;
+    }
+
+    static void mtimecmp(uintmax_t mtimecmp) {
+        assert(current());
+        current()->mtimecmp_ = mtimecmp;
+        if (mtimecmp > CLINT::mtime()) {
+            clearTimerInterruptPending();
+        } else {
+            setTimerInterruptPending();
+        }
+    }
+
+    static bool read(uintptr_t address, uint32_t *destination) {
         if (!current()) return false;
         return current()->vm_->read(address, destination);
     }
 
-    static bool write(unsigned long address, unsigned int source) {
+    static bool write(uintptr_t address, uint32_t source) {
         if (!current()) return false;
         return current()->vm_->write(address, source);
     }
 
-  private:
-    static void setTimerInterruptPending() { csrs<MachineMode::IP>(SupervisorMode::TI); }
-    static void clearTimerInterruptPending() { csrc<MachineMode::IP>(SupervisorMode::TI); }
+    static VirtualCPU *swap(VirtualCPU *next) {
+        VirtualCPU *previous = current();
+        if (next) {
+            next->activate();
+        } else {
+            current(nullptr);
+        }
+        if (previous) {
+            previous->sip_  = csrr<MachineMode::IP>();
+            previous->core_ = -1;
+        }
+        return previous;
+    }
 
+  private:
     __attribute__((naked)) static void dispatch(auto... args) {
         (static_cast<void>(args), ...);
         asm("mret");
     }
 
+    static void setTimerInterruptPending() { csrs<MachineMode::IP>(SupervisorMode::TI); }
+    static void clearTimerInterruptPending() { csrc<MachineMode::IP>(SupervisorMode::TI); }
+    static void current(VirtualCPU *current) { current_[CPU::id()] = current; }
+    static VirtualCPU *current() { return current_[CPU::id()]; }
+    static void sip(uintmax_t sip) {
+        csrc<MachineMode::IP>(0x202);
+        csrs<MachineMode::IP>(sip & 0x202);
+    }
+
   private:
+    static constinit inline VirtualCPU *current_[Traits<CPU>::Active];
     static constexpr uintmax_t MIDELEG = SupervisorMode::SI | SupervisorMode::TI | SupervisorMode::EI;
     static constexpr uintmax_t MEDELEG = 1 << 3     // Breakpoint
                                          | 1 << 4   // Load Address Misaligned
@@ -100,12 +144,10 @@ class VirtualCPU {
                                          | 1 << 15; // Store Page Fault
 
   private:
-    static constinit inline VirtualCPU *current_[Traits<CPU>::Active] = {nullptr};
-
-  private:
     uintmax_t mtimecmp_;
-    size_t core_;
-    bool first_;
+    uintmax_t sip_;
+    int core_;
+    HypervisorContext *context_;
     VirtualMachine *vm_;
 };
 

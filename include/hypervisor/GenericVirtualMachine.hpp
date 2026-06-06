@@ -60,7 +60,7 @@ template <typename... Devices> class GenericVirtualMachine : public VirtualMachi
           cpu_(this),
           devices_(*this, cpu_) {}
 
-    template <typename... Args> void activate(Args... args) { cpu_.boot(args...); }
+    template <typename... Args> void boot(Args... args) { cpu_.boot(args...); }
     bool read(uintptr_t target, unsigned int *destination) override { return devices_.read(target, destination); }
     bool write(uintptr_t target, unsigned int source) override { return devices_.write(target, source); }
     void interrupt(unsigned int id) override { devices_.interrupt(id); }

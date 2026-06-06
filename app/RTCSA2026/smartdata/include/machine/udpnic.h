@@ -76,7 +76,7 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public LocalNetwork::Observer 
         dbuffer->rewind(dbuffer->offset());
         memcpy(dbuffer->data(), buffer->frame(), size);
         m_network->send(dbuffer);
-        free(buffer);
+        delete buffer;
         return size;
     }
 
@@ -115,16 +115,14 @@ class UDPNIC : public NIC<Only_Data_UDP_Wrapper>, public LocalNetwork::Observer 
     void update(const NetworkBuffer &buffer) {
         db<NIC>(TRC) << "UDPNIC::update " << buffer.length() << endl;
         DEPOS::Ethernet::Header *header = reinterpret_cast<DEPOS::Ethernet::Header *>(buffer.start());
-        // const unsigned char *data = buffer->data() + 14;
-        // Protocol prot      = PROTO_TSTP;
-        UInt32 size        = buffer.length();
-        TSC::Time_Stamp ts = TSC::time_stamp();
-        Buffer *buf        = new Buffer(this, 0);
-        // buf->fill(size, address(), address(), 0, 0, 0);
-        buf->size(size);
-        memcpy(buf->data(), buffer.start(), size);
-        buf->sfdts = ts;
-        notify(header->protocol(), buf);
+        UInt32 size                     = buffer.length();
+        TSC::Time_Stamp ts              = TSC::time_stamp();
+
+        Buffer *allocated = new Buffer(this, 0);
+        allocated->size(size);
+        memcpy(allocated->data(), buffer.start(), size);
+        allocated->sfdts = ts;
+        notify(header->protocol(), allocated);
     }
 
   private:

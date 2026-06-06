@@ -24,7 +24,7 @@ template <typename Device, uintptr_t Base> class Network : public Handler, publi
     Network(VirtualMachine &owner)
         : owner_(owner),
           running_(true),
-          thread_(entry, this) {
+          thread_(entry, this, Thread::Criterion::SYSTEM) {
         this->m_header.magic                     = ('t' << 24) | ('r' << 16) | ('i' << 8) | 'v';
         this->m_header.version                   = 1;
         this->m_header.id                        = 1;

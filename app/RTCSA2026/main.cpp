@@ -37,24 +37,25 @@ void call_global_constructors() {
 
 using DS          = Dynamics_State;
 using DS_Proxy    = Interested_SmartData<DS::Unit::Wrap<DS::UNIT>>;
+using None_Proxy  = Interested_SmartData<DS::Unit::Wrap<DS::UNIT>>;
 using OBRTF       = Object_Recognition_And_Tracking_Fuser;
 using OBRTF_Proxy = Interested_SmartData<OBRTF::Unit::Wrap<(SmartData::Unit::MOTION_VECTOR_LOCAL | 10)>>;
 using Device      = DEPOS::Meta::GetFromTypeList<DEPOS::Traits<DEPOS::Ethernet>::Devices, 0>::Result;
 
 void *node(void *) {
-    SEU_SmartData *seu = new SEU_SmartData();
+    // SEU_SmartData *seu = new SEU_SmartData();
 
-    Road_Parameters rp = Road_Parameters(0, 0, 0, 0, 0);
-    rp.set_default();
+    // Road_Parameters *rp = new Road_Parameters(0, 0, 0, 0, 0);
+    // rp->set_default();
 
-    Unit_Dev_Expiry::List *ud_list = new Unit_Dev_Expiry::List();
-    ud_list->insert((new Unit_Dev_Expiry(Dynamics_State::UNIT, 16, 100000))->link());
-    ud_list->insert((new Unit_Dev_Expiry(Object_Recognition_And_Tracking_Fuser::UNIT, 23, 100000))->link());
+    // Unit_Dev_Expiry::List *ud_list = new Unit_Dev_Expiry::List();
+    // ud_list->insert((new Unit_Dev_Expiry(Dynamics_State::UNIT, 16, 100000))->link());
+    // ud_list->insert((new Unit_Dev_Expiry(Object_Recognition_And_Tracking_Fuser::UNIT, 23, 100000))->link());
 
-    RSS_Safe_Distance *rss = new RSS_Safe_Distance(ud_list, &rp, &rp, 100000);
-    seu->add_boolean_filter(rss);
+    // RSS_Safe_Distance *rss = new RSS_Safe_Distance(ud_list, rp, rp, 100000);
+    // seu->add_boolean_filter(rss);
 
-    new OBRTF_Proxy(OBRTF_Proxy::Region(0, 0, 0, 100, OBRTF_Proxy::now(), INFINITE), 300'000);
+    new OBRTF_Proxy(OBRTF_Proxy::Region(0, 0, 0, 100, OBRTF_Proxy::now(), INFINITE), 150'000);
     new DS_Proxy(DS_Proxy::Region(0, 0, 0, 100, DS_Proxy::now(), INFINITE), 5'000);
 
     while (1)
@@ -153,7 +154,7 @@ class LinuxLauncher {
         LinuxLauncher *self = reinterpret_cast<LinuxLauncher *>(pointer);
         Console::println("\n *** Linux is at core ", CPU::id(), " ***");
         LinuxMachine *vm = new LinuxMachine(self->start_, self->size_);
-        vm->activate(0, self->dtb_);
+        vm->boot(0, self->dtb_);
         return nullptr;
     }
 
@@ -297,7 +298,7 @@ class EPOS_Launcher {
         auto *self = reinterpret_cast<EPOS_Launcher *>(pointer);
         memcpy(self->buffer_.data(), self->epos_.data(), self->epos_.length());
         auto *vm = new EPOS_Machine(self->buffer_.data(), self->buffer_.length());
-        vm->activate(1);
+        vm->boot(1);
         return nullptr;
     }
 
@@ -307,40 +308,75 @@ class EPOS_Launcher {
     Thread thread_;
 };
 
-class Overhead {
-  public:
-    Overhead(Thread::Criterion criterion) {
-        for (size_t i = 0; i < Number; i++) {
-            new Periodic_Thread(500, worker1, nullptr, criterion);
-            new Periodic_Thread(500, worker2, nullptr, criterion);
-        }
-    }
-
-  private:
-    static void *worker1(void *) {
-        while (1) {
-            OBRTF_Proxy proxy(OBRTF_Proxy::Region(0, 0, 0, 100, OBRTF_Proxy::now(), INFINITE), 300'000);
-            (void)proxy;
-            Periodic_Thread::wait();
-        }
-
-        return nullptr;
-    }
-    static void *worker2(void *) {
-        while (1) {
-            DS_Proxy proxy(DS_Proxy::Region(0, 0, 0, 100, DS_Proxy::now(), INFINITE), 5'000);
-            (void)proxy;
-            Periodic_Thread::wait();
-        }
-
-        return nullptr;
-    }
-
-  private:
-    static constexpr size_t Number = 10;
-};
+// class Overhead {
+//   public:
+//     Overhead(Thread::Criterion criterion) {
+//         for (size_t i = 0; i < Number; i++) {
+//             new Periodic_Thread(500, worker1, nullptr, criterion);
+//             new Periodic_Thread(500, worker2, nullptr, criterion);
+//         }
+//     }
+//
+//   private:
+//     static void *worker1(void *) {
+//         while (1) {
+//             OBRTF_Proxy proxy(OBRTF_Proxy::Region(0, 0, 0, 100, OBRTF_Proxy::now(), INFINITE), 300'000);
+//             (void)proxy;
+//             Periodic_Thread::wait();
+//         }
+//
+//         return nullptr;
+//     }
+//     static void *worker2(void *) {
+//         while (1) {
+//             DS_Proxy proxy(DS_Proxy::Region(0, 0, 0, 100, DS_Proxy::now(), INFINITE), 5'000);
+//             (void)proxy;
+//             Periodic_Thread::wait();
+//         }
+//
+//         return nullptr;
+//     }
+//
+//   private:
+//     static constexpr size_t Number = 10;
+// };
 
 } // namespace DEPOS
+
+// class _Empty : public Transducer<SmartData::Unit::MOTION_VECTOR_LOCAL | 12 << 16 | 1> {
+//     friend Responsive_SmartData<_Empty>;
+//
+//   public:
+//     static const bool active             = true;
+//     static const Uncertainty UNCERTAINTY = UNKNOWN;
+//     static const Type TYPE               = SENSOR | ACTUATOR;
+//
+//   public:
+//     _Empty(const Device_Id &dev)
+//         : _value(0) {
+//         new Thread(worker, this, Thread::Criterion(Thread::Criterion::NORMAL, 3));
+//     }
+//
+//     ~_Empty() {}
+//
+//     static void *worker(void *pointer) {
+//         _Empty *self = reinterpret_cast<_Empty *>(pointer);
+//         while (1) {
+//             self->notify();
+//             DEPOS::Alarm::udelay(10'000);
+//         }
+//         return nullptr;
+//     }
+//
+//     virtual Value sense() { return _value; }
+//     virtual Signature signature() { return 0; }
+//     virtual void actuate(const Value &value) { _value = value; }
+//
+//   private:
+//     Value _value;
+// };
+//
+// using Empty = Responsive_SmartData<_Empty>;
 
 int main() {
     using namespace DEPOS;
@@ -365,11 +401,16 @@ int main() {
 
     // NetworkVampire<VirtualSwitch<Device>> vm(DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
     // Overhead overhead(DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
-    new LinuxLauncher(MemorySize, linux, initramfs, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 0));
+    new LinuxLauncher(MemorySize, linux, initramfs, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 3));
     new EPOS_Launcher(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 1));
     new EPOS_Launcher(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 2));
 
-    DEPOS::Alarm::udelay(2'000'000);
+    // new EPOS_Launcher(MemorySize, epos, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 3));
 
-    new DEPOS::Thread(node, 0, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 3));
+    DEPOS::Alarm::udelay(5'000'000);
+
+    new DEPOS::Thread(node, 0, DEPOS::Thread::Criterion(DEPOS::Thread::Criterion::NORMAL, 1));
+
+    while (1)
+        DEPOS::Alarm::udelay(1'000'000'000);
 }

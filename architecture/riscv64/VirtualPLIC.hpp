@@ -43,7 +43,7 @@ template <uintptr_t Address> class VirtualPLIC : public VirtualInterruptControll
         for (uint32_t c = 0; c < NumberOfContexts; ++c) {
             if (enabled_[c][bank] & mask) {
                 pending_[bank] |= mask;
-                cpu_.setExternalInterruptPending();
+                cpu_.setInterruptPending();
                 break;
             }
         }
@@ -83,7 +83,7 @@ template <uintptr_t Address> class VirtualPLIC : public VirtualInterruptControll
                 return true;
             } else if (reg == 4) {
                 *destination = claim(context);
-                if (!pending()) cpu_.clearExternalInterruptPending();
+                if (!pending()) cpu_.clearInterruptPending();
                 return true;
             }
         }

@@ -26,7 +26,7 @@ class Ethernet;
 
 template <typename> class DesignWare_I2C_Controller;
 template <typename> class AXP15060_Controller;
-template <typename> class SiFiveU74L2CacheController;
+template <typename> class SiFiveU74_L2_CacheController;
 template <typename> class UART16550;
 template <typename> class DWC_Ether_QoS;
 template <typename> class IPMS_CANFD;
@@ -79,7 +79,7 @@ template <> struct Traits<MemoryMap> {
 };
 
 template <> struct Traits<CacheController> {
-    typedef Meta::TypeList<SiFiveU74L2CacheController<decltype(0)>> Devices;
+    typedef Meta::TypeList<SiFiveU74_L2_CacheController<void>> Devices;
     static constexpr unsigned int NumberOfDevices = Devices::Length;
 };
 

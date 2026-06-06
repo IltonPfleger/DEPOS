@@ -11,7 +11,7 @@ namespace DEPOS {
 class FixedCore {
   public:
     enum : size_t { ANY = ~0U };
-    enum : size_t { IDLE = 0, NORMAL, HIGHER };
+    enum : size_t { IDLE = 0, NORMAL, SYSTEM = NORMAL, HIGHER };
     static constexpr size_t NumberOfCores  = Traits<CPU>::Active;
     static constexpr size_t NumberOfQueues = NumberOfCores * HIGHER;
 
@@ -22,9 +22,7 @@ class FixedCore {
         : index_(other.index_) {}
 
     FixedCore &operator=(const FixedCore &other) {
-        if (this != &other) {
-            index_ = other.index_;
-        }
+        if (this != &other) index_ = other.index_;
         return *this;
     }
 
@@ -57,17 +55,19 @@ class FixedCore {
     size_t rank() const { return index() % HIGHER; }
     static size_t encode(size_t rank, size_t cpu) { return cpu * HIGHER + rank; }
     static size_t build(size_t rank, size_t cpu) {
-        if (rank == IDLE) {
+        if (rank == IDLE && cpu == ANY) {
             cpu = CPU::Atomic::finc(idles_);
+        } else if (rank == SYSTEM && cpu == ANY) {
+            cpu = Traits<CPU>::BSP;
         } else if (cpu == ANY) {
-            cpu = CPU::Atomic::finc(counter_);
+            cpu = CPU::id();
         }
         return encode(rank, cpu % NumberOfCores);
     }
 
   private:
-    static inline size_t idles_   = 0;
-    static inline size_t counter_ = 0;
+    static constinit inline size_t idles_   = 0;
+    static constinit inline size_t counter_ = 0;
     size_t index_;
 };
 

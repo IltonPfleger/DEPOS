@@ -36,9 +36,9 @@ Thread::Return Thread::idle(Argument) {
 
 void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
     CPU::mb();
-    ERROR(!previous);
-    ERROR(!next);
-    ERROR(next == previous);
+    assert(previous);
+    assert(next);
+    assert(next != previous);
 
     s_previous[CPU::id()] = previous;
     s_spin[CPU::id()]     = spin;
@@ -160,7 +160,7 @@ void Thread::sleep(Queue *m_waiting, Spin *spin) {
 
     Node *next = s_scheduler.remove();
 
-    ERROR(!next);
+    assert(next);
 
     dispatch(previous, next->value(), spin);
 

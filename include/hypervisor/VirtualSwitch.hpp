@@ -4,7 +4,7 @@
 #include <Spin.hpp>
 #include <Traits.hpp>
 #include <machine/Machine.hpp>
-#include <utility/collections/AtomicBoundedSimpleList.hpp>
+#include <utility/collections/FIFO.hpp>
 
 namespace DEPOS {
 
@@ -14,7 +14,7 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
         : device_(Device::instance()) {
         device_->attach(this);
         running_ = true;
-        thread_  = new Thread(entry, this);
+        thread_  = new Thread(entry, this, Thread::Criterion::SYSTEM);
     }
 
     ~VirtualSwitch() {
@@ -28,21 +28,14 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
 
     int send(NetworkBuffer *buffer) {
         size_t length = buffer->length();
-
-        while (!spending_.insert(buffer))
-            ;
-
+        spending_.insert(buffer->node());
         semaphore_.v();
-
         return length;
     }
 
     void update(const NetworkBuffer &buffer) {
         device_->retain(&buffer);
-
-        while (!rpending_.insert(&buffer))
-            ;
-
+        rpending_.insert(buffer.node());
         semaphore_.v();
     }
 
@@ -58,17 +51,17 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
         while (running_) {
             semaphore_.p();
 
-            NetworkBuffer *snode;
-            const NetworkBuffer *rnode;
+            NetworkBuffer::Node *snode = spending_.remove();
+            NetworkBuffer::Node *rnode = rpending_.remove();
 
-            if (spending_.remove(&snode)) {
-                this->notify(*snode);
-                device_->send(snode);
+            if (snode) {
+                this->notify(*snode->value());
+                device_->send(snode->value());
             }
 
-            if (rpending_.remove(&rnode)) {
-                this->notify(*rnode);
-                device_->release(const_cast<NetworkBuffer *>(rnode));
+            if (rnode) {
+                this->notify(*rnode->value());
+                device_->release(rnode->value());
             }
         }
         return nullptr;
@@ -79,10 +72,9 @@ template <typename Device> class VirtualSwitch : public Device::Observer, public
 
     Device *device_;
     Thread *thread_;
-    Spin lock_;
 
-    AtomicBoundedSimpleList<NetworkBuffer, InternalQueueSize> spending_;
-    AtomicBoundedSimpleList<const NetworkBuffer, InternalQueueSize> rpending_;
+    collections::FIFO<NetworkBuffer::Node, true> spending_;
+    collections::FIFO<NetworkBuffer::Node, true> rpending_;
 
     volatile bool running_;
     Semaphore semaphore_;
