@@ -21,17 +21,15 @@ class IllegalInstruction {
 
     static void dispatch(size_t id, ContextFrame *c) {
         uint32_t tval = static_cast<uint32_t>(csrr<MachineMode::TVAL>());
-
-        if (Decoder::FP::valid(Decoder::opcode(tval))) {
+        if (Decoder::fp(tval)) {
             c->status &= ~(3ULL << 13);
             c->status |= (1ULL << 13);
-        }
-        if (Decoder::wfi(tval)) {
+        } else if (Decoder::wfi(tval)) {
             Alarm(0);
             c->pc += 4;
-        } else if ((tval & RDTIME_MASK) == RDTIME) {
-            unsigned int rd = (tval >> 7) & 0x1F;
-            if (rd != 0) (*c)[rd] = CLINT::mtime();
+        } else if (Decoder::rdtime(tval)) {
+            uint8_t rd = Decoder::rd(tval);
+            (*c)[rd]   = CLINT::mtime();
             c->pc += 4;
         } else {
             ExceptionHandler::onTrap(id, c);

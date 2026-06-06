@@ -2,6 +2,7 @@
 #define __DEPOS_RISCV64_CONTEXT_FRAME__
 
 #include <types.hpp>
+#include <utility/Debug.hpp>
 
 namespace DEPOS {
 
@@ -15,10 +16,14 @@ struct ContextFrame {
     uint64_t ksp;
     uint64_t status, cause, value, pc;
 
-    uint64_t &operator[](size_t i) {
-        static uint64_t zero = 0;
+    uint64_t operator[](size_t i) const {
         if (i == 0) [[unlikely]]
-            return zero;
+            return 0;
+        return (&ra)[i - 1];
+    }
+
+    uint64_t &operator[](size_t i) {
+        assert(i != 0);
         return (&ra)[i - 1];
     }
 };

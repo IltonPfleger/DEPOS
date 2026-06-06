@@ -1,6 +1,5 @@
 #pragma once
 
-#include <architecture/CPU.hpp>
 #include <utility/Console.hpp>
 
 static constexpr const char *TracePrefix      = "[TRACE] ";
@@ -10,12 +9,9 @@ static constexpr const char *MessagePrefix    = "Message: ";
 static constexpr const char *ReturnLabel      = "return=";
 static constexpr const char *TraceInEnd       = ") {";
 
-#define __LOCATION__ __PRETTY_FUNCTION__
-
 #define assert(expression, ...)                                                                                        \
     if constexpr (DEPOS::Traits<DEPOS::Debug>::Error) {                                                                \
         if (!(expression)) {                                                                                           \
-            DEPOS::CPU::Interrupt::disable();                                                                          \
             DEPOS::Console::panic();                                                                                   \
             DEPOS::Console::println("[ASSERT] ", __PRETTY_FUNCTION__);                                                 \
             DEPOS::Console::println(#expression);                                                                      \
@@ -25,6 +21,7 @@ static constexpr const char *TraceInEnd       = ") {";
         }                                                                                                              \
     }
 
+#define __LOCATION__ __PRETTY_FUNCTION__
 #define ERROR(expr, ...)                                                                                               \
     if constexpr (DEPOS::Traits<DEPOS::Debug>::Error) {                                                                \
         if (expr) {                                                                                                    \
