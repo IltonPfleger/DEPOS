@@ -30,14 +30,23 @@ class Decoder {
         return (instruction & mask) == value;
     }
 
-    struct LD {};
-    struct SD {};
-
+    [[nodiscard]]
     static uint8_t opcode(uintptr_t instruction) {
         if ((instruction & 0x3) != 0x3) return instruction & 0x3;
         return instruction & 0x7F;
     }
 
+    [[nodiscard]]
+    static uint8_t rd(uint16_t instruction16) {
+        return 8 + ((instruction16 >> 2) & 0x7);
+    }
+
+    [[nodiscard]]
+    static uint8_t rd(uint32_t instruction) {
+        return (instruction >> 7) & 0x1F;
+    }
+
+    struct LD {};
     static uint8_t rd(LD, uintptr_t pc) {
         const uint16_t instruction16 = *reinterpret_cast<const uint16_t *>(pc);
         if ((instruction16 & 0x3) != 0x3)
@@ -48,9 +57,7 @@ class Decoder {
         }
     }
 
-    static uint8_t rd(uint16_t instruction16) { return 8 + ((instruction16 >> 2) & 0x7); }
-    static uint8_t rd(uint32_t instruction) { return (instruction >> 7) & 0x1F; }
-
+    struct SD {};
     static uint8_t rs2(SD, uintptr_t pc) {
         const uint16_t instruction16 = *reinterpret_cast<const uint16_t *>(pc);
         if ((instruction16 & 0x3) != 0x3)
