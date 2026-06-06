@@ -1,6 +1,7 @@
 #include <Thread.hpp>
 #include <Traits.hpp>
 #include <architecture/CPU.hpp>
+#include <architecture/riscv64/VirtualPLIC.hpp>
 #include <hypervisor/GenericVirtualMachine.hpp>
 #include <hypervisor/dtb/FDT_Builder.hpp>
 #include <hypervisor/virtio/Console.hpp>
@@ -26,9 +27,10 @@ struct LinuxImage {
 
 class LinuxLauncher {
   public:
-    using SerialDevice = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
-    using Serial       = virtio::Console<SerialDevice, 0x30000000>;
-    using LinuxMachine = GenericVirtualMachine<Serial>;
+    using SerialDevice        = Meta::GetFromTypeList<Traits<UART>::Devices, 0>::Result;
+    using Serial              = virtio::Console<SerialDevice, 0x30000000>;
+    using InterruptController = VirtualPLIC<0xc000000>;
+    using LinuxMachine        = GenericVirtualMachine<Serial, InterruptController>;
 
     LinuxLauncher(size_t size, Span<const uint8_t> kernel, Span<const uint8_t> initramfs, Thread::Criterion criterion)
         : size_(size),
@@ -58,7 +60,7 @@ class LinuxLauncher {
         LinuxLauncher *self = reinterpret_cast<LinuxLauncher *>(pointer);
         Console::println("\n *** Linux is at core ", CPU::id(), " ***");
         LinuxMachine *vm = new LinuxMachine(self->start_, self->size_);
-        vm->activate(0, self->dtb_);
+        vm->boot(0, self->dtb_);
         return nullptr;
     }
 
@@ -206,10 +208,10 @@ int main() {
     Span<const uint8_t> initramfs(static_cast<const uint8_t *>(LinuxImage::Initramfs), sizeof(LinuxImage::Initramfs));
 
     LinuxLauncher vm0(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    LinuxLauncher vm1(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    // LinuxLauncher vm2(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    // LinuxLauncher vm3(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
-    // LinuxLauncher vm4(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    // LinuxLauncher vm1(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    //  LinuxLauncher vm2(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    //  LinuxLauncher vm3(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
+    //  LinuxLauncher vm4(128 * 1024 * 1024, kernel, initramfs, Thread::Criterion(Thread::Criterion::NORMAL, 1));
 
     while (1)
         ;

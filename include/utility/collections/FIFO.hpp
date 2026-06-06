@@ -35,6 +35,7 @@ template <typename T, bool Atomic = false> class FIFO {
     }
 
   protected:
+    [[nodiscard]]
     bool lock() {
         if constexpr (Atomic) {
             bool enabled = CPU::Interrupt::disable();

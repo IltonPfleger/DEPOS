@@ -65,8 +65,8 @@ template <typename Tag> class UART16550 : public Driver, public Observed<const u
 
   public:
     static void init() {
-        for (auto IRQ : MyTraits::IRQs)
-            IC::install(IRQ, handler);
+        for (auto &i : MyTraits::IRQs)
+            IC::install(i, handler);
     }
 
     static UART16550 *instance() {

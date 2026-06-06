@@ -8,6 +8,7 @@
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/PMP.hpp>
 #include <hypervisor/VirtualMachine.hpp>
+#include <utility/Atomic.hpp>
 #include <utility/Debug.hpp>
 
 namespace DEPOS {
@@ -25,7 +26,7 @@ class VirtualCPU {
 
         activate();
 
-        csrs<MachineMode::STATUS>(MachineMode::PP_S | MachineMode::PIRQE);
+        csrs<MachineMode::STATUS>(MachineMode::TW | MachineMode::PP_S | MachineMode::PIRQE);
         csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
         csrw<MachineMode::EPC>(vm_->memory().start());
         csrw<SupervisorMode::SATP>(0);
@@ -69,8 +70,12 @@ class VirtualCPU {
     static void onInterProcessorInterrupt() { onExternalInterrupt(); }
 
     static void onTick() {
-        if (!current()) return;
-        if (CLINT::mtime() >= current()->mtimecmp_) setTimerInterruptPending();
+        VirtualCPU *current = VirtualCPU::current();
+        if (!current) return;
+        if (CLINT::mtime() >= current->mtimecmp_) {
+            current->sip_ |= SupervisorMode::TI;
+            sip(current->sip_);
+        }
     }
 
     static void onExternalInterrupt() {
@@ -84,13 +89,15 @@ class VirtualCPU {
     }
 
     static void mtimecmp(uintmax_t mtimecmp) {
-        assert(current());
-        current()->mtimecmp_ = mtimecmp;
-        if (mtimecmp > CLINT::mtime()) {
-            clearTimerInterruptPending();
+        VirtualCPU *current = VirtualCPU::current();
+        assert(current);
+        current->mtimecmp_ = mtimecmp;
+        if (mtimecmp <= CLINT::mtime()) {
+            current->sip_ |= SupervisorMode::TI;
         } else {
-            setTimerInterruptPending();
+            current->sip_ &= ~SupervisorMode::TI;
         }
+        sip(current->sip_);
     }
 
     static bool read(uintptr_t address, uint32_t *destination) {
@@ -119,7 +126,7 @@ class VirtualCPU {
 
   private:
     __attribute__((naked)) static void dispatch(auto... args) {
-        (static_cast<void>(args), ...);
+        ((void)args, ...);
         asm("mret");
     }
 
@@ -128,8 +135,8 @@ class VirtualCPU {
     static void current(VirtualCPU *current) { current_[CPU::id()] = current; }
     static VirtualCPU *current() { return current_[CPU::id()]; }
     static void sip(uintmax_t sip) {
-        csrc<MachineMode::IP>(0x202);
-        csrs<MachineMode::IP>(sip & 0x202);
+        csrc<MachineMode::IP>(0x222);
+        csrs<MachineMode::IP>(sip & 0x222);
     }
 
   private:
@@ -145,7 +152,7 @@ class VirtualCPU {
 
   private:
     uintmax_t mtimecmp_;
-    uintmax_t sip_;
+    Atomic<uintmax_t> sip_;
     int core_;
     HypervisorContext *context_;
     VirtualMachine *vm_;

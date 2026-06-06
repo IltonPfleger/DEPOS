@@ -3,17 +3,19 @@
 #include <Spin.hpp>
 #include <Thread.hpp>
 #include <utility/collections/Node.hpp>
-#include <utility/collections/POLO.hpp>
+#include <utility/collections/POFO.hpp>
 
 namespace DEPOS {
 
 class Alarm {
-    using Link = collections::Node<Thread::Queue, Microsecond>;
-    using List = collections::POLO<Link>;
+    using Node = collections::Node<Thread::Queue, Microsecond>;
+    using List = collections::POFO<Node>;
 
   public:
-    static void at(Microsecond);
-    static void udelay(Microsecond);
+    Alarm(Microsecond);
+    ~Alarm() = default;
+
+    static void delay(Microsecond);
     static void onTick();
 
   private:
@@ -21,6 +23,9 @@ class Alarm {
 
   private:
     static constinit inline List delays_[Traits<CPU>::Active];
+
+  private:
+    Node node_;
 };
 
 } // namespace DEPOS

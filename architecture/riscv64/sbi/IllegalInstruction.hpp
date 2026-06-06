@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Thread.hpp>
+#include <Alarm.hpp>
 #include <architecture/riscv64/CLINT.hpp>
 #include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/ExceptionHandler.hpp>
@@ -25,6 +25,10 @@ class IllegalInstruction {
         if (Decoder::FP::valid(Decoder::opcode(tval))) {
             c->status &= ~(3ULL << 13);
             c->status |= (1ULL << 13);
+        }
+        if (Decoder::wfi(tval)) {
+            Alarm(0);
+            c->pc += 4;
         } else if ((tval & RDTIME_MASK) == RDTIME) {
             unsigned int rd = (tval >> 7) & 0x1F;
             if (rd != 0) (*c)[rd] = CLINT::mtime();

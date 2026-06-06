@@ -79,6 +79,22 @@ template <typename Base, typename Derived> struct IsBaseOf {
     static constexpr bool Result = sizeof(f((Derived *)nullptr)) == sizeof(char);
 };
 
+template <typename T> struct Remove {
+    using Result = T;
+};
+
+template <typename T> struct Remove<const T> {
+    using Result = T;
+};
+
+template <typename T> struct Remove<volatile T> {
+    using Result = T;
+};
+
+template <typename T> struct Remove<const volatile T> {
+    using Result = T;
+};
+
 /* ------------------------------------------------------------------------- */
 /*                                 Types                                     */
 /* ------------------------------------------------------------------------- */

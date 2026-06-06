@@ -11,6 +11,8 @@ template <typename T> class Atomic {
     Atomic(T value = 0)
         : value_(value) {}
 
+    T load() const { return CPU::Atomic::load(value_); }
+
     T finc()
         requires Meta::Integer<T>
     {
@@ -24,13 +26,40 @@ template <typename T> class Atomic {
     }
 
     bool cas(T &expected, T desired) { return CPU::Atomic::cas(value_, expected, desired); }
-
-    T load() const { return CPU::Atomic::load(value_); }
-
     void store(T value) { CPU::Atomic::store(value_, value); }
 
-    T operator++(int) { return finc(); }
-    T operator--(int) { return fdec(); }
+    T operator++(int)
+        requires Meta::Integer<T>
+    {
+        return finc();
+    }
+
+    T operator--(int)
+        requires Meta::Integer<T>
+    {
+        return fdec();
+    }
+
+    T operator|=(T mask)
+        requires Meta::Integer<T>
+    {
+        T current = load();
+        while (true) {
+            T desired = current | mask;
+            if (cas(current, desired)) return desired;
+        }
+    }
+
+    T operator&=(T mask)
+        requires Meta::Integer<T>
+    {
+        T current = load();
+        while (true) {
+            T desired = current & mask;
+            if (cas(current, desired)) return desired;
+        }
+    }
+
     operator T() const { return load(); }
 
   private:

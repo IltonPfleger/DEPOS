@@ -2,6 +2,7 @@
 
 #include <Meta.hpp>
 #include <architecture/VirtualCPU.hpp>
+#include <hypervisor/VirtualInterruptController.hpp>
 #include <hypervisor/VirtualMachine.hpp>
 #include <types.hpp>
 

@@ -2,7 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <utility/collections/SimpleList.hpp>
+#include <utility/collections/UnorderedList.hpp>
 
 namespace DEPOS::allocators {
 
@@ -77,7 +77,7 @@ template <size_t Min, size_t Max> class Buddy {
     }
 
   private:
-    collections::SimpleList<Node> free_[Maximum + 1];
+    collections::UnorderedList<Node> free_[Maximum + 1];
 };
 
 } // namespace DEPOS::allocators

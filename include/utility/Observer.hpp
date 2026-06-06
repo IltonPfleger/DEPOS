@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utility/collections/SimpleList.hpp>
+#include <utility/collections/UnorderedList.hpp>
 
 namespace DEPOS {
 
@@ -35,7 +35,7 @@ template <typename... Args> class Observed {
     }
 
   private:
-    collections::SimpleList<Link> obervers_;
+    collections::UnorderedList<Link> obervers_;
     uint32_t size_;
 };
 
