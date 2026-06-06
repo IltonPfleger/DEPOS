@@ -4,9 +4,7 @@
 #include <architecture/riscv64/ExceptionHandler.hpp>
 #include <architecture/riscv64/Modes.hpp>
 
-namespace DEPOS {
-
-namespace sbi {
+namespace DEPOS::sbi {
 
 class StoreAccessFault {
     using PageTable = MMU::PageTable;
@@ -19,7 +17,8 @@ class StoreAccessFault {
             uintptr_t address        = PageTable::virt2phys(csrr<MachineMode::TVAL>());
             unsigned int instruction = *reinterpret_cast<unsigned int *>(PageTable::virt2phys(c->pc));
             unsigned int i           = (instruction >> 20) & 0x1F;
-            if (VirtualCPU::write(address, (*c)[i])) {
+            uintmax_t source         = (*const_cast<const ContextFrame *>(c))[i];
+            if (VirtualCPU::write(address, source)) {
                 c->pc += 4;
                 return;
             }
@@ -28,6 +27,4 @@ class StoreAccessFault {
     }
 };
 
-} // namespace sbi
-
-} // namespace DEPOS
+} // namespace DEPOS::sbi
