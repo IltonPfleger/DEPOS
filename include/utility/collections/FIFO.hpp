@@ -12,8 +12,15 @@ template <typename T, bool Atomic = false> class FIFO {
         : head_(nullptr),
           tail_(nullptr) {}
 
-    T *head() { return head_; }
-    T *tail() { return tail_; }
+    [[nodiscard]]
+    T *head() {
+        return head_;
+    }
+
+    [[nodiscard]]
+    T *tail() {
+        return tail_;
+    }
 
     void insert(T *node) {
         bool enabled = lock();

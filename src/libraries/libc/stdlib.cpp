@@ -5,7 +5,7 @@ using namespace DEPOS;
 
 extern "C" void *malloc(size_t size) { return new uint8_t[size]; }
 
-inline long atol(const char *str) {
+extern "C" long atol(const char *str) {
     long result   = 0;
     bool negative = false;
 

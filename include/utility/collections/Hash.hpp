@@ -7,12 +7,12 @@ namespace DEPOS {
 
 template <typename K, typename T, size_t Size, typename Hasher> class Hash {
   public:
-    T &operator[](const K &key) { return m_table[m_hasher(key) % Size]; }
-    const T &operator[](const K &key) const { return m_table[m_hasher(key) % Size]; }
+    T &operator[](const K &key) { return table_[hasher_(key) % Size]; }
+    const T &operator[](const K &key) const { return table_[hasher_(key) % Size]; }
 
   private:
-    Meta::Array<Size, T> m_table;
-    Hasher m_hasher;
+    Meta::Array<Size, T> table_;
+    Hasher hasher_;
 };
 
 } // namespace DEPOS

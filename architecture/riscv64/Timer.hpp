@@ -11,13 +11,8 @@ namespace DEPOS {
 
 class Timer : public ArchitectureCommon::Timer {
   public:
-    static inline Microsecond us(uintmax_t ticks) { return (ticks * 1'000'000) / Traits<CLINT>::Clock; }
-    static inline Microsecond us() { return us(CLINT::mtime()); }
-
-    static void udelay(Microsecond delta) {
-        for (uintmax_t done = us() + delta; done > us();)
-            ;
-    }
+    static inline Microsecond us(uintmax_t ticks) { return Microsecond((ticks * 1'000'000) / Traits<CLINT>::Clock); }
+    static inline Microsecond now() { return us(CLINT::mtime()); }
 
     static void init() {
         if constexpr (!Traits<RISCV>::Supervisor) {

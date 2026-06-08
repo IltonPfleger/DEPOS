@@ -13,9 +13,9 @@ class Alarm {
 
   public:
     Alarm(Microsecond);
+
     ~Alarm() = default;
 
-    static void delay(Microsecond);
     static void onTick();
 
   private:

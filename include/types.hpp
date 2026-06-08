@@ -20,9 +20,34 @@ typedef intmax_t intptr_t;
 typedef uintmax_t uintptr_t;
 
 typedef unsigned long size_t;
+
+template <size_t Factor> class Duration {
+    template <size_t> friend class Duration;
+
+  public:
+    constexpr Duration(uintmax_t value)
+        : value_(value) {}
+
+    template <size_t U>
+    constexpr Duration(const Duration<U> other)
+        : value_((other.value_ * Factor) / U) {}
+
+    template <size_t U> constexpr Duration operator+(const Duration<U> &other) const {
+        return Duration(value_ + Duration(other).value_);
+    }
+
+    constexpr operator uintmax_t() const { return value_; }
+
+  private:
+    uintmax_t value_;
+};
+
+using Second      = Duration<1>;
+using Millisecond = Duration<1000>;
+using Microsecond = Duration<1000000>;
+using Nanosecond  = Duration<1000000000>;
+
 typedef uintmax_t Hz;
-typedef uintmax_t Microsecond;
-typedef uintmax_t Nanosecond;
 typedef uintmax_t Tick;
 
 } // namespace DEPOS

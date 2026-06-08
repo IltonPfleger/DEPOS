@@ -3,6 +3,7 @@
 #include <Thread.hpp>
 #include <utility/Console.hpp>
 #include <utility/Debug.hpp>
+#include <utility/Delay.hpp>
 
 using namespace DEPOS;
 
