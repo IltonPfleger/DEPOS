@@ -47,7 +47,7 @@ class FixedCore {
         Spin locks_[NumberOfQueues];
     };
 
-    operator size_t() const { return rank(); }
+    operator int() const { return rank(); }
 
   private:
     size_t index() const { return index_; }
