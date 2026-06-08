@@ -18,10 +18,10 @@ class Scheduler {
         : _heads({nullptr}),
           _collection() {}
 
-    Node *remove(Criterion minimum = Criterion::IDLE) {
-        auto i = Criterion::HIGHER - 1;
+    Node *remove(int threshold = Criterion::IDLE) {
+        int i = Criterion::HIGHER - 1;
 
-        while (i >= minimum) {
+        while (i >= threshold) {
             if (Node *next = _collection.remove(i)) {
                 head() = next->value();
                 return next;
@@ -29,7 +29,7 @@ class Scheduler {
             i--;
         }
 
-        ERROR(minimum == Criterion::IDLE);
+        assert(threshold != Criterion::IDLE);
         return nullptr;
     }
 

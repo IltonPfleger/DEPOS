@@ -11,11 +11,11 @@ namespace DEPOS {
 class FixedCore {
   public:
     enum : size_t { ANY = ~0U };
-    enum : size_t { IDLE = 0, NORMAL, SYSTEM = NORMAL, HIGHER };
+    enum : size_t { IDLE = 0, NORMAL, SYSTEM, HIGHER };
     static constexpr size_t NumberOfCores  = Traits<CPU>::Active;
     static constexpr size_t NumberOfQueues = NumberOfCores * HIGHER;
 
-    FixedCore(size_t rank = NORMAL, size_t cpu = ANY, ...)
+    FixedCore(int rank = NORMAL, size_t cpu = ANY, ...)
         : index_(build(rank, cpu)) {}
 
     FixedCore(const FixedCore &other)
@@ -34,8 +34,8 @@ class FixedCore {
             locks_[i].release();
         }
 
-        T *remove(size_t rank) {
-            size_t i = encode(rank, CPU::id());
+        T *remove(int rank) {
+            int i = encode(rank, CPU::id());
             locks_[i].acquire();
             T *t = queues_[i].remove();
             locks_[i].release();
@@ -60,7 +60,7 @@ class FixedCore {
         } else if (rank == SYSTEM && cpu == ANY) {
             cpu = Traits<CPU>::BSP;
         } else if (cpu == ANY) {
-            cpu = CPU::id();
+            cpu = CPU::Atomic::finc(counter_);
         }
         return encode(rank, cpu % NumberOfCores);
     }

@@ -21,7 +21,7 @@ $(ELF): $(OBJECTS)
 
 $(TARGET_BUILD_DIR)/%.o: %.cpp $(KERNEL_BLOB) $(INITRAMFS_BLOB)
 	@mkdir -p $(dir $@)
-	$(CC) -D__INITRAMFS__=$(INITRAMFS_BLOB) -D__KERNEL__=$(KERNEL_BLOB) $(MACH_CCFLAGS) -I$(TARGET_BUILD_DIR) -I../include -MMD -MP -c $< -o $@
+	$(CC) -D__INITRAMFS__=$(INITRAMFS_BLOB) -D__KERNEL__=$(KERNEL_BLOB) -I$(TARGET_BUILD_DIR) -I../include -MMD -MP -c $< -o $@ $(MACH_CCFLAGS)
 
 $(KERNEL_BLOB): $(KERNEL)
 	@mkdir -p $(dir $@)
