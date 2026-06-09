@@ -10,28 +10,23 @@
 
 namespace DEPOS {
 
-template <typename T, bool ChangeStack> class ContextTemplate : public ContextFrame {
+template <typename T, bool ChangeStack> class ContextTemplate {
   public:
-    ContextTemplate(const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
-        this->pc     = reinterpret_cast<uint64_t>(pc);
-        this->ra     = reinterpret_cast<uint64_t>(ra);
-        this->status = static_cast<uint64_t>(T::ME2ME);
-        this->a0     = reinterpret_cast<uint64_t>(a0);
-        this->a1     = reinterpret_cast<uint64_t>(a1);
-        this->ksp    = ksp.end();
+    ContextTemplate(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
+        frame_         = reinterpret_cast<ContextFrame *>(usp.end()) - 1;
+        frame_->pc     = reinterpret_cast<uint64_t>(pc);
+        frame_->ra     = reinterpret_cast<uint64_t>(ra);
+        frame_->status = static_cast<uint64_t>(T::ME2ME);
+        frame_->a0     = reinterpret_cast<uint64_t>(a0);
+        frame_->a1     = reinterpret_cast<uint64_t>(a1);
+        frame_->ksp    = ksp.end();
     }
 
-    static ContextTemplate *create(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
-        auto *context = reinterpret_cast<ContextTemplate *>(usp.end()) - 1;
-        new (context) ContextTemplate(ksp, pc, ra, a0, a1);
-        return context;
-    }
-
-    __attribute__((naked)) static void swap(void *previous, void *next) {
+    __attribute__((naked)) static void swap(ContextTemplate &previous, ContextTemplate &next) {
         FPU::save<T>();
         save();
-        asm("sd sp, 0(%0)" ::"r"(previous));
-        asm("mv sp, %0" ::"r"(next));
+        asm("sd sp, 0(%0)" ::"r"(&previous.frame_));
+        asm("mv sp, %0" ::"r"(next.frame_));
         load();
         FPU::load<T>();
         T::ret();
@@ -207,6 +202,9 @@ template <typename T, bool ChangeStack> class ContextTemplate : public ContextFr
 
         T::ret();
     }
+
+  protected:
+    ContextFrame *frame_;
 };
 
 template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
@@ -216,78 +214,36 @@ template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
 using SupervisorContext = ContextTemplate<SupervisorMode, ChangeStack>;
 
 struct GuestContextFrame {
-    uint64_t sie      = 0;
-    uint64_t stvec    = 0;
     uint64_t sscratch = 0;
     uint64_t satp     = 0;
-    uint64_t sepc     = 0;
+    uint64_t stvec    = 0;
     uint64_t scause   = 0;
     uint64_t stval    = 0;
-    uint64_t cpu      = 0;
+    uint64_t sepc     = 0;
+    uint64_t sie      = 0;
+    uint64_t vcpu     = 0;
 };
 
 class HypervisorContext {
     using GuestMode = SupervisorMode;
     using Father    = MachineContext<true>;
 
-    HypervisorContext(const Chunk &ksp, auto pc, auto ra, auto a0, auto a1)
-        : guest_(),
-          father_(ksp, pc, ra, a0, a1) {}
-
   public:
-    static HypervisorContext *create(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1) {
-        HypervisorContext *context = reinterpret_cast<HypervisorContext *>(usp.end()) - 1;
-        new (context) HypervisorContext(ksp, pc, ra, a0, a1);
-        return context;
-    }
+    HypervisorContext(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1)
+        : father_(usp, ksp, pc, ra, a0, a1),
+          guest_() {}
 
-    static void swap(void *previous, void *next);
+    static void swap(HypervisorContext &, HypervisorContext &);
 
   private:
-    static constexpr uint32_t SIE      = __builtin_offsetof(GuestContextFrame, sie);
-    static constexpr uint32_t SATP     = __builtin_offsetof(GuestContextFrame, satp);
-    static constexpr uint32_t SSCRATCH = __builtin_offsetof(GuestContextFrame, sscratch);
-    static constexpr uint32_t STVEC    = __builtin_offsetof(GuestContextFrame, stvec);
-    static constexpr uint32_t STVAL    = __builtin_offsetof(GuestContextFrame, stval);
-    static constexpr uint32_t SCAUSE   = __builtin_offsetof(GuestContextFrame, scause);
-    static constexpr uint32_t SEPC     = __builtin_offsetof(GuestContextFrame, sepc);
-    static constexpr uint32_t OWNER    = __builtin_offsetof(GuestContextFrame, cpu);
+    void save();
+    void load();
 
   private:
-    __attribute__((naked)) static void doSwap(void *, void *);
-    __attribute__((always_inline)) static void save();
-    __attribute__((always_inline)) static void load();
-
-  private:
-    GuestContextFrame guest_;
     Father father_;
+    GuestContextFrame guest_;
 };
 
 } // namespace DEPOS
-
-inline void DEPOS::HypervisorContext::save() {
-    asm("addi sp, sp, %0" ::"i"(-sizeof(GuestContextFrame)));
-    asm("csrr t0, sscratch; sd t0, %0(sp)" ::"i"(SSCRATCH));
-    asm("csrr t0, satp; sd t0, %0(sp)" ::"i"(SATP));
-    asm("csrr t0, stvec; sd t0, %0(sp)" ::"i"(STVEC));
-    asm("csrr t0, scause; sd t0, %0(sp)" ::"i"(SCAUSE));
-    asm("csrr t0, stval; sd t0, %0(sp)" ::"i"(STVAL));
-    asm("csrr t0, sepc; sd t0, %0(sp)" ::"i"(SEPC));
-    asm("csrr t0, mie; sd t0, %0(sp)" ::"i"(SIE));
-    asm("csrr t0, %0" ::"i"(MachineMode::SCRATCH));
-    asm("ld t0, %0(t0)" : : "i"(__builtin_offsetof(CoreContext, scratch0)));
-    asm("sd t0, %0(sp)" ::"i"(OWNER));
-}
-
-inline void DEPOS::HypervisorContext::load() {
-    asm("ld t0, %0(sp); csrw sscratch, t0" ::"i"(SSCRATCH));
-    asm("ld t0, %0(sp); csrw satp, t0" ::"i"(SATP));
-    asm("ld t0, %0(sp); csrw stvec, t0" ::"i"(STVEC));
-    asm("ld t0, %0(sp); csrw scause, t0" ::"i"(SCAUSE));
-    asm("ld t0, %0(sp); csrw stval, t0" ::"i"(STVAL));
-    asm("ld t0, %0(sp); csrw sepc, t0" ::"i"(SEPC));
-    asm("li t1, 0x222; ld t0, %0(sp); andi t0, t0, 0x222; csrc mie, t1; csrs mie, t0" ::"i"(SIE));
-    asm("addi sp, sp, %0" ::"i"(sizeof(GuestContextFrame)));
-}
 
 #endif

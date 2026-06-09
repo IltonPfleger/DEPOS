@@ -51,17 +51,14 @@ int main(int, char *[]) {
     console = new Semaphore(0);
     finish  = new Semaphore(0);
 
-    for (long i = 0; i < Number; i++) {
+    for (long i = 0; i < Number; i++)
         forks[i] = new Semaphore(1);
-    }
 
-    for (long i = 0; i < Number; i++) {
+    for (long i = 0; i < Number; i++)
         threads[i] = new Thread(philosopher, (void *)i, Thread::Criterion::NORMAL);
-    }
 
     console->v();
 
-    for (long i = 0; i < Number; i++) {
-        Thread::join(*threads[i]);
-    }
+    for (long i = 0; i < Number; i++)
+        delete threads[i];
 }

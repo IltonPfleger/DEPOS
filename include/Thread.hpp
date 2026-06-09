@@ -50,7 +50,7 @@ class Thread {
     Queue *m_waiting;
     Node m_node;
     volatile State m_state;
-    Context *m_context;
+    Context m_context;
 
   private:
     static constinit inline Scheduler s_scheduler;

@@ -34,9 +34,10 @@ class Chunk {
         return start() + size();
     }
 
+    template <typename T = unsigned char>
     [[nodiscard]]
-    unsigned char *data() const {
-        return reinterpret_cast<unsigned char *>(start());
+    T *data() const {
+        return reinterpret_cast<T *>(start());
     }
 
     [[nodiscard]]

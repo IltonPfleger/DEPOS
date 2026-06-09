@@ -45,7 +45,7 @@ void Thread::dispatch(Thread *previous, Thread *next, Spin *spin = 0) {
 
     next->m_state = State::RUNNING;
 
-    Context::swap(&previous->m_context, next->m_context);
+    Context::swap(previous->m_context, next->m_context);
 
     epilogue();
 }
@@ -74,11 +74,11 @@ Thread::Thread(Function f, Argument a, Criterion c)
       m_kstack(Memory::alloc(Traits<Thread>::KernelStackSize), Traits<Thread>::KernelStackSize),
       m_waiting(0),
       m_node(Node(this, c)),
-      m_state(State::READY) {
-
+      m_state(State::READY),
+      m_context(m_stack, m_kstack, entry, exit, f, a) {
     TraceIn(this);
 
-    m_context = Context::create(m_stack, m_kstack, entry, exit, f, a);
+    // m_context = Context::create(m_stack, m_kstack, entry, exit, f, a);
 
     bool enabled = CPU::Interrupt::disable();
     CPU::Atomic::finc(s_count);
@@ -121,12 +121,12 @@ void Thread::init() {
 }
 
 void Thread::run() {
-    unsigned char context[sizeof(Context)] = {0};
-    unsigned char buffer[sizeof(Thread)]   = {0};
-    Thread *previous                       = reinterpret_cast<Thread *>(buffer);
-    previous->m_context                    = reinterpret_cast<Context *>(context);
-    previous->m_state                      = State::FINISHED;
-    Thread *next                           = s_scheduler.remove()->value();
+    unsigned char buffer[sizeof(Thread)] = {0};
+    // unsigned char context[sizeof(Context)] = {0};
+    Thread *previous = reinterpret_cast<Thread *>(buffer);
+    // previous->m_context                    = reinterpret_cast<Context *>(context);
+    previous->m_state = State::FINISHED;
+    Thread *next      = s_scheduler.remove()->value();
     dispatch(previous, next);
 }
 
