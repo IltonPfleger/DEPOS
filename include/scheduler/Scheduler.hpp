@@ -34,7 +34,7 @@ class Scheduler {
     }
 
     void insert(Node *node) {
-        ERROR(!node);
+        assert(node);
         _collection.insert(node->criterion(), node);
     }
 
