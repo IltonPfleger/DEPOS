@@ -3,6 +3,8 @@
 
 #include <Traits.hpp>
 #include <architecture/riscv64/CLINT.hpp>
+#include <architecture/riscv64/Decoder.hpp>
+#include <architecture/riscv64/FPU.hpp>
 #include <architecture/riscv64/IC.hpp>
 #include <architecture/riscv64/PLIC.hpp>
 #include <architecture/riscv64/TrapHandler.hpp>
@@ -18,15 +20,21 @@ class MIC {
 
   protected:
     static void forward(size_t, ContextFrame *) { CLINT::forward(); }
+
     static void syscall(size_t, ContextFrame *context) {
         CLINT::syscall();
         context->pc += 4;
     }
 
+    static void fpu(size_t, ContextFrame *context) {
+        if (Decoder::fp(context->value)) {
+            FPU::enable(context);
+        }
+    }
+
   public:
     static void init() {
         TrapHandler::init<MachineMode, ChangeStack>();
-
         if constexpr (!IsMachineMode) {
             CoreContextHandler<MachineMode>::stack(__amm.end() - Traits<Memory>::PageSize * CPU::id<true>());
             if constexpr (IsTimerEnable) {
@@ -34,12 +42,14 @@ class MIC {
                 TrapHandler::install(7, forward);
                 TrapHandler::install(9, syscall, TrapHandler::Exception);
             }
-        } else {
-            if constexpr (IsExternalInterruptionsEnable) {
-                PLIC::init();
-                TrapHandler::install(11, IC::onTrap);
-                csrs<MachineMode::IE>(MachineMode::EI);
-            }
+            return;
+        }
+
+        if constexpr (IsExternalInterruptionsEnable) {
+            PLIC::init();
+            TrapHandler::install(11, IC::onTrap);
+            TrapHandler::install(2, fpu, TrapHandler::Exception);
+            csrs<MachineMode::IE>(MachineMode::EI);
         }
     }
 };

@@ -1,7 +1,7 @@
 #ifndef __DEPOS_RISCV64_SBI_DECODER__
 #define __DEPOS_RISCV64_SBI_DECODER__
 
-namespace DEPOS::sbi {
+namespace DEPOS {
 
 class Decoder {
   public:
@@ -69,6 +69,6 @@ class Decoder {
     }
 };
 
-} // namespace DEPOS::sbi
+} // namespace DEPOS
 
 #endif

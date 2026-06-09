@@ -4,6 +4,7 @@
 #include <Traits.hpp>
 #include <architecture/riscv64/ContextFrame.hpp>
 #include <architecture/riscv64/CoreContext.hpp>
+#include <architecture/riscv64/FPU.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <memory/Chunk.hpp>
 
@@ -27,10 +28,13 @@ template <typename T, bool ChangeStack> class ContextTemplate : public ContextFr
     }
 
     __attribute__((naked)) static void swap(void *previous, void *next) {
+        FPU::save<T>();
         save();
         asm("sd sp, 0(%0)" ::"r"(previous));
         asm("mv sp, %0" ::"r"(next));
         load();
+        FPU::load<T>();
+        T::ret();
     }
 
     __attribute__((always_inline)) static void load() {
@@ -40,10 +44,8 @@ template <typename T, bool ChangeStack> class ContextTemplate : public ContextFr
             asm("sd t1, %0(t0)" ::"i"(__builtin_offsetof(CoreContext, ksp)));
         }
 
-        asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, status)));
-        asm("csrw %0, t0" ::"i"(T::STATUS));
-        asm("ld t0, %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, pc)));
-        asm("csrw %0, t0" ::"i"(T::EPC));
+        asm("ld t0, %0(sp); csrw %1, t0" ::"i"(__builtin_offsetof(ContextFrame, status)), "i"(T::STATUS));
+        asm("ld t0, %0(sp); csrw %1, t0" ::"i"(__builtin_offsetof(ContextFrame, pc)), "i"(T::EPC));
 
         asm("ld s0,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s0)));
         asm("ld s1,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, s1)));
@@ -63,8 +65,6 @@ template <typename T, bool ChangeStack> class ContextTemplate : public ContextFr
         asm("ld a0,  %0(sp)" ::"i"(__builtin_offsetof(ContextFrame, a0)));
 
         asm("addi sp, sp, %0" ::"i"(sizeof(ContextFrame)));
-
-        T::ret();
     }
 
     __attribute__((always_inline)) static void save() {

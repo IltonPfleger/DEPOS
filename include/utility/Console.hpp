@@ -90,6 +90,35 @@ class Console {
 
     static void print(bool x) { print(x ? "true" : "false"); }
 
+    static void print(double x) {
+        if (x != x) {
+            print("NaN");
+            return;
+        }
+
+        if (x < 0) {
+            print('-');
+            x = -x;
+        }
+
+        if (x > 1e18) {
+            print("INFINITE");
+            return;
+        }
+
+        print(static_cast<uintmax_t>(x));
+        print('.');
+
+        double decimals = (x - static_cast<double>(static_cast<uintmax_t>(x)));
+
+        for (int i = 0; i < 6; i++) {
+            decimals *= 10;
+            int digit = static_cast<int>(decimals);
+            print(static_cast<char>('0' + digit));
+            decimals -= digit;
+        }
+    }
+
     template <Meta::Integer T> static void print(T x) {
         if constexpr (Meta::IsSigned<T>::Result) {
             print(static_cast<intmax_t>(x));
