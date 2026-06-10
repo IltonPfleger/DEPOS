@@ -23,12 +23,12 @@ template <typename T, bool ChangeStack> class ContextTemplate {
     }
 
     __attribute__((naked)) static void swap(ContextTemplate &previous, ContextTemplate &next) {
-        FPU::save<T>();
+        previous.fpu_.save<T>();
         save();
         asm("sd sp, 0(%0)" ::"r"(&previous.frame_));
         asm("mv sp, %0" ::"r"(next.frame_));
         load();
-        FPU::load<T>();
+        next.fpu_.load<T>();
         T::ret();
     }
 
@@ -205,6 +205,7 @@ template <typename T, bool ChangeStack> class ContextTemplate {
 
   protected:
     ContextFrame *frame_;
+    FPU fpu_;
 };
 
 template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>

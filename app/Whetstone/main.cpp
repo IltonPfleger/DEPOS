@@ -6,24 +6,28 @@
 using namespace DEPOS;
 
 static constexpr int Number     = 100;
-static constexpr int Iterations = 100;
+static constexpr int Iterations = 1000;
 
 Semaphore *console;
 Semaphore *start;
 Thread *threads[Number];
 
 void *worker(void *) {
-    double value     = 0;
-    double increment = 0.1;
-
     start->p();
 
+    const double step = 1.0 / Iterations;
+
+    double sum = 0.0;
+
     for (int i = 0; i < Iterations; i++) {
-        value += increment;
-    };
+        double x = (i + 0.5) * step;
+        sum += 4.0 / (1.0 + x * x);
+    }
+
+    double pi = sum * step;
 
     console->p();
-    Console::println("<", CPU::id(), ">", " Result: ", value, "!");
+    Console::println("<", CPU::id(), ">", pi);
     console->v();
 
     return nullptr;
