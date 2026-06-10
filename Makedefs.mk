@@ -34,7 +34,7 @@ APPLICATION ?= HelloWorld
 CCFLAGS = -std=c++23
 CCFLAGS += -I$(HERE) -I$(INCLUDE) -I$(HERE)/architecture/$(ARCH) -I$(HERE)/machine/$(MACHINE)
 CCFLAGS += -Wall -Wextra -Werror -pedantic -Wfatal-errors
-CCFLAGS += -D__APPLICATION=$(APPLICATION) -g -O3
+CCFLAGS += -D__APPLICATION=$(APPLICATION) -g
 
 build: $(IMAGE).img
 

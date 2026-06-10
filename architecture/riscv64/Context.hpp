@@ -213,17 +213,6 @@ using MachineContext = ContextTemplate<MachineMode, ChangeStack>;
 template <bool ChangeStack = Traits<Thread>::IsolatedKernelStack>
 using SupervisorContext = ContextTemplate<SupervisorMode, ChangeStack>;
 
-struct GuestContextFrame {
-    uint64_t sscratch = 0;
-    uint64_t satp     = 0;
-    uint64_t stvec    = 0;
-    uint64_t scause   = 0;
-    uint64_t stval    = 0;
-    uint64_t sepc     = 0;
-    uint64_t sie      = 0;
-    uint64_t vcpu     = 0;
-};
-
 class HypervisorContext {
     using GuestMode = SupervisorMode;
     using Father    = MachineContext<true>;
@@ -231,17 +220,13 @@ class HypervisorContext {
   public:
     HypervisorContext(const Chunk &usp, const Chunk &ksp, auto pc, auto ra, auto a0, auto a1)
         : father_(usp, ksp, pc, ra, a0, a1),
-          guest_() {}
+          vcpu_(nullptr) {}
 
     static void swap(HypervisorContext &, HypervisorContext &);
 
   private:
-    void save();
-    void load();
-
-  private:
     Father father_;
-    GuestContextFrame guest_;
+    void *vcpu_;
 };
 
 } // namespace DEPOS

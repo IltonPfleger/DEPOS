@@ -14,18 +14,26 @@
 namespace DEPOS {
 
 class VirtualCPU {
+    struct Registers {
+        uint64_t mtimecmp     = 0;
+        uint64_t sscratch     = 0;
+        uint64_t satp         = 0;
+        uint64_t stvec        = 0;
+        uint64_t scause       = 0;
+        uint64_t stval        = 0;
+        uint64_t sepc         = 0;
+        uint64_t sie          = 0;
+        Atomic<uintmax_t> sip = 0;
+    };
+
   public:
     VirtualCPU(VirtualMachine *vm)
-        : mtimecmp_(0),
-          sip_(0),
-          core_(-1),
+        : core_(-1),
           vm_(vm) {}
 
     void boot(auto... args) {
         CPU::Interrupt::disable();
-
         activate();
-
         csrs<MachineMode::STATUS>(MachineMode::TW | MachineMode::PP_S | MachineMode::PIRQE);
         csrc<MachineMode::STATUS>(SupervisorMode::PIRQE | SupervisorMode::IRQE);
         csrw<MachineMode::EPC>(vm_->memory().start());
@@ -44,60 +52,52 @@ class VirtualCPU {
         core_ = csrr<MachineMode::HARTID>();
         current(this);
 
-        sip(sip_);
-
-        onTick();
+        restore();
     }
 
     void setInterruptPending() {
-        sip_ |= SupervisorMode::EI;
+        registers_.sip |= SupervisorMode::EI;
         if (current() == this) {
-            sip(this->sip_);
+            setExternalInterruptPending();
         } else if (core_ > 0) {
             CLINT::ipi(core_);
         }
     }
 
     void clearInterruptPending() {
-        sip_ &= ~SupervisorMode::EI;
+        registers_.sip |= SupervisorMode::EI;
         if (current() == this) {
-            sip(this->sip_);
+            clearExternalInterruptPending();
         } else if (core_ > 0) {
             CLINT::ipi(core_);
         }
     }
 
-    static void onInterProcessorInterrupt() { onExternalInterrupt(); }
-
-    static void onTick() {
-        VirtualCPU *current = VirtualCPU::current();
-        if (!current) return;
-        if (CLINT::mtime() >= current->mtimecmp_) {
-            current->sip_ |= SupervisorMode::TI;
-            sip(current->sip_);
-        }
+    static void onInterProcessorInterrupt() {
+        if (!current()) return;
+        csrs<MachineMode::IP>(current()->registers_.sip.load());
     }
 
-    static void onExternalInterrupt() {
+    static void onTick() {
         if (!current()) return;
-        sip(current()->sip_);
+        if (CLINT::mtime() >= current()->registers_.mtimecmp) {
+            setTimerInterruptPending();
+        }
     }
 
     static uintmax_t mtimecmp() {
         assert(current());
-        return current()->mtimecmp_;
+        return current()->registers_.mtimecmp;
     }
 
     static void mtimecmp(uintmax_t mtimecmp) {
-        VirtualCPU *current = VirtualCPU::current();
-        assert(current);
-        current->mtimecmp_ = mtimecmp;
+        assert(current());
+        current()->registers_.mtimecmp = mtimecmp;
         if (mtimecmp <= CLINT::mtime()) {
-            current->sip_ |= SupervisorMode::TI;
+            setTimerInterruptPending();
         } else {
-            current->sip_ &= ~SupervisorMode::TI;
+            clearTimerInterruptPending();
         }
-        sip(current->sip_);
     }
 
     static bool read(uintptr_t address, uint32_t *destination) {
@@ -110,18 +110,19 @@ class VirtualCPU {
         return current()->vm_->write(address, source);
     }
 
-    static VirtualCPU *swap(VirtualCPU *next) {
-        VirtualCPU *previous = current();
-        if (next) {
-            next->activate();
-        } else {
-            current(nullptr);
-        }
-        if (previous) {
-            previous->sip_  = csrr<MachineMode::IP>();
-            previous->core_ = -1;
-        }
-        return previous;
+    static VirtualCPU *current() { return current_[CPU::id()]; }
+
+    void save() {
+        core_ = -1;
+        current(nullptr);
+        registers_.sscratch = csrr<SupervisorMode::SCRATCH>();
+        registers_.satp     = csrr<SupervisorMode::SATP>();
+        registers_.stvec    = csrr<SupervisorMode::TVEC>();
+        registers_.scause   = csrr<SupervisorMode::CAUSE>();
+        registers_.stval    = csrr<SupervisorMode::TVAL>();
+        registers_.sepc     = csrr<SupervisorMode::EPC>();
+        registers_.sie      = csrr<MachineMode::IE>();
+        registers_.sip |= csrr<MachineMode::IP>();
     }
 
   private:
@@ -130,14 +131,28 @@ class VirtualCPU {
         asm("mret");
     }
 
-    static void setTimerInterruptPending() { csrs<MachineMode::IP>(SupervisorMode::TI); }
-    static void clearTimerInterruptPending() { csrc<MachineMode::IP>(SupervisorMode::TI); }
-    static void current(VirtualCPU *current) { current_[CPU::id()] = current; }
-    static VirtualCPU *current() { return current_[CPU::id()]; }
-    static void sip(uintmax_t sip) {
+    void restore() {
+        csrw<SupervisorMode::SCRATCH>(registers_.sscratch);
+        csrw<SupervisorMode::SATP>(registers_.satp);
+        csrw<SupervisorMode::TVEC>(registers_.stvec);
+        csrw<SupervisorMode::CAUSE>(registers_.scause);
+        csrw<SupervisorMode::TVAL>(registers_.stval);
+        csrw<SupervisorMode::EPC>(registers_.sepc);
+        csrc<MachineMode::IE>(0x222);
+        csrs<MachineMode::IE>(registers_.sie & 0x222);
         csrc<MachineMode::IP>(0x222);
-        csrs<MachineMode::IP>(sip & 0x222);
+        csrs<MachineMode::IP>(registers_.sip & 0x222);
     }
+
+    static void setTimerInterruptPending() { csrs<MachineMode::IP>(SupervisorMode::TI); }
+
+    static void clearTimerInterruptPending() { csrc<MachineMode::IP>(SupervisorMode::TI); }
+
+    static void setExternalInterruptPending() { csrs<MachineMode::IP>(SupervisorMode::EI); }
+
+    static void clearExternalInterruptPending() { csrc<MachineMode::IP>(SupervisorMode::EI); }
+
+    static void current(VirtualCPU *current) { current_[CPU::id()] = current; }
 
   private:
     static constinit inline VirtualCPU *current_[Traits<CPU>::Active];
@@ -151,10 +166,8 @@ class VirtualCPU {
                                          | 1 << 15; // Store Page Fault
 
   private:
-    uintmax_t mtimecmp_;
-    Atomic<uintmax_t> sip_;
     int core_;
-    HypervisorContext *context_;
+    Registers registers_;
     VirtualMachine *vm_;
 };
 

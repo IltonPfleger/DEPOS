@@ -26,6 +26,7 @@ template <typename T> class Atomic {
     }
 
     bool cas(T &expected, T desired) { return CPU::Atomic::cas(value_, expected, desired); }
+
     void store(T value) { CPU::Atomic::store(value_, value); }
 
     T operator++(int)
