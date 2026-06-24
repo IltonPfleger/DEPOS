@@ -1,0 +1,51 @@
+#pragma once
+
+#include <Traits.hpp>
+#include <architecture/common/Timer.hpp>
+#include <architecture/riscv64/CLINT.hpp>
+#include <architecture/riscv64/ContextFrame.hpp>
+#include <architecture/riscv64/TrapHandler.hpp>
+#include <architecture/riscv64/VirtualCPU.hpp>
+
+namespace QUARK {
+
+class Timer : public ArchitectureCommon::Timer {
+  public:
+    static Nanosecond now() { return ns(CLINT::mtime()); }
+
+    static void delay(Microsecond delta) {
+        Microsecond elapsed = now() + delta;
+        while (now() < elapsed)
+            ;
+    }
+
+    static void init() {
+        if constexpr (!Traits<RISCV>::Supervisor) {
+            TrapHandler::install(7, dispatch);
+            csrs<MachineMode::IE>(MachineMode::TI);
+            CLINT::write();
+        } else {
+            TrapHandler::install(5, dispatch);
+            csrs<SupervisorMode::IE>(SupervisorMode::TI);
+        }
+    }
+
+  private:
+    static Nanosecond ns(uintmax_t ticks) {
+        return Nanosecond((static_cast<__uint128_t>(ticks) * 1000000000ULL) / Traits<CLINT>::Clock);
+    }
+
+    static void dispatch(size_t, ContextFrame *) {
+        if constexpr (Traits<Payload>::Virtualized) {
+            CLINT::write();
+            VirtualCPU::onTick();
+        } else if (!Traits<RISCV>::Supervisor) {
+            CLINT::write();
+        } else {
+            CPU::syscall();
+        }
+        ArchitectureCommon::Timer::handler(CPU::id());
+    }
+};
+
+} // namespace QUARK
