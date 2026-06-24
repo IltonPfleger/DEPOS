@@ -19,38 +19,40 @@ class MIC {
     using MachineContextHandler       = MachineContext<ChangeStack>;
 
   protected:
-    // static void forward(size_t, ContextFrame *) { CLINT::forward(); }
+    static void forward(size_t, ContextFrame *) { CLINT::forward(); }
 
-    // static void syscall(size_t, ContextFrame *context) {
-    //     CLINT::syscall();
-    //     context->pc += 4;
-    // }
+    static void syscall(size_t, ContextFrame *context) {
+        CLINT::syscall();
+        context->pc += 4;
+    }
 
     static void fpu(size_t, ContextFrame *context) {
         if (Decoder::fp(context->value)) {
             FPU::enable<MachineMode>(context);
         }
-        // if (Decoder::fp(context->value) && !FPU::enabled(context)) {
-        // }
     }
 
   public:
     static void init() {
         TrapHandler::init<MachineMode, ChangeStack>();
-        // if constexpr (!IsMachineMode) {
-        //     CoreContextHandler<MachineMode>::stack(__amm.end() - Traits<Memory>::PageSize * CPU::id<true>());
-        //     if constexpr (IsTimerEnable) {
-        //         csrs<MachineMode::IP>(SupervisorMode::TI);
-        //         TrapHandler::install(7, forward);
-        //         TrapHandler::install(9, syscall, TrapHandler::Exception);
-        //     }
-        //     return;
-        // }
+
+        if constexpr (!IsMachineMode) {
+            CoreContextHandler<MachineMode>::stack(__amm.end() - Traits<Memory>::PageSize * CPU::id<true>());
+
+            if constexpr (IsTimerEnable) {
+                csrs<MachineMode::IP>(SupervisorMode::TI);
+                TrapHandler::install(7, forward);
+                TrapHandler::install(9, syscall, TrapHandler::Exception);
+            }
+
+            return;
+        }
+
+        TrapHandler::install(2, fpu, TrapHandler::Exception);
 
         if constexpr (IsExternalInterruptionsEnable) {
             PLIC::init();
             TrapHandler::install(11, IC::onTrap);
-            TrapHandler::install(2, fpu, TrapHandler::Exception);
             csrs<MachineMode::IE>(MachineMode::EI);
         }
     }
