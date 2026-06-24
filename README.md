@@ -1,4 +1,9 @@
 # Just Another RISC-V Hypervisor. 
+
+<p align="center">
+  <img src="Icon.png" alt="Icon" width="200">
+</p>
+
 A lightweight and modular OS designed for RISC-V, focusing on simplicity, performance, and extensibility.
 
 
