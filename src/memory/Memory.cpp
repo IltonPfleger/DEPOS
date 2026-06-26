@@ -30,7 +30,7 @@ void Memory::init() {
     Trace("KB\n");
 
     Trace("Available Memory: ");
-    Trace((free * PageSize) / 1024);
+    Trace(free * (PageSize / 1024));
     Trace("KB\n");
 
     TraceOut();
