@@ -5,9 +5,10 @@
 namespace QUARK::allocators {
 
 template <size_t MINIMUM, size_t MAXIMUM> class Buddy {
-    static_assert(MINIMUM <= MAXIMUM);
-
     typedef collections::Node<void> Node;
+
+    static_assert(MINIMUM <= MAXIMUM);
+    static_assert(1 << MINIMUM >= sizeof(Node));
 
     static constexpr size_t Minimum = MINIMUM;
     static constexpr size_t Maximum = MAXIMUM - Minimum;
@@ -41,6 +42,10 @@ template <size_t MINIMUM, size_t MAXIMUM> class Buddy {
     void insert(void *p, size_t size) {
         uintptr_t address = reinterpret_cast<uintptr_t>(p);
         size_t n          = bucket(size);
+
+        assert(size > 0);
+        assert((size & (size - 1)) == 0);
+        assert((address & (size - 1)) == 0);
 
         while (n < Maximum) {
             uintptr_t b      = buddy(address, n);

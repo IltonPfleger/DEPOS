@@ -8,7 +8,7 @@ namespace QUARK {
 
 class Memory {
   private:
-    using Allocator = allocators::Buddy<1, Traits<Memory>::Order>;
+    using Allocator = allocators::Buddy<3, Traits<Memory>::Order>;
 
   public:
     static void init();

@@ -75,5 +75,3 @@ class Chunk {
 };
 
 } // namespace QUARK
-
-#endif

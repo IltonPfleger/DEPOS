@@ -12,15 +12,26 @@ void Memory::init() {
 
     TraceIn();
 
-    Chunk payload(Traits<Payload>::Address, Traits<Payload>::Size);
-
+    uintptr_t free = 0;
     for (uintptr_t c = RamEnd - PageSize; c >= RamStart; c -= PageSize) {
         Chunk page(c, PageSize);
-        if (page.overlaps(__kmm)) continue;
+        if (page.overlaps(__kmm.text)) continue;
+        if (page.overlaps(__kmm.rodata)) continue;
+        if (page.overlaps(__kmm.data)) continue;
+        if (page.overlaps(__kmm.bss)) continue;
         if (page.overlaps(__bmm)) continue;
-        if (page.overlaps(payload)) continue;
+        if (page.overlaps(Chunk(Traits<Payload>::Address, Traits<Payload>::Size))) continue;
         s_allocator.insert(reinterpret_cast<void *>(page.start()), page.size());
+        free++;
     }
+
+    Trace("QUARK Size: ");
+    Trace((__kmm.text.size() + __kmm.rodata.size() + __kmm.data.size() + __kmm.bss.size()) / 1024);
+    Trace("KB\n");
+
+    Trace("Available Memory: ");
+    Trace((free * PageSize) / (1024 * 1024));
+    Trace("MB\n");
 
     TraceOut();
 }

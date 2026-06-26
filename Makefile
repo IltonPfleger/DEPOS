@@ -17,15 +17,13 @@ debug: $(IMAGE).img
 gdb:
 	$(GDB) -ex "file build/QUARK.elf" -ex "target extended-remote:1234"\
 
-$(IMAGE).bin: $(SYSTEM_BINARY) $(PAYLOAD_BINARY)
+$(IMAGE).bin: $(SYSTEM_BINARY) $(PAYLOAD_ELF)
 	$(DD) bs=1M conv=notrunc if=$(SYSTEM_BINARY) of=$@
-	$(DD) bs=1M conv=notrunc if=$(PAYLOAD_BINARY) of=$@ oflag=seek_bytes seek=$$(( $(Payload_Address) - $(MemoryMap_BootStart) ))
 
 $(SYSTEM_BINARY) : $(SYSTEM_ELF) $(PAYLOAD_ELF) $(MAPPER)
-	$(MAPPER) $(PAYLOAD_ELF) $(MAP)
-	$(OBJCOPY) --update-section .__payload_mm__=$(MAP) $(SYSTEM_ELF)
 	$(MAPPER) $(SYSTEM_ELF) $(MAP)
 	$(OBJCOPY) --update-section .__kernel_mm__=$(MAP) $(SYSTEM_ELF)
+	$(OBJCOPY) --update-section .__payload__=$(PAYLOAD_ELF) $(SYSTEM_ELF)
 	$(OBJCOPY) -O binary $(SYSTEM_ELF) $(SYSTEM_BINARY)
 
 $(PAYLOAD_ELF): $(SYSTEM_ELF)

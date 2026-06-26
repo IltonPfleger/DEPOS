@@ -47,7 +47,7 @@ template <> struct Traits<MemoryMap> {
     static constexpr unsigned long RamStart = Traits<Kernel>::Multitask ? VirtualRamStart : PhysicalRamStart;
     static constexpr unsigned long RamEnd   = Traits<Kernel>::Multitask ? VirtualRamEnd : PhysicalRamEnd;
 
-    static constexpr unsigned long BootStart  = RamStart;
+    static constexpr unsigned long BootStart     = RamStart;
     static constexpr unsigned long KernelAddress = RamStart;
 
     static constexpr unsigned long MMIO  = 0x00000000;

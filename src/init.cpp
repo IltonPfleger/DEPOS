@@ -10,6 +10,7 @@ extern "C" void init() {
     if (CPU::id() == Traits<CPU>::BSP) {
         Console::println('\n');
         TraceIn();
+        Payload::copy();
         Memory::init();
         Thread::init();
         Payload::init();

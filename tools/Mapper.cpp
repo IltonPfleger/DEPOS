@@ -22,7 +22,7 @@ struct SectionRange {
 };
 
 int main(int argc, char *argv[]) {
-    using Chunk       = QUARK::Chunk;
+    using Chunk   = QUARK::Chunk;
     using Payload = QUARK::BootInformation::Payload;
 
     if (argc < 3) {
@@ -82,9 +82,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Payload payload = {};
-
-    new (&static_cast<Chunk &>(payload)) Chunk(text.start, max_addr - text.start);
+    Payload payload{};
 
     if (text.initialized) new (&payload.text) Chunk(text.start, text.size());
     if (data.initialized) new (&payload.data) Chunk(data.start, data.size());
