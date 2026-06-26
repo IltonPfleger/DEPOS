@@ -21,7 +21,7 @@ void Memory::init() {
         if (page.overlaps(__kmm.bss)) continue;
         if (page.overlaps(__bmm)) continue;
         if (page.overlaps(Chunk(Traits<Payload>::Address, Traits<Payload>::Size))) continue;
-        s_allocator.insert(reinterpret_cast<void *>(page.start()), page.size());
+        allocator_.insert(reinterpret_cast<void *>(page.start()), page.size());
         free++;
     }
 
@@ -46,13 +46,13 @@ void *Memory::alloc(size_t size) {
 
     CPU::IRQ::Guard _;
 
-    s_spin.acquire();
+    spin_.acquire();
 
-    void *chunk = s_allocator.remove(size);
+    void *chunk = allocator_.remove(size);
 
     assert(chunk, "Out of Memory.");
 
-    s_spin.release();
+    spin_.release();
 
     return chunk;
 }
@@ -60,13 +60,13 @@ void *Memory::alloc(size_t size) {
 void Memory::free(void *chunk, size_t size) {
     CPU::IRQ::Guard _;
 
-    s_spin.acquire();
+    spin_.acquire();
 
     assert(chunk != nullptr);
 
-    s_allocator.insert(chunk, size);
+    allocator_.insert(chunk, size);
 
-    s_spin.release();
+    spin_.release();
 }
 
 } // namespace QUARK

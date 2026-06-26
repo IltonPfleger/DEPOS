@@ -17,8 +17,8 @@ class Memory {
     static uintptr_t virt2phys(uintptr_t);
 
   private:
-    static constinit inline Allocator s_allocator{};
-    static inline Spin s_spin;
+    static constinit inline Allocator allocator_{};
+    static inline Spin spin_;
 };
 
 } // namespace QUARK
