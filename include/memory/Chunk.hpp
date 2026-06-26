@@ -1,5 +1,4 @@
-#ifndef __QUARK_MEMORY_CHUNK__
-#define __QUARK_MEMORY_CHUNK__
+#pragma once
 
 #include <types.hpp>
 

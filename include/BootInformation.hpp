@@ -7,8 +7,6 @@ namespace QUARK {
 
 struct BootInformation {
     struct Payload : Chunk {
-        Payload() {};
-
         uintptr_t main;
         Chunk text;
         Chunk data;

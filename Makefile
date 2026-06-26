@@ -1,13 +1,12 @@
 include Makedefs.mk
 
-SOURCES       := $(shell find src -name '*.cpp' | grep -v '*architecture*' | grep -v '*machine*')
-SOURCES 	  += $(shell find src/architecture/$(ARCH) -name '*.cpp')
-OBJECTS       := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SOURCES))
-DEPENDENCIES  := $(OBJECTS:.o=.d)
-MAP           := $(BUILD)/MemoryMap
-
-ELF       := $(BUILD)/$(PAYLOAD).elf
-BINARY       := $(BUILD)/$(PAYLOAD).bin
+KERNEL_SOURCES       := $(shell find src -name '*.cpp' | grep -v '*architecture*' | grep -v '*machine*')
+KERNEL_SOURCES 	     += $(shell find src/architecture/$(ARCH) -name '*.cpp')
+KERNEL_OBJECTS       := $(patsubst src/%.cpp,$(BUILD)/%.o,$(KERNEL_SOURCES))
+KERNEL_DEPENDENCIES  := $(KERNEL_OBJECTS:.o=.d)
+PAYLOAD_ELF                  := $(BUILD)/$(PAYLOAD).elf
+PAYLOAD_BINARY               := $(BUILD)/$(PAYLOAD).bin
+MAP                  := $(BUILD)/MemoryMap
 
 run: $(IMAGE).img
 	-$(QEMU) -M $(MACHINE) -smp $(CPU_Count) -bios none -nographic -m $(Memory_Size)b -kernel $<
@@ -18,21 +17,21 @@ debug: $(IMAGE).img
 gdb:
 	$(GDB) -ex "file build/QUARK.elf" -ex "target extended-remote:1234"\
 
-$(IMAGE).bin: $(SYSTEM).bin $(BINARY)
-	$(DD) bs=1M conv=notrunc if=$(SYSTEM).bin of=$@
-	$(DD) bs=1M conv=notrunc if=$(BINARY) of=$@ oflag=seek_bytes seek=$$(( $(Payload_Address) - $(MemoryMap_BootStart) ))
+$(IMAGE).bin: $(SYSTEM_BINARY) $(PAYLOAD_BINARY)
+	$(DD) bs=1M conv=notrunc if=$(SYSTEM_BINARY) of=$@
+	$(DD) bs=1M conv=notrunc if=$(PAYLOAD_BINARY) of=$@ oflag=seek_bytes seek=$$(( $(Payload_Address) - $(MemoryMap_BootStart) ))
 
-$(SYSTEM).bin : $(SYSTEM).elf $(ELF) $(MAPPER)
-	$(MAPPER) $(ELF) $(MAP)
-	$(OBJCOPY) --update-section .__payload_mm__=$(MAP) $(SYSTEM).elf
-	$(MAPPER) $(SYSTEM).elf $(MAP)
-	$(OBJCOPY) --update-section .__kernel_mm__=$(MAP) $(SYSTEM).elf
-	$(OBJCOPY) -O binary $(SYSTEM).elf $(SYSTEM).bin
+$(SYSTEM_BINARY) : $(SYSTEM_ELF) $(PAYLOAD_ELF) $(MAPPER)
+	$(MAPPER) $(PAYLOAD_ELF) $(MAP)
+	$(OBJCOPY) --update-section .__payload_mm__=$(MAP) $(SYSTEM_ELF)
+	$(MAPPER) $(SYSTEM_ELF) $(MAP)
+	$(OBJCOPY) --update-section .__kernel_mm__=$(MAP) $(SYSTEM_ELF)
+	$(OBJCOPY) -O binary $(SYSTEM_ELF) $(SYSTEM_BINARY)
 
-$(ELF): $(SYSTEM).elf
+$(PAYLOAD_ELF): $(SYSTEM_ELF)
 	make PAYLOAD=$(PAYLOAD) -C $(PAYLOADS) all
 
-$(SYSTEM).elf: $(OBJECTS)
+$(SYSTEM_ELF): $(KERNEL_OBJECTS)
 	$(LD) --no-gc-sections -e _init --section-start=.init=$(MemoryMap_BootStart) --image-base=$(MemoryMap_BootStart) -o $@ $^
 
 $(BUILD)/%: $(TOOLS)/%.cpp 
@@ -46,9 +45,9 @@ $(BUILD)/%.o: src/%.cpp
 %.bin: %.elf 
 	$(OBJCOPY) -O binary $< $@
 
-$(OBJECTS): $(CONFIG)
+$(KERNEL_OBJECTS): $(CONFIG)
 
 clean:
 	rm -rf build
 
--include $(DEPENDENCIES)
+-include $(KERNEL_DEPENDENCIES)

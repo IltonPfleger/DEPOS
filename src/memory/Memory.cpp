@@ -12,11 +12,13 @@ void Memory::init() {
 
     TraceIn();
 
+    Chunk payload(Traits<Payload>::Address, Traits<Payload>::Size);
+
     for (uintptr_t c = RamEnd - PageSize; c >= RamStart; c -= PageSize) {
         Chunk page(c, PageSize);
         if (page.overlaps(__kmm)) continue;
-        if (page.overlaps(__mm)) continue;
         if (page.overlaps(__bmm)) continue;
+        if (page.overlaps(payload)) continue;
         s_allocator.insert(reinterpret_cast<void *>(page.start()), page.size());
     }
 
