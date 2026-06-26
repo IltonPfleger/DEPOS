@@ -1,5 +1,4 @@
-#ifndef __QUARK_RISCV64_ATOMIC__
-#define __QUARK_RISCV64_ATOMIC__
+#pragma once
 
 #include <Meta.hpp>
 
@@ -101,5 +100,3 @@ class Atomic {
 };
 
 } // namespace QUARK::riscv64
-
-#endif

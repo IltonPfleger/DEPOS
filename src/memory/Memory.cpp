@@ -25,13 +25,13 @@ void Memory::init() {
         free++;
     }
 
-    Trace("QUARK Size: ");
+    Trace("System Size: ");
     Trace((__kmm.text.size() + __kmm.rodata.size() + __kmm.data.size() + __kmm.bss.size()) / 1024);
     Trace("KB\n");
 
     Trace("Available Memory: ");
-    Trace((free * PageSize) / (1024 * 1024));
-    Trace("MB\n");
+    Trace((free * PageSize) / 1024);
+    Trace("KB\n");
 
     TraceOut();
 }

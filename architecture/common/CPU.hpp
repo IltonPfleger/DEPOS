@@ -1,5 +1,4 @@
-#ifndef __QUARK_ARCHITECTURE_COMMON_CPU_HEADER__
-#define __QUARK_ARCHITECTURE_COMMON_CPU_HEADER__
+#pragma once
 
 #include <Traits.hpp>
 #include <architecture/common/Atomic.hpp>
@@ -32,5 +31,3 @@ class CPU {
 } // namespace ArchitectureCommon
 
 } // namespace QUARK
-
-#endif
