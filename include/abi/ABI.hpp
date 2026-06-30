@@ -1,0 +1,19 @@
+#pragma once
+
+namespace QUARK::ABI {
+
+enum Function {
+    ABI_HEAP_NEW,
+    ABI_HEAP_DELETE,
+
+    ABI_THREAD_CONSTRUCTOR,
+    ABI_THREAD_DESTRUCTOR,
+    ABI_THREAD_JOIN,
+
+    ABI_SEMAPHORE_CONSTRUCTOR,
+    ABI_SEMAPHORE_DESTRUCTOR,
+    ABI_SEMAPHORE_P,
+    ABI_SEMAPHORE_V,
+};
+
+} // namespace QUARK::ABI

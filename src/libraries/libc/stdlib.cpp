@@ -3,7 +3,7 @@
 
 using namespace QUARK;
 
-extern "C" void *malloc(size_t size) { return new uint8_t[size]; }
+// extern "C" void *malloc(size_t size) { return new uint8_t[size]; }
 
 extern "C" long atol(const char *str) {
     long result   = 0;

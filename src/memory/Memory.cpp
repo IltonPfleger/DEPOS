@@ -1,6 +1,7 @@
 #include <BootInformation.hpp>
 #include <architecture/CPU.hpp>
 #include <memory/Memory.hpp>
+#include <memory/operators.hpp>
 #include <utility/Debug.hpp>
 
 namespace QUARK {
@@ -11,6 +12,8 @@ void Memory::init() {
     constexpr auto RamEnd   = Traits<MemoryMap>::RamEnd;
 
     TraceIn();
+
+    new (&allocator_) Allocator();
 
     uintptr_t free = 0;
     for (uintptr_t c = RamEnd - PageSize; c >= RamStart; c -= PageSize) {

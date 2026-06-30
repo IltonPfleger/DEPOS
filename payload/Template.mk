@@ -6,13 +6,9 @@ PAYLOAD_DEPENDENCIES := $(PAYLOAD_OBJECTS:.o=.d)
 
 all: $(PAYLOAD_TARGET)
 
-$(PAYLOAD_TARGET): $(PAYLOAD_BUILD)/$(PAYLOAD).o
+$(PAYLOAD_TARGET): $(PAYLOAD_OBJECTS)
 	@mkdir -p $(dir $@)
-	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(Payload_Address) --image-base=$(Payload_Address) -o $@ $<
-
-$(PAYLOAD_BUILD)/$(PAYLOAD).o: $(PAYLOAD_OBJECTS)
-	@mkdir -p $(dir $@)
-	$(LD) -e main -r $(PAYLOAD_OBJECTS) -o $@
+	$(LD) -e main --just-symbols $(SYSTEM).elf -Ttext=$(Payload_Address) --image-base=$(Payload_Address) -o $@ $^
 
 $(PAYLOAD_BUILD)/%.cpp.o: %.cpp $(CONFIG)
 	@mkdir -p $(dir $@)

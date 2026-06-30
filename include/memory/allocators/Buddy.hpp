@@ -43,9 +43,8 @@ template <size_t MINIMUM, size_t MAXIMUM> class Buddy {
         uintptr_t address = reinterpret_cast<uintptr_t>(p);
         size_t n          = bucket(size);
 
-        assert(size > 0);
-        assert((size & (size - 1)) == 0);
-        assert((address & (size - 1)) == 0);
+        assert(size > 0, size);
+        assert((address & ((1 << log2ceil(size)) - 1)) == 0, address, " ", size);
 
         while (n < Maximum) {
             uintptr_t b      = buddy(address, n);

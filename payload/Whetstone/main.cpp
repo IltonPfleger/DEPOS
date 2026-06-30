@@ -1,5 +1,6 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
+#include <memory/Heap.hpp>
 #include <utility/Console.hpp>
 #include <utility/Delay.hpp>
 

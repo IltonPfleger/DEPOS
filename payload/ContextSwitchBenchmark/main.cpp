@@ -2,6 +2,7 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
 #include <Traits.hpp>
+#include <memory/Heap.hpp>
 #include <utility/Console.hpp>
 #include <utility/Debug.hpp>
 #include <utility/Delay.hpp>
@@ -10,7 +11,7 @@
 
 using namespace QUARK;
 
-static constexpr int Iterations = 10000;
+static constexpr int Iterations = 1000;
 
 using Unit   = Nanosecond;
 using Buffer = collections::CircularBuffer<Unit, Iterations>;

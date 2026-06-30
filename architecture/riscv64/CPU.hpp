@@ -7,7 +7,7 @@
 #include <architecture/riscv64/CoreContextHandler.hpp>
 #include <architecture/riscv64/Modes.hpp>
 #include <architecture/riscv64/csrs.hpp>
-#include <memory/Heap.hpp>
+#include <memory/operators.hpp>
 #include <utility/Endian.hpp>
 #include <utility/Guard.hpp>
 
