@@ -12,7 +12,7 @@ class TrapHandler {
   private:
     using ID      = size_t;
     using Index   = uintmax_t;
-    using Handler = void (*)(ID, ContextFrame *);
+    using Handler = void (*)(ContextFrame *);
 
     static Index irq2index(ID id, Type type) { return id + (type * NumberOfExceptions); }
 
@@ -25,7 +25,7 @@ class TrapHandler {
         assert(index < NumberOfHandlers, index);
         assert(s_handlers[index], index, " ", id);
 
-        s_handlers[index](id, c);
+        s_handlers[index](c);
     }
 
     template <typename Privilege, bool ChangeStack>

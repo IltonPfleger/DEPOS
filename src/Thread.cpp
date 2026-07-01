@@ -90,13 +90,13 @@ Thread::Thread(Function f, Argument a, Criterion c)
 }
 
 Thread::~Thread() {
-    Thread::join(*this);
+    join();
     Memory::free(stack_.data(), stack_.size());
     Memory::free(kstack_.data(), kstack_.size());
 }
 
-void Thread::join(Thread &joinable) {
-    while (joinable.state_ != State::FINISHED) {
+void Thread::join() {
+    while (state_ != State::FINISHED) {
         reschedule();
     }
 }

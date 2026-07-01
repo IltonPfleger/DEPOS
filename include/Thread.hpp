@@ -36,9 +36,9 @@ class Thread {
     static void yield();
     static void reschedule();
     static void onTick();
-    static void join(Thread &);
     static void exit();
     static Thread *running();
+    void join();
 
   private:
     static void entry(Function, Argument);

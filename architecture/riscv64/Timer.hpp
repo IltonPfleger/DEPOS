@@ -35,7 +35,7 @@ class Timer : public ArchitectureCommon::Timer {
         return Nanosecond((static_cast<__uint128_t>(ticks) * 1000000000ULL) / Traits<CLINT>::Clock);
     }
 
-    static void dispatch(size_t, ContextFrame *) {
+    static void dispatch(ContextFrame *) {
         if constexpr (Traits<Payload>::Virtualized) {
             CLINT::write();
             VirtualCPU::onTick();

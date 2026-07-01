@@ -2,28 +2,45 @@
 
 #include <abi/ABI.hpp>
 
+namespace QUARK {
+
 template <typename Response> class Syscall {
   public:
     template <typename... Args> Syscall(ABI::Function call, Args &&...args) {
-        static_assert(sizeof...(Args) <= 6);
+        static_assert(sizeof...(Args) <= 6, "Syscall supports a maximum of 6 arguments.");
 
-        long argv[] = {static_cast<long>(args)...};
+        constexpr long UNUSED = 0;
+        long argv[6]          = {UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED};
 
-        register long a0 asm("a0") = sizeof...(Args) > 0 ? argv[0] : 0;
-        register long a1 asm("a1") = sizeof...(Args) > 1 ? argv[1] : 0;
-        register long a2 asm("a2") = sizeof...(Args) > 2 ? argv[2] : 0;
-        register long a3 asm("a3") = sizeof...(Args) > 3 ? argv[3] : 0;
-        register long a4 asm("a4") = sizeof...(Args) > 4 ? argv[4] : 0;
-        register long a5 asm("a5") = sizeof...(Args) > 5 ? argv[5] : 0;
+        if constexpr (sizeof...(Args) > 0) {
+            int i = 0;
+            ((argv[i++] = (long)args), ...);
+        }
+
+        register long a0 asm("a0") = argv[0];
+        register long a1 asm("a1") = argv[1];
+        register long a2 asm("a2") = argv[2];
+        register long a3 asm("a3") = argv[3];
+        register long a4 asm("a4") = argv[4];
+        register long a5 asm("a5") = argv[5];
+
         register long a7 asm("a7") = static_cast<long>(call);
 
         asm volatile("ecall" : "+r"(a0) : "r"(a1), "r"(a2), "r"(a3), "r"(a4), "r"(a5), "r"(a7) : "memory");
 
-        response_ = static_cast<Response>(a0);
+        if constexpr (!Meta::IsVoid<Response>::Result) {
+            response_ = (Response)a0;
+        }
     }
 
-    operator Response() const { return response_; }
+    operator Response() const
+        requires(!Meta::IsVoid<Response>::Result)
+    {
+        return response_;
+    }
 
   private:
-    Response response_;
+    typename Meta::IF<!Meta::IsVoid<Response>::Result, Response, Meta::Empty>::Result response_;
 };
+
+} // namespace QUARK

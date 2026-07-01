@@ -12,7 +12,7 @@ class StoreAccessFault {
   public:
     static constexpr unsigned int CODE = 7;
 
-    static void dispatch(size_t id, ContextFrame *c) {
+    static void dispatch(ContextFrame *c) {
         if (((c->status >> 11) & 0x3) == 1) {
             uintptr_t address        = PageTable::virt2phys(csrr<MachineMode::TVAL>());
             unsigned int instruction = *reinterpret_cast<unsigned int *>(PageTable::virt2phys(c->pc));
@@ -23,7 +23,7 @@ class StoreAccessFault {
                 return;
             }
         }
-        ExceptionHandler::onTrap(id, c);
+        ExceptionHandler::onTrap(c);
     }
 };
 

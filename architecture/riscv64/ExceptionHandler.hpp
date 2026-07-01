@@ -27,11 +27,10 @@ class ExceptionHandler {
     // };
 
   public:
-    static void onTrap(size_t id, ContextFrame *c) {
+    static void onTrap(ContextFrame *c) {
         Console::panic();
         Console::println("\n<", CPU::id(), "> Ohh, It's a Trap!");
         Console::println("context: ", c);
-        Console::println("id: ", id);
         Console::println("pc: ", Console::Hex(c->pc));
         Console::println("cause: ", Console::Hex(c->cause));
         Console::println("status: ", Console::Hex(c->status));

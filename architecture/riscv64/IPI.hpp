@@ -9,7 +9,7 @@ namespace QUARK {
 
 class IPI {
   public:
-    static void onTrap(size_t, ContextFrame *) {
+    static void onTrap(ContextFrame *) {
         VirtualCPU::onInterProcessorInterrupt();
         CLINT::ipi(mhartid());
     }

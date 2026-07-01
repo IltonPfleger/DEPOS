@@ -16,7 +16,7 @@ class LoadAccessFault {
   public:
     static constexpr unsigned int CODE = 5;
 
-    static void dispatch(size_t id, ContextFrame *c) {
+    static void dispatch(ContextFrame *c) {
         if (((c->status >> 11) & 0x3) == 1) {
             uintptr_t address = PageTable::virt2phys(csrr<MachineMode::TVAL>());
             uintptr_t pc      = PageTable::virt2phys(c->pc);
@@ -26,7 +26,7 @@ class LoadAccessFault {
                 return;
             }
         }
-        ExceptionHandler::onTrap(id, c);
+        ExceptionHandler::onTrap(c);
     }
 };
 

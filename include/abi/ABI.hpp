@@ -2,7 +2,7 @@
 
 namespace QUARK::ABI {
 
-enum Function {
+enum class Function {
     ABI_HEAP_NEW,
     ABI_HEAP_DELETE,
 

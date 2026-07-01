@@ -14,7 +14,7 @@ class IllegalInstruction {
   public:
     static constexpr unsigned int CODE = 2;
 
-    static void dispatch(size_t id, ContextFrame *context) {
+    static void dispatch(ContextFrame *context) {
         uint32_t instruction = context->value & 0xFFFFFFFF;
         if (Decoder::rdtime(instruction)) {
             uint8_t rd     = Decoder::rd(instruction);
@@ -26,7 +26,7 @@ class IllegalInstruction {
         } else if (Decoder::fp(instruction) && !FPU::enabled(context)) {
             FPU::enable<MachineMode>(context);
         } else {
-            ExceptionHandler::onTrap(id, context);
+            ExceptionHandler::onTrap(context);
         }
     }
 };
