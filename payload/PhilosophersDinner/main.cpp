@@ -1,5 +1,6 @@
 #include <Semaphore.hpp>
 #include <Thread.hpp>
+#include <memory/Heap.hpp>
 #include <utility/Console.hpp>
 #include <utility/Debug.hpp>
 
@@ -57,5 +58,5 @@ int main(int, char *[]) {
     console->v();
 
     for (long i = 0; i < Number; i++)
-        Thread::join(*threads[i]);
+        threads[i]->join();
 }
