@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Meta.hpp>
 #include <abi/ABI.hpp>
 
 namespace QUARK {

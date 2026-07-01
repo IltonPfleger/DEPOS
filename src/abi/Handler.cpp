@@ -1,3 +1,4 @@
+#include <Semaphore.hpp>
 #include <Thread.hpp>
 #include <abi/Handler.hpp>
 #include <memory/Heap.hpp>
@@ -19,6 +20,21 @@ void *Handler::dispatch(Function f, const Arguments a) {
             delete reinterpret_cast<Thread *>(a[0]);
             break;
         };
+        case Function::ABI_SEMAPHORE_CONSTRUCTOR: {
+            return new (Heap::SYSTEM) Semaphore(a[0]);
+        }
+        case Function::ABI_SEMAPHORE_P: {
+            reinterpret_cast<Semaphore *>(a[0])->p();
+            break;
+        }
+        case Function::ABI_SEMAPHORE_V: {
+            reinterpret_cast<Semaphore *>(a[0])->v();
+            break;
+        }
+        case Function::ABI_SEMAPHORE_DESTRUCTOR: {
+            delete reinterpret_cast<Semaphore *>(a[0]);
+            break;
+        }
         default: {
             assert(false, "Not Available!");
             break;

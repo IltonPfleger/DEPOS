@@ -4,7 +4,7 @@
 #include <utility/Console.hpp>
 #include <utility/Debug.hpp>
 
-using namespace QUARK;
+using namespace QUARK::ABI;
 
 static constexpr int Number     = 1000;
 static constexpr int Iterations = 100;
