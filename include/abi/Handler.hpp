@@ -8,7 +8,6 @@ namespace QUARK::ABI {
 class Handler {
   public:
     using Arguments = uintmax_t *;
-
     static void *dispatch(Function, const Arguments);
 };
 

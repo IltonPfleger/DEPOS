@@ -8,12 +8,12 @@ namespace QUARK::ABI {
 class Thread {
   public:
     template <typename Function, typename Argment> Thread(Function f, Argment a) {
-        handler_ = Syscall<void *>(ABI::Function::ABI_THREAD_CONSTRUCTOR, f, a);
+        handler_ = Syscall(ABI::Function::ABI_THREAD_CONSTRUCTOR, f, a);
     }
 
-    ~Thread() { Syscall<void>(ABI::Function::ABI_THREAD_DESTRUCTOR, handler_); }
+    ~Thread() { Syscall(ABI::Function::ABI_THREAD_DESTRUCTOR, handler_); }
 
-    void join() { Syscall<void>(ABI::Function::ABI_THREAD_JOIN, handler_); }
+    void join() { Syscall(ABI::Function::ABI_THREAD_JOIN, handler_); }
 
   private:
     void *handler_;

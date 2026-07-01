@@ -1,6 +1,7 @@
+#include <abi/Heap.hpp>
 #include <abi/Semaphore.hpp>
 #include <abi/Thread.hpp>
-#include <memory/Heap.hpp>
+#include <architecture/CPU.hpp>
 #include <utility/Console.hpp>
 #include <utility/Debug.hpp>
 

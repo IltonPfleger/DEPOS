@@ -35,6 +35,14 @@ void *Handler::dispatch(Function f, const Arguments a) {
             delete reinterpret_cast<Semaphore *>(a[0]);
             break;
         }
+        case Function::ABI_HEAP_NEW: {
+            return new uint8_t[a[0]];
+            break;
+        }
+        case Function::ABI_HEAP_DELETE: {
+            delete[] reinterpret_cast<uint8_t *>(a[0]);
+            break;
+        }
         default: {
             assert(false, "Not Available!");
             break;

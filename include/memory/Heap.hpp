@@ -38,3 +38,4 @@ inline void *operator new[](QUARK::size_t s, QUARK::Heap::Location l) { return :
 inline void operator delete(void *p, QUARK::size_t) { ::operator delete(p); }
 inline void operator delete[](void *p) { ::operator delete(p); }
 inline void operator delete[](void *p, QUARK::size_t) { ::operator delete(p); }
+

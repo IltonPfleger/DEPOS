@@ -143,8 +143,8 @@ class Console {
     }
 
   private:
-    static volatile inline void *s_panic = 0;
-    static inline unsigned s_column      = 0;
+    static volatile inline void *panic_ = 0;
+    static inline unsigned column_      = 0;
 };
 
 } // namespace QUARK

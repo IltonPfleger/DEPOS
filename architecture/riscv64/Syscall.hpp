@@ -5,10 +5,10 @@
 
 namespace QUARK {
 
-template <typename Response> class Syscall {
+template <typename Response = void *> class Syscall {
   public:
     template <typename... Args> Syscall(ABI::Function call, Args &&...args) {
-        static_assert(sizeof...(Args) <= 6, "Syscall supports a maximum of 6 arguments.");
+        static_assert(sizeof...(Args) <= 6);
 
         constexpr long UNUSED = 0;
         long argv[6]          = {UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED};
